@@ -86,7 +86,7 @@ class DependencyTests(unittest.TestCase):
         data = {"kdotool": {"revision": "abc", "release": "0.3.0", "patches": []}}
         state = {"revision": "abc", "cargo_lock_sha256": "lock", "clean_checkout": True}
         self.candidate("print('kdotool 0.3.0')\n")
-        receipt = state | {"binary_sha256": deps.digest(self.root / "bin/kdotool"), "toolchain": {"rustc": "1", "cargo": "1"}, "build_command": "command", "resolved_cargo": {"lock_packages": ["package"], "resolved_nodes": ["node"]}, "patches": [], "release": "0.3.0"}
+        receipt = state | {"binary_sha256": deps.digest(self.root / "bin/kdotool"), "toolchain": {"rustc": "1", "cargo": "1"}, "build_command": "command", "resolved_cargo": {"lock_packages": [{"name": "kdotool", "version": "0.3.0"}], "resolved_nodes": [{"id": "kdotool", "dependencies": [], "deps": [], "features": []}]}, "patches": [], "release": "0.3.0"}
         receipt_path = self.root / "build.json"
         with patch.object(deps, "source_state", return_value=state):
             receipt_path.write_text(json.dumps(receipt))
@@ -99,6 +99,28 @@ class DependencyTests(unittest.TestCase):
             with self.assertRaises(deps.Failure) as caught:
                 deps.verify_build(self.runner, self.root, data)
             self.assertEqual(caught.exception.error["code"], "provenance_mismatch")
+
+    def test_cli_malformed_nested_receipts_return_actionable_json(self):
+        receipt = json.loads((deps.PROJECT / "evidence/issue-9/environment.json").read_text())["kdotool"]
+        receipt_path = self.root / "build.json"
+        mutations = [
+            ("toolchain", None), ("toolchain", []), ("toolchain", "old-format"),
+            ("toolchain", {"rustc": None, "cargo": "1"}),
+            ("resolved_cargo", None), ("resolved_cargo", []), ("resolved_cargo", "old-format"),
+            ("resolved_cargo", {"lock_packages": None, "resolved_nodes": []}),
+            ("resolved_cargo", {"lock_packages": ["invalid"], "resolved_nodes": [None]}),
+            ("resolved_cargo", {"lock_packages": [{"name": [], "version": "1"}], "resolved_nodes": [{}]}),
+        ]
+        for field, value in mutations:
+            with self.subTest(field=field, value=value):
+                receipt_path.write_text(json.dumps(receipt | {field: value}))
+                result = subprocess.run([sys.executable, "-I", str(deps.PROJECT / "tools/dependencies.py"), "check-kdotool", "--root", str(self.root)], capture_output=True, timeout=15)
+                self.assertEqual(result.returncode, 1)
+                payload = json.loads(result.stdout)
+                self.assertFalse(payload["ok"])
+                self.assertEqual(payload["errors"][0]["code"], "provenance_mismatch")
+                self.assertIn("fresh --root", payload["errors"][0]["repair"])
+                self.assertEqual(result.stderr, b"")
 
     def test_commit_and_lock_mismatches(self):
         source = self.root / "kdotool-source"

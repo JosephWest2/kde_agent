@@ -196,20 +196,68 @@ def source_state(runner, root, data):
     return {"revision": revision, "cargo_lock_sha256": lock_digest, "clean_checkout": True}
 
 
+def validate_receipt(receipt):
+    """Reject incompatible JSON shapes before using any receipt fields."""
+    def invalid():
+        raise Failure("provenance_mismatch", "Incomplete or malformed build receipt",
+                      "Use a fresh --root and rerun setup")
+
+    def text(value):
+        return isinstance(value, str) and bool(value)
+
+    def strings(value):
+        return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+    if not isinstance(receipt, dict):
+        invalid()
+    for key in ("revision", "cargo_lock_sha256", "binary_sha256", "build_command", "release"):
+        if not text(receipt.get(key)):
+            invalid()
+    if receipt.get("clean_checkout") is not True or not isinstance(receipt.get("patches"), list):
+        invalid()
+    toolchain = receipt.get("toolchain")
+    if not isinstance(toolchain, dict) or not all(text(toolchain.get(name)) for name in ("rustc", "cargo")):
+        invalid()
+    resolved = receipt.get("resolved_cargo")
+    if not isinstance(resolved, dict):
+        invalid()
+    for key in ("lock_packages", "resolved_nodes"):
+        items = resolved.get(key)
+        if not isinstance(items, list) or not items or not all(isinstance(item, dict) for item in items):
+            invalid()
+    for package in resolved["lock_packages"]:
+        if not all(text(package.get(key)) for key in ("name", "version")):
+            invalid()
+        if any(not text(package[key]) for key in ("source", "checksum") if key in package):
+            invalid()
+        if "dependencies" in package and not strings(package["dependencies"]):
+            invalid()
+    for node in resolved["resolved_nodes"]:
+        if not text(node.get("id")) or not strings(node.get("dependencies")) or not strings(node.get("features")):
+            invalid()
+        node_deps = node.get("deps")
+        if not isinstance(node_deps, list):
+            invalid()
+        for dependency in node_deps:
+            if not isinstance(dependency, dict) or not all(text(dependency.get(key)) for key in ("name", "pkg")):
+                invalid()
+            kinds = dependency.get("dep_kinds")
+            if not isinstance(kinds, list) or any(
+                    not isinstance(kind, dict) or any(
+                        key not in kind or (kind[key] is not None and not isinstance(kind[key], str))
+                        for key in ("kind", "target")) for kind in kinds):
+                invalid()
+
+
 def verify_build(runner, root, data):
     receipt_path = root / "build.json"
     if not receipt_path.is_file():
         raise Failure("missing_build", "No completed kdotool build receipt", "Run tools/dependencies.py setup")
     receipt = json.loads(receipt_path.read_text())
+    validate_receipt(receipt)
     state = source_state(runner, root, data)
-    required = {"revision", "cargo_lock_sha256", "binary_sha256", "toolchain", "build_command", "resolved_cargo", "patches", "release"}
-    if not isinstance(receipt, dict) or not required.issubset(receipt) or any(receipt.get(key) != value for key, value in state.items()):
-        raise Failure("provenance_mismatch", "Incomplete or stale build receipt", "Use a fresh --root and rerun setup")
-    if (not all(receipt["toolchain"].get(name) for name in ("rustc", "cargo"))
-            or not receipt["build_command"]
-            or not receipt["resolved_cargo"].get("lock_packages")
-            or not receipt["resolved_cargo"].get("resolved_nodes")):
-        raise Failure("provenance_mismatch", "Build receipt omits resolved dependency/toolchain evidence", "Use a fresh --root and rerun setup")
+    if any(receipt.get(key) != value for key, value in state.items()):
+        raise Failure("provenance_mismatch", "Stale build receipt", "Use a fresh --root and rerun setup")
     if receipt["patches"] != data["kdotool"]["patches"] or receipt["release"] != data["kdotool"]["release"]:
         raise Failure("provenance_mismatch", "Build policy differs from receipt", "Use a fresh --root and rerun setup")
     if digest(root / "bin/kdotool") != receipt["binary_sha256"]:

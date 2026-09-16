@@ -53,7 +53,7 @@ cache. The final setup obtains the complete graph using bounded `cargo metadata
 --locked`; it succeeded from the clean root. No success receipt was written for
 the failed attempt.
 
-All **11 tests passed** (0.568 seconds). They exercised injected environment and
+All **12 tests passed** (0.817 seconds), including a CLI regression added after PR review for null/non-mapping nested build receipts. They exercised injected environment and
 Python startup settings, ignored host Git configuration, rejected project and
 ancestor Cargo configuration, actionable missing tools/bindings, finite timeout
 with a descendant retaining output handles, private-bus cleanup after successful

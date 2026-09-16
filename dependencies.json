@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kdotool": {
+    "repository": "https://github.com/jinliu/kdotool.git",
+    "revision": "be03ce90c09350898556436bac74ed35fe928617",
+    "release": "0.3.0",
+    "patches": [],
+    "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc"
+  },
+  "arch_packages": [
+    "kwin",
+    "plasma-workspace",
+    "systemd",
+    "dbus",
+    "libei",
+    "python",
+    "python-gobject",
+    "python-dbus",
+    "python-pillow",
+    "glib2",
+    "gobject-introspection-runtime",
+    "libffi",
+    "libjpeg-turbo",
+    "zlib",
+    "wayland",
+    "wayland-protocols",
+    "libxkbcommon",
+    "gcc",
+    "pkgconf",
+    "git",
+    "rustup"
+  ],
+  "excluded_dependencies": [
+    "ydotool",
+    "kwin-mcp",
+    "MCP SDK"
+  ],
+  "compatibility_reruns": {
+    "KWin/KDE/systemd/D-Bus/Wayland": [
+      "environment",
+      "#10 private harness",
+      "#11 windows",
+      "#12 input",
+      "#13 capture/control loop"
+    ],
+    "kdotool/Cargo graph/Rust": [
+      "build/provenance",
+      "custom-script generation",
+      "#11 windows and timing"
+    ],
+    "Python/PyGObject/dbus-python/GLib/libffi": [
+      "environment",
+      "#10 lifecycle",
+      "#11 orchestration",
+      "#12 input",
+      "#13 capture/control loop"
+    ],
+    "libei/headers/compiler": [
+      "environment",
+      "#12 ABI/device lifecycle/input/cancellation",
+      "#13 responsiveness"
+    ],
+    "Pillow/image libraries": [
+      "environment",
+      "#13 capture/PNG/pixels"
+    ]
+  }
+}

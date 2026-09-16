@@ -200,3 +200,81 @@ membership, invalid control traffic and distinct presented states. KWin denies
 limitation alongside its explicit launch environment and working private
 endpoints. See [issue #10 evidence](../evidence/issue-10/README.md) for actual
 measurements, failure history and remaining milestone checks.
+
+## Structured window/focus feasibility probe (#11)
+
+Use the exact #9 candidate executable and the existing private probe seam:
+
+```sh
+# Substitute the absolute checkout path; repeat latency in three fresh runs.
+/usr/bin/python -I /checkout/tools/private_harness.py run -- \
+  /usr/bin/python -I /checkout/tools/kdotool_probe.py \
+  /checkout/.local/issue9-clean/bin/kdotool functional
+/usr/bin/python -I /checkout/tools/private_harness.py run -- \
+  /usr/bin/python -I /checkout/tools/kdotool_probe.py \
+  /checkout/.local/issue9-clean/bin/kdotool faults
+/usr/bin/python -I /checkout/tools/private_harness.py run -- \
+  /usr/bin/python -I /checkout/tools/kdotool_probe.py \
+  /checkout/.local/issue9-clean/bin/kdotool latency
+```
+
+The probe refuses a missing/private-environment mismatch before connecting to
+D-Bus and verifies the executable's hash against #9's selected artifact. It uses
+the compiled kdotool CLI, unchanged, for every query, activation and forced script
+removal. A read-only observer on the explicit private bus checks the exact owned
+script name with `isScriptLoaded`; it does not implement another window transport.
+
+`tools/kwin_window_query.js` is the fixed snapshot source. JSON results include
+KWin UUID, reported PID, title, application class, separate global client/frame
+rectangles, per-window active state and active UUID. Missing metadata is null;
+empty available titles/classes stay empty. The fixture must actually supply
+identity and exact content geometry. Frame geometry never substitutes for
+client geometry. Dynamic values enter an ASCII-escaped JSON data declaration;
+titles and classes are descriptive and cannot select one of equal candidates.
+Schema validation rejects incomplete, duplicate, inconsistent or nonfinite data.
+
+The functional scenario keeps the primary fixture healthy and launches a second
+owned fixture solely to test ambiguous descriptions, real focus transitions and
+a formerly valid vanished UUID. It closes/reaps that child through its own stdin.
+This is a fault fixture, not a production multi-application interface. Focus first
+checks existence, requests activation, then polls fresh snapshots until that UUID
+is actually active. The successful-no-op activation case must time out. Closing
+the second fixture must produce `target_missing` when its old UUID is focused.
+
+The proposed query work deadline is **500ms**, focus deadline **2s**, and focus
+poll cadence **100ms** between starts with no overlapping queries/catch-up burst.
+A successful query includes parsing and independent script absence observation.
+A successful focus requires a matching fresh snapshot before its absolute
+deadline; a failed query never permits continuing with stale focus. Full latency
+samples additionally include diagnostic writes and return to the probe caller.
+The instrumented feasibility code writes considerable per-query evidence; it is
+not the production worker adapter or a throughput benchmark.
+
+Failures reserve **1.5s** separately for killing/reaping the owned CLI, unloading
+only its exact script name if necessary, independently observing absence, and
+removing its private temporary files. Each phase is clamped to the harness's
+remaining budget. Request failure detection and final cleanup return are distinct
+measurements: a 100ms deadline cannot interrupt JavaScript already executing in
+the compositor. The fixed 750ms slow-script test detects its request timeout near
+100ms but requires the script to finish before unload observation can complete.
+If cleanup cannot be confirmed, the probe fails and the bounded service backstop
+ends that private desktop; it cannot report per-query cleanup success.
+
+Faults cover thrown errors, syntax failure without completion callback, absent or
+malformed JSON, finite compositor delay, native missing-completion timeout and
+SIGSTOP of a demonstrably registered owned CLI. No infinite compositor loop is
+used. Native timeout is tested with a separate 12s outer budget because the pin
+has separate 5s D-Bus/result/cleanup limits. That budget is not proposed for
+ordinary polling. The fault test verifies the exact native timeout diagnostic,
+script absence and fresh-query recovery. All scenarios retain stdout/stderr,
+script inputs, per-query process/lifecycle/timing receipts and the final probe
+report beside the usual harness logs and cleanup manifest.
+
+[Issue #11 evidence](../evidence/issue-11/README.md) records the measured retain
+assessment and reproducible samples. A proposed focus-loss detection window is
+100ms poll delay plus the 500ms query budget, under the recorded target conditions.
+This does not establish input release/cancellation timing. Production integration
+must observe these helpers asynchronously; #13 must still demonstrate that a
+slow query/cleanup cannot stall the GLib cancellation loop, and #12 must prove
+actual libei release. Full session readiness and production support remain
+outside this window-transport probe.

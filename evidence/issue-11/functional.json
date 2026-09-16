@@ -1,0 +1,2755 @@
+{
+  "fixture_observations": {
+    "fixture-events.jsonl": [
+      {
+        "checksum": 2457234885,
+        "control_id": 0,
+        "event": "committed",
+        "fixture_pid": 246225,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "height": 360,
+        "monotonic_ns": 38690260679821,
+        "revision": 1,
+        "seq": 69,
+        "source": "initial",
+        "state": 0,
+        "width": 640
+      },
+      {
+        "checksum": 2457234885,
+        "clock_id": 1,
+        "control_id": 0,
+        "event": "presented",
+        "fixture_pid": 246225,
+        "flags": 7,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "monotonic_ns": 38690265108571,
+        "output_matched": false,
+        "presentation_ns": 265119056,
+        "presentation_seconds": 38690,
+        "presentation_seq": 0,
+        "refresh_ns": 16666666,
+        "revision": 1,
+        "seq": 73,
+        "sole_output_name": "Virtual-0",
+        "source": "initial",
+        "state": 0,
+        "sync_output_received": false
+      },
+      {
+        "event": "close",
+        "fixture_pid": 246225,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "monotonic_ns": 38692960698210,
+        "seq": 98
+      }
+    ],
+    "secondary.events.jsonl": [
+      {
+        "checksum": 2457234885,
+        "control_id": 0,
+        "event": "committed",
+        "fixture_pid": 246244,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "height": 360,
+        "monotonic_ns": 38690319141928,
+        "revision": 1,
+        "seq": 69,
+        "source": "initial",
+        "state": 0,
+        "width": 640
+      },
+      {
+        "checksum": 2457234885,
+        "clock_id": 1,
+        "control_id": 0,
+        "event": "presented",
+        "fixture_pid": 246244,
+        "flags": 7,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "monotonic_ns": 38690332381649,
+        "output_matched": false,
+        "presentation_ns": 331785720,
+        "presentation_seconds": 38690,
+        "presentation_seq": 0,
+        "refresh_ns": 16666666,
+        "revision": 1,
+        "seq": 73,
+        "sole_output_name": "Virtual-0",
+        "source": "initial",
+        "state": 0,
+        "sync_output_received": false
+      },
+      {
+        "event": "close",
+        "fixture_pid": 246244,
+        "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+        "monotonic_ns": 38692806115964,
+        "seq": 94
+      }
+    ]
+  },
+  "manifest": {
+    "bounds_seconds": {
+      "build": 30,
+      "cleanup": 15,
+      "control": 3,
+      "finalization": 5,
+      "graceful": 2,
+      "manager_call": 5,
+      "overall": 170,
+      "probe": 60,
+      "service_lifetime": 95,
+      "startup": 30
+    },
+    "build": {
+      "argv": [
+        "/usr/bin/gcc",
+        "-std=c11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I",
+        "<checkout>/.local/fixture-build",
+        "<checkout>/tools/wayland_fixture.c",
+        "<checkout>/.local/fixture-build/xdg-shell-protocol.c",
+        "<checkout>/.local/fixture-build/presentation-time-protocol.c",
+        "-lwayland-client",
+        "-lm",
+        "-lxkbcommon",
+        "-o",
+        "<checkout>/.local/fixture-build/wayland-fixture"
+      ],
+      "binary_sha256": "a422676bf22c247781b5d54a5bb3211e606b0f9862d84d8f68aee705d3b8d244",
+      "compiler": "gcc (GCC) 16.2.1 20260810",
+      "elapsed_seconds": 0.238,
+      "protocols": {
+        "/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml": "dffac93bcb2bb1d8c385e72b8a8c2c0d4d79a336866322f3ba886dce2b27b1e2",
+        "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "7ba7f9c8473deee674cb1f154a18abd0bb0cc072604fc055b0c15e459fc4c7df"
+      },
+      "source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869"
+    },
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "elapsed_seconds": 0.032,
+      "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "members": [],
+      "started_monotonic_ns": 38693119837850,
+      "total_shutdown_seconds": 0.193,
+      "verified_empty": true
+    },
+    "cleanup_started_monotonic_ns": 38692959616135,
+    "cwd": "<checkout>",
+    "dependency_policy_sha256": "cb0a6cc409bdeb74f97c96a093a642e713b6624e06627221fcf2a9a6f9e4efac",
+    "elapsed_seconds": 3.467,
+    "environment": {
+      "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/kde-m1-qrkz7sug/bus",
+      "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/kde-m1-qrkz7sug/no-system-bus",
+      "HARNESS_GENERATION": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "HOME": "/tmp/kde-m1-qrkz7sug/home",
+      "KDE_SESSION_VERSION": "6",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "NO_AT_BRIDGE": "1",
+      "PATH": "/usr/bin:/bin",
+      "QT_ACCESSIBILITY": "0",
+      "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+      "QT_QPA_PLATFORM": "wayland",
+      "TMPDIR": "/tmp/kde-m1-qrkz7sug/tmp",
+      "WAYLAND_DISPLAY": "fixture-wayland",
+      "XDG_CACHE_HOME": "/tmp/kde-m1-qrkz7sug/home/cache",
+      "XDG_CONFIG_DIRS": "/tmp/kde-m1-qrkz7sug/empty",
+      "XDG_CONFIG_HOME": "/tmp/kde-m1-qrkz7sug/home/config",
+      "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+      "XDG_DATA_HOME": "/tmp/kde-m1-qrkz7sug/home/data",
+      "XDG_RUNTIME_DIR": "/tmp/kde-m1-qrkz7sug",
+      "XDG_SESSION_TYPE": "wayland",
+      "XDG_STATE_HOME": "/tmp/kde-m1-qrkz7sug/home/state",
+      "XKB_DEFAULT_LAYOUT": "us"
+    },
+    "fixture_binary": "<checkout>/.local/fixture-build/wayland-fixture",
+    "fixture_close_exit": 0,
+    "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+    "harness_source_sha256": "a38fc6db86b2cb1fe6ee8493fe28efcb82b1b79852b5823bc72e41b6ae9fd9f6",
+    "initial_presented": {
+      "checksum": 2457234885,
+      "clock_id": 1,
+      "control_id": 0,
+      "event": "presented",
+      "fixture_pid": 246225,
+      "flags": 7,
+      "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "monotonic_ns": 38690265108571,
+      "output_matched": false,
+      "presentation_ns": 265119056,
+      "presentation_seconds": 38690,
+      "presentation_seq": 0,
+      "refresh_ns": 16666666,
+      "revision": 1,
+      "seq": 73,
+      "sole_output_name": "Virtual-0",
+      "source": "initial",
+      "state": 0,
+      "sync_output_received": false
+    },
+    "inject": "none",
+    "issue9_report_sha256": "567b632a05645861036d608f0a8b9e42183122f486a809291a1988752ffe0077",
+    "mode": "headless",
+    "native_packages": [
+      "kwin 6.7.5-1",
+      "systemd 261.3-1",
+      "dbus 1.16.2-1",
+      "wayland 1.26.0-1",
+      "wayland-protocols 1.49-1",
+      "libxkbcommon 1.13.2-1",
+      "gcc 16.2.1+r23+gd564253eb6c8-1"
+    ],
+    "outcome": "passed",
+    "output": {
+      "count": 1,
+      "event": "output",
+      "fixture_pid": 246225,
+      "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "height": 720,
+      "monotonic_ns": 38690254736298,
+      "scale": 1,
+      "seq": 68,
+      "transform": 0,
+      "width": 1280
+    },
+    "phase": "stopped",
+    "probe": [
+      "/usr/bin/python",
+      "-I",
+      "<checkout>/tools/kdotool_probe.py",
+      "<checkout>/.local/issue9-clean/bin/kdotool",
+      "functional"
+    ],
+    "probe_exit": 0,
+    "processes": {
+      "bus": {
+        "argv": [
+          "/usr/bin/dbus-daemon",
+          "--nofork",
+          "--config-file=/tmp/kde-m1-qrkz7sug/bus.conf"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+        "cwd": "<checkout>",
+        "pid": 246199,
+        "start_ticks": "3869001"
+      },
+      "fixture": {
+        "argv": [
+          "<checkout>/.local/fixture-build/wayland-fixture"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+        "cwd": "<checkout>",
+        "pid": 246225,
+        "start_ticks": "3869018"
+      },
+      "kwin": {
+        "argv": [
+          "/usr/bin/kwin_wayland",
+          "--virtual",
+          "--width",
+          "1280",
+          "--height",
+          "720",
+          "--scale",
+          "1",
+          "--output-count",
+          "1",
+          "--socket",
+          "fixture-wayland",
+          "--no-lockscreen",
+          "--no-global-shortcuts",
+          "--no-kactivities"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+        "cwd": "<checkout>",
+        "pid": 246202,
+        "start_ticks": "3869007"
+      },
+      "probe": {
+        "argv": [
+          "/usr/bin/python",
+          "-I",
+          "<checkout>/tools/kdotool_probe.py",
+          "<checkout>/.local/issue9-clean/bin/kdotool",
+          "functional"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+        "cwd": "<checkout>",
+        "pid": 246240,
+        "start_ticks": "3869026"
+      }
+    },
+    "python_version": "3.14.7",
+    "requested_output": {
+      "count": 1,
+      "height": 720,
+      "scale": 1,
+      "width": 1280
+    },
+    "runtime": "/tmp/kde-m1-qrkz7sug",
+    "schema_version": 1,
+    "scope": "feasibility",
+    "service_argv": [
+      "/usr/bin/systemd-run",
+      "--user",
+      "--no-ask-password",
+      "--no-block",
+      "--quiet",
+      "--service-type=exec",
+      "--unit=kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "--property=Restart=no",
+      "--property=UMask=0077",
+      "--property=KillMode=control-group",
+      "--property=SendSIGKILL=yes",
+      "--property=TimeoutStopSec=3s",
+      "--property=RuntimeMaxSec=95s",
+      "--property=ExecStopPost=\"/usr/bin/env\" \"-i\" \"PATH=/usr/bin:/bin\" \"SERVICE_RESULT=${SERVICE_RESULT}\" \"/usr/bin/python\" \"-I\" \"<checkout>/tools/private_harness.py\" \"_finalize\" \"<checkout>/.local/harness-runs/f0821a7fdc854c5e8ea66fa0436ae57f/manifest.json\"",
+      "--property=StandardOutput=append:<checkout>/.local/harness-runs/f0821a7fdc854c5e8ea66fa0436ae57f/worker.stdout.log",
+      "--property=StandardError=append:<checkout>/.local/harness-runs/f0821a7fdc854c5e8ea66fa0436ae57f/worker.stderr.log",
+      "--working-directory=<checkout>",
+      "--expand-environment=no",
+      "--",
+      "/usr/bin/env",
+      "-i",
+      "PATH=/usr/bin:/bin",
+      "LANG=C.UTF-8",
+      "LC_ALL=C.UTF-8",
+      "HOME=/tmp/kde-m1-qrkz7sug/home",
+      "XDG_RUNTIME_DIR=/tmp/kde-m1-qrkz7sug",
+      "XDG_CONFIG_HOME=/tmp/kde-m1-qrkz7sug/home/config",
+      "XDG_DATA_HOME=/tmp/kde-m1-qrkz7sug/home/data",
+      "XDG_CACHE_HOME=/tmp/kde-m1-qrkz7sug/home/cache",
+      "XDG_STATE_HOME=/tmp/kde-m1-qrkz7sug/home/state",
+      "XDG_CONFIG_DIRS=/tmp/kde-m1-qrkz7sug/empty",
+      "XDG_DATA_DIRS=/usr/local/share:/usr/share",
+      "TMPDIR=/tmp/kde-m1-qrkz7sug/tmp",
+      "DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/kde-m1-qrkz7sug/bus",
+      "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/kde-m1-qrkz7sug/no-system-bus",
+      "WAYLAND_DISPLAY=fixture-wayland",
+      "QT_QPA_PLATFORM=wayland",
+      "QT_ACCESSIBILITY=0",
+      "QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0",
+      "NO_AT_BRIDGE=1",
+      "KDE_SESSION_VERSION=6",
+      "XDG_SESSION_TYPE=wayland",
+      "XKB_DEFAULT_LAYOUT=us",
+      "HARNESS_GENERATION=f0821a7fdc854c5e8ea66fa0436ae57f",
+      "/usr/bin/python",
+      "-I",
+      "<checkout>/tools/private_harness.py",
+      "_worker",
+      "<checkout>/.local/harness-runs/f0821a7fdc854c5e8ea66fa0436ae57f/manifest.json"
+    ],
+    "service_result": "success",
+    "started_monotonic_ns": 38689686259842,
+    "startup_seconds": 0.247,
+    "unit": "kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+    "within_overall_bound": true,
+    "worker": {
+      "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "pid": 246197,
+      "start_ticks": "3868997"
+    },
+    "worker_elapsed_seconds": 2.943
+  },
+  "probe": {
+    "ambiguous_title_candidates": [
+      {
+        "active": true,
+        "class": "org.kde_agent.fixture",
+        "client": {
+          "height": 360,
+          "width": 640,
+          "x": 346.6666666666667,
+          "y": 195
+        },
+        "frame": {
+          "height": 360,
+          "width": 640,
+          "x": 346.6666666666667,
+          "y": 195
+        },
+        "pid": 246244,
+        "title": "KDE Agent Native Fixture",
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      },
+      {
+        "active": false,
+        "class": "org.kde_agent.fixture",
+        "client": {
+          "height": 360,
+          "width": 640,
+          "x": 320,
+          "y": 180
+        },
+        "frame": {
+          "height": 360,
+          "width": 640,
+          "x": 320,
+          "y": 180
+        },
+        "pid": 246225,
+        "title": "KDE Agent Native Fixture",
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      }
+    ],
+    "binary_sha256": "62e7ee53096d933ec29e8e5d439b895590f851a40f0dcd87b87db9a6dc4749de",
+    "bounds_seconds": {
+      "cleanup": 1.5,
+      "focus": 2,
+      "poll_interval": 0.1,
+      "query": 0.5
+    },
+    "final_focus": {
+      "observed": {
+        "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+        "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-61",
+        "schema_version": 1,
+        "windows": [
+          {
+            "active": true,
+            "class": "org.kde_agent.fixture",
+            "client": {
+              "height": 360,
+              "width": 640,
+              "x": 320,
+              "y": 180
+            },
+            "frame": {
+              "height": 360,
+              "width": 640,
+              "x": 320,
+              "y": 180
+            },
+            "pid": 246225,
+            "title": "KDE Agent Native Fixture",
+            "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+          }
+        ]
+      },
+      "seconds": 0.05652861399721587,
+      "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+    },
+    "focus_transitions": [
+      {
+        "observed": {
+          "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-6",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.04389444000116782,
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-9",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.04574371100170538,
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-12",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.06155713900079718,
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-15",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.0365682889969321,
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-18",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.04963990000396734,
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-21",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.05328239200025564,
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-24",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.05303388799802633,
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-27",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.048978361002809834,
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-30",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.045273955998709425,
+        "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+      },
+      {
+        "observed": {
+          "active_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}",
+          "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-33",
+          "schema_version": 1,
+          "windows": [
+            {
+              "active": true,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 346.6666666666667,
+                "y": 195
+              },
+              "pid": 246244,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+            },
+            {
+              "active": false,
+              "class": "org.kde_agent.fixture",
+              "client": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "frame": {
+                "height": 360,
+                "width": 640,
+                "x": 320,
+                "y": 180
+              },
+              "pid": 246225,
+              "title": "KDE Agent Native Fixture",
+              "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+            }
+          ]
+        },
+        "seconds": 0.02237589800643036,
+        "uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+      }
+    ],
+    "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+    "initial_snapshot": {
+      "active_uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}",
+      "request_id": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-0",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 246225,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        }
+      ]
+    },
+    "kdotool_revision": "be03ce90c09350898556436bac74ed35fe928617",
+    "kwin_header_sha256": "bb36b1eb1d20c105346bc7c6d86e66c85d5705cb528991336fbb1bb5386ed4aa",
+    "negative": [
+      {
+        "expected": "timeout",
+        "observed": "timeout",
+        "operations_from": 34
+      },
+      {
+        "expected": "target_missing",
+        "observed": "target_missing",
+        "operations_from": 58
+      }
+    ],
+    "operations": [
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0001156879952759482,
+        "error": null,
+        "finished": 38690.31106068,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-0",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246242,
+          "start_ticks": "3869030"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.310947,
+        "request_finished": 38690.310944992,
+        "returncode": 0,
+        "seconds": 0.0048548399936407804,
+        "started": 38690.30620584,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 9.587100066710263e-05,
+        "error": null,
+        "finished": 38690.315816415,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-1",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246243,
+          "start_ticks": "3869031"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.315721991,
+        "request_finished": 38690.315720544,
+        "returncode": 0,
+        "seconds": 0.004561597997962963,
+        "started": 38690.311254817,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00010153499897569418,
+        "error": null,
+        "finished": 38690.320891981,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-2",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246245,
+          "start_ticks": "3869031"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.320791512,
+        "request_finished": 38690.320790446,
+        "returncode": 0,
+        "seconds": 0.0046412699957727455,
+        "started": 38690.316250711,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00023508699814556167,
+        "error": null,
+        "finished": 38690.336351433,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-3",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246246,
+          "start_ticks": "3869033"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.336119176,
+        "request_finished": 38690.336116346,
+        "returncode": 0,
+        "seconds": 0.005109795994940214,
+        "started": 38690.331241637,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00039182399632409215,
+        "error": null,
+        "finished": 38690.348909324,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-4",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246247,
+          "start_ticks": "3869033"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.348521845,
+        "request_finished": 38690.3485175,
+        "returncode": 0,
+        "seconds": 0.011838865997560788,
+        "started": 38690.337070458,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004594770070980303,
+        "error": null,
+        "finished": 38690.362683894,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-5",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246249,
+          "start_ticks": "3869035"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.362229177,
+        "request_finished": 38690.362224417,
+        "returncode": 0,
+        "seconds": 0.012380021005810704,
+        "started": 38690.350303873,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005400590016506612,
+        "error": null,
+        "finished": 38690.379235023,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-6",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246250,
+          "start_ticks": "3869036"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.378700209,
+        "request_finished": 38690.378694964,
+        "returncode": 0,
+        "seconds": 0.014903417002642527,
+        "started": 38690.364331606,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005045709986006841,
+        "error": null,
+        "finished": 38690.395991874,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-7",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246251,
+          "start_ticks": "3869038"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.395492484,
+        "request_finished": 38690.395487303,
+        "returncode": 0,
+        "seconds": 0.014967381997848861,
+        "started": 38690.381024492,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00047406800149474293,
+        "error": null,
+        "finished": 38690.410414618,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-8",
+        "native": [
+          "windowactivate",
+          "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246252,
+          "start_ticks": "3869039"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.409946146,
+        "request_finished": 38690.40994055,
+        "returncode": 0,
+        "seconds": 0.012591841004905291,
+        "started": 38690.397822777,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00046011099766474217,
+        "error": null,
+        "finished": 38690.424943956,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-9",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246253,
+          "start_ticks": "3869041"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.424488761,
+        "request_finished": 38690.424483845,
+        "returncode": 0,
+        "seconds": 0.012735679003526457,
+        "started": 38690.412208277,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005181650049053133,
+        "error": null,
+        "finished": 38690.445845608,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-10",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246255,
+          "start_ticks": "3869042"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.445332693,
+        "request_finished": 38690.445327443,
+        "returncode": 0,
+        "seconds": 0.0190409390052082,
+        "started": 38690.426804669,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005138900014571846,
+        "error": null,
+        "finished": 38690.460363433,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-11",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246256,
+          "start_ticks": "3869044"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.459855251,
+        "request_finished": 38690.459849543,
+        "returncode": 0,
+        "seconds": 0.012563222997414414,
+        "started": 38690.44780021,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004984689949196763,
+        "error": null,
+        "finished": 38690.486247272,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-12",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246257,
+          "start_ticks": "3869046"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.485755097,
+        "request_finished": 38690.485748803,
+        "returncode": 0,
+        "seconds": 0.02378710199991474,
+        "started": 38690.46246017,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0003640239956439473,
+        "error": null,
+        "finished": 38690.500947249,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-13",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246259,
+          "start_ticks": "3869048"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.500587259,
+        "request_finished": 38690.500583225,
+        "returncode": 0,
+        "seconds": 0.012540874995465856,
+        "started": 38690.488406374,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 9.949399827746674e-05,
+        "error": null,
+        "finished": 38690.516821885,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-14",
+        "native": [
+          "windowactivate",
+          "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246260,
+          "start_ticks": "3869050"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.516723505,
+        "request_finished": 38690.516722391,
+        "returncode": 0,
+        "seconds": 0.01400594699953217,
+        "started": 38690.502815938,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 9.690799925010651e-05,
+        "error": null,
+        "finished": 38690.524138574,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-15",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246262,
+          "start_ticks": "3869051"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.524042827,
+        "request_finished": 38690.524041666,
+        "returncode": 0,
+        "seconds": 0.006846864002000075,
+        "started": 38690.51729171,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005155740000191145,
+        "error": null,
+        "finished": 38690.537793533,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-16",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246263,
+          "start_ticks": "3869052"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.537283868,
+        "request_finished": 38690.537277959,
+        "returncode": 0,
+        "seconds": 0.012768329004757106,
+        "started": 38690.525025204,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004665059968829155,
+        "error": null,
+        "finished": 38690.55488556,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-17",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246264,
+          "start_ticks": "3869054"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.554424582,
+        "request_finished": 38690.554419054,
+        "returncode": 0,
+        "seconds": 0.014697425998747349,
+        "started": 38690.540188134,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004954219984938391,
+        "error": null,
+        "finished": 38690.572177081,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-18",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246265,
+          "start_ticks": "3869055"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.571686653,
+        "request_finished": 38690.571681659,
+        "returncode": 0,
+        "seconds": 0.014769093999348115,
+        "started": 38690.557407987,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0016679600012139417,
+        "error": null,
+        "finished": 38690.589280457,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-19",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246266,
+          "start_ticks": "3869057"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.587621556,
+        "request_finished": 38690.587612497,
+        "returncode": 0,
+        "seconds": 0.014570365005056374,
+        "started": 38690.574710092,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0011527599999681115,
+        "error": null,
+        "finished": 38690.606900736,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-20",
+        "native": [
+          "windowactivate",
+          "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246268,
+          "start_ticks": "3869059"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.605756041,
+        "request_finished": 38690.605747976,
+        "returncode": 0,
+        "seconds": 0.015005337001639418,
+        "started": 38690.591895399,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.000512088998220861,
+        "error": null,
+        "finished": 38690.625312336,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-21",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246269,
+          "start_ticks": "3869061"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.624805378,
+        "request_finished": 38690.624800247,
+        "returncode": 0,
+        "seconds": 0.01508479400217766,
+        "started": 38690.610227542,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.000484891002997756,
+        "error": null,
+        "finished": 38690.646436228,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-22",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246270,
+          "start_ticks": "3869063"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.645956357,
+        "request_finished": 38690.645951337,
+        "returncode": 0,
+        "seconds": 0.018392363002931233,
+        "started": 38690.628043865,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00011019600060535595,
+        "error": null,
+        "finished": 38690.660915554,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-23",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246272,
+          "start_ticks": "3869064"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.660806574,
+        "request_finished": 38690.660805358,
+        "returncode": 0,
+        "seconds": 0.011723122996045277,
+        "started": 38690.649192431,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00046142900100676343,
+        "error": null,
+        "finished": 38690.677943632,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-24",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246273,
+          "start_ticks": "3869066"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.677487114,
+        "request_finished": 38690.677482203,
+        "returncode": 0,
+        "seconds": 0.014842869000858627,
+        "started": 38690.663100763,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005540929996641353,
+        "error": null,
+        "finished": 38690.698241457,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-25",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246274,
+          "start_ticks": "3869068"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.697692746,
+        "request_finished": 38690.697687364,
+        "returncode": 0,
+        "seconds": 0.01712110199878225,
+        "started": 38690.681120355,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00048384299589088187,
+        "error": null,
+        "finished": 38690.714127996,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-26",
+        "native": [
+          "windowactivate",
+          "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246275,
+          "start_ticks": "3869070"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.713649375,
+        "request_finished": 38690.713644153,
+        "returncode": 0,
+        "seconds": 0.012792732995876577,
+        "started": 38690.701335263,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00037669899757020175,
+        "error": null,
+        "finished": 38690.72730262,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-27",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246277,
+          "start_ticks": "3869071"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.726929892,
+        "request_finished": 38690.726925921,
+        "returncode": 0,
+        "seconds": 0.010311942001862917,
+        "started": 38690.716990678,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004886540045845322,
+        "error": null,
+        "finished": 38690.740385812,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-28",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246281,
+          "start_ticks": "3869073"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.739902271,
+        "request_finished": 38690.739897158,
+        "returncode": 0,
+        "seconds": 0.01025568500335794,
+        "started": 38690.730130127,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005612890017800964,
+        "error": null,
+        "finished": 38690.758510337,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-29",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246282,
+          "start_ticks": "3869074"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.757955229,
+        "request_finished": 38690.757949048,
+        "returncode": 0,
+        "seconds": 0.014970308999181725,
+        "started": 38690.743540028,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0002093820003210567,
+        "error": null,
+        "finished": 38690.773943421,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-30",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246283,
+          "start_ticks": "3869076"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.773736333,
+        "request_finished": 38690.773734039,
+        "returncode": 0,
+        "seconds": 0.012112877004256006,
+        "started": 38690.761830544,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00020788799884030595,
+        "error": null,
+        "finished": 38690.784788575,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-31",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246284,
+          "start_ticks": "3869077"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.784583133,
+        "request_finished": 38690.784580687,
+        "returncode": 0,
+        "seconds": 0.0093677140030195,
+        "started": 38690.775420861,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00023164199956227094,
+        "error": null,
+        "finished": 38690.791116889,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-32",
+        "native": [
+          "windowactivate",
+          "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246285,
+          "start_ticks": "3869078"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.79088694,
+        "request_finished": 38690.790885247,
+        "returncode": 0,
+        "seconds": 0.005024969999794848,
+        "started": 38690.786091919,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00011956499656662345,
+        "error": null,
+        "finished": 38690.797038638,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-33",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246286,
+          "start_ticks": "3869079"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.796920171,
+        "request_finished": 38690.796919073,
+        "returncode": 0,
+        "seconds": 0.004702344995166641,
+        "started": 38690.792336293,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00023903699911898002,
+        "error": null,
+        "finished": 38690.802677615,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-34",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246288,
+          "start_ticks": "3869079"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.802441039,
+        "request_finished": 38690.802438578,
+        "returncode": 0,
+        "seconds": 0.0048689739996916614,
+        "started": 38690.797808641,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0003796980017796159,
+        "error": null,
+        "finished": 38690.809244156,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-35",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246289,
+          "start_ticks": "3869080"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.80886706,
+        "request_finished": 38690.808864458,
+        "returncode": 0,
+        "seconds": 0.005298386997310445,
+        "started": 38690.803945769,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00011366500257281587,
+        "error": null,
+        "finished": 38690.816515354,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-36",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246290,
+          "start_ticks": "3869081"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.816403083,
+        "request_finished": 38690.816401689,
+        "returncode": 0,
+        "seconds": 0.005015066999476403,
+        "started": 38690.811500287,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0008249169986811467,
+        "error": null,
+        "finished": 38690.929971122,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-37",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246292,
+          "start_ticks": "3869091"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38690.929151751,
+        "request_finished": 38690.929146205,
+        "returncode": 0,
+        "seconds": 0.018394667000393383,
+        "started": 38690.911576455,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00011081099364673719,
+        "error": null,
+        "finished": 38691.02440107,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-38",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246294,
+          "start_ticks": "3869101"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.024291582,
+        "request_finished": 38691.024290259,
+        "returncode": 0,
+        "seconds": 0.012751049995131325,
+        "started": 38691.01165002,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005074480068287812,
+        "error": null,
+        "finished": 38691.131034135,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-39",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246297,
+          "start_ticks": "3869111"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.130531843,
+        "request_finished": 38691.130526687,
+        "returncode": 0,
+        "seconds": 0.019243367001763545,
+        "started": 38691.111790768,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.001872098000603728,
+        "error": null,
+        "finished": 38691.229026593,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-40",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246300,
+          "start_ticks": "3869121"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.227161975,
+        "request_finished": 38691.227154495,
+        "returncode": 0,
+        "seconds": 0.017161791001854,
+        "started": 38691.211864802,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0002889500028686598,
+        "error": null,
+        "finished": 38691.322549072,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-41",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246302,
+          "start_ticks": "3869131"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.322261855,
+        "request_finished": 38691.322260122,
+        "returncode": 0,
+        "seconds": 0.0105343620016356,
+        "started": 38691.31201471,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.001849824002420064,
+        "error": null,
+        "finished": 38691.429993052,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-42",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246305,
+          "start_ticks": "3869141"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.428150962,
+        "request_finished": 38691.428143228,
+        "returncode": 0,
+        "seconds": 0.017794205996324308,
+        "started": 38691.412198846,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00048341899673687294,
+        "error": null,
+        "finished": 38691.526693119,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-43",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246307,
+          "start_ticks": "3869151"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.526215056,
+        "request_finished": 38691.5262097,
+        "returncode": 0,
+        "seconds": 0.014353733000461943,
+        "started": 38691.512339386,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00048584600153844804,
+        "error": null,
+        "finished": 38691.630391124,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-44",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246310,
+          "start_ticks": "3869161"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.629910161,
+        "request_finished": 38691.629905278,
+        "returncode": 0,
+        "seconds": 0.0179650110003422,
+        "started": 38691.612426113,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.001828936998208519,
+        "error": null,
+        "finished": 38691.728223097,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-45",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246312,
+          "start_ticks": "3869171"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.726403465,
+        "request_finished": 38691.72639416,
+        "returncode": 0,
+        "seconds": 0.015707311998994555,
+        "started": 38691.712515785,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0015754249980091117,
+        "error": null,
+        "finished": 38691.829705259,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-46",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246315,
+          "start_ticks": "3869181"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.828137519,
+        "request_finished": 38691.828129834,
+        "returncode": 0,
+        "seconds": 0.017016705001879018,
+        "started": 38691.812688554,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00046426399785559624,
+        "error": null,
+        "finished": 38691.925976182,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-47",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246317,
+          "start_ticks": "3869191"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38691.925516951,
+        "request_finished": 38691.925511918,
+        "returncode": 0,
+        "seconds": 0.013215988001320511,
+        "started": 38691.912760194,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004753619941766374,
+        "error": null,
+        "finished": 38692.026019615,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-48",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246319,
+          "start_ticks": "3869201"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.025549418,
+        "request_finished": 38692.025544253,
+        "returncode": 0,
+        "seconds": 0.01318259699473856,
+        "started": 38692.012837018,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.000535941006091889,
+        "error": null,
+        "finished": 38692.126354457,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-49",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246322,
+          "start_ticks": "3869211"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.125823944,
+        "request_finished": 38692.125818516,
+        "returncode": 0,
+        "seconds": 0.013449864003632683,
+        "started": 38692.112904593,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004715469985967502,
+        "error": null,
+        "finished": 38692.226187207,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-50",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246324,
+          "start_ticks": "3869221"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.225720673,
+        "request_finished": 38692.22571566,
+        "returncode": 0,
+        "seconds": 0.013215512997703627,
+        "started": 38692.212971694,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00047977399663068354,
+        "error": null,
+        "finished": 38692.33042776,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-51",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246327,
+          "start_ticks": "3869231"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.329953201,
+        "request_finished": 38692.329947986,
+        "returncode": 0,
+        "seconds": 0.017401097997208126,
+        "started": 38692.313026662,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.4847808749982505
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00048354700265917927,
+        "error": null,
+        "finished": 38692.426766244,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-52",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246329,
+          "start_ticks": "3869241"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.42628821,
+        "request_finished": 38692.426282697,
+        "returncode": 0,
+        "seconds": 0.013560880004661158,
+        "started": 38692.413205364,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.38460217299871147
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005905230063945055,
+        "error": null,
+        "finished": 38692.522864395,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-53",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246332,
+          "start_ticks": "3869251"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.522281051,
+        "request_finished": 38692.522273872,
+        "returncode": 0,
+        "seconds": 0.009567337001499254,
+        "started": 38692.513297058,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.2845104789957986
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.000749066995922476,
+        "error": null,
+        "finished": 38692.631642516,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-54",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246334,
+          "start_ticks": "3869261"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.63089847,
+        "request_finished": 38692.630893449,
+        "returncode": 0,
+        "seconds": 0.0182769669991103,
+        "started": 38692.613365549,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.18444198799988953
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0006571919948328286,
+        "error": null,
+        "finished": 38692.729174983,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-55",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246337,
+          "start_ticks": "3869271"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.728522921,
+        "request_finished": 38692.728517791,
+        "returncode": 0,
+        "seconds": 0.01574108899512794,
+        "started": 38692.713433894,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.08437364299606998
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0014319769979920238,
+        "error": {
+          "code": "timeout",
+          "message": "Shared operation deadline expired"
+        },
+        "finished": 38692.799667918,
+        "loaded_after_cleanup": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-56",
+        "native": null,
+        "process_reaped": true,
+        "process_reaped_at": 38692.798240048,
+        "request_finished": 38692.798235941,
+        "returncode": null,
+        "seconds": 0.0017252949983230792,
+        "started": 38692.797942623,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": -0.000135086003865581
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00048220100143225864,
+        "error": null,
+        "finished": 38692.822413518,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-57",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246339,
+          "start_ticks": "3869280"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.821936144,
+        "request_finished": 38692.821931317,
+        "returncode": 0,
+        "seconds": 0.015139477000047918,
+        "started": 38692.807274041,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00045913000212749466,
+        "error": null,
+        "finished": 38692.843909404,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-58",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246340,
+          "start_ticks": "3869282"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.84345569,
+        "request_finished": 38692.843450274,
+        "returncode": 0,
+        "seconds": 0.014818139003182296,
+        "started": 38692.829091265,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00047059400094440207,
+        "error": null,
+        "finished": 38692.86405982,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-59",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246342,
+          "start_ticks": "3869285"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.863594253,
+        "request_finished": 38692.863589226,
+        "returncode": 0,
+        "seconds": 0.01285168000322301,
+        "started": 38692.85120814,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0005516009987331927,
+        "error": null,
+        "finished": 38692.881328831,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-60",
+        "native": [
+          "windowactivate",
+          "{6314ef37-458d-403e-a6c9-6a1d1e52e6c2}"
+        ],
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246343,
+          "start_ticks": "3869287"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.88078241,
+        "request_finished": 38692.88077723,
+        "returncode": 0,
+        "seconds": 0.010661771993909497,
+        "started": 38692.870667059,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0004743930039694533,
+        "error": null,
+        "finished": 38692.900966433,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-f0821a7fdc854c5e8ea66fa0436ae57f-61",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+          "pid": 246344,
+          "start_ticks": "3869288"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38692.900496566,
+        "request_finished": 38692.90049204,
+        "returncode": 0,
+        "seconds": 0.012804122998204548,
+        "started": 38692.88816231,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      }
+    ],
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "query_sha256": "2829c59538fcd57f95a43ae3f5fd605a135a65e2c42fee3708fb27e2f4f8dc20",
+    "scenario": "functional",
+    "scope": "feasibility",
+    "secondary_process": {
+      "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "pid": 246244,
+      "start_ticks": "3869031"
+    },
+    "secondary_reaped": 0,
+    "synthetic_encoding_null": {
+      "echo": "quotes \" \\ newline\n ` ${throw new Error()} \u96ea \u2028",
+      "unavailable": {
+        "active": false,
+        "class": null,
+        "client": null,
+        "frame": null,
+        "pid": null,
+        "title": null,
+        "uuid": null
+      }
+    },
+    "vanished_uuid": "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
+  },
+  "result": {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "elapsed_seconds": 0.032,
+      "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "members": [],
+      "started_monotonic_ns": 38693119837850,
+      "total_shutdown_seconds": 0.193,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 3.467,
+    "error": null,
+    "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+    "manifest": "<checkout>/.local/harness-runs/f0821a7fdc854c5e8ea66fa0436ae57f/manifest.json",
+    "ok": true,
+    "outcome": "passed"
+  }
+}

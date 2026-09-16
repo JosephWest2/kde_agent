@@ -1,0 +1,365 @@
+[
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-0ec6cfd4f4af43eea3794b3cf945443d.service",
+      "elapsed_seconds": 0.048,
+      "generation": "0ec6cfd4f4af43eea3794b3cf945443d",
+      "members": [],
+      "started_monotonic_ns": 38562981191029,
+      "total_shutdown_seconds": 0.183,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 5.487,
+    "error": null,
+    "generation": "0ec6cfd4f4af43eea3794b3cf945443d",
+    "outcome": "passed",
+    "probe_sha256": "3e82bb256e08bf734f64838da1935874389075399eafe700a4f94169fd12d482",
+    "scenario": "latency",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4a673fa9bac240498a3979d9eef948fc.service",
+      "elapsed_seconds": 0.021,
+      "generation": "4a673fa9bac240498a3979d9eef948fc",
+      "members": [],
+      "started_monotonic_ns": 38557600028453,
+      "total_shutdown_seconds": 0.136,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 1.255,
+    "error": {
+      "code": "timeout",
+      "message": "Shared operation deadline expired"
+    },
+    "generation": "4a673fa9bac240498a3979d9eef948fc",
+    "outcome": "failed",
+    "probe_sha256": "3e82bb256e08bf734f64838da1935874389075399eafe700a4f94169fd12d482",
+    "scenario": "faults",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-5122892bd65e4cfeab6ff1eb921ebdbf.service",
+      "elapsed_seconds": 0.032,
+      "generation": "5122892bd65e4cfeab6ff1eb921ebdbf",
+      "members": [],
+      "started_monotonic_ns": 38592824305207,
+      "total_shutdown_seconds": 0.188,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 7.397,
+    "error": null,
+    "generation": "5122892bd65e4cfeab6ff1eb921ebdbf",
+    "outcome": "passed",
+    "probe_sha256": "2c89eb2e74722894d17f7f2bd119b8bdb37d043a3e77003862cc0ec608a13107",
+    "scenario": "faults",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-6c2fa481f32e47c1a2478b6bacd64bac.service",
+      "elapsed_seconds": 0.033,
+      "generation": "6c2fa481f32e47c1a2478b6bacd64bac",
+      "members": [],
+      "started_monotonic_ns": 38508789293829,
+      "total_shutdown_seconds": 0.201,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 3.515,
+    "error": null,
+    "generation": "6c2fa481f32e47c1a2478b6bacd64bac",
+    "outcome": "passed",
+    "probe_sha256": "3e82bb256e08bf734f64838da1935874389075399eafe700a4f94169fd12d482",
+    "scenario": "functional",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-6df1c2ce94d64aad8f48b38fe7e4e152.service",
+      "elapsed_seconds": 0.032,
+      "generation": "6df1c2ce94d64aad8f48b38fe7e4e152",
+      "members": [],
+      "started_monotonic_ns": 38645010510541,
+      "total_shutdown_seconds": 0.191,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 6.01,
+    "error": null,
+    "generation": "6df1c2ce94d64aad8f48b38fe7e4e152",
+    "outcome": "passed",
+    "probe_sha256": "3f2ddf1a25cc788ab80f3c7c4d922a764e55a1beb8ac8f8209d4593e7ed4214f",
+    "scenario": "latency",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-70ca4d17fd0245cd928ad750a74424af.service",
+      "elapsed_seconds": 0.032,
+      "generation": "70ca4d17fd0245cd928ad750a74424af",
+      "members": [],
+      "started_monotonic_ns": 38712469072509,
+      "total_shutdown_seconds": 0.154,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 6.025,
+    "error": null,
+    "generation": "70ca4d17fd0245cd928ad750a74424af",
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "scenario": "latency",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-919c27077cc24d1dbb56a28b6b91a056.service",
+      "elapsed_seconds": 0.032,
+      "generation": "919c27077cc24d1dbb56a28b6b91a056",
+      "members": [],
+      "started_monotonic_ns": 38706377487677,
+      "total_shutdown_seconds": 0.198,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 5.787,
+    "error": null,
+    "generation": "919c27077cc24d1dbb56a28b6b91a056",
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "scenario": "latency",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+      "elapsed_seconds": 0.011,
+      "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "members": [],
+      "started_monotonic_ns": 38700574844994,
+      "total_shutdown_seconds": 0.102,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 7.378,
+    "error": null,
+    "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "scenario": "faults",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d3c95136e98b4772acf3fad4b6f80a34.service",
+      "elapsed_seconds": 0.015,
+      "generation": "d3c95136e98b4772acf3fad4b6f80a34",
+      "members": [],
+      "started_monotonic_ns": 38718203586078,
+      "total_shutdown_seconds": 0.133,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 5.66,
+    "error": null,
+    "generation": "d3c95136e98b4772acf3fad4b6f80a34",
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "scenario": "latency",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f0821a7fdc854c5e8ea66fa0436ae57f.service",
+      "elapsed_seconds": 0.032,
+      "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+      "members": [],
+      "started_monotonic_ns": 38693119837850,
+      "total_shutdown_seconds": 0.193,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 3.467,
+    "error": null,
+    "generation": "f0821a7fdc854c5e8ea66fa0436ae57f",
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "scenario": "functional",
+    "selected": true
+  }
+]

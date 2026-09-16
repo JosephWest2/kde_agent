@@ -1,0 +1,734 @@
+{
+  "fault_io": {
+    "query-0000": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-0\"};\nthrow new Error(\"fixed error\");",
+      "stderr": "ERROR: Script error: Error: fixed error\nError: Script finished with 1 error(s)\n",
+      "stdout": ""
+    },
+    "query-0001": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-1\"};\nsyntax {{{",
+      "stderr": "",
+      "stdout": ""
+    },
+    "query-0002": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-2\"};\n",
+      "stderr": "",
+      "stdout": ""
+    },
+    "query-0003": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-3\"};\noutput_result(\"not-json\");",
+      "stderr": "",
+      "stdout": "not-json\n"
+    },
+    "query-0004": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-4\"};\nvar end=Date.now()+750; while(Date.now()<end) {}",
+      "stderr": "",
+      "stdout": ""
+    },
+    "query-0005": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-5\"};\n// Fixed feasibility query. `request` is an encoded data object, never caller code.\nfunction nullable(value) {\n    return value === undefined || value === null ? null : value;\n}\nfunction rectangle(value) {\n    if (value === undefined || value === null) return null;\n    return {x: nullable(value.x), y: nullable(value.y),\n            width: nullable(value.width), height: nullable(value.height)};\n}\nfunction metadata(w, active) {\n    return {uuid: w.internalId == null ? null : String(w.internalId),\n            pid: typeof w.pid === \"number\" && w.pid > 0 ? w.pid : null,\n            title: nullable(w.caption), class: nullable(w.resourceClass),\n            client: rectangle(w.clientGeometry), frame: rectangle(w.frameGeometry),\n            active: active == null ? false : String(w.internalId) === active};\n}\nif (request.check_data) {\n    output_result(JSON.stringify({echo: request.echo, unavailable: metadata({}, null)}));\n} else {\n    var active = workspace.activeWindow;\n    var activeId = active == null ? null : String(active.internalId);\n    output_result(JSON.stringify({schema_version: 1, request_id: request.request_id,\n        active_uuid: activeId,\n        windows: workspace.windowList().map(w => metadata(w, activeId))\n                                      .sort((a, b) => a.uuid.localeCompare(b.uuid))}));\n}\n",
+      "stderr": "",
+      "stdout": "{\"schema_version\":1,\"request_id\":\"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-5\",\"active_uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"windows\":[{\"uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"pid\":246400,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"frame\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"active\":true}]}\n"
+    },
+    "query-0006": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-6\"};\ncallDBus = function() {};",
+      "stderr": "Error: Timed out waiting for KWin script completion\n",
+      "stdout": ""
+    },
+    "query-0007": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-7\"};\n// Fixed feasibility query. `request` is an encoded data object, never caller code.\nfunction nullable(value) {\n    return value === undefined || value === null ? null : value;\n}\nfunction rectangle(value) {\n    if (value === undefined || value === null) return null;\n    return {x: nullable(value.x), y: nullable(value.y),\n            width: nullable(value.width), height: nullable(value.height)};\n}\nfunction metadata(w, active) {\n    return {uuid: w.internalId == null ? null : String(w.internalId),\n            pid: typeof w.pid === \"number\" && w.pid > 0 ? w.pid : null,\n            title: nullable(w.caption), class: nullable(w.resourceClass),\n            client: rectangle(w.clientGeometry), frame: rectangle(w.frameGeometry),\n            active: active == null ? false : String(w.internalId) === active};\n}\nif (request.check_data) {\n    output_result(JSON.stringify({echo: request.echo, unavailable: metadata({}, null)}));\n} else {\n    var active = workspace.activeWindow;\n    var activeId = active == null ? null : String(active.internalId);\n    output_result(JSON.stringify({schema_version: 1, request_id: request.request_id,\n        active_uuid: activeId,\n        windows: workspace.windowList().map(w => metadata(w, activeId))\n                                      .sort((a, b) => a.uuid.localeCompare(b.uuid))}));\n}\n",
+      "stderr": "",
+      "stdout": "{\"schema_version\":1,\"request_id\":\"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-7\",\"active_uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"windows\":[{\"uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"pid\":246400,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"frame\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"active\":true}]}\n"
+    },
+    "query-0008": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-8\"};\ncallDBus = function() {};",
+      "stderr": "",
+      "stdout": ""
+    },
+    "query-0009": {
+      "input.js": "const request = {\"request_id\": \"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-9\"};\n// Fixed feasibility query. `request` is an encoded data object, never caller code.\nfunction nullable(value) {\n    return value === undefined || value === null ? null : value;\n}\nfunction rectangle(value) {\n    if (value === undefined || value === null) return null;\n    return {x: nullable(value.x), y: nullable(value.y),\n            width: nullable(value.width), height: nullable(value.height)};\n}\nfunction metadata(w, active) {\n    return {uuid: w.internalId == null ? null : String(w.internalId),\n            pid: typeof w.pid === \"number\" && w.pid > 0 ? w.pid : null,\n            title: nullable(w.caption), class: nullable(w.resourceClass),\n            client: rectangle(w.clientGeometry), frame: rectangle(w.frameGeometry),\n            active: active == null ? false : String(w.internalId) === active};\n}\nif (request.check_data) {\n    output_result(JSON.stringify({echo: request.echo, unavailable: metadata({}, null)}));\n} else {\n    var active = workspace.activeWindow;\n    var activeId = active == null ? null : String(active.internalId);\n    output_result(JSON.stringify({schema_version: 1, request_id: request.request_id,\n        active_uuid: activeId,\n        windows: workspace.windowList().map(w => metadata(w, activeId))\n                                      .sort((a, b) => a.uuid.localeCompare(b.uuid))}));\n}\n",
+      "stderr": "",
+      "stdout": "{\"schema_version\":1,\"request_id\":\"kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-9\",\"active_uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"windows\":[{\"uuid\":\"{54916812-4469-4da0-a595-33189b9822f4}\",\"pid\":246400,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"frame\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"active\":true}]}\n"
+    }
+  },
+  "manifest": {
+    "bounds_seconds": {
+      "build": 30,
+      "cleanup": 15,
+      "control": 3,
+      "finalization": 5,
+      "graceful": 2,
+      "manager_call": 5,
+      "overall": 170,
+      "probe": 60,
+      "service_lifetime": 95,
+      "startup": 30
+    },
+    "build": {
+      "argv": [
+        "/usr/bin/gcc",
+        "-std=c11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I",
+        "<checkout>/.local/fixture-build",
+        "<checkout>/tools/wayland_fixture.c",
+        "<checkout>/.local/fixture-build/xdg-shell-protocol.c",
+        "<checkout>/.local/fixture-build/presentation-time-protocol.c",
+        "-lwayland-client",
+        "-lm",
+        "-lxkbcommon",
+        "-o",
+        "<checkout>/.local/fixture-build/wayland-fixture"
+      ],
+      "binary_sha256": "a422676bf22c247781b5d54a5bb3211e606b0f9862d84d8f68aee705d3b8d244",
+      "compiler": "gcc (GCC) 16.2.1 20260810",
+      "elapsed_seconds": 0.239,
+      "protocols": {
+        "/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml": "dffac93bcb2bb1d8c385e72b8a8c2c0d4d79a336866322f3ba886dce2b27b1e2",
+        "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "7ba7f9c8473deee674cb1f154a18abd0bb0cc072604fc055b0c15e459fc4c7df"
+      },
+      "source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869"
+    },
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+      "elapsed_seconds": 0.011,
+      "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "members": [],
+      "started_monotonic_ns": 38700574844994,
+      "total_shutdown_seconds": 0.102,
+      "verified_empty": true
+    },
+    "cleanup_started_monotonic_ns": 38700483959491,
+    "cwd": "<checkout>",
+    "dependency_policy_sha256": "cb0a6cc409bdeb74f97c96a093a642e713b6624e06627221fcf2a9a6f9e4efac",
+    "elapsed_seconds": 7.378,
+    "environment": {
+      "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/kde-m1-jtn96x4q/bus",
+      "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/kde-m1-jtn96x4q/no-system-bus",
+      "HARNESS_GENERATION": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "HOME": "/tmp/kde-m1-jtn96x4q/home",
+      "KDE_SESSION_VERSION": "6",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "NO_AT_BRIDGE": "1",
+      "PATH": "/usr/bin:/bin",
+      "QT_ACCESSIBILITY": "0",
+      "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+      "QT_QPA_PLATFORM": "wayland",
+      "TMPDIR": "/tmp/kde-m1-jtn96x4q/tmp",
+      "WAYLAND_DISPLAY": "fixture-wayland",
+      "XDG_CACHE_HOME": "/tmp/kde-m1-jtn96x4q/home/cache",
+      "XDG_CONFIG_DIRS": "/tmp/kde-m1-jtn96x4q/empty",
+      "XDG_CONFIG_HOME": "/tmp/kde-m1-jtn96x4q/home/config",
+      "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+      "XDG_DATA_HOME": "/tmp/kde-m1-jtn96x4q/home/data",
+      "XDG_RUNTIME_DIR": "/tmp/kde-m1-jtn96x4q",
+      "XDG_SESSION_TYPE": "wayland",
+      "XDG_STATE_HOME": "/tmp/kde-m1-jtn96x4q/home/state",
+      "XKB_DEFAULT_LAYOUT": "us"
+    },
+    "fixture_binary": "<checkout>/.local/fixture-build/wayland-fixture",
+    "fixture_close_exit": 0,
+    "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+    "harness_source_sha256": "a38fc6db86b2cb1fe6ee8493fe28efcb82b1b79852b5823bc72e41b6ae9fd9f6",
+    "initial_presented": {
+      "checksum": 2457234885,
+      "clock_id": 1,
+      "control_id": 0,
+      "event": "presented",
+      "fixture_pid": 246400,
+      "flags": 7,
+      "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "monotonic_ns": 38693814859840,
+      "output_matched": false,
+      "presentation_ns": 815118914,
+      "presentation_seconds": 38693,
+      "presentation_seq": 0,
+      "refresh_ns": 16666666,
+      "revision": 1,
+      "seq": 73,
+      "sole_output_name": "Virtual-0",
+      "source": "initial",
+      "state": 0,
+      "sync_output_received": false
+    },
+    "inject": "none",
+    "issue9_report_sha256": "567b632a05645861036d608f0a8b9e42183122f486a809291a1988752ffe0077",
+    "mode": "headless",
+    "native_packages": [
+      "kwin 6.7.5-1",
+      "systemd 261.3-1",
+      "dbus 1.16.2-1",
+      "wayland 1.26.0-1",
+      "wayland-protocols 1.49-1",
+      "libxkbcommon 1.13.2-1",
+      "gcc 16.2.1+r23+gd564253eb6c8-1"
+    ],
+    "outcome": "passed",
+    "output": {
+      "count": 1,
+      "event": "output",
+      "fixture_pid": 246400,
+      "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "height": 720,
+      "monotonic_ns": 38693801045031,
+      "scale": 1,
+      "seq": 68,
+      "transform": 0,
+      "width": 1280
+    },
+    "phase": "stopped",
+    "probe": [
+      "/usr/bin/python",
+      "-I",
+      "<checkout>/tools/kdotool_probe.py",
+      "<checkout>/.local/issue9-clean/bin/kdotool",
+      "faults"
+    ],
+    "probe_exit": 0,
+    "processes": {
+      "bus": {
+        "argv": [
+          "/usr/bin/dbus-daemon",
+          "--nofork",
+          "--config-file=/tmp/kde-m1-jtn96x4q/bus.conf"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+        "cwd": "<checkout>",
+        "pid": 246374,
+        "start_ticks": "3869355"
+      },
+      "fixture": {
+        "argv": [
+          "<checkout>/.local/fixture-build/wayland-fixture"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+        "cwd": "<checkout>",
+        "pid": 246400,
+        "start_ticks": "3869371"
+      },
+      "kwin": {
+        "argv": [
+          "/usr/bin/kwin_wayland",
+          "--virtual",
+          "--width",
+          "1280",
+          "--height",
+          "720",
+          "--scale",
+          "1",
+          "--output-count",
+          "1",
+          "--socket",
+          "fixture-wayland",
+          "--no-lockscreen",
+          "--no-global-shortcuts",
+          "--no-kactivities"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+        "cwd": "<checkout>",
+        "pid": 246377,
+        "start_ticks": "3869361"
+      },
+      "probe": {
+        "argv": [
+          "/usr/bin/python",
+          "-I",
+          "<checkout>/tools/kdotool_probe.py",
+          "<checkout>/.local/issue9-clean/bin/kdotool",
+          "faults"
+        ],
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+        "cwd": "<checkout>",
+        "pid": 246410,
+        "start_ticks": "3869381"
+      }
+    },
+    "python_version": "3.14.7",
+    "requested_output": {
+      "count": 1,
+      "height": 720,
+      "scale": 1,
+      "width": 1280
+    },
+    "runtime": "/tmp/kde-m1-jtn96x4q",
+    "schema_version": 1,
+    "scope": "feasibility",
+    "service_argv": [
+      "/usr/bin/systemd-run",
+      "--user",
+      "--no-ask-password",
+      "--no-block",
+      "--quiet",
+      "--service-type=exec",
+      "--unit=kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+      "--property=Restart=no",
+      "--property=UMask=0077",
+      "--property=KillMode=control-group",
+      "--property=SendSIGKILL=yes",
+      "--property=TimeoutStopSec=3s",
+      "--property=RuntimeMaxSec=95s",
+      "--property=ExecStopPost=\"/usr/bin/env\" \"-i\" \"PATH=/usr/bin:/bin\" \"SERVICE_RESULT=${SERVICE_RESULT}\" \"/usr/bin/python\" \"-I\" \"<checkout>/tools/private_harness.py\" \"_finalize\" \"<checkout>/.local/harness-runs/92d0273e45ee4d7dad6c13f98cc5f235/manifest.json\"",
+      "--property=StandardOutput=append:<checkout>/.local/harness-runs/92d0273e45ee4d7dad6c13f98cc5f235/worker.stdout.log",
+      "--property=StandardError=append:<checkout>/.local/harness-runs/92d0273e45ee4d7dad6c13f98cc5f235/worker.stderr.log",
+      "--working-directory=<checkout>",
+      "--expand-environment=no",
+      "--",
+      "/usr/bin/env",
+      "-i",
+      "PATH=/usr/bin:/bin",
+      "LANG=C.UTF-8",
+      "LC_ALL=C.UTF-8",
+      "HOME=/tmp/kde-m1-jtn96x4q/home",
+      "XDG_RUNTIME_DIR=/tmp/kde-m1-jtn96x4q",
+      "XDG_CONFIG_HOME=/tmp/kde-m1-jtn96x4q/home/config",
+      "XDG_DATA_HOME=/tmp/kde-m1-jtn96x4q/home/data",
+      "XDG_CACHE_HOME=/tmp/kde-m1-jtn96x4q/home/cache",
+      "XDG_STATE_HOME=/tmp/kde-m1-jtn96x4q/home/state",
+      "XDG_CONFIG_DIRS=/tmp/kde-m1-jtn96x4q/empty",
+      "XDG_DATA_DIRS=/usr/local/share:/usr/share",
+      "TMPDIR=/tmp/kde-m1-jtn96x4q/tmp",
+      "DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/kde-m1-jtn96x4q/bus",
+      "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/kde-m1-jtn96x4q/no-system-bus",
+      "WAYLAND_DISPLAY=fixture-wayland",
+      "QT_QPA_PLATFORM=wayland",
+      "QT_ACCESSIBILITY=0",
+      "QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0",
+      "NO_AT_BRIDGE=1",
+      "KDE_SESSION_VERSION=6",
+      "XDG_SESSION_TYPE=wayland",
+      "XKB_DEFAULT_LAYOUT=us",
+      "HARNESS_GENERATION=92d0273e45ee4d7dad6c13f98cc5f235",
+      "/usr/bin/python",
+      "-I",
+      "<checkout>/tools/private_harness.py",
+      "_worker",
+      "<checkout>/.local/harness-runs/92d0273e45ee4d7dad6c13f98cc5f235/manifest.json"
+    ],
+    "service_result": "success",
+    "started_monotonic_ns": 38693208619048,
+    "startup_seconds": 0.258,
+    "unit": "kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+    "within_overall_bound": true,
+    "worker": {
+      "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+      "pid": 246372,
+      "start_ticks": "3869349"
+    },
+    "worker_elapsed_seconds": 6.929
+  },
+  "probe": {
+    "binary_sha256": "62e7ee53096d933ec29e8e5d439b895590f851a40f0dcd87b87db9a6dc4749de",
+    "bounds_seconds": {
+      "cleanup": 1.5,
+      "focus": 2,
+      "poll_interval": 0.1,
+      "query": 0.5
+    },
+    "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+    "kdotool_revision": "be03ce90c09350898556436bac74ed35fe928617",
+    "kwin_header_sha256": "bb36b1eb1d20c105346bc7c6d86e66c85d5705cb528991336fbb1bb5386ed4aa",
+    "negative": [
+      {
+        "expected": "query_failed",
+        "observed": "query_failed",
+        "operations_from": 0
+      },
+      {
+        "expected": "timeout",
+        "observed": "timeout",
+        "operations_from": 1
+      },
+      {
+        "expected": "invalid_result",
+        "observed": "invalid_result",
+        "operations_from": 2
+      },
+      {
+        "expected": "invalid_result",
+        "observed": "invalid_result",
+        "operations_from": 3
+      },
+      {
+        "expected": "timeout",
+        "observed": "timeout",
+        "operations_from": 4
+      },
+      {
+        "expected": "query_failed",
+        "observed": "query_failed",
+        "operations_from": 6
+      },
+      {
+        "expected": "timeout",
+        "observed": "timeout",
+        "operations_from": 8
+      }
+    ],
+    "operations": [
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0002919830003520474,
+        "error": {
+          "code": "query_failed",
+          "message": "kdotool exited 1"
+        },
+        "finished": 38693.861334604,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-0",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246412,
+          "start_ticks": "3869385"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38693.861044921,
+        "request_finished": 38693.861042621,
+        "returncode": 1,
+        "seconds": 0.004902925997157581,
+        "started": 38693.856431678,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [
+          "kdotool-lHO9V4"
+        ],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0026063559998874553,
+        "error": {
+          "code": "timeout",
+          "message": "Shared operation deadline expired"
+        },
+        "finished": 38694.364260574,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-1",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246413,
+          "start_ticks": "3869386"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38694.362803066,
+        "request_finished": 38694.361654218,
+        "returncode": -9,
+        "seconds": 0.5027102520034532,
+        "started": 38693.861550322,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0006405419990187511,
+        "error": {
+          "code": "invalid_result",
+          "message": "Expecting value: line 1 column 1 (char 0)"
+        },
+        "finished": 38694.380204494,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-2",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246422,
+          "start_ticks": "3869436"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38694.379569299,
+        "request_finished": 38694.379563952,
+        "returncode": 0,
+        "seconds": 0.01476423900021473,
+        "started": 38694.365440255,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0006907799979671836,
+        "error": {
+          "code": "invalid_result",
+          "message": "Expecting value: line 1 column 1 (char 0)"
+        },
+        "finished": 38694.398071927,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-3",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246423,
+          "start_ticks": "3869438"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38694.397386003,
+        "request_finished": 38694.397381147,
+        "returncode": 0,
+        "seconds": 0.016697589999239426,
+        "started": 38694.381374337,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [
+          "kdotool-EMVimi"
+        ],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.6666338590002852,
+        "error": {
+          "code": "timeout",
+          "message": "Shared operation deadline expired"
+        },
+        "finished": 38695.166020478,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": true,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-4",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246424,
+          "start_ticks": "3869440"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38694.500457483,
+        "remove_process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246438,
+          "start_ticks": "3869516"
+        },
+        "remove_returncode": 0,
+        "request_finished": 38694.499386619,
+        "returncode": -9,
+        "seconds": 0.7666755199970794,
+        "started": 38694.399344958,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.09999999999854481
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0002270740005769767,
+        "error": null,
+        "finished": 38695.169385961,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-5",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246439,
+          "start_ticks": "3869516"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38695.169160166,
+        "request_finished": 38695.169158887,
+        "returncode": 0,
+        "seconds": 0.0028981530049350113,
+        "started": 38695.166487808,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.0008023480040719733,
+        "error": {
+          "code": "query_failed",
+          "message": "kdotool exited 1"
+        },
+        "finished": 38700.179861156,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-6",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246441,
+          "start_ticks": "3869516"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38700.179064459,
+        "request_finished": 38700.179058808,
+        "returncode": 1,
+        "seconds": 5.010143384999537,
+        "started": 38695.169717771,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 12.0
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00045000599493505433,
+        "error": null,
+        "finished": 38700.196775877,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-7",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246519,
+          "start_ticks": "3870018"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38700.196331133,
+        "request_finished": 38700.196325871,
+        "returncode": 0,
+        "seconds": 0.015083258993399795,
+        "started": 38700.181692618,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      },
+      {
+        "abandoned_temp_files": [
+          "kdotool-rdzPZt"
+        ],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.011265187997196335,
+        "error": {
+          "code": "timeout",
+          "message": "Shared operation deadline expired"
+        },
+        "finished": 38700.409790724,
+        "loaded_after_cleanup": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": true,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-8",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246520,
+          "start_ticks": "3870019"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38700.399651367,
+        "remove_process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246524,
+          "start_ticks": "3870040"
+        },
+        "remove_returncode": 0,
+        "request_finished": 38700.398525536,
+        "returncode": -9,
+        "seconds": 0.2113664919961593,
+        "started": 38700.198424232,
+        "stopped_after_registration": true,
+        "temporary_removed": true,
+        "work_limit": 0.19999999999708962
+      },
+      {
+        "abandoned_temp_files": [],
+        "cleanup_ok": true,
+        "cleanup_seconds": 0.00153803700231947,
+        "error": null,
+        "finished": 38700.429841685,
+        "loaded_after_cleanup": false,
+        "loaded_after_native": false,
+        "loaded_before": false,
+        "loaded_before_cleanup": false,
+        "name": "kde-agent-92d0273e45ee4d7dad6c13f98cc5f235-9",
+        "native": null,
+        "process": {
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+          "pid": 246525,
+          "start_ticks": "3870041"
+        },
+        "process_reaped": true,
+        "process_reaped_at": 38700.428311813,
+        "request_finished": 38700.428303648,
+        "returncode": 0,
+        "seconds": 0.01664802800223697,
+        "started": 38700.413193657,
+        "stopped_after_registration": false,
+        "temporary_removed": true,
+        "work_limit": 0.5
+      }
+    ],
+    "outcome": "passed",
+    "probe_sha256": "948b32e7c647607bde1d979900137d0e06265b820ddd10f04a23c7aa6ac5c46b",
+    "query_sha256": "2829c59538fcd57f95a43ae3f5fd605a135a65e2c42fee3708fb27e2f4f8dc20",
+    "scenario": "faults",
+    "scope": "feasibility"
+  },
+  "result": {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-92d0273e45ee4d7dad6c13f98cc5f235.service",
+      "elapsed_seconds": 0.011,
+      "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+      "members": [],
+      "started_monotonic_ns": 38700574844994,
+      "total_shutdown_seconds": 0.102,
+      "verified_empty": true
+    },
+    "elapsed_seconds": 7.378,
+    "error": null,
+    "generation": "92d0273e45ee4d7dad6c13f98cc5f235",
+    "manifest": "<checkout>/.local/harness-runs/92d0273e45ee4d7dad6c13f98cc5f235/manifest.json",
+    "ok": true,
+    "outcome": "passed"
+  }
+}

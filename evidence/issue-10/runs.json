@@ -1,0 +1,697 @@
+{
+  "attempts": [
+    {
+      "cleanup": {
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "elapsed_seconds": 0.015,
+        "error": {
+          "code": "command_failed",
+          "message": "systemctl: Failed to stop kde-agent-m1-5371186fa045461fa169d6c8700333bb.service: Unit kde-agent-m1-5371186fa045461fa169d6c8700333bb.service not loaded."
+        },
+        "generation": "5371186fa045461fa169d6c8700333bb",
+        "started_monotonic_ns": 37098669325179,
+        "verified_empty": false
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "development_note": "Desktop and smoke passed; cleanup observer failed on auto-unloaded successful unit. Original failure retained; independent postmortem confirms cgroup/runtime removed.",
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 1.041,
+      "fixture_source_sha256": "3f36346d373a612a18f0ced6f07bee53ec5f8915c201ffdaa7b124997e16a625",
+      "generation": "5371186fa045461fa169d6c8700333bb",
+      "inject": "none",
+      "outcome": "failed",
+      "postmortem": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-5371186fa045461fa169d6c8700333bb.service",
+        "cgroup_removed": true,
+        "generation": "5371186fa045461fa169d6c8700333bb",
+        "reason": "Observer treated auto-unloaded successful transient unit as stop failure; postmortem verifies recorded owned cgroup removed. Original failed result retained.",
+        "recorded_processes_absent": true,
+        "runtime_removed": true
+      }
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-df8de1da40a74c9380aee91fc309804a.service",
+        "elapsed_seconds": 0.032,
+        "generation": "df8de1da40a74c9380aee91fc309804a",
+        "members": [],
+        "started_monotonic_ns": 37179244247324,
+        "total_shutdown_seconds": 0.194,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 1.084,
+      "fixture_source_sha256": "d6cec773ae1f31117e9d45e038296644e9507a3081317b1c569f1a74e7bdbf0c",
+      "generation": "df8de1da40a74c9380aee91fc309804a",
+      "inject": "none",
+      "outcome": "passed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d347e3c14c13447cb77c5ff0534ccc67.service",
+        "elapsed_seconds": 0.081,
+        "generation": "d347e3c14c13447cb77c5ff0534ccc67",
+        "members": [],
+        "started_monotonic_ns": 37234925571238,
+        "total_shutdown_seconds": 3.257,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 3.951,
+      "error": {
+        "code": "injected_startup_failure",
+        "message": "Injected failure after fixture presentation"
+      },
+      "fixture_source_sha256": "d6cec773ae1f31117e9d45e038296644e9507a3081317b1c569f1a74e7bdbf0c",
+      "generation": "d347e3c14c13447cb77c5ff0534ccc67",
+      "inject": "after-fixture",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-c125988f99074a92a0349bad4fe98b74.service",
+        "elapsed_seconds": 0.064,
+        "generation": "c125988f99074a92a0349bad4fe98b74",
+        "members": [],
+        "started_monotonic_ns": 37334377900435,
+        "total_shutdown_seconds": 3.268,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 33.627,
+      "error": {
+        "code": "startup_timeout",
+        "message": "Injected startup stall reached deadline"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "c125988f99074a92a0349bad4fe98b74",
+      "harness_source_sha256": "6ea311cef18bd0d21a8e652e0f39a842885e0413d73b8e23949c29fa11a8f5d6",
+      "inject": "startup-timeout",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "9",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "signal",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "9",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "signal",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8d3bf1c78d3d484eb28d12bb72514b26.service",
+        "elapsed_seconds": 0.064,
+        "generation": "8d3bf1c78d3d484eb28d12bb72514b26",
+        "members": [],
+        "started_monotonic_ns": 37421193838727,
+        "total_shutdown_seconds": 0.176,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 0.781,
+      "error": {
+        "code": "service_failed",
+        "message": "signal"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "8d3bf1c78d3d484eb28d12bb72514b26",
+      "harness_source_sha256": "6ea311cef18bd0d21a8e652e0f39a842885e0413d73b8e23949c29fa11a8f5d6",
+      "inject": "worker-kill",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f044e33bade247269b98d34177455fe0.service",
+        "elapsed_seconds": 0.064,
+        "generation": "f044e33bade247269b98d34177455fe0",
+        "members": [],
+        "started_monotonic_ns": 37432495224718,
+        "total_shutdown_seconds": 0.193,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "development_note": "Boundary probe rejected bus socket mode 0777 behind owner-only runtime; explicit bus/Wayland socket chmod added.",
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n",
+        "probe.stderr.log": "Traceback (most recent call last):\n  File \"${CHECKOUT}/tests/private_harness_probe.py\", line 32, in <module>\n    assert st.st_uid == os.getuid() and not (stat.S_IMODE(st.st_mode) & 0o077), (label, oct(st.st_mode))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('bus', '0o140777')\n"
+      },
+      "elapsed_seconds": 0.859,
+      "error": {
+        "code": "probe_failed",
+        "message": "Probe exited 1"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "f044e33bade247269b98d34177455fe0",
+      "harness_source_sha256": "6ea311cef18bd0d21a8e652e0f39a842885e0413d73b8e23949c29fa11a8f5d6",
+      "inject": "none",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d0908819bfa44fda8a110031edd3fe9e.service",
+        "elapsed_seconds": 0.065,
+        "generation": "d0908819bfa44fda8a110031edd3fe9e",
+        "members": [],
+        "started_monotonic_ns": 37453785869164,
+        "total_shutdown_seconds": 0.202,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "development_note": "Same socket-mode failure repeated because developer edit command ran from /tmp and did not apply; no desktop cleanup failure.",
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n",
+        "probe.stderr.log": "Traceback (most recent call last):\n  File \"${CHECKOUT}/tests/private_harness_probe.py\", line 32, in <module>\n    assert st.st_uid == os.getuid() and not (stat.S_IMODE(st.st_mode) & 0o077), (label, oct(st.st_mode))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('bus', '0o140777')\n"
+      },
+      "elapsed_seconds": 0.863,
+      "error": {
+        "code": "probe_failed",
+        "message": "Probe exited 1"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "d0908819bfa44fda8a110031edd3fe9e",
+      "harness_source_sha256": "6ea311cef18bd0d21a8e652e0f39a842885e0413d73b8e23949c29fa11a8f5d6",
+      "inject": "none",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-24b94d9d1e914edda9c3c75daffca6b0.service",
+        "elapsed_seconds": 0.065,
+        "generation": "24b94d9d1e914edda9c3c75daffca6b0",
+        "members": [],
+        "started_monotonic_ns": 37472185366002,
+        "total_shutdown_seconds": 0.201,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "development_note": "Boundary probe assumed /proc/KWin/environ readability; KWin denies it. Probe now records this limitation and checks readable children/explicit launch environment.",
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n",
+        "probe.stderr.log": "Traceback (most recent call last):\n  File \"${CHECKOUT}/tests/private_harness_probe.py\", line 36, in <module>\n    entries = Path(f'/proc/{process[\"pid\"]}/environ').read_bytes().split(b'\\0')\n              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/pathlib/__init__.py\", line 777, in read_bytes\n    with self.open(mode='rb', buffering=0) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/pathlib/__init__.py\", line 771, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: '/proc/237887/environ'\n"
+      },
+      "elapsed_seconds": 0.837,
+      "error": {
+        "code": "probe_failed",
+        "message": "Probe exited 1"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "24b94d9d1e914edda9c3c75daffca6b0",
+      "harness_source_sha256": "1b617e44215433f06f4d6b7029e85fd26450730148af4c97e4b72f6c00f4235b",
+      "inject": "none",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-641a2af3d677429eb112e36a14268ca9.service",
+        "elapsed_seconds": 0.032,
+        "generation": "641a2af3d677429eb112e36a14268ca9",
+        "members": [],
+        "started_monotonic_ns": 37524768505226,
+        "total_shutdown_seconds": 0.185,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 0.929,
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "641a2af3d677429eb112e36a14268ca9",
+      "harness_source_sha256": "1b617e44215433f06f4d6b7029e85fd26450730148af4c97e4b72f6c00f4235b",
+      "inject": "none",
+      "outcome": "passed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-7e77368bdc38440ab1568893f970eef7.service",
+        "elapsed_seconds": 0.032,
+        "generation": "7e77368bdc38440ab1568893f970eef7",
+        "members": [],
+        "started_monotonic_ns": 37576913762356,
+        "total_shutdown_seconds": 0.18,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 1.096,
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "7e77368bdc38440ab1568893f970eef7",
+      "harness_source_sha256": "70fc359c97b7aeb031d54f9e8ddaab3b2fb62b2411f19540d3bab23c54c63e22",
+      "inject": "none",
+      "outcome": "passed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-827f65532a0445a88e2f7c530fc027d8.service",
+        "elapsed_seconds": 0.047,
+        "generation": "827f65532a0445a88e2f7c530fc027d8",
+        "members": [],
+        "started_monotonic_ns": 37642632454145,
+        "total_shutdown_seconds": 3.14,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 33.517,
+      "error": {
+        "code": "startup_timeout",
+        "message": "Injected startup stall reached deadline"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "827f65532a0445a88e2f7c530fc027d8",
+      "harness_source_sha256": "70fc359c97b7aeb031d54f9e8ddaab3b2fb62b2411f19540d3bab23c54c63e22",
+      "inject": "startup-timeout",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "1",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "exit-code",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8a031a558d824e199a95e75bb4147d76.service",
+        "elapsed_seconds": 0.065,
+        "generation": "8a031a558d824e199a95e75bb4147d76",
+        "members": [],
+        "started_monotonic_ns": 37711947946834,
+        "total_shutdown_seconds": 3.264,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 3.92,
+      "error": {
+        "code": "injected_startup_failure",
+        "message": "Injected failure after fixture presentation"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "8a031a558d824e199a95e75bb4147d76",
+      "harness_source_sha256": "70fc359c97b7aeb031d54f9e8ddaab3b2fb62b2411f19540d3bab23c54c63e22",
+      "inject": "after-fixture",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "9",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "signal",
+          "SubState": "failed"
+        },
+        "before": {
+          "ActiveState": "failed",
+          "ControlGroup": "",
+          "ExecMainStatus": "9",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "Result": "signal",
+          "SubState": "failed"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-65792fb0ed7c4d9180d08bd4a2180fdb.service",
+        "elapsed_seconds": 0.065,
+        "generation": "65792fb0ed7c4d9180d08bd4a2180fdb",
+        "members": [],
+        "started_monotonic_ns": 37739759517950,
+        "total_shutdown_seconds": 0.193,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 0.79,
+      "error": {
+        "code": "service_failed",
+        "message": "signal"
+      },
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "65792fb0ed7c4d9180d08bd4a2180fdb",
+      "harness_source_sha256": "70fc359c97b7aeb031d54f9e8ddaab3b2fb62b2411f19540d3bab23c54c63e22",
+      "inject": "worker-kill",
+      "outcome": "failed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-f4872e1b5f5e42f1bfce8ff169f649e0.service",
+        "elapsed_seconds": 0.032,
+        "generation": "f4872e1b5f5e42f1bfce8ff169f649e0",
+        "members": [],
+        "started_monotonic_ns": 37749981586747,
+        "total_shutdown_seconds": 0.166,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 0.907,
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "f4872e1b5f5e42f1bfce8ff169f649e0",
+      "harness_source_sha256": "70fc359c97b7aeb031d54f9e8ddaab3b2fb62b2411f19540d3bab23c54c63e22",
+      "inject": "none",
+      "outcome": "passed"
+    },
+    {
+      "cleanup": {
+        "after": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "before": {
+          "ActiveState": "inactive",
+          "ControlGroup": "",
+          "ExecMainStatus": "0",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-2656eb3447f044a1beda7aa17bbed76e.service",
+        "elapsed_seconds": 0.032,
+        "generation": "2656eb3447f044a1beda7aa17bbed76e",
+        "members": [],
+        "started_monotonic_ns": 37770915270117,
+        "total_shutdown_seconds": 0.198,
+        "verified_empty": true
+      },
+      "current_postmortem": {
+        "recorded_cgroup_removed": true,
+        "runtime_removed": true
+      },
+      "diagnostics": {
+        "kwin.stderr.log": "WARNING: radv is not a conformant Vulkan implementation, testing use only.\nWARNING: radv is not a conformant Vulkan implementation, testing use only.\n"
+      },
+      "elapsed_seconds": 1.146,
+      "fixture_source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869",
+      "generation": "2656eb3447f044a1beda7aa17bbed76e",
+      "harness_source_sha256": "a38fc6db86b2cb1fe6ee8493fe28efcb82b1b79852b5823bc72e41b6ae9fd9f6",
+      "inject": "none",
+      "outcome": "passed"
+    }
+  ],
+  "current_source_sha256": {
+    "tests/private_harness_probe.py": "8ce5433e596636eec38bc061e358524b9b04d4db66145fad3bd2803014ffddf7",
+    "tests/test_private_harness.py": "5ed73ec5515f3a7e47c9d2e22b4519e562b407745384521062327e21b5347633",
+    "tools/private_harness.py": "a38fc6db86b2cb1fe6ee8493fe28efcb82b1b79852b5823bc72e41b6ae9fd9f6",
+    "tools/wayland_fixture.c": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869"
+  },
+  "dependency_report_sha256": "567b632a05645861036d608f0a8b9e42183122f486a809291a1988752ffe0077",
+  "final_metadata_adjustment": "After the selected failure and environment runs, the final harness added argv/cwd to each existing process identity receipt; lifecycle/control behavior was unchanged. The selected normal run validates that final source.",
+  "recorded_date": "2026-09-16",
+  "schema_version": 1,
+  "scope": "M1 #10 feasibility only; input #12 and capture #13 remain untested",
+  "selected_runs": {
+    "environment_control": "f4872e1b5f5e42f1bfce8ff169f649e0",
+    "normal": "2656eb3447f044a1beda7aa17bbed76e",
+    "startup_failure": "8a031a558d824e199a95e75bb4147d76",
+    "startup_timeout": "827f65532a0445a88e2f7c530fc027d8",
+    "worker_kill": "65792fb0ed7c4d9180d08bd4a2180fdb"
+  },
+  "tests": {
+    "command": "/usr/bin/python -m unittest discover -s tests -v",
+    "elapsed_seconds": 0.883,
+    "passed": 18
+  }
+}

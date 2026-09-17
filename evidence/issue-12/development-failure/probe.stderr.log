@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py", line 710, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py", line 700, in main
+    probe.run(args.scenario)
+    ~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py", line 656, in run
+    self.focus_loss_scenario()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py", line 616, in focus_loss_scenario
+    if kind == "removal":
+       ^^^^
+NameError: name 'kind' is not defined

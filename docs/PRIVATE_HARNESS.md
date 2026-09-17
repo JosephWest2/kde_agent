@@ -278,3 +278,12 @@ must observe these helpers asynchronously; #13 must still demonstrate that a
 slow query/cleanup cannot stall the GLib cancellation loop, and #12 must prove
 actual libei release. Full session readiness and production support remain
 outside this window-transport probe.
+
+## libei feasibility probe (#12)
+
+The [libei probe guide](LIBEI_PROBE.md) documents actual keyboard acknowledgments,
+cancellation, pause/removal/disconnect/reset and the Python/GLib boundary decision.
+Only its pause scenario opts into `--eis-fault-plugin PATH`: a locally built test
+plugin copied into the current private KWin runtime. The default harness still
+loads no project fault plugin or EIS permission override. The plugin path and
+opt-in flag are added only to KWin's environment and recorded in its manifest.

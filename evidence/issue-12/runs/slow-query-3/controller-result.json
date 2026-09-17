@@ -1,0 +1,55 @@
+{
+  "repeat": 3,
+  "scenario": "slow-query",
+  "argv": [
+    "/usr/bin/python",
+    "-I",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/private_harness.py",
+    "run",
+    "--artifacts",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-runs",
+    "--",
+    "/usr/bin/python",
+    "-I",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue9-clean/bin/kdotool",
+    "slow-query"
+  ],
+  "returncode": 0,
+  "result": {
+    "ok": true,
+    "generation": "20ba980b15fc4a87ad6cb29da91c9cde",
+    "manifest": "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-runs/20ba980b15fc4a87ad6cb29da91c9cde/manifest.json",
+    "outcome": "passed",
+    "cleanup": {
+      "generation": "20ba980b15fc4a87ad6cb29da91c9cde",
+      "started_monotonic_ns": 88475451283417,
+      "verified_empty": true,
+      "before": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": ""
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-20ba980b15fc4a87ad6cb29da91c9cde.service",
+      "members": [],
+      "after": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": ""
+      },
+      "elapsed_seconds": 0.032,
+      "total_shutdown_seconds": 0.187
+    },
+    "elapsed_seconds": 1.703,
+    "error": null
+  },
+  "stderr": ""
+}

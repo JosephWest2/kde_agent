@@ -1,0 +1,155 @@
+{
+  "actions": [
+    {
+      "cancel_handled_ns": 88473368875003,
+      "cancel_reason": "focus_lost",
+      "cancel_requested_ns": 88473368874450,
+      "deadline": 88475.247328282,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94707435922752,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "d5f570903ac14278bb9be9dee39dd6df",
+          "monotonic_ns": 88473247416453,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94707435922752,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "d5f570903ac14278bb9be9dee39dd6df",
+          "monotonic_ns": 88473368936703,
+          "press": false
+        }
+      ],
+      "finished_ns": 88473368997722,
+      "fixture_from": 73,
+      "id": 1,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88473247327613
+    },
+    {
+      "deadline": 88475.501204522,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94707435922752,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "d5f570903ac14278bb9be9dee39dd6df",
+          "monotonic_ns": 88473501345657,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94707435922752,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "d5f570903ac14278bb9be9dee39dd6df",
+          "monotonic_ns": 88473506248557,
+          "press": false
+        }
+      ],
+      "finished_ns": 88473506377967,
+      "fixture_from": 80,
+      "fixture_to": 83,
+      "id": 2,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88473501203128
+    }
+  ],
+  "binding_sha256": "3afd7f8bdf78fe8b6c8077bc56ff4a71fc0b709696950c13f3e20c8f882e9aee",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "kind": "focus_loss",
+      "loss_detection_seconds": 0.12154739,
+      "original_target_neutral_on_reentry": true,
+      "release_received_by_new_focus": true
+    }
+  ],
+  "emission_count": 4,
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 1
+    }
+  ],
+  "generation": "d5f570903ac14278bb9be9dee39dd6df",
+  "heartbeat_max_seconds": 0.005654382999637164,
+  "initial_focus": {
+    "observed": {
+      "active_uuid": "{655b2d7d-0970-4c24-a634-f14dbdf586cc}",
+      "request_id": "kde-agent-d5f570903ac14278bb9be9dee39dd6df-3",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 476351,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{655b2d7d-0970-4c24-a634-f14dbdf586cc}"
+        }
+      ]
+    },
+    "seconds": 0.02060331300890539,
+    "uuid": "{655b2d7d-0970-4c24-a634-f14dbdf586cc}"
+  },
+  "outcome": "passed",
+  "probe_sha256": "7997b54bbdc2f40cd8df7875e79c92d2ed85b39f3eed60428152464e705c6728",
+  "scenario": "focus-loss",
+  "scope": "feasibility",
+  "secondary_process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d5f570903ac14278bb9be9dee39dd6df.service",
+    "pid": 476371,
+    "start_ticks": "8847325"
+  },
+  "target": {
+    "active": true,
+    "class": "org.kde_agent.fixture",
+    "client": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "frame": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "pid": 476351,
+    "title": "KDE Agent Native Fixture",
+    "uuid": "{655b2d7d-0970-4c24-a634-f14dbdf586cc}"
+  }
+}

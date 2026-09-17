@@ -1,0 +1,32 @@
+{"event": "focus_observation", "monotonic_ns": 88455144666082, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": false, "seconds": 0.010083140005008318, "operation": "query", "poll": false}
+{"event": "focus_observation", "monotonic_ns": 88455159860441, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.015091356006450951, "operation": "focus", "poll": false}
+{"event": "setup", "monotonic_ns": 88455160661663, "generation": "833fc689f4744f65b26cccd5b2318325", "epoch": 1, "result": 0, "nonblocking": true}
+{"event": "libei", "monotonic_ns": 88455160917093, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "91", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 88455160987106, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "CONNECT", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 88455161010210, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "SEAT_ADDED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 88455161104727, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "DEVICE_ADDED", "epoch": 1, "device": 94853659726896}
+{"event": "libei", "monotonic_ns": 88455161134266, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 94853659726896}
+{"event": "ready", "monotonic_ns": 88455161153579, "generation": "833fc689f4744f65b26cccd5b2318325", "epoch": 1, "cookie": 1}
+{"event": "focus_observation", "monotonic_ns": 88455169974736, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.00874135699996259, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 88455170105072, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": true, "device": 94853659726896, "epoch": 1}
+{"event": "emission", "monotonic_ns": 88455281380356, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": false, "device": 94853659726896, "epoch": 1}
+{"event": "cancel", "monotonic_ns": 88455281484363, "generation": "833fc689f4744f65b26cccd5b2318325", "reason": "client_cancel", "uncertain": false}
+{"event": "focus_observation", "monotonic_ns": 88455291386992, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.020184221997624263, "operation": "query", "poll": true}
+{"event": "focus_observation", "monotonic_ns": 88455306526016, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.014965778987971134, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 88455306702572, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 42, "press": true, "device": 94853659726896, "epoch": 1}
+{"event": "emission", "monotonic_ns": 88455306740663, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 30, "press": true, "device": 94853659726896, "epoch": 1}
+{"event": "libei", "monotonic_ns": 88455306925215, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "9", "epoch": 1, "device": 94853659726896}
+{"event": "emission", "monotonic_ns": 88455416584541, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 30, "press": false, "device": 94853659726896, "epoch": 1}
+{"event": "emission", "monotonic_ns": 88455416666999, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 42, "press": false, "device": 94853659726896, "epoch": 1}
+{"event": "cancel", "monotonic_ns": 88455416719253, "generation": "833fc689f4744f65b26cccd5b2318325", "reason": "client_cancel", "uncertain": false}
+{"event": "libei", "monotonic_ns": 88455416883710, "generation": "833fc689f4744f65b26cccd5b2318325", "kind": "9", "epoch": 1, "device": 94853659726896}
+{"event": "focus_observation", "monotonic_ns": 88455433126833, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.025296788997366093, "operation": "query", "poll": true}
+{"event": "focus_observation", "monotonic_ns": 88455458392057, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.025061209991690703, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 88455458587412, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": true, "device": 94853659726896, "epoch": 1}
+{"event": "emission", "monotonic_ns": 88455558644263, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": false, "device": 94853659726896, "epoch": 1}
+{"event": "cancel", "monotonic_ns": 88455558731330, "generation": "833fc689f4744f65b26cccd5b2318325", "reason": "client_eof", "uncertain": false}
+{"event": "focus_observation", "monotonic_ns": 88455579821055, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.02009912399807945, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 88455579956732, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": true, "device": 94853659726896, "epoch": 1}
+{"event": "focus_observation", "monotonic_ns": 88455701366525, "generation": "833fc689f4744f65b26cccd5b2318325", "ok": true, "active_uuid": "{97c6655a-765c-44b2-990b-5c3e12b5b8fa}", "target_present": true, "seconds": 0.020278957003029063, "operation": "query", "poll": true}
+{"event": "emission", "monotonic_ns": 88455731710496, "generation": "833fc689f4744f65b26cccd5b2318325", "code": 17, "press": false, "device": 94853659726896, "epoch": 1}
+{"event": "cancel", "monotonic_ns": 88455731801753, "generation": "833fc689f4744f65b26cccd5b2318325", "reason": "action_timeout", "uncertain": false}

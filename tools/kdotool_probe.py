@@ -14,6 +14,7 @@ import signal
 import stat
 import statistics
 import subprocess
+import sys
 import time
 import uuid
 
@@ -289,6 +290,31 @@ class Probe:
             return result
         raise AssertionError(f"Expected {code}")
 
+    def bridge(self):
+        """Blocking query worker for #12; the caller observes this child asynchronously."""
+        print(json.dumps({"ready": True}), flush=True)
+        while True:
+            line = sys.stdin.buffer.readline(4097)
+            if not line:
+                return
+            if len(line) > 4096 or not line.endswith(b"\n"):
+                raise Failure("invalid_request", "Oversized query bridge request")
+            request = json.loads(line)
+            try:
+                if request["op"] == "query":
+                    value = self.query()
+                elif request["op"] == "slow-query":
+                    value = self.execute("const end = Date.now() + 750; while (Date.now() < end) {}\n" + self.source,
+                                         parse=lambda text, name: snapshot(json.loads(text), name))
+                elif request["op"] == "focus":
+                    value = self.focus(request["uuid"])
+                else:
+                    raise Failure("invalid_request", "Unknown query bridge operation")
+                result = {"ok": True, "value": value}
+            except Exception as exc:
+                result = {"ok": False, "code": getattr(exc, "code", "query_failed"), "message": str(exc)}
+            print(json.dumps(result), flush=True)
+
     def functional(self):
         initial = self.query()
         primary_pid = self.manifest["processes"]["fixture"]["pid"]
@@ -406,7 +432,7 @@ class Probe:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
-    parser.add_argument("scenario", choices=("functional", "latency", "faults"))
+    parser.add_argument("scenario", choices=("functional", "latency", "faults", "bridge"))
     args = parser.parse_args()
     probe = Probe(args.binary, args.scenario)
     try:

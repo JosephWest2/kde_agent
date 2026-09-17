@@ -1,0 +1,488 @@
+[
+  {
+    "name": "input-1",
+    "generation": "ef9c58fe445d4daa958c92a7b9890d7e",
+    "files_sha256": {
+      "cleanup.json": "ba6a7c1d6cf078868ce878fc9a3548b22204baa2de396a502bfbf5df6933da2f",
+      "controller-result.json": "0109d1f482c7c47487a9ad66fbad187fe840b758f792cf03dfeb0d551d3f2bdd",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "c253f7f541a648af362601ef7d7548c94b283bd458c9896aae42be8b7034059c",
+      "fixture-events.jsonl": "1aaa5a3f6201db9eb27166fc68785b4355212493e036cca11db277e92c87192d",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "2381d66889e562e63e2dcf20feacad33eabfe7d28dceb4f2b06aa42a0d268a86",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "756e8dad3802d9b6ae042cb2596a8a380b2c3c1cbc9913a809e02be891ac2590",
+      "libei-timeline.jsonl": "e6f09c50fa222351bf5189c03436034529b32fb40d1f69d671e48e03c4152251",
+      "manifest.json": "bcead41c5a9468a0838d4afd11e2c36a5acdc0ef86f35705f3cf68656c169143",
+      "ownership.json": "58504f007dfc8985d9a1e077eb910f1b1109d35a4138a3203b3c9e62f85ddb4f",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "cancel-1",
+    "generation": "62f7c01348b6442c95fc0c6deccec02b",
+    "files_sha256": {
+      "cleanup.json": "7ca8f8dac9d00f66a04aa832609a182ff69da193116b05016f57f4902a41a983",
+      "controller-result.json": "3c2115b3d0c0051fc6354ecce98a2eacf746e342aabfcfa50d96a255752b336d",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "939b601f7a282e849669bcac4d774bca1aefed266852f2b2beaed44958b1f2c5",
+      "fixture-events.jsonl": "57994aad175a5e19b76f08d6246b13eecc08886749c4984f99613edca6e590ce",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "c3d98e9c01017ec8ceb3fde32b5b153ae2e60b3d7a693fd51dd8c730e2c64373",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "4579177936ff8ecfce73ace3436884faf5d83eaa23591d560a4f87fe284f8738",
+      "libei-timeline.jsonl": "f2d0b35e16d35c6a531caacefd44419218a476ed3b0233e5a330ae420f4e04f8",
+      "manifest.json": "f8e9f236067710c1e2bc2608ab12b6346433b1df01e87074ac60bf079cf7f2d8",
+      "ownership.json": "759acb8b1fde4f346c3221c877b1beb5a8ced4fa3a7823ac0b50f15bf6b19b09",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "pause-1",
+    "generation": "b59b9f74eb88432cbe5531691dd5a043",
+    "files_sha256": {
+      "cleanup.json": "2342f22eb053caec126f2ca333acd78e8aa020baa62c3f643a71ab851bedc1e0",
+      "controller-result.json": "1a37c69047499c2e807460ae2a24215623ce9a7500960202d99d634feb264945",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "41f5f2d331f4e12b26e4e57f628502c4a2ae72dceb45f9877702ad78fbf4a0f6",
+      "fixture-events.jsonl": "172a35c608c648af3afc92929cf60b1be3548702959c84c90a67b2599f01200e",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "f3077ba8cc5de3985aad337913df4121d9386eff943807d43c64974d6b9d0fee",
+      "kwin.stderr.log": "75a06c5ef57a67a4666bddef184b47b89692992f3fa68c2507e3850e1d9d311e",
+      "libei-probe.json": "691375c74fe570130dbd914459c36804cf73b711cf0147a3867b9c93c8f0c5ea",
+      "libei-timeline.jsonl": "d9ad59327dfc9ed8179707b0b2558b6184b34cecec60b1eb6f83bea6b8a7dcfc",
+      "manifest.json": "a3aa10476b3ec719f659b94dec8060851c09ed4cd6d6400a14664b3dfd6741ee",
+      "ownership.json": "63f4ba876893aa1ad7357abcb901f87ab9591ee77d186662dbe001404cc83ce2",
+      "probe.stderr.log": "b23b7093eb0807dd480a0c8ed66c3154adaa681e45c63a93da57499ab8ce30da",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "removal-1",
+    "generation": "4e69998402c24c8f9426f6d63aa4896e",
+    "files_sha256": {
+      "cleanup.json": "8873ffc9b0685ce0bec4042bbbf13043350920bcf943fc4d3f6d4e0d79dd7338",
+      "controller-result.json": "3241754fbbe873c236288badf13a90f131a6e4e0461c5b9662741759b9cc0727",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "10d4c1b1b725361eb4a25a55a0fe9a49746a842ee270d39fc8d559560cce2950",
+      "fixture-events.jsonl": "09bbb87913b9ea60ce77b9b2f1f9dea2ab510bf2ad7caffd40c5f04eeffd5ee4",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "fa28f760b6af964ee52a52124da593438a1295a52a1b14b252412384df477596",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "ece3781874871f68748846535c5136f0fb664b4210a22bef7b701029484b4f21",
+      "libei-timeline.jsonl": "65c7c971974f42e5f66ca9444f99d59fd6163f49a99fc56f3f81e3100f00b81f",
+      "manifest.json": "51e385bd1ca1f21765aa950bf87ed2ad983af9bd8ea5086d367d71b575564085",
+      "ownership.json": "541056166a47ad2525ff8dbc579a7ecf1b1ac8380627d5f04f2661de90999cf6",
+      "probe.stderr.log": "39874b79a33f552087b10e677cc12a302199950dec61be54617de3fcb6757ac3",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "disconnect-1",
+    "generation": "74776ca0ce5c41a09b53f09ec0e2f7cf",
+    "files_sha256": {
+      "cleanup.json": "b16585782578219b6da2f1441b991db98df0ab9d7bf6c968742380bb3f1e0d59",
+      "controller-result.json": "6d837b89c1c2e86ad7a494a4fda3f8ce99f048ebfb43724a01aa66b091a27cbf",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "bd8a53153bfed8d6e2181c6e6ecfc66fea3f4906480dfc1960528194d899f034",
+      "fixture-events.jsonl": "45e50f94c9fedf2cf239c92d1940a8128e894e7ee8d1845cbc122ff3003325dd",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "88382ebefe1a4d6cb5523760afb1c4ae346303f4c0b774684b3161792fe3dc9d",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "4d0934ec5ba5207799039d8945d2769e8c8d2f57c75ffb729d000a679985ea67",
+      "libei-timeline.jsonl": "5f2a02cebbb3934634b685c41aaff0057de8c07477e13ab7981ae2d3e39efcf5",
+      "manifest.json": "674fa81b85001b0a564de92a35ca98c0f824bab6afb419f826b6901658981956",
+      "ownership.json": "e894d2fdfeae2347b68509c0a4e64408f447c3a68c11e5eb42d809815d962bc1",
+      "probe.stderr.log": "c5ac877e4d00b134c60c1d539711e93b381ed2698165a986f63e6502c1819110",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "reset-failure-1",
+    "generation": "a906d15d4f5840efaebab962ef4179be",
+    "files_sha256": {
+      "cleanup.json": "f99fdd94867fda7abfa1206c7476343a91db1ff8fdeb119f32cd56cebdfc2573",
+      "controller-result.json": "4000f87bd8f26d940dcfb4144eb18e165184f4451ea6bc8fe345e0b39abbff9b",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "5a84eb5ff8298061f6586ace2c6c7a713924cdd714c0ed335e00e91c38beec72",
+      "fixture-events.jsonl": "49f1c17f4dbaa7184d0503132202b01a5b2fb13d7887a85cc5213a4c8786a75a",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "703d501c68f35bd66f073f84c55215b7c2239b8a9fa93d64ee51aed7f941cb4d",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "31e922a3dbeb5894492951ad73ccb97e8c77bb1a1463163b05a415c9c5a6e687",
+      "libei-timeline.jsonl": "27db4b5da6a8ff87db2fdba82a1d9ff177aec2aac7e03f6ed4b63817aa64a929",
+      "manifest.json": "f019df73874c56da8c594acd0617ecbebdc0e484cfad7a56621deef13b399226",
+      "ownership.json": "398685fe5fd822fcca6f5a39d91fa7adddfc59c419551bc6b9ae3e94b531c6bd",
+      "probe.stderr.log": "0233e41599fac118a9363def0d57c7350126aa36706f0c84afef75263ce35148",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "focus-loss-1",
+    "generation": "5e52073f7bd84cecac9dd8cef9430043",
+    "files_sha256": {
+      "cleanup.json": "6841d41304b1948543bd19a4bea269c3f934e797b5e100cb60f4b2585535a672",
+      "controller-result.json": "735835631a462ffb71a8a0012c3af2ac628538df1b4d0ab1595f2f2feb9a2182",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "898b3c58c3c8eae68dab336c0c2a492bca51b4888e4b82b4c95260063710d154",
+      "fixture-events.jsonl": "33eafe6e2e8f3c9bf651b5c9dd602bf3328a3178b283b9483e41ebcdda22dc8e",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "d9cfee3917ed447743fecfbf297d864697a4842872f1313fc122f98a4adffbe2",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "dc0bf3cee62d09d6c89309ad21c698f79970809f4e2451850326334642eaa2e6",
+      "libei-timeline.jsonl": "125cdad37b9732e3dbf4b5feb27ff23d4410d92d91efae3b3bf0ad26868d3eee",
+      "manifest.json": "80c5665f2ebed73c7b93350ea1c31aa0ce5e66197d430187d1671cb814e2725c",
+      "ownership.json": "acff4756d190a7a67cd5e79887936d0b26d95ba7a38c78a54705cad0d46909d7",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "secondary.events.jsonl": "b612b9e595b20b3fb17d0f2a4f845da012f3d3de8e48433640f9191599e78401",
+      "secondary.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "slow-query-1",
+    "generation": "cb50f7eb1ceb4e2b9109f80cd6ba6839",
+    "files_sha256": {
+      "cleanup.json": "679c18cdafe6e99a17f7eb162f4bb9b3bca96384edaab1b4e0e05a6c67207980",
+      "controller-result.json": "93d4864cab1e8580f2140f1dab888b777332e32ab696d598fe3d97071966a41c",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "fce70588aefe0c16443aa66adae213c4359744af3b3e1bf6665e94dda2f9bfc2",
+      "fixture-events.jsonl": "e919f44cc349da88086fc9a16b03c4826cb43a1ee36bea329ddbd138283f42e9",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "15162eb69cab49378bb1cc6d353930af6e4d52c0c04242f6990fe38c38a98fe7",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "b378e53daabc8636f0cab931b1b6689e2a62d828b30674dd9ef742c78e00b966",
+      "libei-timeline.jsonl": "8d1e23f1a1e89551e9be71ac831869c054b1edd5c51d7ff22a64e450760fcd9e",
+      "manifest.json": "843dbdda9a7b6ffff678d43cdffe41a0ddf520a859dae2d7a9a5b9ba630f98f1",
+      "ownership.json": "7e242813c6a2dddbecee979719241afc93a4aaf4e90eebdb2afc80a8cc0b0d37",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "input-2",
+    "generation": "a612cebf801042c9a8df2256ee7308e9",
+    "files_sha256": {
+      "cleanup.json": "c3613632563d1aff649b6488e266a4ead22148b401fb059aa4ea91f1c344fab2",
+      "controller-result.json": "60ed0a485fe628f57f8557bca54ed459d8daa3e549414c762d6883ce51705490",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "fe35ec2b3a1017dc68bc620a024372bfc967b1e2403d93f98e7c469b16fa03f5",
+      "fixture-events.jsonl": "a95ad53ff1545a16c7c21b39e1ee1dcc7c3aae33b95fab159a4061640aefc6d8",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "cb54f7439dd21529fc5226ff593768d055d3485f39ba75c7efda1ce945ef6ebd",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "f8809ee110c3d0abb8ec712b8cec4d7d44fbfe6a12f3d18f58a5c857b7443eb2",
+      "libei-timeline.jsonl": "627bc2264fed7812460d62a814223928bfb0fcec69fe217b0f30e46cc5013a1c",
+      "manifest.json": "3c3cb5269fe458cb877cbae56bb2e088b4fae68e337d1319c6eccaaf73acf082",
+      "ownership.json": "893525ab26e40c5d9b5d3b71a6a8ea460c1a8f9b5238b3575ef23b62d6dbc8be",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "cancel-2",
+    "generation": "833fc689f4744f65b26cccd5b2318325",
+    "files_sha256": {
+      "cleanup.json": "ec531f997fb4e8630817a8aa1ab31aaa8e224fccd90aacb45ef3ae514d475e2f",
+      "controller-result.json": "3e0ea02f040161434041baa5d55c5da359f1401986a4f1b4a1e3ea2c82f298da",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "5df764f0932a3bf81ea8e82503f928158638ad655b77140d2e94669f9fb66529",
+      "fixture-events.jsonl": "81131ab1162aa692a64263a7aadff9b61af1f3fc861720e6d881c5d5c1b382e1",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "c3d1405d980b916c58c89b0a5d773037c2f329df8c6432723705addb3521faac",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "e92ec322e4ad92d5f52dbcd5e9a6e0c1836b12705175464e7364a06212a64c85",
+      "libei-timeline.jsonl": "8c2afac8739eca2cae6df893ad8c58ac6ba297a844c43b70dc706d860a2c2ce1",
+      "manifest.json": "8bc08fa1e64bb95ddcc42d43c277578e938361b694199800b91f7a811de85322",
+      "ownership.json": "0072c29bd5e2a8e77ac71a6df1bb6e857ff7bb5b261ab9557996ec6db4b1682e",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "pause-2",
+    "generation": "d6f915f5ef664daf8a6e701ca998827c",
+    "files_sha256": {
+      "cleanup.json": "4956f8965a2ae3ad1b980cddcbc74bfdd46585b9f7542fa72e75987bd9955195",
+      "controller-result.json": "8bd397ff57aa71654274bd08f2d1270bfa754a17681d69000a47a59d2c684454",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "fa7fea7bd645858a7e15b715d53647baf810660182d62da56ffb7157f2247297",
+      "fixture-events.jsonl": "9d2f1abeb70218ed7446426abc4b53e223c6c402160149443bf6f573ac09e6b8",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "0db86021936b7bc8f58a86d5f9288c7a77fe1a84bfddedc1bbea52b1a0beeef8",
+      "kwin.stderr.log": "8b3d0cafd742aff9842847e5fb35935dc0c304fb67d6065517e23b16efec20cf",
+      "libei-probe.json": "49de551351a72363794aec1056cc1f66875239e8c40f9413a4e890da74dfa050",
+      "libei-timeline.jsonl": "c3e3986fbc8e19462fdbf46c2cb028b0c0712d4d2bee349dbe60330029007623",
+      "manifest.json": "864c4e3218745b4ccd45cab4483e61bae2a4744153ba18d8041b6ba02b477276",
+      "ownership.json": "d1acbb8f8b76968f6a10779d015203946f88d379b47648561d0928e369c6a320",
+      "probe.stderr.log": "66071e4fba5d5e5b22922d1361a4c1115e3695903cffa80c745b8bac5e8a146c",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "removal-2",
+    "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+    "files_sha256": {
+      "cleanup.json": "b535514c9a68593393fe6768bfd51f903c94d27da4f7d76d7ede7efcc32d653e",
+      "controller-result.json": "2120fa5798d454ef2c3480a471a3bb8a0d5ed7cd2f00e3f6ed27d43dd2cf5824",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "dd335789083715dd06962d1218229b628755f4d0974fb8ceb507d40879aad8b4",
+      "fixture-events.jsonl": "36078722b0db46969075b72d848349961120dcc8023a9c436290c8348d3577d9",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "4ca41072d7cd5f44356f2973965bc3f9c1334c8fa52751f85d94c46183b7ea6c",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "f304b78f5a9db62341fe654304f1f23d5ac3ffdd075afb5cb9e6717ae98401cf",
+      "libei-timeline.jsonl": "97991575b9d8e40e47863a5b05e2356717d98f5ce487ee6a5a1da37d31cc20fc",
+      "manifest.json": "7739ee9ca2058aaf5725d1178e081df737b21d4814053d81610135cff0c20830",
+      "ownership.json": "bce208ec3b90b9b1f5f66bfe2af6f4614b7e65eab352025a0fea5551ebeb2028",
+      "probe.stderr.log": "a158ffebadbd93a0d61d68944ca7331d545ba1c898918d174edc0b2e91170b28",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "disconnect-2",
+    "generation": "c6796363a74c457abd8ae1e848a72dfe",
+    "files_sha256": {
+      "cleanup.json": "46ef54be59f747ad27b935df4f93a6901b6e37e16e1c29c192823f33323c66d8",
+      "controller-result.json": "6c5e283043029dbe1185382ca38a022ebdf9c65f2294ea630a38c3d3ba42f8a2",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "90467a063604aafaf624644025632ad9be72540adab5022b19cbd6293574afc9",
+      "fixture-events.jsonl": "298d0ba5d81d95cc7d854ae4b0857a52dc73bf526f2b60dabf199a6e75ef8674",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "fe61373b320137318f19a9dfc4a9af217a3c956631a31de7e10e2c85f106bffe",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "e028838d440f0f7b14e90894ba57d2bb36f6c326163bc21449bea95bfdff499a",
+      "libei-timeline.jsonl": "57776ea172aeac3209d3c8430ac44641fdfbae1a1388a5e0b8cc070751e32c80",
+      "manifest.json": "ef0df85b19a75357b9e8d4c4139e3f8ad13a3c3c5522a3cbe3dba4f78b74d12b",
+      "ownership.json": "5f7bacfb65eb5fa3d688dee7c262c8cc53d1ae6de48274c3f799597df3a828bf",
+      "probe.stderr.log": "05ef15687d684fff9afac7c2434390ba2d1e0aac8e90e43a80616a9972409bfd",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "reset-failure-2",
+    "generation": "592319b01f8c41d3942ac249f31363bb",
+    "files_sha256": {
+      "cleanup.json": "28ea877108fc5aae082e35ee566f4f194728765b232ee9731a9a895b1ebc5e22",
+      "controller-result.json": "0ad79d038aa0a9e8d7e6a08395b8ca1f593b591fb944504366a2e0254d06620e",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "fd7faba471c16f7d745207872012c5211bca9c199a44007a465a42314184b429",
+      "fixture-events.jsonl": "7061a6decee4451160b237fd461e00b61ef266795368ea59055db6a949e707dc",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "4028c2c241d8854ed211e38e05a723f625fe454a7a76aefc1ee058e528db57bb",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "33ed7e194f325187714b3e0365fe66876b974ff11ce9b2a1631a46597ea92532",
+      "libei-timeline.jsonl": "b8c49807cae526177012d701fe9c14b3b34f3b0c2986a3398d2ab6aafd105fd0",
+      "manifest.json": "54d60f499a0d933dad14ec375c76e2e4ca3724896878733e37b8135582b4e7d4",
+      "ownership.json": "55ef1e292b566c23b7900e862e604e42ab7dc41db4d025dfec9ac863ebe48141",
+      "probe.stderr.log": "346c0b1f4aa1b2db73910a20ba936fd68d4001a4a0baa4dba6bc33fc0909ca81",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "focus-loss-2",
+    "generation": "2d81d73015264f0a971935baf5e95ac7",
+    "files_sha256": {
+      "cleanup.json": "52c123e32a1c6d0aecea44b3a8fbe13501637ddd1eaea73761001970872750fd",
+      "controller-result.json": "d909159b3b7bd482ce7a69aad19f7e9bc6be7a9204303451611e4abb1387c0e1",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "fee7fc5236e8d387db3a024ded3f540df467045321799618b73f195ef5273ae3",
+      "fixture-events.jsonl": "a1f9c91395d0cdfb470163992b30c6000876f9bd24695e96a7d97bc01e6673e4",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "0974a7e590be5a7ee9fc29dd2e91888ceea0e98e7e3bd670cc35a06a7f993a83",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "ab3f929f958b36e0754a6ef87c60da286317a6ee4c1b1aa61860379201b537b4",
+      "libei-timeline.jsonl": "6e7c450c1c729b73c195a53a42b99f2cd0d49f3fff6f0bc649534341d4650c84",
+      "manifest.json": "654e58d92e78dbcfb6866099dc3020bf9bb9a19b8b1fac8b0c518445afc8b978",
+      "ownership.json": "3dbf5da711a22e9add642fdaf5ae9ba45b8bb8282768ed9b811b4aa2baff7c97",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "secondary.events.jsonl": "dabc53c2743c8e04c22acb8e946fca30088000a5a9e37e66c48d16c96352b556",
+      "secondary.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "slow-query-2",
+    "generation": "e6dd78f47ab94e4d92951687f09dbbf5",
+    "files_sha256": {
+      "cleanup.json": "52bdcb22f439760419a6d86fea07da0da4fba85112bbf1880a882c5f6e07c2dd",
+      "controller-result.json": "63a9b0898fc2fab5c91f0fce8edf8c414ed3c230c00ae917fb958d2376931491",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "643c5dc24e051f1e1e1c6394c5ad9c8e5f2519cde20c4a13c3050d0c005c3873",
+      "fixture-events.jsonl": "d0287e95af6581a9ef33241bed4d612e500961a5abc4b2937c6f295e1fa35661",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "ca7cd60367a3195084a14af677e2518f5fcbb465d15824ac6d146919aa3319c1",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "e2f067a61d9d019aa64ff0b7a548d180bc8eed3404e19127b25496f613414862",
+      "libei-timeline.jsonl": "66daf2ed170ca9e97c33afa6b1ae8348c5b37ee8ab8a29c84f7e855a1e00b7f8",
+      "manifest.json": "8dd18e090c959ab5addb763164b96a7db1538052a16bbf3b19ecdd257a5feb34",
+      "ownership.json": "3948f6a6571245682bd7b3560eeba94978f98b11d68306a7cf954e52646a1bcb",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "input-3",
+    "generation": "00b53b9dfa624be1bd634ae71647a8c6",
+    "files_sha256": {
+      "cleanup.json": "38b89303d54f4ddbd6a4bd0ab934f89130ed2d6990c81e82273048b3ff5b0d49",
+      "controller-result.json": "8ee8a05e9588187cf0adc2c5064f4f03d4e90550fdf8aaf250366abb87e4cf33",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "d7ed1449dd0b7338acc2db7172537d841fd71773b90e21352d96a471ca9c9737",
+      "fixture-events.jsonl": "c7125a25626b8a3e5f54e757604b1f89ca0a131b0edb5d04a5affa8e57b3d9fe",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "308ab182839cd3c278c9a87532d96778e83242318f61dd804ff4c9881564ab8f",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "aeb653411766ab9cf062b43d225440df32475232c399ede2ebc81647d2b9c7f5",
+      "libei-timeline.jsonl": "3d77afdbeb5e7605aab4fefc7c017f60f625b2dbe24138ec8e618c8229944ebb",
+      "manifest.json": "f0184acd7319b4bfc7a192428750f8db259d39d9b16fd55be121923415ba6ee8",
+      "ownership.json": "812770e549722b901046025a2400af002d87f7216a9ac1e185ed111edcf010c4",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "cancel-3",
+    "generation": "d557a34fe39b41cbbc4c0981d63fa2ca",
+    "files_sha256": {
+      "cleanup.json": "0b8bb97e82cfc459e362c524374ad68ba9bfbc927ddf652f40f93f1349996e4a",
+      "controller-result.json": "22820cb2e1e185665ac6f0f936d892d1b4cbdda8641697c22e513d658e8ebf26",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "dbcd20c16e6e110eafd868fb2958a67bac7d1401b83d46a844dc4315b4345c36",
+      "fixture-events.jsonl": "0a94d5c4a1a7a78b41c774223a504e9d81c95543824304f37a79806762e5ebc2",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "2397f8f1731971bfb9410d9a9ffe3049f7b09f7b9f2796f37315157896e3d16b",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "7c2f9c272963c01d757bf973eb2ff821c1a125d2d2557ca33d32b022df74358e",
+      "libei-timeline.jsonl": "d68a28446b97bfc44ac6b461ea5ac84411e5f081588ca26222ff2513fc06f5da",
+      "manifest.json": "e03ba03d9145a554331092490cf4caff000917a420d203d4bce980b8eb28188f",
+      "ownership.json": "b1bb633f0d0a8049612f13d7b625a6427714d2ecefca9334008910a295229a4c",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "pause-3",
+    "generation": "06a53252071e445ea24937ca6e7223a1",
+    "files_sha256": {
+      "cleanup.json": "f3b8b4aa54f750aea8daae0b19d91a3d20247c957eacc58dfb72a2a377f9de72",
+      "controller-result.json": "5ca5ed5cf705ccdff5e5e20af394c9b1754530f83933e4b779edefde23db2456",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "22fdc2bbecc87e6be1ed23797470a6e2940381fb479c477df3ec21491d577f95",
+      "fixture-events.jsonl": "c26d7869756b76fdfdba374294d4e026956c45c544b87f40b9f5f9f213c7383c",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "5d39cbb01fb070161e319971e1b570a667faa5a118598ce9444b8950f3329c07",
+      "kwin.stderr.log": "970b02f9f1ebdcf2eb3cf9d439141e561ac9226e19680b9920c40c11c0232879",
+      "libei-probe.json": "9ffb6fe624305df65f27cee03dbe97b763d80a130a11ccf676693070f5d92309",
+      "libei-timeline.jsonl": "e71edf4adc3fcb7250ab43640954a32cd6eaf9cef496f2d0261c3156c6b7aac1",
+      "manifest.json": "69a7d99dd6c4047fffb9c81fbdf81d807bf049160cf8948b668163b14d8b1376",
+      "ownership.json": "dfcd2e8ba70277a2cfcca91589b48bb70bd4e2123ca709d935592f8b54ed514f",
+      "probe.stderr.log": "416ccb02c6884e45dd70924da3468c92abe085f4dce71918ea54c1a46b8029ec",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "removal-3",
+    "generation": "b38d7c6c5bc848b8bf934efafbd155e5",
+    "files_sha256": {
+      "cleanup.json": "152f45e33f7882503471005bd19754b59a773a394fb24ff87efb23f2328eb864",
+      "controller-result.json": "da86a74644ebda4ad9fe59f51cfb08b7521d0ab2a14cb6994c13b521c4682204",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "2140aaa89cda6118e982c8497d3e76fb720a37ecb72e9618fd3b839692c89f28",
+      "fixture-events.jsonl": "762874e98249b59c12f42827744f9934d52f227f9fdf658aadc736b8b88de589",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "7834cf7d4979db0627d4ff2d4f0c8da33e83fba549ee41495ecddb636fdbb454",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "2828f045de6fafe68e91423395c8f78e72c4c4066a4ab9d5d722e7b1120e3a97",
+      "libei-timeline.jsonl": "a9c7b366a1f93e462f9b6d2f12dbf146561ffbe9c887e7d99202bd65d9e4af63",
+      "manifest.json": "ae1b53bcf0d420b5d74b48563e485f3779ce4d9c4d870fa1177a4944fc891e64",
+      "ownership.json": "84910d1230862b7ddb35359235ae05fc170e2aa4c4e375e36ecf1f85c62f2825",
+      "probe.stderr.log": "ec6603d90568dd26e09e08299504426954422a9a514f07e7b7f8e2442052c59b",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "disconnect-3",
+    "generation": "b0263b73b043488cb504628f31c64854",
+    "files_sha256": {
+      "cleanup.json": "afce279d4f5bb054735a963f29267b8134c4928b748d8afd6e0b1e974a2a9dc7",
+      "controller-result.json": "80f6884db0c9672d72cc9bf107007b802eeff76c26d7640f9051ff804f4f00b5",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "9b5f650a9bcd808b44ec32a64ce91bebb4cfd79e800ae1634a91bb02c97bc1b1",
+      "fixture-events.jsonl": "e906fee5b2e935e0f1b531ed5ef4dbd80d271164ad9e9f6ddc8a6d9fce8b87c9",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "6b68121869915b6c0029ef92e2554a269016e025eef4f41b096d24b444d2767c",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "e396f91396b18c3f71e3e7d3d60ba1dc9650d8922c9ba3332756d409525139c3",
+      "libei-timeline.jsonl": "469fa6b41280a76fa58a2c0c715d170f58095387a1fedf58169614d82c13d6c8",
+      "manifest.json": "cbb80e90c3e70a4b8832f2dedafbc8df5614121399aceb1ee8c420f7295f7ac4",
+      "ownership.json": "7c83a74b4a0f25c2cd53fecd82bf91b83f113b170530f39e55d342bad53de2ac",
+      "probe.stderr.log": "6333991ecc95ce91e5877cd01711130b2b51f4fb9c8be91516aefdc8d1b16062",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "reset-failure-3",
+    "generation": "cec1b9bf4e664cb9ad40d5ec19932078",
+    "files_sha256": {
+      "cleanup.json": "08c818288bd91b7e65c2e31393528718512452281281d80aee4692040136126d",
+      "controller-result.json": "635dae76141fe714fa180c734149d4954d0add7e29eeb77757ba39bd0a388145",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "71af7ebc1d0428b60688b0f6f62869285df5b74619a60afcf1ae2b9c65248386",
+      "fixture-events.jsonl": "b60b4d10cee1c804b800c1b5eec6cf0f8a59dfedd304de3d4e5d2204fc20c77b",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "9a44f3ecb3d9d87879975783a11910a3239d4041c0f59962750d9cd03bbcc61b",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "cfef5a20f97864406f21ba8ccf19b973f4ceb7cd4434e7e70e38438dea53067d",
+      "libei-timeline.jsonl": "489966e104ffc8bb4ae05c36cdb0f7c7938e3656d28706add4d10df1dc210092",
+      "manifest.json": "f0f888b514a0ca2e5d3ceb0c4811c0db88c4ab9942f393b8e47784ae87d01614",
+      "ownership.json": "ef5a35844dd8d43e0ea1a6dc24da64bf45cde1b778352637c67f599d928fb26c",
+      "probe.stderr.log": "25fc06f8b5be03a92ea1b442f4f9b39fd7cd89165600ba45aeea681f8247987f",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "focus-loss-3",
+    "generation": "d5f570903ac14278bb9be9dee39dd6df",
+    "files_sha256": {
+      "cleanup.json": "f430793b70559787bccba18152489bce642d194a77371bd2e816c5207e8703b2",
+      "controller-result.json": "67b5c826d6b225a8cf8dc448ee3ad99d758325f57da31cb99be58c19a42dd931",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "44a65f9dfc0d711b8c251501de66a79e895d878e215ac3b274a555197a8027ce",
+      "fixture-events.jsonl": "cc32932a0808a363dcf0c7d7e0d85b1404ebda4a6f99d87a20b61d74cb08a602",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "6256089c0fe33c789f7e16c7db2d290f563c1336accf98875408f9968fbce197",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "3980c98ef9df797052b90fa86af6c4094fafb187309c3d4cde735ddc0c1237ca",
+      "libei-timeline.jsonl": "271e1a3eb68f6cf46dc39ff1094c6d66d152797c6318b53080a64d2c44d4e4c8",
+      "manifest.json": "0dfbc5b98b599d97556c4db2a06e773ac943d3650d9e4b0daa21614d16a5c428",
+      "ownership.json": "e8c8f923e1d1c9ab0f09c0ff08a9c7cecd11c48b9b2c7dade5a4bfe6a0384b95",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "secondary.events.jsonl": "4cf1521be3aa2713facee9df9fe58dd994e3578fcc56065e55f3fb8863947e36",
+      "secondary.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "slow-query-3",
+    "generation": "20ba980b15fc4a87ad6cb29da91c9cde",
+    "files_sha256": {
+      "cleanup.json": "a8c6fa060973e3de48723b325123c3d741c169a85aa2f9ac39ef2277a4834c14",
+      "controller-result.json": "545bd01fb1704946cde9a84f9765dc6269678c09ad13d29adc1fa6fb7b54cace",
+      "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+      "finalizer.json": "d990a4b7137cc8cd9a822868c524eaa0cedcc3f8b240d2ea07782f0082a6a94d",
+      "fixture-events.jsonl": "c6732145cf3c9fb5f1e2bce0727b6e3eaaea1230739076425c1038be3f98fe62",
+      "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kdotool-probe.json": "c788e2d4ec9475353b1605b814d59c6756b942fe22c4732f945a20ca7fad19c8",
+      "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "libei-probe.json": "31640ec4075e8c04643c6031bc4bc5b84552a7df6124aab6e8f87c5cb39ef939",
+      "libei-timeline.jsonl": "50575b51b7f6987b61e9b18cfd48ff9ea0374ef356f07d58dfb8e1d8f9f61190",
+      "manifest.json": "e4144fbc8b785c218d9dc483db2b7992ad4418bead455b485200136bcc563d8f",
+      "ownership.json": "2b441e216f554e79397087e5d3c2e4e5162bb3f0db14c9e53402e25811ee4f20",
+      "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+]

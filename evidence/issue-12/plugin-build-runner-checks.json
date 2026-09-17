@@ -1,0 +1,34 @@
+{
+  "clean_environment": {
+    "returncode": 0,
+    "output": "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-eis-fault/private-home\n",
+    "error": null,
+    "output_limit_bytes": 1048576,
+    "process_group": 474278,
+    "group_cleanup": "SIGKILL and bounded direct-child wait"
+  },
+  "timeout": {
+    "returncode": -9,
+    "output": "",
+    "error": "build subprocess deadline exceeded",
+    "output_limit_bytes": 1048576,
+    "process_group": 474281,
+    "group_cleanup": "SIGKILL and bounded direct-child wait"
+  },
+  "output_limit": {
+    "returncode": -9,
+    "output": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "error": "build subprocess output limit exceeded",
+    "output_limit_bytes": 64,
+    "process_group": 474282,
+    "group_cleanup": "SIGKILL and bounded direct-child wait"
+  },
+  "success_descendant_cleanup": {
+    "returncode": 0,
+    "output": "474546\n",
+    "error": null,
+    "output_limit_bytes": 1048576,
+    "process_group": 474543,
+    "group_cleanup": "SIGKILL and bounded direct-child wait"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "after": {
+    "ActiveState": "inactive",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "LoadState": "not-found",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "before": {
+    "ActiveState": "inactive",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "LoadState": "not-found",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-c6796363a74c457abd8ae1e848a72dfe.service",
+  "elapsed_seconds": 0.048,
+  "generation": "c6796363a74c457abd8ae1e848a72dfe",
+  "members": [],
+  "started_monotonic_ns": 88459989181244,
+  "total_shutdown_seconds": 0.225,
+  "verified_empty": true
+}

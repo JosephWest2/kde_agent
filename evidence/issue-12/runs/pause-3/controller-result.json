@@ -1,0 +1,57 @@
+{
+  "repeat": 3,
+  "scenario": "pause",
+  "argv": [
+    "/usr/bin/python",
+    "-I",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/private_harness.py",
+    "run",
+    "--artifacts",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-runs",
+    "--eis-fault-plugin",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-eis-fault/build/issue12_eis_fault.so",
+    "--",
+    "/usr/bin/python",
+    "-I",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tools/libei_probe.py",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue9-clean/bin/kdotool",
+    "pause"
+  ],
+  "returncode": 0,
+  "result": {
+    "ok": true,
+    "generation": "06a53252071e445ea24937ca6e7223a1",
+    "manifest": "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/.local/issue12-runs/06a53252071e445ea24937ca6e7223a1/manifest.json",
+    "outcome": "passed",
+    "cleanup": {
+      "generation": "06a53252071e445ea24937ca6e7223a1",
+      "started_monotonic_ns": 88468789541912,
+      "verified_empty": true,
+      "before": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": ""
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-06a53252071e445ea24937ca6e7223a1.service",
+      "members": [],
+      "after": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": ""
+      },
+      "elapsed_seconds": 0.049,
+      "total_shutdown_seconds": 0.191
+    },
+    "elapsed_seconds": 1.613,
+    "error": null
+  },
+  "stderr": ""
+}

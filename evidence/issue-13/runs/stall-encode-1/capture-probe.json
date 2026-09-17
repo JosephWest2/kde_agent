@@ -1,0 +1,133 @@
+{
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "capture": 3,
+    "failed_session_stop": 15,
+    "fixture_release": 0.5,
+    "local_cleanup": 1
+  },
+  "captures": [
+    {
+      "abort_started": 93927.191533204,
+      "accepted": false,
+      "cleanup_seconds": 0.005252871007542126,
+      "deadline": 93927.18808759,
+      "error": "capture_timeout",
+      "fault": "stall-encode",
+      "finished": 93927.196797377,
+      "generation": "ab42938253eb47f99d9264af30895295",
+      "local_cleanup": true,
+      "png_published": false,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-ab42938253eb47f99d9264af30895295.service",
+        "pid": 498780,
+        "start_ticks": "9392418"
+      },
+      "process_reaped": true,
+      "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+      "returncode": -9,
+      "rows": [
+        {
+          "capacity": 65536,
+          "dbus_python": "1.4.0",
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "inode": "pipe:[2251971]",
+          "monotonic_ns": 93924273738688,
+          "pillow": "12.3.0",
+          "python": "3.14.7",
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "stage": "pipe"
+        },
+        {
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "monotonic_ns": 93924273862570,
+          "reader_installed_before_request": true,
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "screen": "Virtual-0",
+          "stage": "requested"
+        },
+        {
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "monotonic_ns": 93924276313720,
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "stage": "first-byte"
+        },
+        {
+          "expected_bytes": 3686400,
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "local_pipe_fds": [
+            {
+              "access": 0,
+              "fd": 5
+            }
+          ],
+          "metadata": {
+            "format": 6,
+            "height": 720,
+            "scale": 1.0,
+            "screen": "Virtual-0",
+            "stride": 5120,
+            "type": "raw",
+            "width": 1280
+          },
+          "monotonic_ns": 93924276579919,
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "stage": "metadata"
+        },
+        {
+          "bytes": 3686400,
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "local_pipe_fds": [
+            {
+              "access": 0,
+              "fd": 5
+            }
+          ],
+          "monotonic_ns": 93924277992631,
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "stage": "eof"
+        },
+        {
+          "bytes": 3686400,
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "local_pipe_fds": [],
+          "monotonic_ns": 93924279600035,
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "sha256": "5c8db87266fcf6b3aac5b251e8b85ef5c706d2dddf0a1aca7d28601cbc5f130d",
+          "stage": "raw-complete"
+        },
+        {
+          "generation": "ab42938253eb47f99d9264af30895295",
+          "monotonic_ns": 93924285807146,
+          "pixel_checks": [],
+          "request_id": "capture-336d2ce2d3ff43eca6edd805a189cb2a",
+          "stage": "encode"
+        }
+      ],
+      "server_cleanup": "unconfirmed",
+      "server_fd_observation": {
+        "observable": false,
+        "reason": "PermissionError"
+      },
+      "session_stop_required": true,
+      "started": 93924.18808759
+    }
+  ],
+  "checks": [],
+  "codec_sha256": "57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb",
+  "error": {
+    "code": "capture_cleanup_unconfirmed",
+    "message": "Owned private desktop must stop after unconfirmed server cleanup"
+  },
+  "final_held": [],
+  "generation": "ab42938253eb47f99d9264af30895295",
+  "heartbeat_max_seconds": 0.0055196730099851266,
+  "input_uncertain": false,
+  "interface_version": 5,
+  "kwin_image_header_sha256": "886f0ec7ab8bd1190e8a051df0efa13f8fd9646b86aa18b02f9dc495918be94d",
+  "outcome": "failed",
+  "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+  "scenario": "stall-encode",
+  "scope": "M1 feasibility, not production support",
+  "session_unavailable_ns": 93927197564920
+}

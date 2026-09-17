@@ -1,0 +1,130 @@
+{
+  "binary_sha256": "62e7ee53096d933ec29e8e5d439b895590f851a40f0dcd87b87db9a6dc4749de",
+  "bounds_seconds": {
+    "cleanup": 1.5,
+    "focus": 2,
+    "poll_interval": 0.1,
+    "query": 0.5
+  },
+  "generation": "8e36c8a8b12e40d380250469058f9530",
+  "kdotool_revision": "be03ce90c09350898556436bac74ed35fe928617",
+  "kwin_header_sha256": "bb36b1eb1d20c105346bc7c6d86e66c85d5705cb528991336fbb1bb5386ed4aa",
+  "operations": [
+    {
+      "abandoned_temp_files": [],
+      "cleanup_ok": true,
+      "cleanup_seconds": 0.00023366400273516774,
+      "error": null,
+      "finished": 93913.633832737,
+      "loaded_after_cleanup": false,
+      "loaded_after_native": false,
+      "loaded_before": false,
+      "loaded_before_cleanup": false,
+      "name": "kde-agent-8e36c8a8b12e40d380250469058f9530-0",
+      "native": null,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+        "pid": 498375,
+        "start_ticks": "9391362"
+      },
+      "process_reaped": true,
+      "process_reaped_at": 93913.633601967,
+      "request_finished": 93913.633599073,
+      "returncode": 0,
+      "seconds": 0.005740620996220969,
+      "started": 93913.628092116,
+      "stopped_after_registration": false,
+      "temporary_removed": true,
+      "work_limit": 0.5
+    },
+    {
+      "abandoned_temp_files": [],
+      "cleanup_ok": true,
+      "cleanup_seconds": 0.0005092259962111712,
+      "error": null,
+      "finished": 93913.646158606,
+      "loaded_after_cleanup": false,
+      "loaded_after_native": false,
+      "loaded_before": false,
+      "loaded_before_cleanup": false,
+      "name": "kde-agent-8e36c8a8b12e40d380250469058f9530-1",
+      "native": null,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+        "pid": 498376,
+        "start_ticks": "9391363"
+      },
+      "process_reaped": true,
+      "process_reaped_at": 93913.645654422,
+      "request_finished": 93913.64564938,
+      "returncode": 0,
+      "seconds": 0.007820387996616773,
+      "started": 93913.638338218,
+      "stopped_after_registration": false,
+      "temporary_removed": true,
+      "work_limit": 0.5
+    },
+    {
+      "abandoned_temp_files": [],
+      "cleanup_ok": true,
+      "cleanup_seconds": 0.0009152120037470013,
+      "error": null,
+      "finished": 93913.655945745,
+      "loaded_after_cleanup": false,
+      "loaded_after_native": false,
+      "loaded_before": false,
+      "loaded_before_cleanup": false,
+      "name": "kde-agent-8e36c8a8b12e40d380250469058f9530-2",
+      "native": [
+        "windowactivate",
+        "{fb121bf2-1a7d-465c-9e38-22fa1df27d67}"
+      ],
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+        "pid": 498378,
+        "start_ticks": "9391364"
+      },
+      "process_reaped": true,
+      "process_reaped_at": 93913.655035998,
+      "request_finished": 93913.655030533,
+      "returncode": 0,
+      "seconds": 0.00891435900120996,
+      "started": 93913.647031386,
+      "stopped_after_registration": false,
+      "temporary_removed": true,
+      "work_limit": 0.5
+    },
+    {
+      "abandoned_temp_files": [],
+      "cleanup_ok": true,
+      "cleanup_seconds": 0.0010687149915611371,
+      "error": null,
+      "finished": 93913.674409822,
+      "loaded_after_cleanup": false,
+      "loaded_after_native": false,
+      "loaded_before": false,
+      "loaded_before_cleanup": false,
+      "name": "kde-agent-8e36c8a8b12e40d380250469058f9530-3",
+      "native": null,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+        "pid": 498379,
+        "start_ticks": "9391365"
+      },
+      "process_reaped": true,
+      "process_reaped_at": 93913.673348209,
+      "request_finished": 93913.673341107,
+      "returncode": 0,
+      "seconds": 0.016805210994789377,
+      "started": 93913.657604611,
+      "stopped_after_registration": false,
+      "temporary_removed": true,
+      "work_limit": 0.5
+    }
+  ],
+  "outcome": "passed",
+  "probe_sha256": "0906158d417e02b31cfe993a588a476050238aea615201464959f44b711542a4",
+  "query_sha256": "2829c59538fcd57f95a43ae3f5fd605a135a65e2c42fee3708fb27e2f4f8dc20",
+  "scenario": "bridge",
+  "scope": "feasibility"
+}

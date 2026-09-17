@@ -1,0 +1,905 @@
+[
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-0652ce70b4b74cf8b3d41acc6d3c0e00.service",
+      "elapsed_seconds": 0.032,
+      "generation": "0652ce70b4b74cf8b3d41acc6d3c0e00",
+      "members": [],
+      "started_monotonic_ns": 93837702610453,
+      "total_shutdown_seconds": 0.17,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "0652ce70b4b74cf8b3d41acc6d3c0e00",
+    "outcome": "passed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/0652ce70b4b74cf8b3d41acc6d3c0e00",
+    "scenario": "functional",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-065fca996b7946fa8f9c591ef7fec177.service",
+      "elapsed_seconds": 0.064,
+      "generation": "065fca996b7946fa8f9c591ef7fec177",
+      "members": [],
+      "started_monotonic_ns": 93777839207322,
+      "total_shutdown_seconds": 0.209,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "065fca996b7946fa8f9c591ef7fec177",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/065fca996b7946fa8f9c591ef7fec177",
+    "scenario": "responsive-pipe",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-0b4c7a6b48064d5f97bee8f7b00ae6c3.service",
+      "elapsed_seconds": 0.064,
+      "generation": "0b4c7a6b48064d5f97bee8f7b00ae6c3",
+      "members": [],
+      "started_monotonic_ns": 93848911266844,
+      "total_shutdown_seconds": 0.17,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "0b4c7a6b48064d5f97bee8f7b00ae6c3",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/0b4c7a6b48064d5f97bee8f7b00ae6c3",
+    "scenario": "stall-reply",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-0d320fba116447ac806c930ecc4bc936.service",
+      "elapsed_seconds": 0.064,
+      "generation": "0d320fba116447ac806c930ecc4bc936",
+      "members": [],
+      "started_monotonic_ns": 93844868540921,
+      "total_shutdown_seconds": 0.235,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "0d320fba116447ac806c930ecc4bc936",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/0d320fba116447ac806c930ecc4bc936",
+    "scenario": "partial",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-0e210cd7164e4533973ea595c7e564fd.service",
+      "elapsed_seconds": 0.096,
+      "generation": "0e210cd7164e4533973ea595c7e564fd",
+      "members": [],
+      "started_monotonic_ns": 93861359334681,
+      "total_shutdown_seconds": 0.241,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "0e210cd7164e4533973ea595c7e564fd",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/0e210cd7164e4533973ea595c7e564fd",
+    "scenario": "responsive-pipe",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-1735dad04bbc4574a9e775c966fd796c.service",
+      "elapsed_seconds": 0.032,
+      "generation": "1735dad04bbc4574a9e775c966fd796c",
+      "members": [],
+      "started_monotonic_ns": 93842432768896,
+      "total_shutdown_seconds": 0.15,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "1735dad04bbc4574a9e775c966fd796c",
+    "outcome": "passed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/1735dad04bbc4574a9e775c966fd796c",
+    "scenario": "functional",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-37fa16a14b5f437cba9400a42764b288.service",
+      "elapsed_seconds": 0.011,
+      "generation": "37fa16a14b5f437cba9400a42764b288",
+      "members": [],
+      "started_monotonic_ns": 93840073513543,
+      "total_shutdown_seconds": 0.118,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "37fa16a14b5f437cba9400a42764b288",
+    "outcome": "passed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/37fa16a14b5f437cba9400a42764b288",
+    "scenario": "functional",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4690cf961e84470abc776918cbbd1227.service",
+      "elapsed_seconds": 0.064,
+      "generation": "4690cf961e84470abc776918cbbd1227",
+      "members": [],
+      "started_monotonic_ns": 93853018903212,
+      "total_shutdown_seconds": 0.178,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "4690cf961e84470abc776918cbbd1227",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/4690cf961e84470abc776918cbbd1227",
+    "scenario": "stall-pipe",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4f91e8b9a1174d3dac87281cea64816f.service",
+      "elapsed_seconds": 0.065,
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "members": [],
+      "started_monotonic_ns": 93931525945082,
+      "total_shutdown_seconds": 0.205,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "4f91e8b9a1174d3dac87281cea64816f",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/4f91e8b9a1174d3dac87281cea64816f",
+    "scenario": "responsive-pipe",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-5db1a5df8d51481d91dd0948a33b968a.service",
+      "elapsed_seconds": 0.032,
+      "generation": "5db1a5df8d51481d91dd0948a33b968a",
+      "members": [],
+      "started_monotonic_ns": 93704979594947,
+      "total_shutdown_seconds": 0.144,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "5db1a5df8d51481d91dd0948a33b968a",
+    "outcome": "passed",
+    "probe_sha256": "3ba5ed06c717c6293ded522b38338cd044821f4ea99bcda1ee15e770be6cf3ea",
+    "raw_folder": "<checkout>/.local/harness-runs/5db1a5df8d51481d91dd0948a33b968a",
+    "scenario": "functional",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-6c5e10774ac94810affa9c8386cb58e6.service",
+      "elapsed_seconds": 0.044,
+      "generation": "6c5e10774ac94810affa9c8386cb58e6",
+      "members": [],
+      "started_monotonic_ns": 93865479380000,
+      "total_shutdown_seconds": 0.129,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "6c5e10774ac94810affa9c8386cb58e6",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/6c5e10774ac94810affa9c8386cb58e6",
+    "scenario": "responsive-encode",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-72bf06fccca2432990ef97628e45ff74.service",
+      "elapsed_seconds": 0.026,
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "members": [],
+      "started_monotonic_ns": 93915117502507,
+      "total_shutdown_seconds": 0.125,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "72bf06fccca2432990ef97628e45ff74",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/72bf06fccca2432990ef97628e45ff74",
+    "scenario": "partial",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-7aed0bb5598d441f8cd5e1e2c2b38c6e.service",
+      "elapsed_seconds": 0.032,
+      "generation": "7aed0bb5598d441f8cd5e1e2c2b38c6e",
+      "members": [],
+      "started_monotonic_ns": 93912803662383,
+      "total_shutdown_seconds": 0.137,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "7aed0bb5598d441f8cd5e1e2c2b38c6e",
+    "outcome": "passed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/7aed0bb5598d441f8cd5e1e2c2b38c6e",
+    "scenario": "functional",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+      "elapsed_seconds": 0.023,
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "members": [],
+      "started_monotonic_ns": 93914011478849,
+      "total_shutdown_seconds": 0.12,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "8e36c8a8b12e40d380250469058f9530",
+    "outcome": "passed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/8e36c8a8b12e40d380250469058f9530",
+    "scenario": "invalid-screen",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-97d9477953284c3f9ab6bafecc6e4650.service",
+      "elapsed_seconds": 0.032,
+      "generation": "97d9477953284c3f9ab6bafecc6e4650",
+      "members": [],
+      "started_monotonic_ns": 93843702316619,
+      "total_shutdown_seconds": 0.187,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "97d9477953284c3f9ab6bafecc6e4650",
+    "outcome": "passed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/97d9477953284c3f9ab6bafecc6e4650",
+    "scenario": "invalid-screen",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-9c72747638cc45d9b3d594ee2c39ff6f.service",
+      "elapsed_seconds": 0.071,
+      "generation": "9c72747638cc45d9b3d594ee2c39ff6f",
+      "members": [],
+      "started_monotonic_ns": 93857200334274,
+      "total_shutdown_seconds": 0.181,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "9c72747638cc45d9b3d594ee2c39ff6f",
+    "outcome": "failed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/9c72747638cc45d9b3d594ee2c39ff6f",
+    "scenario": "stall-encode",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-a7efe81018ab435cb69335500c7f4383.service",
+      "elapsed_seconds": 0.011,
+      "generation": "a7efe81018ab435cb69335500c7f4383",
+      "members": [],
+      "started_monotonic_ns": 93908030281707,
+      "total_shutdown_seconds": 0.16,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "a7efe81018ab435cb69335500c7f4383",
+    "outcome": "passed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/a7efe81018ab435cb69335500c7f4383",
+    "scenario": "functional",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-ab42938253eb47f99d9264af30895295.service",
+      "elapsed_seconds": 0.08,
+      "generation": "ab42938253eb47f99d9264af30895295",
+      "members": [],
+      "started_monotonic_ns": 93927415756739,
+      "total_shutdown_seconds": 0.241,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "ab42938253eb47f99d9264af30895295",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/ab42938253eb47f99d9264af30895295",
+    "scenario": "stall-encode",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-ad5a7d36a3aa4f08b84173fec010b1b3.service",
+      "elapsed_seconds": 0.072,
+      "generation": "ad5a7d36a3aa4f08b84173fec010b1b3",
+      "members": [],
+      "started_monotonic_ns": 93919234052633,
+      "total_shutdown_seconds": 0.216,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "ad5a7d36a3aa4f08b84173fec010b1b3",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/ad5a7d36a3aa4f08b84173fec010b1b3",
+    "scenario": "stall-reply",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-b5c7061260d142109cde82785ff0711d.service",
+      "elapsed_seconds": 0.055,
+      "generation": "b5c7061260d142109cde82785ff0711d",
+      "members": [],
+      "started_monotonic_ns": 93923343298182,
+      "total_shutdown_seconds": 0.187,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "b5c7061260d142109cde82785ff0711d",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/b5c7061260d142109cde82785ff0711d",
+    "scenario": "stall-pipe",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-be28fddc6ac049739f79824fbdd7ad51.service",
+      "elapsed_seconds": 0.049,
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "members": [],
+      "started_monotonic_ns": 93937615729625,
+      "total_shutdown_seconds": 0.2,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "be28fddc6ac049739f79824fbdd7ad51",
+    "outcome": "passed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/be28fddc6ac049739f79824fbdd7ad51",
+    "scenario": "slow-query",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d0ff06dad6214ba7934095562ebdb8c5.service",
+      "elapsed_seconds": 0.032,
+      "generation": "d0ff06dad6214ba7934095562ebdb8c5",
+      "members": [],
+      "started_monotonic_ns": 93867458841229,
+      "total_shutdown_seconds": 0.178,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "d0ff06dad6214ba7934095562ebdb8c5",
+    "outcome": "passed",
+    "probe_sha256": "23d2e8ae6d3e7da9672744890481d112c17056c5f3c79934c70e846cc8d6a08f",
+    "raw_folder": "<checkout>/.local/harness-runs/d0ff06dad6214ba7934095562ebdb8c5",
+    "scenario": "slow-query",
+    "selected": false
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "before": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d5e9ef6bced34e28a98b76da1b1f9297.service",
+      "elapsed_seconds": 0.065,
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "members": [],
+      "started_monotonic_ns": 93935659905455,
+      "total_shutdown_seconds": 0.221,
+      "verified_empty": true
+    },
+    "error": {
+      "code": "capture_cleanup_unconfirmed",
+      "message": "Owned private desktop must stop after unconfirmed server cleanup"
+    },
+    "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+    "outcome": "failed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/d5e9ef6bced34e28a98b76da1b1f9297",
+    "scenario": "responsive-encode",
+    "selected": true
+  },
+  {
+    "cleanup": {
+      "after": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "before": {
+        "ActiveState": "inactive",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-e9b055234055402292f4622996af834e.service",
+      "elapsed_seconds": 0.032,
+      "generation": "e9b055234055402292f4622996af834e",
+      "members": [],
+      "started_monotonic_ns": 93910388597182,
+      "total_shutdown_seconds": 0.19,
+      "verified_empty": true
+    },
+    "error": null,
+    "generation": "e9b055234055402292f4622996af834e",
+    "outcome": "passed",
+    "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+    "raw_folder": "<checkout>/.local/harness-runs/e9b055234055402292f4622996af834e",
+    "scenario": "functional",
+    "selected": true
+  }
+]

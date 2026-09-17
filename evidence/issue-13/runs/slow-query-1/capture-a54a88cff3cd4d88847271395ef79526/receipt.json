@@ -1,0 +1,122 @@
+{
+  "accepted": true,
+  "accepted_at": 93937.402659183,
+  "deadline": 93940.296578979,
+  "fault": "none",
+  "finished": 93937.40272717,
+  "generation": "be28fddc6ac049739f79824fbdd7ad51",
+  "path": "<checkout>/.local/harness-runs/be28fddc6ac049739f79824fbdd7ad51/capture-a54a88cff3cd4d88847271395ef79526/image.png",
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-be28fddc6ac049739f79824fbdd7ad51.service",
+    "pid": 499176,
+    "start_ticks": "9393729"
+  },
+  "process_reaped": true,
+  "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+  "returncode": 0,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "inode": "pipe:[2249273]",
+      "monotonic_ns": 93937360569125,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "pipe"
+    },
+    {
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "monotonic_ns": 93937360697098,
+      "reader_installed_before_request": true,
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "monotonic_ns": 93937363969349,
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "first-byte"
+    },
+    {
+      "expected_bytes": 3686400,
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93937364191774,
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "metadata"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "monotonic_ns": 93937365758923,
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "eof"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "local_pipe_fds": [],
+      "monotonic_ns": 93937367328154,
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "sha256": "dc2a5db48d1b9f53ccab3b0225dcfb99968d19636d43fe3e8680635a1d8a6e6a",
+      "stage": "raw-complete"
+    },
+    {
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "monotonic_ns": 93937373600414,
+      "pixel_checks": [],
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "encode"
+    },
+    {
+      "backend": "org.kde.KWin.ScreenShot2",
+      "capture_timestamp_kind": "request-and-completion-monotonic",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "generation": "be28fddc6ac049739f79824fbdd7ad51",
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93937390099360,
+      "path": "<checkout>/.local/harness-runs/be28fddc6ac049739f79824fbdd7ad51/capture-a54a88cff3cd4d88847271395ef79526/image.png",
+      "png_bytes": 4582,
+      "png_sha256": "96b404a853e854e6f9290c2dc344a26104252414eaa83fca87082fff84841272",
+      "request_id": "capture-a54a88cff3cd4d88847271395ef79526",
+      "stage": "success"
+    }
+  ],
+  "seconds": 0.10608020400104579,
+  "server_cleanup": "exact_raw_bytes_and_eof",
+  "started": 93937.296578979
+}

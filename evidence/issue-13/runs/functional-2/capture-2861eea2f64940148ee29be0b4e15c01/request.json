@@ -1,0 +1,14 @@
+{
+  "deadline": 93912.389802911,
+  "fault": "none",
+  "generation": "e9b055234055402292f4622996af834e",
+  "geometry": {
+    "height": 360,
+    "width": 640,
+    "x": 320,
+    "y": 180
+  },
+  "request_id": "capture-2861eea2f64940148ee29be0b4e15c01",
+  "screen": "Virtual-0",
+  "state": 610839778
+}

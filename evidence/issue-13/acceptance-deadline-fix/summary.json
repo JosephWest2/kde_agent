@@ -1,0 +1,125 @@
+{
+  "all_selected_assertions_passed": true,
+  "complete_pngs": 11,
+  "exact_pixel_assertions": 360,
+  "kwin_commit": "ab7df7ccb7c6af20f4b279cd6220f7cd3d2267d7",
+  "metrics": {
+    "aggregate_ready_seconds": {
+      "max": 1.7695308480033418,
+      "median": 1.7695308480033418,
+      "min": 1.7695308480033418,
+      "samples": 1,
+      "values": [
+        1.7695308480033418
+      ]
+    },
+    "cancel_dispatch_seconds": {
+      "max": 0.000578764,
+      "median": 0.000578764,
+      "min": 0.000578764,
+      "samples": 1,
+      "values": [
+        0.000578764
+      ]
+    },
+    "control_response_seconds": {
+      "max": 0.050361713001620956,
+      "median": 0.050361713001620956,
+      "min": 0.050361713001620956,
+      "samples": 1,
+      "values": [
+        0.050361713001620956
+      ]
+    },
+    "failed_capture_through_empty_cgroup_seconds": {
+      "max": 3.221691954997368,
+      "median": 3.221691954997368,
+      "min": 3.221691954997368,
+      "samples": 1,
+      "values": [
+        3.221691954997368
+      ]
+    },
+    "fixture_release_seconds": {
+      "max": 0.002450856,
+      "median": 0.002450856,
+      "min": 0.002450856,
+      "samples": 1,
+      "values": [
+        0.002450856
+      ]
+    },
+    "glib_max_gap_seconds": {
+      "max": 0.005640675997710787,
+      "median": 0.005573627990088426,
+      "min": 0.005515069991815835,
+      "samples": 3,
+      "values": [
+        0.005573627990088426,
+        0.005515069991815835,
+        0.005640675997710787
+      ]
+    },
+    "local_abort_cleanup_seconds": {
+      "max": 0.005281223988276906,
+      "median": 0.0026759999891510233,
+      "min": 7.077599002514035e-05,
+      "samples": 2,
+      "values": [
+        7.077599002514035e-05,
+        0.005281223988276906
+      ]
+    },
+    "shutdown_seconds": {
+      "max": 0.161,
+      "median": 0.16,
+      "min": 0.148,
+      "samples": 3,
+      "values": [
+        0.161,
+        0.16,
+        0.148
+      ]
+    },
+    "successful_capture_seconds": {
+      "max": 0.12122161900333595,
+      "median": 0.11123367000254802,
+      "min": 0.10106150299543515,
+      "samples": 11,
+      "values": [
+        0.11613552799099125,
+        0.12122161900333595,
+        0.12114244600525126,
+        0.10106150299543515,
+        0.11116415199649055,
+        0.1061791989923222,
+        0.11620848800521344,
+        0.11623865900037345,
+        0.11123367000254802,
+        0.1065934729995206,
+        0.1058763059991179
+      ]
+    },
+    "timeout_detection_seconds": {
+      "max": 3.0040501070034225,
+      "median": 3.0040501070034225,
+      "min": 3.0040501070034225,
+      "samples": 1,
+      "values": [
+        3.0040501070034225
+      ]
+    }
+  },
+  "prior_dependency_baseline": "ddacc3b3775bf8a5f1d5640692b4b334d498307b",
+  "scope": "M1 feasibility, not production support",
+  "selected_runs": 3,
+  "server_fd_observation": "PermissionError; every unconfirmed aborted capture stops its private session",
+  "source_sha256": {
+    "tools/capture_codec.py": "57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb",
+    "tools/capture_probe.py": "3e6a2dc2b1d80684f2716e77d7d9b2168faacac2c5a0a2037aeee2ca9307ac45",
+    "tools/kdotool_probe.py": "0906158d417e02b31cfe993a588a476050238aea615201464959f44b711542a4",
+    "tools/libei_binding.py": "19d5268e355935840c06d42524c022e3cfb3805a669c234e75baf70339ee88c8",
+    "tools/libei_probe.py": "af4183a1a6f65e54fea282a920f8ca6c7f787000773fe0123a7d210bc88b6fb0",
+    "tools/private_harness.py": "a1573bd1b6d06ef4e7623a9341fdc37d920b5da4cbef0bc3710f215e6c9cd3a5"
+  }
+}

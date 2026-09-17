@@ -1,0 +1,91 @@
+{
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "capture": 3,
+    "failed_session_stop": 15,
+    "fixture_release": 0.5,
+    "local_cleanup": 1
+  },
+  "captures": [
+    {
+      "abort_started": 93923.101029313,
+      "accepted": false,
+      "cleanup_seconds": 0.005118597007822245,
+      "deadline": 93923.100238722,
+      "error": "capture_timeout",
+      "fault": "stall-pipe",
+      "finished": 93923.106154272,
+      "generation": "b5c7061260d142109cde82785ff0711d",
+      "local_cleanup": true,
+      "png_published": false,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-b5c7061260d142109cde82785ff0711d.service",
+        "pid": 498657,
+        "start_ticks": "9392010"
+      },
+      "process_reaped": true,
+      "request_id": "capture-9490adbf0ec04565af5bb15faa239990",
+      "returncode": -9,
+      "rows": [
+        {
+          "capacity": 65536,
+          "dbus_python": "1.4.0",
+          "generation": "b5c7061260d142109cde82785ff0711d",
+          "inode": "pipe:[2246964]",
+          "monotonic_ns": 93920167733989,
+          "pillow": "12.3.0",
+          "python": "3.14.7",
+          "request_id": "capture-9490adbf0ec04565af5bb15faa239990",
+          "stage": "pipe"
+        },
+        {
+          "generation": "b5c7061260d142109cde82785ff0711d",
+          "monotonic_ns": 93920167860612,
+          "reader_installed_before_request": true,
+          "request_id": "capture-9490adbf0ec04565af5bb15faa239990",
+          "screen": "Virtual-0",
+          "stage": "requested"
+        },
+        {
+          "generation": "b5c7061260d142109cde82785ff0711d",
+          "monotonic_ns": 93920170901252,
+          "request_id": "capture-9490adbf0ec04565af5bb15faa239990",
+          "stage": "first-byte"
+        },
+        {
+          "bytes": 4096,
+          "capacity": 65536,
+          "generation": "b5c7061260d142109cde82785ff0711d",
+          "inode": "pipe:[2246964]",
+          "monotonic_ns": 93920170918664,
+          "request_id": "capture-9490adbf0ec04565af5bb15faa239990",
+          "stage": "partial"
+        }
+      ],
+      "server_cleanup": "unconfirmed",
+      "server_fd_observation": {
+        "observable": false,
+        "reason": "PermissionError"
+      },
+      "session_stop_required": true,
+      "started": 93920.100238722
+    }
+  ],
+  "checks": [],
+  "codec_sha256": "57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb",
+  "error": {
+    "code": "capture_cleanup_unconfirmed",
+    "message": "Owned private desktop must stop after unconfirmed server cleanup"
+  },
+  "final_held": [],
+  "generation": "b5c7061260d142109cde82785ff0711d",
+  "heartbeat_max_seconds": 0.005595759008429013,
+  "input_uncertain": false,
+  "interface_version": 5,
+  "kwin_image_header_sha256": "886f0ec7ab8bd1190e8a051df0efa13f8fd9646b86aa18b02f9dc495918be94d",
+  "outcome": "failed",
+  "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+  "scenario": "stall-pipe",
+  "scope": "M1 feasibility, not production support",
+  "session_unavailable_ns": 93923106554170
+}

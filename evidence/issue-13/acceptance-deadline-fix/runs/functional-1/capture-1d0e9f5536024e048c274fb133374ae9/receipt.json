@@ -1,0 +1,807 @@
+{
+  "accepted": true,
+  "accepted_at": 94406.888021262,
+  "deadline": 94409.781842063,
+  "fault": "none",
+  "finished": 94406.888024539,
+  "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+  "path": "<checkout>/.local/harness-runs/bbc74cf47e9a47c985a2491eece0e4fd/capture-1d0e9f5536024e048c274fb133374ae9/image.png",
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-bbc74cf47e9a47c985a2491eece0e4fd.service",
+    "pid": 501900,
+    "start_ticks": "9440678"
+  },
+  "process_reaped": true,
+  "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+  "returncode": 0,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "inode": "pipe:[2268269]",
+      "monotonic_ns": 94406847875357,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "pipe"
+    },
+    {
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "monotonic_ns": 94406848005202,
+      "reader_installed_before_request": true,
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "monotonic_ns": 94406850297009,
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "first-byte"
+    },
+    {
+      "expected_bytes": 3686400,
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 94406850839481,
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "metadata"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "monotonic_ns": 94406852012210,
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "eof"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "local_pipe_fds": [],
+      "monotonic_ns": 94406853580725,
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "sha256": "dee2cb0463a58a4f650bb34bcac6a17e9e5a0669c8fcb664fdad183b606b42bf",
+      "stage": "raw-complete"
+    },
+    {
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "monotonic_ns": 94406859897511,
+      "pixel_checks": [
+        {
+          "expected": [
+            48,
+            192,
+            128,
+            255
+          ],
+          "kind": "quadrant",
+          "matched": true,
+          "observed": [
+            48,
+            192,
+            128,
+            255
+          ],
+          "quadrant": 0,
+          "x": 480,
+          "y": 270
+        },
+        {
+          "expected": [
+            144,
+            64,
+            192,
+            255
+          ],
+          "kind": "quadrant",
+          "matched": true,
+          "observed": [
+            144,
+            64,
+            192,
+            255
+          ],
+          "quadrant": 1,
+          "x": 800,
+          "y": 270
+        },
+        {
+          "expected": [
+            32,
+            64,
+            128,
+            255
+          ],
+          "kind": "quadrant",
+          "matched": true,
+          "observed": [
+            32,
+            64,
+            128,
+            255
+          ],
+          "quadrant": 2,
+          "x": 480,
+          "y": 450
+        },
+        {
+          "expected": [
+            224,
+            96,
+            32,
+            255
+          ],
+          "kind": "quadrant",
+          "matched": true,
+          "observed": [
+            224,
+            96,
+            32,
+            255
+          ],
+          "quadrant": 3,
+          "x": 800,
+          "y": 450
+        },
+        {
+          "bit": 0,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 340,
+          "y": 212
+        },
+        {
+          "bit": 1,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 348,
+          "y": 212
+        },
+        {
+          "bit": 2,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 356,
+          "y": 212
+        },
+        {
+          "bit": 3,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 364,
+          "y": 212
+        },
+        {
+          "bit": 4,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 372,
+          "y": 212
+        },
+        {
+          "bit": 5,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 380,
+          "y": 212
+        },
+        {
+          "bit": 6,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 388,
+          "y": 212
+        },
+        {
+          "bit": 7,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 396,
+          "y": 212
+        },
+        {
+          "bit": 8,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 404,
+          "y": 212
+        },
+        {
+          "bit": 9,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 412,
+          "y": 212
+        },
+        {
+          "bit": 10,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 420,
+          "y": 212
+        },
+        {
+          "bit": 11,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 428,
+          "y": 212
+        },
+        {
+          "bit": 12,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 436,
+          "y": 212
+        },
+        {
+          "bit": 13,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 444,
+          "y": 212
+        },
+        {
+          "bit": 14,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 452,
+          "y": 212
+        },
+        {
+          "bit": 15,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 460,
+          "y": 212
+        },
+        {
+          "bit": 16,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 468,
+          "y": 212
+        },
+        {
+          "bit": 17,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 476,
+          "y": 212
+        },
+        {
+          "bit": 18,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 484,
+          "y": 212
+        },
+        {
+          "bit": 19,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 492,
+          "y": 212
+        },
+        {
+          "bit": 20,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 500,
+          "y": 212
+        },
+        {
+          "bit": 21,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 508,
+          "y": 212
+        },
+        {
+          "bit": 22,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 516,
+          "y": 212
+        },
+        {
+          "bit": 23,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 524,
+          "y": 212
+        },
+        {
+          "bit": 24,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 532,
+          "y": 212
+        },
+        {
+          "bit": 25,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 540,
+          "y": 212
+        },
+        {
+          "bit": 26,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 548,
+          "y": 212
+        },
+        {
+          "bit": 27,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 556,
+          "y": 212
+        },
+        {
+          "bit": 28,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 564,
+          "y": 212
+        },
+        {
+          "bit": 29,
+          "expected": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "x": 572,
+          "y": 212
+        },
+        {
+          "bit": 30,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 580,
+          "y": 212
+        },
+        {
+          "bit": 31,
+          "expected": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "kind": "bit",
+          "matched": true,
+          "observed": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "x": 588,
+          "y": 212
+        }
+      ],
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "encode"
+    },
+    {
+      "backend": "org.kde.KWin.ScreenShot2",
+      "capture_timestamp_kind": "request-and-completion-monotonic",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "generation": "bbc74cf47e9a47c985a2491eece0e4fd",
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 94406876438424,
+      "path": "<checkout>/.local/harness-runs/bbc74cf47e9a47c985a2491eece0e4fd/capture-1d0e9f5536024e048c274fb133374ae9/image.png",
+      "png_bytes": 4612,
+      "png_sha256": "0562237bd1a602c8dce085a084d079347a0d2b822315106697560d84a55b57dd",
+      "request_id": "capture-1d0e9f5536024e048c274fb133374ae9",
+      "stage": "success"
+    }
+  ],
+  "seconds": 0.1061791989923222,
+  "server_cleanup": "exact_raw_bytes_and_eof",
+  "started": 94406.781842063
+}

@@ -1,0 +1,15 @@
+{
+  "packages": [
+    "kwin 6.7.5-1",
+    "libei 1.6.0-1",
+    "python 3.14.7-1",
+    "python-gobject 3.56.3-1",
+    "python-dbus 1.4.0-2",
+    "python-pillow 12.3.0-1",
+    "qt6-base 6.11.2-3",
+    "systemd 261.3-1",
+    "dbus 1.16.2-1",
+    "glib2 2.88.3-1"
+  ],
+  "basis": "same target as #9-#12; exact source/native hashes in summary and linked prior evidence"
+}

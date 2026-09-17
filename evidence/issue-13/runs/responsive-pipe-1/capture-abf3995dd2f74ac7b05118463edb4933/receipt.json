@@ -1,0 +1,85 @@
+{
+  "abort_started": 93931.316972081,
+  "accepted": false,
+  "cleanup_seconds": 0.005343563010683283,
+  "deadline": 93931.316531878,
+  "error": "capture_timeout",
+  "fault": "stall-pipe",
+  "finished": 93931.32232816,
+  "generation": "4f91e8b9a1174d3dac87281cea64816f",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4f91e8b9a1174d3dac87281cea64816f.service",
+    "pid": 498903,
+    "start_ticks": "9392831"
+  },
+  "process_reaped": true,
+  "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+  "returncode": -9,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "inode": "pipe:[2246290]",
+      "monotonic_ns": 93928393259609,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "stage": "pipe"
+    },
+    {
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "monotonic_ns": 93928393397874,
+      "reader_installed_before_request": true,
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "expected_bytes": 3686400,
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93928395948400,
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "stage": "metadata"
+    },
+    {
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "monotonic_ns": 93928395995470,
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "stage": "first-byte"
+    },
+    {
+      "bytes": 4096,
+      "capacity": 65536,
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "inode": "pipe:[2246290]",
+      "monotonic_ns": 93928396008546,
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "stage": "partial"
+    }
+  ],
+  "server_cleanup": "unconfirmed",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": true,
+  "started": 93928.316531878
+}

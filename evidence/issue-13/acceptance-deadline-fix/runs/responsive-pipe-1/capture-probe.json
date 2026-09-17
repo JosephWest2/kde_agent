@@ -1,0 +1,194 @@
+{
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "capture": 3,
+    "failed_session_stop": 15,
+    "fixture_release": 0.5,
+    "local_cleanup": 1
+  },
+  "captures": [
+    {
+      "abort_started": 94412.5881283,
+      "accepted": false,
+      "cleanup_seconds": 0.005281223988276906,
+      "deadline": 94412.584078193,
+      "error": "capture_timeout",
+      "fault": "stall-pipe",
+      "finished": 94412.593421752,
+      "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+      "local_cleanup": true,
+      "png_published": false,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-66a7f4c8f5ea4253a7db928dc03c3fe6.service",
+        "pid": 502075,
+        "start_ticks": "9440958"
+      },
+      "process_reaped": true,
+      "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+      "returncode": -9,
+      "rows": [
+        {
+          "capacity": 65536,
+          "dbus_python": "1.4.0",
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "inode": "pipe:[2267438]",
+          "monotonic_ns": 94409669701879,
+          "pillow": "12.3.0",
+          "python": "3.14.7",
+          "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+          "stage": "pipe"
+        },
+        {
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "monotonic_ns": 94409669829189,
+          "reader_installed_before_request": true,
+          "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+          "screen": "Virtual-0",
+          "stage": "requested"
+        },
+        {
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "monotonic_ns": 94409672584651,
+          "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+          "stage": "first-byte"
+        },
+        {
+          "bytes": 4096,
+          "capacity": 65536,
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "inode": "pipe:[2267438]",
+          "monotonic_ns": 94409672610551,
+          "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+          "stage": "partial"
+        }
+      ],
+      "server_cleanup": "unconfirmed",
+      "server_fd_observation": {
+        "observable": false,
+        "reason": "PermissionError"
+      },
+      "session_stop_required": true,
+      "started": 94409.584078193
+    }
+  ],
+  "checks": [
+    {
+      "action": {
+        "cancel_handled_ns": 94409755414311,
+        "cancel_reason": "client_cancel",
+        "cancel_requested_ns": 94409755029979,
+        "deadline": 94411.579076364,
+        "emissions": [
+          {
+            "code": 42,
+            "device": 94815394628464,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+            "monotonic_ns": 94409579163448,
+            "press": true
+          },
+          {
+            "code": 17,
+            "device": 94815394628464,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+            "monotonic_ns": 94409579215517,
+            "press": true
+          },
+          {
+            "code": 17,
+            "device": 94815394628464,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+            "monotonic_ns": 94409755477771,
+            "press": false
+          },
+          {
+            "code": 42,
+            "device": 94815394628464,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+            "monotonic_ns": 94409755558985,
+            "press": false
+          }
+        ],
+        "finished_ns": 94409755608743,
+        "fixture_from": 73,
+        "id": 1,
+        "names": [
+          "SHIFT",
+          "W"
+        ],
+        "started_ns": 94409579075634
+      },
+      "capture_stage": "partial",
+      "capture_still_running": true,
+      "dispatch_seconds": 0.000578764,
+      "fixture_release_seconds": 0.002450856,
+      "kind": "cancel-during-capture"
+    },
+    {
+      "capture_still_running": true,
+      "kind": "control-during-capture",
+      "seconds": 0.050361713001620956,
+      "status": {
+        "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+        "ok": true,
+        "output": {
+          "count": 1,
+          "event": "output",
+          "fixture_pid": 502053,
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "height": 720,
+          "monotonic_ns": 94409389017209,
+          "scale": 1,
+          "seq": 68,
+          "transform": 0,
+          "width": 1280
+        },
+        "presented": {
+          "checksum": 1507437765,
+          "clock_id": 1,
+          "control_id": 0,
+          "event": "presented",
+          "fixture_pid": 502053,
+          "flags": 7,
+          "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+          "monotonic_ns": 94409779407571,
+          "output_matched": false,
+          "presentation_ns": 779556942,
+          "presentation_seconds": 94409,
+          "presentation_seq": 0,
+          "refresh_ns": 16666666,
+          "revision": 5,
+          "seq": 87,
+          "sole_output_name": "Virtual-0",
+          "source": "input",
+          "state": 4,
+          "sync_output_received": false
+        },
+        "request_id": "11f85f7c558248cc9c28761aa058b744"
+      }
+    }
+  ],
+  "codec_sha256": "57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb",
+  "error": {
+    "code": "capture_cleanup_unconfirmed",
+    "message": "Owned private desktop must stop after unconfirmed server cleanup"
+  },
+  "final_held": [],
+  "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+  "heartbeat_max_seconds": 0.005640675997710787,
+  "input_uncertain": false,
+  "interface_version": 5,
+  "kwin_image_header_sha256": "886f0ec7ab8bd1190e8a051df0efa13f8fd9646b86aa18b02f9dc495918be94d",
+  "outcome": "failed",
+  "probe_sha256": "3e6a2dc2b1d80684f2716e77d7d9b2168faacac2c5a0a2037aeee2ca9307ac45",
+  "scenario": "responsive-pipe",
+  "scope": "M1 feasibility, not production support",
+  "session_unavailable_ns": 94412594082895
+}

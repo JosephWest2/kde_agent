@@ -1,0 +1,48 @@
+{
+  "abort_started": 93918.989842775,
+  "accepted": false,
+  "cleanup_seconds": 0.005265575993689708,
+  "deadline": 93918.987684818,
+  "error": "capture_timeout",
+  "fault": "stall-reply",
+  "finished": 93918.995117875,
+  "generation": "ad5a7d36a3aa4f08b84173fec010b1b3",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-ad5a7d36a3aa4f08b84173fec010b1b3.service",
+    "pid": 498535,
+    "start_ticks": "9391598"
+  },
+  "process_reaped": true,
+  "request_id": "capture-3e8fc90d51874072a14c461e09e4a90b",
+  "returncode": -9,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "ad5a7d36a3aa4f08b84173fec010b1b3",
+      "inode": "pipe:[2243556]",
+      "monotonic_ns": 93916069135067,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-3e8fc90d51874072a14c461e09e4a90b",
+      "stage": "pipe"
+    },
+    {
+      "generation": "ad5a7d36a3aa4f08b84173fec010b1b3",
+      "monotonic_ns": 93916069264716,
+      "reader_installed_before_request": true,
+      "request_id": "capture-3e8fc90d51874072a14c461e09e4a90b",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    }
+  ],
+  "server_cleanup": "unconfirmed",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": true,
+  "started": 93915.987684818
+}

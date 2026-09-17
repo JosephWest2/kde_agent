@@ -1,0 +1,5 @@
+{
+  "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-ab42938253eb47f99d9264af30895295.service",
+  "generation": "ab42938253eb47f99d9264af30895295",
+  "members": []
+}

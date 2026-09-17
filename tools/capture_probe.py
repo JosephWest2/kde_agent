@@ -297,9 +297,16 @@ class Capture:
                 if code == 0 and success and success['path'] == str(self.folder / 'image.png'):
                     if not (self.folder / 'image.png').is_file():
                         raise Failure('capture_publication', 'Completed PNG absent')
-                    self.result.update(accepted=True, accepted_at=now, seconds=now - self.started,
-                                       server_cleanup='exact_raw_bytes_and_eof', path=success['path'])
-                    self.finish()
+                    # Process/publication checks can consume the remaining budget.
+                    # Sample at acceptance, never reuse the pre-poll/pre-stat time.
+                    accepted_at = time.monotonic()
+                    if accepted_at >= self.deadline:
+                        self.abort('capture_timeout')
+                    else:
+                        self.result.update(accepted=True, accepted_at=accepted_at,
+                                           seconds=accepted_at - self.started,
+                                           server_cleanup='exact_raw_bytes_and_eof', path=success['path'])
+                        self.finish()
                 else:
                     self.abort((self.stage('error') or {}).get('code', 'capture_child_failed'))
             if self.aborting:

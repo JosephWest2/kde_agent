@@ -1,0 +1,63 @@
+{
+  "abort_started": 94412.5881283,
+  "accepted": false,
+  "cleanup_seconds": 0.005281223988276906,
+  "deadline": 94412.584078193,
+  "error": "capture_timeout",
+  "fault": "stall-pipe",
+  "finished": 94412.593421752,
+  "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-66a7f4c8f5ea4253a7db928dc03c3fe6.service",
+    "pid": 502075,
+    "start_ticks": "9440958"
+  },
+  "process_reaped": true,
+  "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+  "returncode": -9,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+      "inode": "pipe:[2267438]",
+      "monotonic_ns": 94409669701879,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+      "stage": "pipe"
+    },
+    {
+      "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+      "monotonic_ns": 94409669829189,
+      "reader_installed_before_request": true,
+      "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+      "monotonic_ns": 94409672584651,
+      "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+      "stage": "first-byte"
+    },
+    {
+      "bytes": 4096,
+      "capacity": 65536,
+      "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+      "inode": "pipe:[2267438]",
+      "monotonic_ns": 94409672610551,
+      "request_id": "capture-82eec7a20836477ca04443120d51ae63",
+      "stage": "partial"
+    }
+  ],
+  "server_cleanup": "unconfirmed",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": true,
+  "started": 94409.584078193
+}

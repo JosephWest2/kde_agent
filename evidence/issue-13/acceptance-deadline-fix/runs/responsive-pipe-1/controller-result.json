@@ -1,0 +1,38 @@
+{
+  "ok": false,
+  "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+  "manifest": "<checkout>/.local/harness-runs/66a7f4c8f5ea4253a7db928dc03c3fe6/manifest.json",
+  "outcome": "failed",
+  "cleanup": {
+    "generation": "66a7f4c8f5ea4253a7db928dc03c3fe6",
+    "started_monotonic_ns": 94412758770148,
+    "verified_empty": true,
+    "before": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "Result": "exit-code",
+      "ExecMainStatus": "1",
+      "ControlGroup": ""
+    },
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-66a7f4c8f5ea4253a7db928dc03c3fe6.service",
+    "members": [],
+    "after": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "Result": "exit-code",
+      "ExecMainStatus": "1",
+      "ControlGroup": ""
+    },
+    "elapsed_seconds": 0.047,
+    "total_shutdown_seconds": 0.148
+  },
+  "elapsed_seconds": 3.972,
+  "error": {
+    "code": "probe_failed",
+    "message": "Probe exited 1"
+  }
+}

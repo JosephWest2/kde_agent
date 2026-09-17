@@ -32,6 +32,20 @@ acknowledgment and twenty production workflow runs remain separate requirements.
 | Input (#12) | [Lifecycle evidence](../evidence/issue-12/README.md), [ownership correction](../evidence/issue-12/fd-ownership-fix/README.md), [commands](LIBEI_PROBE.md) | Keep the audited 24-symbol ctypes surface and one GLib owner. Resumed-device gating, explicit release frames, bounded cancellation and uncertainty/reset remain mandatory. |
 | Capture/integration (#13) | [Probe commands and contract](CAPTURE_PROBE.md), [capture evidence](../evidence/issue-13/README.md) | Keep one killable child per request owning bus, pipe and image work. Actual raw pixels, EOF and timely complete PNG publication passed; stopping the session after unconfirmed aborted-server cleanup is mandatory. |
 
+## Acceptance deadline correction from fresh review
+
+The [separate correction evidence](../evidence/issue-13/acceptance-deadline-fix/README.md)
+fixes a stale acceptance timestamp taken before process/publication checks. The
+supervisor now samples the clock after those checks and rejects expiry immediately
+at acceptance. Two reproducing regressions and all **60 tests** pass. Three
+focused corrected-source runs produce eleven complete PNGs, with maximum actual
+acceptance 121.222ms, local cleanup 5.282ms, GLib gap 5.641ms and observed service
+stop 161ms. Slow-capture cancellation dispatch is 0.579ms and fixture release
+2.451ms. Timeout polling detection is 3.004051s; the strict success deadline stays
+3s. The aggregate ten-capture/input sequence is 1.770s. The following original
+matrix/tables remain historical pre-correction measurements with their original
+source hashes; they were not silently replaced or attributed to the corrected code.
+
 ## Timing evidence and bounds
 
 Observed historical maxima below belong to their recorded source versions and

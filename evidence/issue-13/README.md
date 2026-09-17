@@ -15,7 +15,17 @@ both the individual capture process and failed-private-session policy before
 implementation. No host desktop operation, viewer, XWayland, global installation,
 excluded tool, native library patch or additional compositor plugin was used.
 
-## Selected runs and provenance
+## Fresh-review correction
+
+The subsequent [acceptance-deadline correction](acceptance-deadline-fix/README.md)
+fixes a stale timestamp sampled before publication checking. It contains two
+reproducing regressions, all **60 passing tests**, and three focused corrected-source
+private runs with eleven PNGs and observed cleanup. The eleven-run matrix and
+58-test log below remain **historical pre-correction evidence**, with unchanged
+raw files and hashes. The corrected probe hash and actual acceptance timings are
+recorded separately; do not attribute the older samples to that new source.
+
+## Historical selected runs and provenance
 
 [summary.json](summary.json) includes every selected timing sample and final
 source hashes. [runs.json](runs.json) indexes complete checked-in selected raw
@@ -27,11 +37,11 @@ selected desktop attempts, their actual source hashes, outcomes and cleanup.
 All observed cgroups were empty after cleanup. Expected capture failures remain
 failed operations and failed harness runs; the containment assertions pass.
 
-The final selected source is `tools/capture_probe.py` SHA256
+The historical eleven-run selected source is `tools/capture_probe.py` SHA256
 `299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404`,
 with codec SHA256
 `57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb`.
-Every selected capture report matches those hashes; harness/input/query hashes
+Every historical selected capture report matches those hashes; harness/input/query hashes
 are recorded in the summary. Input code is unchanged from merged #12 `ddacc3b`,
 including the audited native binary gate and immediate negative-setup FD close.
 
@@ -46,10 +56,11 @@ including the audited native binary gate and immediate negative-setup FD close.
 | `responsive-pipe`, `responsive-encode` | 2 | Real Shift+W acknowledgment, stalled capture, separate cancellation process, actual releases and independent status response before capture finishes; then expected deadline/session stop. |
 | `slow-query` | 1 | Existing finite 750ms KWin query stall, 500ms query deadline cancellation while child cleans up, actual release after KWin resumes, then successful capture. |
 
-All selected generations ran sequentially. Normal capture latency includes child
+All selected generations ran sequentially. Historically reported capture latency includes child
 startup, actual request, concurrent drain, metadata/codec checks, PNG encoding,
-close/reopen/full decode, publication, child exit/reap and timely parent
-acceptance. Ten captures in a functional generation are distinct requests with
+close/reopen/full decode, publication, child exit/reap and parent
+acceptance observation. The correction above fixes the final timestamp sampling
+point; ordinary samples here did not exercise that deadline race. Ten captures in a functional generation are distinct requests with
 unique paths, even where stable fixture state gives identical PNG hashes.
 
 ## Metadata, freshness and complete image proof
@@ -100,8 +111,9 @@ viewer.
 Retain **3s capture**, including timely parent acceptance of the fully published
 PNG; **1s separate local abort cleanup**; and **15s complete failed-session
 shutdown**. A full-timeout failure may therefore take up to 19s through session
-cleanup, with each phase clamped to enclosing harness budgets. Success is never
-accepted after the 3s deadline. Detection is observed on a 5ms timer and includes
+cleanup, with each phase clamped to enclosing harness budgets. The corrected implementation samples time after final publication checks and
+never accepts success at or after the 3s deadline; see its separate regression
+and real-run evidence above. Detection is observed on a 5ms timer and includes
 scheduler variation; it is not a claim of hard real-time interruption at exactly
 3.000000 seconds. Failed requests and completed cleanup have distinct timestamps.
 
@@ -156,7 +168,8 @@ preceding dependency/window/input/harness tests.
 The first oversized-status test exposed repeated parsing of an over-limit pipe
 after abort had already started, preventing final reap/cleanup. The
 [original failing log](development-failure/status-cap-test.log) is retained.
-The supervisor now skips further status parsing once abort starts, kills/reaps
+The supervisor skips further status parsing once abort starts, kills/reaps
 and removes partial output. All transport tests pass; the full selected desktop
-matrix was rerun against that final source. Earlier passing desktop runs remain
+matrix was rerun against the then-current source, before the later acceptance
+timestamp correction described above. Earlier passing desktop runs remain
 indexed as development attempts, rather than silently attributed to final code.

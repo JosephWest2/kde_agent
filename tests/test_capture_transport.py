@@ -221,6 +221,55 @@ report('success', path=str(folder / 'image.png'))
         self.assertFalse((value.folder / "image.png").exists())
         self.assertFalse((value.folder / "image.partial").exists())
 
+    def test_publication_check_crossing_deadline_cannot_accept_stale_time(self):
+        value = self.child("""
+(folder / 'image.png').write_bytes(b'controlled-test-output')
+report('success', path=str(folder / 'image.png'))
+""")
+        value.process.wait(timeout=1)
+        original_is_file = Path.is_file
+        checks = []
+
+        def delayed_publication(path):
+            if path == value.folder / "image.png":
+                time.sleep(.05)
+                checks.append(time.monotonic())
+            return original_is_file(path)
+
+        value.deadline = time.monotonic() + .02
+        with patch.object(Path, "is_file", delayed_publication):
+            self.finish(value)
+        self.assertEqual(len(checks), 1)
+        self.assertGreater(checks[0], value.deadline)
+        self.assertFalse(value.result["accepted"])
+        self.assertNotIn("accepted_at", value.result)
+        self.assertEqual(value.result["error"], "capture_timeout")
+        self.assertTrue(value.result["session_stop_required"])
+        self.assertFalse((value.folder / "image.png").exists())
+
+    def test_acceptance_timestamp_follows_process_and_publication_checks(self):
+        value = self.child("""
+(folder / 'image.png').write_bytes(b'controlled-test-output')
+report('success', path=str(folder / 'image.png'))
+""")
+        value.process.wait(timeout=1)
+        original_is_file = Path.is_file
+        checks = []
+
+        def measured_publication(path):
+            answer = original_is_file(path)
+            if path == value.folder / "image.png":
+                checks.append(time.monotonic())
+            return answer
+
+        with patch.object(Path, "is_file", measured_publication):
+            self.finish(value)
+        self.assertTrue(value.result["accepted"])
+        self.assertEqual(len(checks), 1)
+        self.assertGreaterEqual(value.result["accepted_at"], checks[0])
+        self.assertLess(value.result["accepted_at"], value.deadline)
+        self.assertEqual(value.result["seconds"], value.result["accepted_at"] - value.started)
+
     def test_abort_kills_and_reaps_running_child(self):
         value = self.child("time.sleep(30)\n")
         (value.folder / "image.partial").write_bytes(b"partial")

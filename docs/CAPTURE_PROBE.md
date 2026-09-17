@@ -130,6 +130,20 @@ unconfirmed cleanup, mark the session unavailable, reject more captures and
 stop the owned service. Only its observed empty cgroup establishes full recovery.
 Input cancellation retains its independent dispatch bound throughout.
 
+## Acceptance deadline correction from fresh review
+
+The [separate correction evidence](../evidence/issue-13/acceptance-deadline-fix/README.md)
+fixes a stale acceptance timestamp taken before process/publication checks. The
+supervisor now samples the clock after those checks and rejects expiry immediately
+at acceptance. Two reproducing regressions and all **60 tests** pass. Three
+focused corrected-source runs produce eleven complete PNGs, with maximum actual
+acceptance 121.222ms, local cleanup 5.282ms, GLib gap 5.641ms and observed service
+stop 161ms. Slow-capture cancellation dispatch is 0.579ms and fixture release
+2.451ms. Timeout polling detection is 3.004051s; the strict success deadline stays
+3s. The aggregate ten-capture/input sequence is 1.770s. The following original
+matrix/tables remain historical pre-correction measurements with their original
+source hashes; they were not silently replaced or attributed to the corrected code.
+
 ## Recorded evidence and measurements
 
 The [#13 evidence](../evidence/issue-13/README.md),

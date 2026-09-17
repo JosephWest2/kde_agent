@@ -89,13 +89,30 @@ explicitly None (void); connection state comes from consumed events.
 | Object or FD | Ownership rule |
 | --- | --- |
 | `ei_new_sender` | One owned context, released with ei_unref. |
-| D-Bus UnixFd | `.take()` once transfers ownership to Python. Set O_NONBLOCK and non-inheritable before setup. Close locally only if preparation fails before transfer. |
-| `ei_setup_backend_fd` | Consumes the socket even on its supported implementation's error path. Its initial internal dispatch can block without O_NONBLOCK. Context teardown closes it; Python must not close it again. |
+| D-Bus UnixFd | `.take()` once transfers ownership to Python. Set O_NONBLOCK and non-inheritable before setup. Python closes it if preparation fails or the audited setup returns negative. |
+| `ei_setup_backend_fd` | Success transfers ownership to libei; Python must not close it again. In the pinned 1.6.0 implementation, a negative initial epoll-add result leaves the supplied FD caller-owned. Python closes it immediately before logging/context destruction/any FD reuse. Its initial success-path dispatch can block without O_NONBLOCK. |
 | `ei_get_fd` | Borrowed poll FD; remove GLib sources before context destruction/FD reuse. Terminal DISCONNECT removes its watch immediately. |
 | `ei_get_event` | Owned event, always unrefed in finally, including unknown event types. |
 | Event seat/device getters | Borrowed objects; explicit ref before retention beyond the event, one unref on removal or disposal. |
 | Originating private D-Bus connection | Retained throughout EIS ownership; KWin destroys its associated contexts when that caller disappears. |
 | Retained fault-plugin InputDevice | Borrowed QPointer only; the plugin never deletes/owns the compositor device. |
+
+The failed-setup rule is source- and binary-specific. In libei 1.6.0,
+`ei_set_socket` returns negative only when `sink_add_source` fails its initial
+`epoll_ctl(ADD)`; it never installs that source in the context. The source defaults
+to close-on-remove, and neither failure cleanup nor later context unref removes
+it, so the FD remains open. The caller closes that known-owned descriptor before
+any reuse. It never unrefs first and then probes/closes the old integer.
+
+To avoid applying this behavior to a changed implementation, `load()` checks
+x86_64 and the recorded installed library SHA256 before loading the explicit
+resolved `/usr/lib/libei.so.1` path. Unknown binaries fail before obtaining an EIS
+FD; they require a fresh ABI/ownership audit and an explicit tested-hash update.
+The regression forces actual EPERM with a regular FD, verifies immediate close,
+reuses its integer before context disposal, and verifies the reused/unrelated FDs
+survive. Eight iterations preserve the FD count; a nonblocking socketpair verifies
+successful setup still transfers ownership exactly once. These finite native
+checks need no compositor. See the [review-fix evidence](../evidence/issue-12/fd-ownership-fix/README.md).
 
 The capability API is variadic. Only its fixed pointer argument is declared in
 ctypes; capabilities and zero sentinel are explicitly promoted c_int values.

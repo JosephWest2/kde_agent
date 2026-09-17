@@ -2,7 +2,10 @@
 
 **Pass for the M1 feasibility scope:** all eight scenarios passed in three fresh
 private desktops each. Every service cgroup was observed empty after cleanup.
-The compiler audit and 31 unit/regression tests passed. This is not the eventual
+The original compiler audit and 31 unit/regression tests passed. Fresh PR review
+then found a failed-setup FD ownership error; the [scoped correction and new
+35-test/three-run evidence](fd-ownership-fix/README.md) are recorded separately.
+The original 24-run files and hashes remain unchanged. This is not the eventual
 20-run production workflow or an application support claim.
 
 Reproduce using [docs/LIBEI_PROBE.md](../../docs/LIBEI_PROBE.md). No host desktop,
@@ -88,7 +91,7 @@ summary.json; [#9 baseline](../issue-9/README.md), run manifests and plugin rece
 record resolved dependencies. Native bindings remain the distribution packages.
 
 - [KWin v6.7.5](https://github.com/KDE/kwin/tree/ab7df7ccb7c6af20f4b279cd6220f7cd3d2267d7), commit `ab7df7ccb7c6af20f4b279cd6220f7cd3d2267d7`: `src/plugins/eis/eisbackend.cpp` supplies private connect/disconnect; `eisdevice.cpp:88–91` supplies pause/resume. Only creation enables EIS devices in stock source. The touchpad toggle excludes them. `src/backends/libinput/device.h:78` and `device.cpp:476` expose enabled only for libinput devices; EIS has no such D-Bus property.
-- [libei 1.6.0](https://gitlab.freedesktop.org/libinput/libei/-/tree/8a46bf3d4b6af7f25a61be53386cf618218114ef), commit `8a46bf3d4b6af7f25a61be53386cf618218114ef`: `libei.c:988–1005` establishes immediate dispatch during FD setup; O_NONBLOCK is required. `util-sources.c:91–112` establishes FD ownership including setup failure. `libei-device.c:306–311` is the actual PAUSED-event path, unlike initial ADDED/internal paused state or removal.
+- [libei 1.6.0](https://gitlab.freedesktop.org/libinput/libei/-/tree/8a46bf3d4b6af7f25a61be53386cf618218114ef), commit `8a46bf3d4b6af7f25a61be53386cf618218114ef`: `libei.c:988–1005` establishes immediate dispatch during FD setup; O_NONBLOCK is required. Correction from fresh review: `util-sources.c:91–112,189–199` leaves the supplied FD open after failed epoll add; the original claim that failure transferred ownership was wrong. The pinned implementation now gets immediate caller-side close on that negative path; successful transfer remains library-owned. `libei-device.c:306–311` is the actual PAUSED-event path, unlike initial ADDED/internal paused state or removal.
 - Installed libei.h SHA256 `8aabc649cbf009bec552e45d855ec8be28ef416e8f62450ab453c64a2fd9c847` equals the exact release's source header. Loaded `/usr/lib/libei.so.1.6.0` SHA256 is recorded in audit.json.
 - [Plugin build receipt](plugin-build-receipt.json): local ECM 6.26.0 archive checksum, exact compiler/link commands, installed KWin headers and library hashes, plugin metadata and resolved native dependencies. Final plugin SHA256 is `451fab0a1f219f7aabb7f81fff84743be9f8847d2a54db73026403b9d99de168`. Embedded IID is exactly `org.kde.kwin.PluginFactoryInterface6.7.5`; EnabledByDefault is false. Rebuild for every compositor release.
 

@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import signal
 import subprocess
 import tempfile
@@ -47,6 +48,11 @@ CONSTANTS = {"EI_EVENT_CONNECT": 1, "EI_EVENT_DISCONNECT": 2,
              "EI_EVENT_DEVICE_PAUSED": 7, "EI_EVENT_DEVICE_RESUMED": 8,
              "EI_DEVICE_CAP_KEYBOARD": 4}
 
+# The negative setup ownership rule below is implementation-specific, not the
+# generic header promise. Reject unreviewed native builds before obtaining an FD.
+SUPPORTED_LIBRARY = Path("/usr/lib/libei.so.1")
+SUPPORTED_LIBRARY_SHA256 = "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501"
+
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -72,7 +78,10 @@ def command(argv, seconds=5):
 
 
 def load():
-    library = C.CDLL("libei.so.1")
+    path = SUPPORTED_LIBRARY.resolve(strict=True)
+    if platform.machine() != "x86_64" or digest(path) != SUPPORTED_LIBRARY_SHA256:
+        raise RuntimeError("Unsupported libei build: re-audit ABI and failed-setup FD ownership before updating the tested library hash")
+    library = C.CDLL(str(path))
     for name, (result, args) in DECLARATIONS.items():
         function = getattr(library, name)
         function.restype = TYPES[result][1]

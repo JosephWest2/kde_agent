@@ -80,8 +80,14 @@ class Input:
             os.close(fd)  # Not transferred until ei_setup_backend_fd is called.
             raise
         result = self.lib.ei_setup_backend_fd(self.context, fd)
-        # FD ownership transferred on both success and failure. ei_unref closes.
-        self.owner.log("setup", epoch=self.epoch, result=result, nonblocking=True)
+        if result < 0:
+            # Audited/pinned libei 1.6.0 only: failed epoll ADD never installs
+            # this source, and close-on-remove never runs. The FD is still ours.
+            # Close immediately, before logging, unref or any possible FD reuse.
+            os.close(fd)
+        # On success ownership transferred; only libei may close that descriptor.
+        self.owner.log("setup", epoch=self.epoch, result=result, nonblocking=True,
+                       fd_ownership="caller_closed_failed_setup" if result < 0 else "libei")
         if result < 0:
             raise Failure("input_setup", f"libei setup errno {-result}")
         self.watch = self.owner.GLib.io_add_watch(self.lib.ei_get_fd(self.context),

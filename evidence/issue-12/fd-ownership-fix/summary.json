@@ -1,0 +1,99 @@
+{
+  "reason": "PR45 P2 failed-setup FD ownership correction",
+  "original_reviewed_commit": "4f42108",
+  "original_24_run_files_preserved": true,
+  "unit_tests": 35,
+  "native_failure": "real regular descriptor forces -EPERM, which stays caller-owned in pinned libei1.6.0",
+  "fixed_failure_iterations": 8,
+  "checks": [
+    "caller closes before setup logging and dispose",
+    "same integer reused via dup2 before dispose stays valid",
+    "unrelated descriptor stays valid",
+    "FD count unchanged after all eight iterations",
+    "real socketpair success transfers ownership exactly once",
+    "unsupported native hash rejected before loading"
+  ],
+  "supported_library": {
+    "path": "/usr/lib/libei.so.1.6.0",
+    "sha256": "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501"
+  },
+  "source_release": {
+    "version": "1.6.0",
+    "commit": "8a46bf3d4b6af7f25a61be53386cf618218114ef",
+    "sha256": {
+      "src/libei-fd.c": "d0a36fb148de7c23fc1546faa1743cf4de0c7ed36573ca6b5347a005ddd2c14e",
+      "src/libei.c": "e3195a3ca0e0617b7942ab9dc1992a0744fa63808103ea7b1cf425a7c3d4ceb4",
+      "src/util-sources.c": "32a85ea1479e7b536e887e5e897265c9c5d22d3342a16edb39f4f1b3b2417be1"
+    }
+  },
+  "code_sha256": {
+    "tools/libei_binding.py": "19d5268e355935840c06d42524c022e3cfb3805a669c234e75baf70339ee88c8",
+    "tools/libei_probe.py": "af4183a1a6f65e54fea282a920f8ca6c7f787000773fe0123a7d210bc88b6fb0",
+    "tests/test_libei_probe.py": "54024703f51bf6b584d064e594380d6e6dde73627e5081d4ade67770aee7643c"
+  },
+  "runs": [
+    {
+      "scenario": "input",
+      "generation": "5d32fd52b4e84123bdccbc6403621f09",
+      "shutdown_seconds": 0.17,
+      "files_sha256": {
+        "cleanup.json": "6f46f68b2f5caf7d4545b686669de3a53f4b16bb08f58a7ac2ba5008751b1810",
+        "controller-result.json": "0e4e1034733dc2564051fe7ab691707403cea80a71fb4d1be8a7d5b48681317b",
+        "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+        "finalizer.json": "d2a89182acb6e0dac07cce3b63449f2246a4e43e60df87fab45b54ed1fa7c903",
+        "fixture-events.jsonl": "a6b0e582d0ab9df79c900ba3e83853b4f3c6a6572a00ee5d1cb95ed1db7bba3c",
+        "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "kdotool-probe.json": "71ffa131149c6bde78098c5454bafa5786f0a73359126c26467585c7d23356ac",
+        "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+        "libei-probe.json": "71ebce4e089e3e41670a9a007bfd40c52d9c6c0ec32a6dd8db37fdb6c44fec3b",
+        "libei-timeline.jsonl": "a7ec6be02986b5d9d156cec6838cd256725b442af95d211d95d773d505217964",
+        "manifest.json": "13fc17dc94747f1b44b9b880b7dd09521c07003130dd43ae207268d5a6222171",
+        "ownership.json": "3f688842d1b7da40b1c6622b5c22107d40a117c1537303d6556fe959de86914d",
+        "probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "scenario": "pause",
+      "generation": "cb53fa02db1e41b8b30b8b0766bd8631",
+      "shutdown_seconds": 0.218,
+      "files_sha256": {
+        "cleanup.json": "c5dae7ad0d919032fc404f735f081c139cdb069c250d4675545e2d9684b0cc37",
+        "controller-result.json": "fdf2c8b70e0f4824a56f884f67f89d71e10b315898a846bda381d33fb6d2d360",
+        "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+        "finalizer.json": "cbc80e20f77f449f3599f665d6fff5321178c313cda9cabe7c0439b77b460a06",
+        "fixture-events.jsonl": "d334c9163d663261d81aeb6bb804ef36de496c5e6b24321d0e9ae9530e0faae5",
+        "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "kdotool-probe.json": "15c369f2f7c3448619d4641f0e301dc13c6816fddab34a81c08ba7313b77a14d",
+        "kwin.stderr.log": "e0b879ec602f9fb74e77f5d9a4aae7bc67e81644eb4ab1c1fa699dc061618dc0",
+        "libei-probe.json": "2335e8fb06942801368617dc47e0b4774df3660759cfe16bcdd295eb0e420511",
+        "libei-timeline.jsonl": "645b2680ddce82d34543544d4f15cd3beb2adfa4ecc6897dd1060ef14e748a8a",
+        "manifest.json": "d248287f944cda31c6a8f5b5b90fd6ce674681f61c6869c647062163b2117d94",
+        "ownership.json": "2394d0dffe14ed6a2dc77c631ac8c3f31fc2fc0f63d48590bccba958ef63c5e3",
+        "probe.stderr.log": "1abdaf916c99a80530629f2214f4fa475b19ee69fca4ae078e64f83bdbd51180",
+        "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "scenario": "reset-failure",
+      "generation": "69ce453fce5540ffac14c2f6eb0a30d2",
+      "shutdown_seconds": 0.172,
+      "files_sha256": {
+        "cleanup.json": "6a6fc8be9549c194409136dfaf77209a7fd6ad6f0db8c1a5567f3c7528e31e71",
+        "controller-result.json": "6803a4895fcb5a7d7d9bca02b27b326c1b361737364dbb700e0f7720aae50bab",
+        "eis-introspection.xml": "a8755673ba9d7469f1bfcdab97ff36b40e1794b35fe361e9f574afefbb6bfc1b",
+        "finalizer.json": "c4960c7dc1de7a56a00419ad955ab22a9985bdd0fef25e0861d38012dcb3064e",
+        "fixture-events.jsonl": "af8db1a196d761ef353bc655734e0e83267ad66054bde6fe27ad86e781eab055",
+        "fixture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "kdotool-probe.json": "b7c78f4c285bf112202e40ffaf49276aac48029c518b063b84d118e8a50d4b7a",
+        "kwin.stderr.log": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+        "libei-probe.json": "2f8437c9bf85b155c03ca4681626772e67da257967a5b44386ce0dcd327aa5f6",
+        "libei-timeline.jsonl": "8a78393f367188ab243fe16ea5c3ed1e24d87ef5f98b215727843d58a84be9c6",
+        "manifest.json": "cf55a1ae620b47530e627913d770f656e0b8fdcecb730b50e75db20692f909b7",
+        "ownership.json": "081b7f512bbf0afc533ab63332f2670e1ba0314db46d02076c57471f8841fe2d",
+        "probe.stderr.log": "49b5e54eacb08090876384114d332bf9300589392edf8e075cc7453e6edd7d23",
+        "query-bridge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ]
+}

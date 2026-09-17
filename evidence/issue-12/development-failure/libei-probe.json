@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "cancel_handled_ns": 88166233289157,
+      "cancel_reason": "focus_lost",
+      "cancel_requested_ns": 88166233288365,
+      "deadline": 88168.111913317,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94440119945104,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "4c95385bf625421fa48d6390d92c825c",
+          "monotonic_ns": 88166112084713,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94440119945104,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "4c95385bf625421fa48d6390d92c825c",
+          "monotonic_ns": 88166233349424,
+          "press": false
+        }
+      ],
+      "finished_ns": 88166233441763,
+      "fixture_from": 73,
+      "id": 1,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88166111911900
+    },
+    {
+      "deadline": 88168.354723209,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94440119945104,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "4c95385bf625421fa48d6390d92c825c",
+          "monotonic_ns": 88166354778069,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94440119945104,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "4c95385bf625421fa48d6390d92c825c",
+          "monotonic_ns": 88166359863866,
+          "press": false
+        }
+      ],
+      "finished_ns": 88166359930813,
+      "fixture_from": 80,
+      "fixture_to": 83,
+      "id": 2,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88166354722376
+    }
+  ],
+  "binding_sha256": "db1a2b9713dd4b56471db257ae52cca05978ffdf6f8d14d18ecdaa2aa89e85ec",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "kind": "focus_loss",
+      "loss_detection_seconds": 0.121377257,
+      "original_target_neutral_on_reentry": true,
+      "release_received_by_new_focus": true
+    }
+  ],
+  "emission_count": 4,
+  "error": {
+    "code": "assertion",
+    "message": "name 'kind' is not defined"
+  },
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 1
+    }
+  ],
+  "generation": "4c95385bf625421fa48d6390d92c825c",
+  "heartbeat_max_seconds": 0.005608162988210097,
+  "outcome": "failed",
+  "probe_sha256": "eb5e57eb29057816496f8fa06d820a764a67e6d230954931bac5d24a2222116c",
+  "scenario": "focus-loss",
+  "scope": "feasibility",
+  "secondary_process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4c95385bf625421fa48d6390d92c825c.service",
+    "pid": 472976,
+    "start_ticks": "8816611"
+  }
+}

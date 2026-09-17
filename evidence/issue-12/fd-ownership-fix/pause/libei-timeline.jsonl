@@ -1,0 +1,35 @@
+{"event": "focus_observation", "monotonic_ns": 89189014830301, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "ok": true, "active_uuid": "{d2b7284c-0cfe-46cf-97de-6b8e6b2837d2}", "target_present": false, "seconds": 0.010082406995934434, "operation": "query", "poll": false}
+{"event": "focus_observation", "monotonic_ns": 89189035060949, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "ok": true, "active_uuid": "{d2b7284c-0cfe-46cf-97de-6b8e6b2837d2}", "target_present": true, "seconds": 0.020142756009590812, "operation": "focus", "poll": false}
+{"event": "setup", "monotonic_ns": 89189035900709, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "epoch": 1, "result": 0, "nonblocking": true, "fd_ownership": "libei"}
+{"event": "libei", "monotonic_ns": 89189036240551, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "91", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 89189036317836, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "CONNECT", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 89189036572664, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "SEAT_ADDED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 89189036690623, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_ADDED", "epoch": 1, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189036728688, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 93828115338352}
+{"event": "ready", "monotonic_ns": 89189036753868, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "epoch": 1, "cookie": 1}
+{"event": "libei", "monotonic_ns": 89189037544691, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_PAUSED", "epoch": 1, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189288619644, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 93828115338352}
+{"event": "focus_observation", "monotonic_ns": 89189308445555, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "ok": true, "active_uuid": "{d2b7284c-0cfe-46cf-97de-6b8e6b2837d2}", "target_present": true, "seconds": 0.019600722996983677, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 89189308637774, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 17, "press": true, "device": 93828115338352, "epoch": 1}
+{"event": "emission", "monotonic_ns": 89189313629652, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 17, "press": false, "device": 93828115338352, "epoch": 1}
+{"event": "focus_observation", "monotonic_ns": 89189338831124, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "ok": true, "active_uuid": "{d2b7284c-0cfe-46cf-97de-6b8e6b2837d2}", "target_present": true, "seconds": 0.02007764100562781, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 89189339035124, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 42, "press": true, "device": 93828115338352, "epoch": 1}
+{"event": "emission", "monotonic_ns": 89189339078146, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 17, "press": true, "device": 93828115338352, "epoch": 1}
+{"event": "libei", "monotonic_ns": 89189339274000, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "9", "epoch": 1, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189345021394, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_PAUSED", "epoch": 1, "device": 93828115338352}
+{"event": "release_uncertain", "monotonic_ns": 89189345103474, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "epoch": 1, "keys": [42, 17]}
+{"event": "cancel", "monotonic_ns": 89189345132804, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "reason": "device_paused", "uncertain": true}
+{"event": "libei", "monotonic_ns": 89189595405463, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189647700528, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_REMOVED", "epoch": 1, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189647723724, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "SEAT_REMOVED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 89189647736540, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DISCONNECT", "epoch": 1, "device": null}
+{"event": "setup", "monotonic_ns": 89189648254250, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "epoch": 2, "result": 0, "nonblocking": true, "fd_ownership": "libei"}
+{"event": "libei", "monotonic_ns": 89189648483301, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "91", "epoch": 2, "device": null}
+{"event": "libei", "monotonic_ns": 89189648593304, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "CONNECT", "epoch": 2, "device": null}
+{"event": "libei", "monotonic_ns": 89189648619912, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "SEAT_ADDED", "epoch": 2, "device": null}
+{"event": "libei", "monotonic_ns": 89189648798755, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_ADDED", "epoch": 2, "device": 93828115338352}
+{"event": "libei", "monotonic_ns": 89189648854628, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "kind": "DEVICE_RESUMED", "epoch": 2, "device": 93828115338352}
+{"event": "ready", "monotonic_ns": 89189648887728, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "epoch": 2, "cookie": 2}
+{"event": "focus_observation", "monotonic_ns": 89189672816680, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "ok": true, "active_uuid": "{d2b7284c-0cfe-46cf-97de-6b8e6b2837d2}", "target_present": true, "seconds": 0.020042788004502654, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 89189672979831, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 17, "press": true, "device": 93828115338352, "epoch": 2}
+{"event": "emission", "monotonic_ns": 89189677951378, "generation": "cb53fa02db1e41b8b30b8b0766bd8631", "code": 17, "press": false, "device": 93828115338352, "epoch": 2}

@@ -1,0 +1,8 @@
+{
+  "KPlugin": {
+    "Id": "issue12_eis_fault",
+    "Name": "Issue 12 private EIS pause fault",
+    "Description": "Explicitly enabled private harness test only",
+    "EnabledByDefault": false
+  }
+}

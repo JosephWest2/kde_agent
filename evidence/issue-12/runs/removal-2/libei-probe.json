@@ -1,0 +1,222 @@
+{
+  "actions": [
+    {
+      "cancel_handled_ns": 88458534397121,
+      "cancel_reason": "device_removed",
+      "cancel_requested_ns": 88458534395924,
+      "deadline": 88460.528864299,
+      "emissions": [
+        {
+          "code": 42,
+          "device": 94216643888112,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458529016436,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94216643888112,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458529132519,
+          "press": true
+        }
+      ],
+      "finished_ns": 88458534473160,
+      "fixture_from": 73,
+      "id": 1,
+      "names": [
+        "SHIFT",
+        "W"
+      ],
+      "started_ns": 88458528862905
+    },
+    {
+      "deadline": 88460.615114925,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94216643888112,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458615195965,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94216643888112,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458620082500,
+          "press": false
+        }
+      ],
+      "finished_ns": 88458620143669,
+      "fixture_from": 83,
+      "fixture_to": 86,
+      "id": 2,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88458615114278
+    },
+    {
+      "deadline": 88460.640351071,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94216643888112,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458640415797,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94216643888112,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+          "monotonic_ns": 88458645363960,
+          "press": false
+        }
+      ],
+      "finished_ns": 88458645423611,
+      "fixture_from": 88,
+      "fixture_to": 92,
+      "id": 3,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88458640350647
+    }
+  ],
+  "binding_sha256": "3afd7f8bdf78fe8b6c8077bc56ff4a71fc0b709696950c13f3e20c8f882e9aee",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "cancelled": true,
+      "fixture_held_before_reset": [],
+      "kind": "removal",
+      "no_further_emission": true,
+      "real_event": "DEVICE_REMOVED",
+      "uncertain": true
+    },
+    {
+      "fixture_neutral": true,
+      "kind": "reset",
+      "new_epoch": 2,
+      "old_epoch": 1,
+      "prior_held": {
+        "94216643888112": [
+          42,
+          17
+        ]
+      },
+      "prior_uncertain": true,
+      "seconds": 0.008378511993214488
+    },
+    {
+      "acknowledged": true,
+      "kind": "rebind"
+    }
+  ],
+  "emission_count": 6,
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 1
+    },
+    {
+      "cause": "removal",
+      "emissions_unchanged": true,
+      "epoch": 1
+    },
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 2
+    },
+    {
+      "cause": "reset_not_yet_neutral",
+      "emissions_unchanged": true,
+      "epoch": 2
+    },
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 2
+    }
+  ],
+  "generation": "7c4b946fc4bf4437b08f2a27f3a30ca4",
+  "heartbeat_max_seconds": 0.0054625569900963455,
+  "initial_focus": {
+    "observed": {
+      "active_uuid": "{4ef228f3-ecfc-4bba-b902-fc634557179e}",
+      "request_id": "kde-agent-7c4b946fc4bf4437b08f2a27f3a30ca4-3",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 475434,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{4ef228f3-ecfc-4bba-b902-fc634557179e}"
+        }
+      ]
+    },
+    "seconds": 0.018129228003090248,
+    "uuid": "{4ef228f3-ecfc-4bba-b902-fc634557179e}"
+  },
+  "outcome": "passed",
+  "probe_sha256": "7997b54bbdc2f40cd8df7875e79c92d2ed85b39f3eed60428152464e705c6728",
+  "scenario": "removal",
+  "scope": "feasibility",
+  "target": {
+    "active": true,
+    "class": "org.kde_agent.fixture",
+    "client": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "frame": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "pid": 475434,
+    "title": "KDE Agent Native Fixture",
+    "uuid": "{4ef228f3-ecfc-4bba-b902-fc634557179e}"
+  }
+}

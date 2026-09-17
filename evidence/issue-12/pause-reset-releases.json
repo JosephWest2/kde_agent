@@ -1,0 +1,143 @@
+[
+  {
+    "run": "pause-1",
+    "paused_ns": 88446258745760,
+    "first_post_reset_press_ns": 88446586671825,
+    "actual_reset_release_receipts": [
+      {
+        "generation": "b59b9f74eb88432cbe5531691dd5a043",
+        "fixture_pid": 474519,
+        "seq": 87,
+        "monotonic_ns": 88446561997747,
+        "event": "key",
+        "source": "wayland",
+        "serial": 14,
+        "time_ms": 88446561,
+        "key": 17,
+        "state": 0,
+        "keysym": 87,
+        "text": "W"
+      },
+      {
+        "generation": "b59b9f74eb88432cbe5531691dd5a043",
+        "fixture_pid": 474519,
+        "seq": 89,
+        "monotonic_ns": 88446563761549,
+        "event": "key",
+        "source": "wayland",
+        "serial": 15,
+        "time_ms": 88446561,
+        "key": 42,
+        "state": 0,
+        "keysym": 65505,
+        "text": ""
+      }
+    ],
+    "neutral_modifiers_receipt": {
+      "generation": "b59b9f74eb88432cbe5531691dd5a043",
+      "fixture_pid": 474519,
+      "seq": 90,
+      "monotonic_ns": 88446563770696,
+      "event": "modifiers",
+      "serial": 16,
+      "depressed": 0,
+      "latched": 0,
+      "locked": 0,
+      "group": 0
+    }
+  },
+  {
+    "run": "pause-2",
+    "paused_ns": 88457091228421,
+    "first_post_reset_press_ns": 88457420056783,
+    "actual_reset_release_receipts": [
+      {
+        "generation": "d6f915f5ef664daf8a6e701ca998827c",
+        "fixture_pid": 475347,
+        "seq": 85,
+        "monotonic_ns": 88457395469861,
+        "event": "key",
+        "source": "wayland",
+        "serial": 14,
+        "time_ms": 88457395,
+        "key": 42,
+        "state": 0,
+        "keysym": 65505,
+        "text": ""
+      },
+      {
+        "generation": "d6f915f5ef664daf8a6e701ca998827c",
+        "fixture_pid": 475347,
+        "seq": 88,
+        "monotonic_ns": 88457397220645,
+        "event": "key",
+        "source": "wayland",
+        "serial": 16,
+        "time_ms": 88457395,
+        "key": 17,
+        "state": 0,
+        "keysym": 119,
+        "text": "w"
+      }
+    ],
+    "neutral_modifiers_receipt": {
+      "generation": "d6f915f5ef664daf8a6e701ca998827c",
+      "fixture_pid": 475347,
+      "seq": 87,
+      "monotonic_ns": 88457397212761,
+      "event": "modifiers",
+      "serial": 15,
+      "depressed": 0,
+      "latched": 0,
+      "locked": 0,
+      "group": 0
+    }
+  },
+  {
+    "run": "pause-3",
+    "paused_ns": 88468241582139,
+    "first_post_reset_press_ns": 88468565019423,
+    "actual_reset_release_receipts": [
+      {
+        "generation": "06a53252071e445ea24937ca6e7223a1",
+        "fixture_pid": 476034,
+        "seq": 87,
+        "monotonic_ns": 88468545143896,
+        "event": "key",
+        "source": "wayland",
+        "serial": 14,
+        "time_ms": 88468544,
+        "key": 42,
+        "state": 0,
+        "keysym": 65505,
+        "text": ""
+      },
+      {
+        "generation": "06a53252071e445ea24937ca6e7223a1",
+        "fixture_pid": 476034,
+        "seq": 90,
+        "monotonic_ns": 88468547525169,
+        "event": "key",
+        "source": "wayland",
+        "serial": 16,
+        "time_ms": 88468545,
+        "key": 17,
+        "state": 0,
+        "keysym": 119,
+        "text": "w"
+      }
+    ],
+    "neutral_modifiers_receipt": {
+      "generation": "06a53252071e445ea24937ca6e7223a1",
+      "fixture_pid": 476034,
+      "seq": 89,
+      "monotonic_ns": 88468547515904,
+      "event": "modifiers",
+      "serial": 15,
+      "depressed": 0,
+      "latched": 0,
+      "locked": 0,
+      "group": 0
+    }
+  }
+]

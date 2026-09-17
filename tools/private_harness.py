@@ -377,9 +377,13 @@ class Worker:
         command(["/usr/bin/dbus-send", "--address=" + self.env["DBUS_SESSION_BUS_ADDRESS"], "--type=method_call",
                  "--print-reply", "--reply-timeout=1000", "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus",
                  "org.freedesktop.DBus.Hello"], env=self.env, timeout=min(2, deadline - time.monotonic()))
+        kwin_env = self.env
+        if self.data.get("eis_fault_plugin"):
+            kwin_env = self.env | {"QT_PLUGIN_PATH": str(self.runtime / "plugins"),
+                                   "HARNESS_EIS_FAULT_PLUGIN": "1"}
         self.spawn("kwin", ["/usr/bin/kwin_wayland", "--virtual", "--width", "1280", "--height", "720",
                             "--scale", "1", "--output-count", "1", "--socket", self.env["WAYLAND_DISPLAY"],
-                            "--no-lockscreen", "--no-global-shortcuts", "--no-kactivities"])
+                            "--no-lockscreen", "--no-global-shortcuts", "--no-kactivities"], env=kwin_env)
         while not (self.runtime / self.env["WAYLAND_DISPLAY"]).is_socket():
             if time.monotonic() >= deadline:
                 raise Failure("startup_timeout", "KWin did not create its private display")
@@ -519,6 +523,18 @@ def run(args):
             raise Failure("overall_timeout", "Overall harness deadline expired")
         return min(limit, remaining)
     try:
+        if args.eis_fault_plugin:
+            source = Path(args.eis_fault_plugin).resolve(strict=True)
+            if source.name != "issue12_eis_fault.so" or not source.is_file() or source.stat().st_uid != os.getuid():
+                raise Failure("invalid_plugin", "Expected owner-owned issue12_eis_fault.so")
+            folder = runtime / "plugins/kwin/plugins"
+            folder.mkdir(mode=0o700, parents=True)
+            destination = folder / source.name
+            shutil.copyfile(source, destination)
+            destination.chmod(0o600)
+            (runtime / "home/config/kwinrc").write_text("[Plugins]\nissue12_eis_faultEnabled=true\n")
+            data["eis_fault_plugin"] = {"source": str(source), "sha256": digest(source),
+                                        "private_copy": str(destination), "kwin_only_environment": True}
         binary, receipt = build(args.build_root)
         data.update(fixture_binary=str(binary), build=receipt, phase="starting")
         data["native_packages"] = command(["/usr/bin/pacman", "-Q", "kwin", "systemd", "dbus", "wayland", "wayland-protocols", "libxkbcommon", "gcc"], env=manager_env()).splitlines()
@@ -667,6 +683,7 @@ def main():
     launch = sub.add_parser("run")
     launch.add_argument("--artifacts", default=str(PROJECT / ".local/harness-runs"))
     launch.add_argument("--build-root", default=str(PROJECT / ".local/fixture-build"))
+    launch.add_argument("--eis-fault-plugin", help="Opt-in local issue #12 pause test plugin; loaded only by private KWin")
     launch.add_argument("--inject", choices=("none", "after-fixture", "startup-timeout", "worker-kill"), default="none")
     launch.add_argument("probe", nargs=argparse.REMAINDER)
     client = sub.add_parser("control")

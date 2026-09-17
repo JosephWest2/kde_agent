@@ -1,0 +1,119 @@
+{
+  "actions": [
+    {
+      "cancel_handled_ns": 88452757120737,
+      "cancel_reason": "focus_query_timeout",
+      "cancel_requested_ns": 88452757120556,
+      "deadline": 88454.247202795,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94621921395648,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "cb50f7eb1ceb4e2b9109f80cd6ba6839",
+          "monotonic_ns": 88452247290070,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94621921395648,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "cb50f7eb1ceb4e2b9109f80cd6ba6839",
+          "monotonic_ns": 88452757138819,
+          "press": false
+        }
+      ],
+      "finished_ns": 88452757169261,
+      "fixture_from": 73,
+      "id": 1,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88452247201725
+    }
+  ],
+  "binding_sha256": "3afd7f8bdf78fe8b6c8077bc56ff4a71fc0b709696950c13f3e20c8f882e9aee",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "cancelled_while_child_busy": true,
+      "detection_seconds": 0.504963414001395,
+      "kind": "slow_query",
+      "query_error": "timeout"
+    }
+  ],
+  "emission_count": 2,
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 1
+    }
+  ],
+  "generation": "cb50f7eb1ceb4e2b9109f80cd6ba6839",
+  "heartbeat_max_seconds": 0.005429511002148502,
+  "initial_focus": {
+    "observed": {
+      "active_uuid": "{2a787a41-68ec-4c67-abb5-f1668410e425}",
+      "request_id": "kde-agent-cb50f7eb1ceb4e2b9109f80cd6ba6839-3",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 474950,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{2a787a41-68ec-4c67-abb5-f1668410e425}"
+        }
+      ]
+    },
+    "seconds": 0.018427311995765194,
+    "uuid": "{2a787a41-68ec-4c67-abb5-f1668410e425}"
+  },
+  "outcome": "passed",
+  "probe_sha256": "7997b54bbdc2f40cd8df7875e79c92d2ed85b39f3eed60428152464e705c6728",
+  "scenario": "slow-query",
+  "scope": "feasibility",
+  "target": {
+    "active": true,
+    "class": "org.kde_agent.fixture",
+    "client": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "frame": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "pid": 474950,
+    "title": "KDE Agent Native Fixture",
+    "uuid": "{2a787a41-68ec-4c67-abb5-f1668410e425}"
+  }
+}

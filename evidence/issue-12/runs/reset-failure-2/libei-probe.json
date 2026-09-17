@@ -1,0 +1,140 @@
+{
+  "actions": [
+    {
+      "deadline": 88462.903100534,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 94196142302464,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "592319b01f8c41d3942ac249f31363bb",
+          "monotonic_ns": 88460903173906,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 94196142302464,
+          "epoch": 2,
+          "event": "emission",
+          "generation": "592319b01f8c41d3942ac249f31363bb",
+          "monotonic_ns": 88460908128987,
+          "press": false
+        }
+      ],
+      "finished_ns": 88460908181106,
+      "fixture_from": 73,
+      "fixture_to": 76,
+      "id": 1,
+      "names": [
+        "W"
+      ],
+      "started_ns": 88460903099750
+    }
+  ],
+  "binding_sha256": "3afd7f8bdf78fe8b6c8077bc56ff4a71fc0b709696950c13f3e20c8f882e9aee",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "code": "dbus_failed",
+      "input_unavailable": true,
+      "kind": "reset_failure"
+    },
+    {
+      "fixture_neutral": true,
+      "kind": "reset",
+      "new_epoch": 2,
+      "old_epoch": 1,
+      "prior_held": {},
+      "prior_uncertain": true,
+      "seconds": 0.0012035010004183277
+    }
+  ],
+  "emission_count": 2,
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 1
+    },
+    {
+      "cause": "failed_reset",
+      "emissions_unchanged": true,
+      "epoch": 1
+    },
+    {
+      "cause": "ADDED",
+      "emissions_unchanged": true,
+      "epoch": 2
+    },
+    {
+      "cause": "reset_not_yet_neutral",
+      "emissions_unchanged": true,
+      "epoch": 2
+    }
+  ],
+  "generation": "592319b01f8c41d3942ac249f31363bb",
+  "heartbeat_max_seconds": 0.005408237004303373,
+  "initial_focus": {
+    "observed": {
+      "active_uuid": "{66d07f19-453b-4e3c-bb08-df0b1d90fcb4}",
+      "request_id": "kde-agent-592319b01f8c41d3942ac249f31363bb-3",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 475591,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{66d07f19-453b-4e3c-bb08-df0b1d90fcb4}"
+        }
+      ]
+    },
+    "seconds": 0.01787122398673091,
+    "uuid": "{66d07f19-453b-4e3c-bb08-df0b1d90fcb4}"
+  },
+  "outcome": "passed",
+  "probe_sha256": "7997b54bbdc2f40cd8df7875e79c92d2ed85b39f3eed60428152464e705c6728",
+  "scenario": "reset-failure",
+  "scope": "feasibility",
+  "target": {
+    "active": true,
+    "class": "org.kde_agent.fixture",
+    "client": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "frame": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "pid": 475591,
+    "title": "KDE Agent Native Fixture",
+    "uuid": "{66d07f19-453b-4e3c-bb08-df0b1d90fcb4}"
+  }
+}

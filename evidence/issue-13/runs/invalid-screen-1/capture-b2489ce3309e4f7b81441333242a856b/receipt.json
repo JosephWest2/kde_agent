@@ -1,0 +1,122 @@
+{
+  "accepted": true,
+  "accepted_at": 93913.886269647,
+  "deadline": 93916.780425664,
+  "fault": "none",
+  "finished": 93913.886331576,
+  "generation": "8e36c8a8b12e40d380250469058f9530",
+  "path": "<checkout>/.local/harness-runs/8e36c8a8b12e40d380250469058f9530/capture-b2489ce3309e4f7b81441333242a856b/image.png",
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+    "pid": 498383,
+    "start_ticks": "9391378"
+  },
+  "process_reaped": true,
+  "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+  "returncode": 0,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "inode": "pipe:[2248040]",
+      "monotonic_ns": 93913843097535,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "pipe"
+    },
+    {
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "monotonic_ns": 93913843224998,
+      "reader_installed_before_request": true,
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "monotonic_ns": 93913845977247,
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "first-byte"
+    },
+    {
+      "expected_bytes": 3686400,
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93913846776807,
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "metadata"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "monotonic_ns": 93913848188306,
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "eof"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "local_pipe_fds": [],
+      "monotonic_ns": 93913849752828,
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "sha256": "5c8db87266fcf6b3aac5b251e8b85ef5c706d2dddf0a1aca7d28601cbc5f130d",
+      "stage": "raw-complete"
+    },
+    {
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "monotonic_ns": 93913856181223,
+      "pixel_checks": [],
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "encode"
+    },
+    {
+      "backend": "org.kde.KWin.ScreenShot2",
+      "capture_timestamp_kind": "request-and-completion-monotonic",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93913873205684,
+      "path": "<checkout>/.local/harness-runs/8e36c8a8b12e40d380250469058f9530/capture-b2489ce3309e4f7b81441333242a856b/image.png",
+      "png_bytes": 4557,
+      "png_sha256": "a30e1f2bc5edad26804d1b94cd490f95d7d59f776242952dd90ecaa149ed3c66",
+      "request_id": "capture-b2489ce3309e4f7b81441333242a856b",
+      "stage": "success"
+    }
+  ],
+  "seconds": 0.10584398300852627,
+  "server_cleanup": "exact_raw_bytes_and_eof",
+  "started": 93913.780425664
+}

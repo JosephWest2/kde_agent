@@ -1,0 +1,28 @@
+test_abort_kills_and_reaps_running_child (test_capture_transport.CaptureSupervisor.test_abort_kills_and_reaps_running_child) ... ok
+test_exact_invalid_screen_is_the_safe_rejection (test_capture_transport.CaptureSupervisor.test_exact_invalid_screen_is_the_safe_rejection) ... ok
+test_late_success_is_rejected_and_both_publication_paths_removed (test_capture_transport.CaptureSupervisor.test_late_success_is_rejected_and_both_publication_paths_removed) ... ok
+test_status_cap_terminates_writer_without_unbounded_buffer (test_capture_transport.CaptureSupervisor.test_status_cap_terminates_writer_without_unbounded_buffer) ... FAIL
+test_wrong_generation_or_request_rejects_child_status (test_capture_transport.CaptureSupervisor.test_wrong_generation_or_request_rejects_child_status) ... ok
+test_call_setup_failure_closes_original_wrapper_reader_and_bus (test_capture_transport.NativeFdOwnership.test_call_setup_failure_closes_original_wrapper_reader_and_bus) ... /usr/lib/python3.14/site-packages/gi/overrides/__init__.py:159: PyGIDeprecationWarning: GLib.unix_signal_add_full is deprecated; use GLibUnix.signal_add_full instead
+  value = getattr(proxy, attr)
+/usr/lib/python3.14/site-packages/gi/overrides/GLib.py:766: PyGIDeprecationWarning: Calling io_add_watch without priority as second argument is deprecated
+  warnings.warn(
+ok
+test_message_append_duplicates_fd_and_message_destruction_releases_last_writer (test_capture_transport.NativeFdOwnership.test_message_append_duplicates_fd_and_message_destruction_releases_last_writer) ... ok
+
+======================================================================
+FAIL: test_status_cap_terminates_writer_without_unbounded_buffer (test_capture_transport.CaptureSupervisor.test_status_cap_terminates_writer_without_unbounded_buffer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tests/test_capture_transport.py", line 177, in test_status_cap_terminates_writer_without_unbounded_buffer
+    self.finish(value)
+    ~~~~~~~~~~~^^^^^^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c74ae35a/tests/test_capture_transport.py", line 132, in finish
+    self.assertIsNone(self.owner.fatal)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+AssertionError: Failure('Capture status cap exceeded') is not None
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.247s
+
+FAILED (failures=1)

@@ -1,0 +1,73 @@
+{
+  "abort_started": 93914.95140958,
+  "accepted": false,
+  "cleanup_seconds": 6.282899994403124e-05,
+  "deadline": 93917.868661754,
+  "error": "injected_partial",
+  "fault": "partial",
+  "finished": 93914.951474768,
+  "generation": "72bf06fccca2432990ef97628e45ff74",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-72bf06fccca2432990ef97628e45ff74.service",
+    "pid": 498459,
+    "start_ticks": "9391487"
+  },
+  "process_reaped": true,
+  "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+  "returncode": 1,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "inode": "pipe:[2248049]",
+      "monotonic_ns": 93914937398139,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+      "stage": "pipe"
+    },
+    {
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "monotonic_ns": 93914937539985,
+      "reader_installed_before_request": true,
+      "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "monotonic_ns": 93914939716911,
+      "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+      "stage": "first-byte"
+    },
+    {
+      "bytes": 4096,
+      "capacity": 65536,
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "inode": "pipe:[2248049]",
+      "monotonic_ns": 93914939732453,
+      "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+      "stage": "partial"
+    },
+    {
+      "bytes": 4096,
+      "code": "injected_partial",
+      "dbus_error": null,
+      "generation": "72bf06fccca2432990ef97628e45ff74",
+      "message": "Closed reader after positive partial image",
+      "monotonic_ns": 93914939764070,
+      "request_id": "capture-625e3bc6d96741c6a2077327c8f33a59",
+      "stage": "error"
+    }
+  ],
+  "server_cleanup": "unconfirmed",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": true,
+  "started": 93914.868661754
+}

@@ -377,10 +377,12 @@ class Worker:
         command(["/usr/bin/dbus-send", "--address=" + self.env["DBUS_SESSION_BUS_ADDRESS"], "--type=method_call",
                  "--print-reply", "--reply-timeout=1000", "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus",
                  "org.freedesktop.DBus.Hello"], env=self.env, timeout=min(2, deadline - time.monotonic()))
-        kwin_env = self.env
+        kwin_env = self.env.copy()
+        if self.data.get("screenshot", {}).get("enabled"):
+            kwin_env["KWIN_SCREENSHOT_NO_PERMISSION_CHECKS"] = "1"
         if self.data.get("eis_fault_plugin"):
-            kwin_env = self.env | {"QT_PLUGIN_PATH": str(self.runtime / "plugins"),
-                                   "HARNESS_EIS_FAULT_PLUGIN": "1"}
+            kwin_env.update(QT_PLUGIN_PATH=str(self.runtime / "plugins"),
+                            HARNESS_EIS_FAULT_PLUGIN="1")
         self.spawn("kwin", ["/usr/bin/kwin_wayland", "--virtual", "--width", "1280", "--height", "720",
                             "--scale", "1", "--output-count", "1", "--socket", self.env["WAYLAND_DISPLAY"],
                             "--no-lockscreen", "--no-global-shortcuts", "--no-kactivities"], env=kwin_env)
@@ -508,6 +510,8 @@ def run(args):
     data = {"schema_version": 1, "scope": "feasibility", "mode": "headless", "generation": generation,
             "runtime": str(runtime), "unit": unit, "cwd": str(Path.cwd()), "probe": args.probe,
             "inject": args.inject, "bounds_seconds": BOUNDS,
+            "screenshot": {"enabled": args.screenshot, "kwin_only_environment": True,
+                           "environment": {"KWIN_SCREENSHOT_NO_PERMISSION_CHECKS": "1"} if args.screenshot else {}},
             "requested_output": {"count": 1, "width": 1280, "height": 720, "scale": 1},
             "phase": "building", "outcome": "pending", "started_monotonic_ns": time.monotonic_ns(),
             "dependency_policy_sha256": digest(PROJECT / "dependencies.json"),
@@ -684,6 +688,8 @@ def main():
     launch.add_argument("--artifacts", default=str(PROJECT / ".local/harness-runs"))
     launch.add_argument("--build-root", default=str(PROJECT / ".local/fixture-build"))
     launch.add_argument("--eis-fault-plugin", help="Opt-in local issue #12 pause test plugin; loaded only by private KWin")
+    launch.add_argument("--screenshot", action="store_true",
+                        help="Enable issue #13 screenshot access only in private KWin")
     launch.add_argument("--inject", choices=("none", "after-fixture", "startup-timeout", "worker-kill"), default="none")
     launch.add_argument("probe", nargs=argparse.REMAINDER)
     client = sub.add_parser("control")

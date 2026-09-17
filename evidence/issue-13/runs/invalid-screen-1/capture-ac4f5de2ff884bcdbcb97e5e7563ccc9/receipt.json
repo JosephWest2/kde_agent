@@ -1,0 +1,71 @@
+{
+  "abort_started": 93913.780120165,
+  "accepted": false,
+  "cleanup_seconds": 6.283499533310533e-05,
+  "deadline": 93916.686091845,
+  "error": "capture_dbus",
+  "fault": "none",
+  "finished": 93913.780185203,
+  "generation": "8e36c8a8b12e40d380250469058f9530",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-8e36c8a8b12e40d380250469058f9530.service",
+    "pid": 498380,
+    "start_ticks": "9391368"
+  },
+  "process_reaped": true,
+  "request_id": "capture-ac4f5de2ff884bcdbcb97e5e7563ccc9",
+  "returncode": 1,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "inode": "pipe:[2220580]",
+      "monotonic_ns": 93913764935055,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-ac4f5de2ff884bcdbcb97e5e7563ccc9",
+      "stage": "pipe"
+    },
+    {
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "monotonic_ns": 93913765077414,
+      "reader_installed_before_request": true,
+      "request_id": "capture-ac4f5de2ff884bcdbcb97e5e7563ccc9",
+      "screen": "kde-agent-nonexistent-output",
+      "stage": "requested"
+    },
+    {
+      "bytes": 0,
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "monotonic_ns": 93913765602686,
+      "request_id": "capture-ac4f5de2ff884bcdbcb97e5e7563ccc9",
+      "stage": "eof"
+    },
+    {
+      "bytes": 0,
+      "code": "capture_dbus",
+      "dbus_error": "org.kde.KWin.ScreenShot2.Error.InvalidScreen",
+      "generation": "8e36c8a8b12e40d380250469058f9530",
+      "message": "org.kde.KWin.ScreenShot2.Error.InvalidScreen: Invalid screen requested",
+      "monotonic_ns": 93913765658794,
+      "request_id": "capture-ac4f5de2ff884bcdbcb97e5e7563ccc9",
+      "stage": "error"
+    }
+  ],
+  "server_cleanup": "rejected_before_capture",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": false,
+  "started": 93913.686091845
+}

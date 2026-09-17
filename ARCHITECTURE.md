@@ -165,8 +165,13 @@ Run one ordinary action at a time. Keep control handling, essential-process
 monitoring, input lifecycle events, and deadline checks responsive while an action
 is active. Use a GLib main loop for D-Bus/libei readiness and timers; express
 input sequences and waits as short cancellable steps. Blocking capture work
-runs outside that control loop with a deadline and owned cleanup. The exact
-thread/subprocess boundary for capture remains a dependency-integration choice.
+runs outside that control loop with a deadline and owned cleanup. M1 selects one directly executed subprocess per capture, observed asynchronously
+by the GLib owner. The child owns its private D-Bus connection, raw pipe and
+Pillow work; the owner enforces its deadline and kill/reap reserve. An aborted
+capture whose compositor resources cannot be confirmed reclaimed makes the
+private session unavailable and triggers bounded session stop. See the measured
+[M1 decision record](docs/M1_DECISION.md); this is a feasibility decision, not a
+production implementation or support claim.
 Observe kdotool subprocesses asynchronously so a slow focus query cannot block
 the control loop or deadline handling.
 

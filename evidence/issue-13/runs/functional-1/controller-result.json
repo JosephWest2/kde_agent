@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "generation": "a7efe81018ab435cb69335500c7f4383",
+  "manifest": "<checkout>/.local/harness-runs/a7efe81018ab435cb69335500c7f4383/manifest.json",
+  "outcome": "passed",
+  "cleanup": {
+    "generation": "a7efe81018ab435cb69335500c7f4383",
+    "started_monotonic_ns": 93908030281707,
+    "verified_empty": true,
+    "before": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ControlGroup": ""
+    },
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-a7efe81018ab435cb69335500c7f4383.service",
+    "members": [],
+    "after": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ControlGroup": ""
+    },
+    "elapsed_seconds": 0.011,
+    "total_shutdown_seconds": 0.16
+  },
+  "elapsed_seconds": 2.398,
+  "error": null
+}

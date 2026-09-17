@@ -1,0 +1,105 @@
+{
+  "abort_started": 93935.42924897,
+  "accepted": false,
+  "cleanup_seconds": 0.005272832000628114,
+  "deadline": 93935.425487411,
+  "error": "capture_timeout",
+  "fault": "stall-encode",
+  "finished": 93935.434533842,
+  "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+  "local_cleanup": true,
+  "png_published": false,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-d5e9ef6bced34e28a98b76da1b1f9297.service",
+    "pid": 499029,
+    "start_ticks": "9393242"
+  },
+  "process_reaped": true,
+  "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+  "returncode": -9,
+  "rows": [
+    {
+      "capacity": 65536,
+      "dbus_python": "1.4.0",
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "inode": "pipe:[2249195]",
+      "monotonic_ns": 93932501959522,
+      "pillow": "12.3.0",
+      "python": "3.14.7",
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "stage": "pipe"
+    },
+    {
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "monotonic_ns": 93932502092645,
+      "reader_installed_before_request": true,
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "screen": "Virtual-0",
+      "stage": "requested"
+    },
+    {
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "monotonic_ns": 93932504940936,
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "stage": "first-byte"
+    },
+    {
+      "expected_bytes": 3686400,
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "metadata": {
+        "format": 6,
+        "height": 720,
+        "scale": 1.0,
+        "screen": "Virtual-0",
+        "stride": 5120,
+        "type": "raw",
+        "width": 1280
+      },
+      "monotonic_ns": 93932505221514,
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "stage": "metadata"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "local_pipe_fds": [
+        {
+          "access": 0,
+          "fd": 5
+        }
+      ],
+      "monotonic_ns": 93932506684849,
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "stage": "eof"
+    },
+    {
+      "bytes": 3686400,
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "local_pipe_fds": [],
+      "monotonic_ns": 93932508255891,
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "sha256": "dc2a5db48d1b9f53ccab3b0225dcfb99968d19636d43fe3e8680635a1d8a6e6a",
+      "stage": "raw-complete"
+    },
+    {
+      "generation": "d5e9ef6bced34e28a98b76da1b1f9297",
+      "monotonic_ns": 93932513997989,
+      "pixel_checks": [],
+      "request_id": "capture-60c3a0f8a67844229b65595eced49479",
+      "stage": "encode"
+    }
+  ],
+  "server_cleanup": "unconfirmed",
+  "server_fd_observation": {
+    "observable": false,
+    "reason": "PermissionError"
+  },
+  "session_stop_required": true,
+  "started": 93932.425487411
+}

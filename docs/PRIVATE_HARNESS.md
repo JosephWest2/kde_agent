@@ -134,9 +134,11 @@ fallback. Installed read-only resources in `/usr/share` remain available.
 
 The private bus has an explicit configuration with no service directories or
 systemd activation. KWin uses `--virtual`, explicit 1280×720 scale 1/output count,
-and disables lockscreen/global shortcuts/KActivities. No Plasma session,
-XWayland, viewer, EIS permission override, screenshot permission override or host
-input/capture adapter is launched. The temporary runtime/HOME and artifact
+and disables lockscreen/global shortcuts/KActivities. No Plasma session, XWayland, viewer, EIS permission override or host input/capture
+adapter is launched. The explicit `--screenshot` option gives only the private
+KWin process `KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1`; ordinary harness runs do
+not enable it, and probes/applications retain the clean environment. The
+manifest records this opt-in and its constructed compositor-only setting. The temporary runtime/HOME and artifact
 roots are 0700; private bus, Wayland and test-control sockets are explicitly 0600
 inside that runtime. Ordinary descendants remain in the service's cgroup.
 
@@ -287,3 +289,14 @@ Only its pause scenario opts into `--eis-fault-plugin PATH`: a locally built tes
 plugin copied into the current private KWin runtime. The default harness still
 loads no project fault plugin or EIS permission override. The plugin path and
 opt-in flag are added only to KWin's environment and recorded in its manifest.
+
+## ScreenShot2 and control-loop feasibility (#13)
+
+Use `run --screenshot -- .../tools/capture_probe.py <pinned-kdotool> <scenario>`
+for the private capture probes. [CAPTURE_PROBE.md](CAPTURE_PROBE.md) documents
+complete fresh PNG validation, per-capture processes, slow-work cancellation,
+and the distinct 3s capture, 1s local cleanup and 15s failed-session shutdown
+bounds. Injected partial/hung capture runs deliberately return failure and stop
+the private desktop; successful failure containment is recorded separately from
+a successful screenshot. [M1_DECISION.md](M1_DECISION.md) consolidates the measured
+adapter choices without changing `foundation_ready` into production readiness.

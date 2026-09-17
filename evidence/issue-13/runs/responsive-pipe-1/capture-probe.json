@@ -1,0 +1,216 @@
+{
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "capture": 3,
+    "failed_session_stop": 15,
+    "fixture_release": 0.5,
+    "local_cleanup": 1
+  },
+  "captures": [
+    {
+      "abort_started": 93931.316972081,
+      "accepted": false,
+      "cleanup_seconds": 0.005343563010683283,
+      "deadline": 93931.316531878,
+      "error": "capture_timeout",
+      "fault": "stall-pipe",
+      "finished": 93931.32232816,
+      "generation": "4f91e8b9a1174d3dac87281cea64816f",
+      "local_cleanup": true,
+      "png_published": false,
+      "process": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-4f91e8b9a1174d3dac87281cea64816f.service",
+        "pid": 498903,
+        "start_ticks": "9392831"
+      },
+      "process_reaped": true,
+      "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+      "returncode": -9,
+      "rows": [
+        {
+          "capacity": 65536,
+          "dbus_python": "1.4.0",
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "inode": "pipe:[2246290]",
+          "monotonic_ns": 93928393259609,
+          "pillow": "12.3.0",
+          "python": "3.14.7",
+          "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+          "stage": "pipe"
+        },
+        {
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "monotonic_ns": 93928393397874,
+          "reader_installed_before_request": true,
+          "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+          "screen": "Virtual-0",
+          "stage": "requested"
+        },
+        {
+          "expected_bytes": 3686400,
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "local_pipe_fds": [
+            {
+              "access": 0,
+              "fd": 5
+            }
+          ],
+          "metadata": {
+            "format": 6,
+            "height": 720,
+            "scale": 1.0,
+            "screen": "Virtual-0",
+            "stride": 5120,
+            "type": "raw",
+            "width": 1280
+          },
+          "monotonic_ns": 93928395948400,
+          "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+          "stage": "metadata"
+        },
+        {
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "monotonic_ns": 93928395995470,
+          "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+          "stage": "first-byte"
+        },
+        {
+          "bytes": 4096,
+          "capacity": 65536,
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "inode": "pipe:[2246290]",
+          "monotonic_ns": 93928396008546,
+          "request_id": "capture-abf3995dd2f74ac7b05118463edb4933",
+          "stage": "partial"
+        }
+      ],
+      "server_cleanup": "unconfirmed",
+      "server_fd_observation": {
+        "observable": false,
+        "reason": "PermissionError"
+      },
+      "session_stop_required": true,
+      "started": 93928.316531878
+    }
+  ],
+  "checks": [
+    {
+      "action": {
+        "cancel_handled_ns": 93928484478993,
+        "cancel_reason": "client_cancel",
+        "cancel_requested_ns": 93928484100502,
+        "deadline": 93930.311461743,
+        "emissions": [
+          {
+            "code": 42,
+            "device": 94143680185648,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "4f91e8b9a1174d3dac87281cea64816f",
+            "monotonic_ns": 93928311539097,
+            "press": true
+          },
+          {
+            "code": 17,
+            "device": 94143680185648,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "4f91e8b9a1174d3dac87281cea64816f",
+            "monotonic_ns": 93928311584124,
+            "press": true
+          },
+          {
+            "code": 17,
+            "device": 94143680185648,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "4f91e8b9a1174d3dac87281cea64816f",
+            "monotonic_ns": 93928484536083,
+            "press": false
+          },
+          {
+            "code": 42,
+            "device": 94143680185648,
+            "epoch": 1,
+            "event": "emission",
+            "generation": "4f91e8b9a1174d3dac87281cea64816f",
+            "monotonic_ns": 93928484617907,
+            "press": false
+          }
+        ],
+        "finished_ns": 93928484661980,
+        "fixture_from": 73,
+        "id": 1,
+        "names": [
+          "SHIFT",
+          "W"
+        ],
+        "started_ns": 93928311461146
+      },
+      "capture_stage": "partial",
+      "capture_still_running": true,
+      "dispatch_seconds": 0.000561478,
+      "fixture_release_seconds": 0.002490553,
+      "kind": "cancel-during-capture"
+    },
+    {
+      "capture_still_running": true,
+      "kind": "control-during-capture",
+      "seconds": 0.0503950190031901,
+      "status": {
+        "generation": "4f91e8b9a1174d3dac87281cea64816f",
+        "ok": true,
+        "output": {
+          "count": 1,
+          "event": "output",
+          "fixture_pid": 498881,
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "height": 720,
+          "monotonic_ns": 93928135754929,
+          "scale": 1,
+          "seq": 68,
+          "transform": 0,
+          "width": 1280
+        },
+        "presented": {
+          "checksum": 1507437765,
+          "clock_id": 1,
+          "control_id": 0,
+          "event": "presented",
+          "fixture_pid": 498881,
+          "flags": 7,
+          "generation": "4f91e8b9a1174d3dac87281cea64816f",
+          "monotonic_ns": 93928513133371,
+          "output_matched": false,
+          "presentation_ns": 512909526,
+          "presentation_seconds": 93928,
+          "presentation_seq": 0,
+          "refresh_ns": 16666666,
+          "revision": 5,
+          "seq": 87,
+          "sole_output_name": "Virtual-0",
+          "source": "input",
+          "state": 4,
+          "sync_output_received": false
+        },
+        "request_id": "6bbf6e041b914d648ae409370740b0dd"
+      }
+    }
+  ],
+  "codec_sha256": "57307c987b3ed6bfd067db01d36bf9acfc8f95f2dbcde41afa950a2b3aa1bdfb",
+  "error": {
+    "code": "capture_cleanup_unconfirmed",
+    "message": "Owned private desktop must stop after unconfirmed server cleanup"
+  },
+  "final_held": [],
+  "generation": "4f91e8b9a1174d3dac87281cea64816f",
+  "heartbeat_max_seconds": 0.005595521011855453,
+  "input_uncertain": false,
+  "interface_version": 5,
+  "kwin_image_header_sha256": "886f0ec7ab8bd1190e8a051df0efa13f8fd9646b86aa18b02f9dc495918be94d",
+  "outcome": "failed",
+  "probe_sha256": "299ae8c4f3034195d5f59cbc3d3202a6c78d9017efe3bb5784815b9c7a994404",
+  "scenario": "responsive-pipe",
+  "scope": "M1 feasibility, not production support",
+  "session_unavailable_ns": 93931323039068
+}

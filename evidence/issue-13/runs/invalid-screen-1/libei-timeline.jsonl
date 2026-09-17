@@ -1,0 +1,9 @@
+{"event": "focus_observation", "monotonic_ns": 93913638222424, "generation": "8e36c8a8b12e40d380250469058f9530", "ok": true, "active_uuid": "{fb121bf2-1a7d-465c-9e38-22fa1df27d67}", "target_present": false, "seconds": 0.01017583700013347, "operation": "query", "poll": false}
+{"event": "focus_observation", "monotonic_ns": 93913678913312, "generation": "8e36c8a8b12e40d380250469058f9530", "ok": true, "active_uuid": "{fb121bf2-1a7d-465c-9e38-22fa1df27d67}", "target_present": true, "seconds": 0.04047414500382729, "operation": "focus", "poll": false}
+{"event": "setup", "monotonic_ns": 93913681652964, "generation": "8e36c8a8b12e40d380250469058f9530", "epoch": 1, "result": 0, "nonblocking": true, "fd_ownership": "libei"}
+{"event": "libei", "monotonic_ns": 93913682736919, "generation": "8e36c8a8b12e40d380250469058f9530", "kind": "91", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 93913683090087, "generation": "8e36c8a8b12e40d380250469058f9530", "kind": "CONNECT", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 93913685147149, "generation": "8e36c8a8b12e40d380250469058f9530", "kind": "SEAT_ADDED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 93913685698017, "generation": "8e36c8a8b12e40d380250469058f9530", "kind": "DEVICE_ADDED", "epoch": 1, "device": 94908926407984}
+{"event": "libei", "monotonic_ns": 93913685880922, "generation": "8e36c8a8b12e40d380250469058f9530", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 94908926407984}
+{"event": "ready", "monotonic_ns": 93913685985316, "generation": "8e36c8a8b12e40d380250469058f9530", "epoch": 1, "cookie": 1}

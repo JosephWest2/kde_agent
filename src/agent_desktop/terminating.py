@@ -49,6 +49,8 @@ class KillTask:
             # Keep the real positive observation time across Registry retirement;
             # historical lookup intentionally supplies no invented timestamp.
             self.process_state = dict(self.pinned.process_state)
+        if self.process_state.get('root_returncode') is not None:
+            self.snapshot = self.snapshot | {'exit_code': self.process_state['root_returncode']}
         self.exited = True if complete else (False if self.process_state['subtree_populated'] is True else None)
         if complete:
             self.exit_observed_at = self.process_state['observed_at']

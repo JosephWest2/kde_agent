@@ -451,7 +451,10 @@ class Run(support.Run):
             trace = self.native_trace()
             moved = next(e for e in trace if e['event'] == 'controlled_migration')
             gate = next(e for e in trace if e['event'] == 'migration_empty_before_observer')
-            observed = next(e for e in trace if e['event'] == 'migration_observer_returned')
+            observations = [e for e in trace if e['event'] == 'migration_observer_returned']
+            assert observations and all(not e['completed'] and e['active_owner_retained']
+                                        for e in observations), observations
+            observed = next(e for e in observations if e['ownership_uncertain'])
             assert retained['at'] < moved['at'] < gate['at'] <= observed['at']
             assert gate['root_returncode'] == 0 and gate['subtree_populated'] is False
             assert gate['retained_live'] and gate['completed'] is False
@@ -459,6 +462,9 @@ class Run(support.Run):
             assert observed['ownership_uncertain'] and observed['retained_live'], observed
             assert not self.signals(), 'Controlled migration precedes any application dispatch'
             assert not [e for e in trace if e['event'] == 'kill_complete']
+            partial = response['error'].get('partial_result') or {}
+            assert partial.get('root_returncode') == partial.get('exit_status') == 0, response
+            assert partial['process_state']['root_reaped'] is True, response
             self.case['migration_receipts'] = {'retained': retained, 'moved': moved, 'empty_gate': gate, 'observed': observed}
             self.case['independent_shutdown_started_at'] = observed['at']
             self.case['retained_application_after_migration'] = self.app_record()

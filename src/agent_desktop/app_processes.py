@@ -563,11 +563,17 @@ class Registry:
         app = self.active
         if app is not None and app.handle == handle:
             cached = app.process_state
+            # Children is the sole reaper. Its current, constant-size status is
+            # available even when the cgroup observation is stale or uncertain.
+            # Do not refresh the cgroup observation timestamp when reporting it.
+            root_reaped = None if app.child is None else app.child.returncode is not None
+            root_code = (app.child.returncode if app.child is not None and app.child.returncode is not None
+                         else snapshot.get('exit_code'))
             if app.uncertain or cached is None:
-                return {'root_reaped': None, 'root_returncode': snapshot.get('exit_code'),
+                return {'root_reaped': root_reaped, 'root_returncode': root_code,
                         'subtree_populated': None, 'all_exited': None, 'observed_at': None,
                         'remaining_processes': None, 'enumeration': 'unavailable'}
-            return dict(cached)
+            return dict(cached) | {'root_reaped': root_reaped, 'root_returncode': root_code}
         completed = snapshot['state'] in ('all-exited', 'launch-failed')
         return {'root_reaped': True if snapshot.get('exit_code') is not None else None,
                 'root_returncode': snapshot.get('exit_code'),

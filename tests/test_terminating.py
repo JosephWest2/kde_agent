@@ -333,6 +333,24 @@ class TerminationTests(unittest.TestCase):
         self.assertEqual(result['remaining_processes'], [])
         self.assertTrue(cursor.revoked)
         self.assertEqual(result['exit_status'], -15)
+    def test_current_reaper_code_survives_stale_or_uncertain_cgroup_cache(self):
+        self.app.observe(force=True)
+        observed_at = self.app.process_state['observed_at']
+        self.start()
+        self.app.child.returncode = 7
+        self.clock[0] += .01  # Cgroup observation cadence has not elapsed.
+        state = self.registry.application_process_state(APP)
+        self.assertTrue(state['root_reaped'])
+        self.assertEqual(state['root_returncode'], 7)
+        self.assertEqual(state['observed_at'], observed_at)
+        self.app.uncertain = True
+        self.task.request_cancel('session_failed')
+        result = self.task.projection()
+        self.assertEqual(result['exit_status'], 7)
+        self.assertEqual(result['root_returncode'], 7)
+        self.assertTrue(result['process_state']['root_reaped'])
+        self.assertIsNone(result['process_state']['subtree_populated'])
+        self.assertIsNone(result['process_state']['observed_at'])
     def test_late_persistence_cannot_turn_completion_into_success(self):
         self.start()
         self.app.child.returncode = 0

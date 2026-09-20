@@ -99,6 +99,9 @@ constant-size cached aggregate from existing cgroup observation, not a complete
 process list or signal authority. `remaining_processes: null` and
 `enumeration: unavailable` are deliberate; even 4096 retained identities do not
 turn close reporting into an additional process walk. See [window close semantics](WINDOWS.md#graceful-selected-window-close).
+The scalar root-reaped/return-code fields use the current sole child reaper's
+status; reporting them does not refresh the cgroup observation timestamp. Known
+root codes remain available even when subtree ownership becomes uncertain.
 
 ## Explicit termination
 

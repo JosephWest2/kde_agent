@@ -126,6 +126,34 @@ class ObservationBudgetTests(unittest.TestCase):
             self.app.observe_exit()
         self.assertEqual(caught.exception.outcome, 'unknown')
 
+    def test_registry_tick_skips_scan_after_lifetime_observation_exhausts_budget(self):
+        now = [1.0]
+        def slow_observation():
+            now[0] += .003
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch.object(self.app, 'observe', side_effect=slow_observation), \
+                patch.object(self.app, 'scan_turn', wraps=self.app.scan_turn) as scanning:
+            Registry.tick(self.registry)
+        scanning.assert_not_called()
+
+    def test_registry_scan_uses_only_budget_remaining_after_lifetime_observation(self):
+        self.handle()
+        self.app.scanner = (pid for pid in [123])
+        now = [1.0]
+        def observation():
+            now[0] += .001
+        def delayed_poll(fd):
+            now[0] += .0015
+            return True
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch.object(self.app, 'observe', side_effect=observation), \
+                patch('agent_desktop.app_processes.live', side_effect=delayed_poll), \
+                patch('agent_desktop.app_processes.identity') as acquire:
+            Registry.tick(self.registry)
+        acquire.assert_not_called()
+        self.assertIsNone(self.app.pending_pid)
+        self.store.application_processes.assert_not_called()
+
     def test_budget_exhausted_before_work_schedules_no_poll_or_snapshot(self):
         self.handle()
         self.app.dirty = True

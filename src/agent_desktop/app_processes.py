@@ -204,8 +204,9 @@ class Application:
             except OSError:
                 pass
 
-    def scan_turn(self):
-        deadline = time.monotonic() + .002
+    def scan_turn(self, *, deadline=None):
+        if deadline is None:
+            deadline = time.monotonic() + .002
         published = False
         # A batch remains owned in memory until its write succeeds. Flush it
         # before collecting more, bounding deferred persistence to 16 identities.
@@ -317,10 +318,11 @@ class Registry:
         app = self.active
         if app is None:
             return
+        deadline = time.monotonic() + .002
         try:
             app.observe()
-            if self.active is app:
-                app.scan_turn()
+            if self.active is app and time.monotonic() < deadline:
+                app.scan_turn(deadline=deadline)
         except Exception:
             app.uncertain = True
             raise

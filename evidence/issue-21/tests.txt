@@ -1,0 +1,11 @@
+Source implementation: 52bf8f543600baa29e224bb7484d3782e16507e9
+Command: PYTHONWARNINGS=ignore python -m unittest discover -s tests -q
+Working directory: /home/josephwest/development/kde-agent
+
+Observed result (before commit, identical committed source/test files):
+----------------------------------------------------------------------
+Ran 272 tests in 20.533s
+
+OK
+
+The installed native 18-case matrix is recorded separately in final/cleanup.json.

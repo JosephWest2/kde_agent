@@ -1,0 +1,14 @@
+Source implementation: 01edfe40ddd05f19d7e784a058f55449b627cce8
+Command: PYTHONWARNINGS=ignore python -m unittest discover -s tests -q
+Working directory: /home/josephwest/development/kde-agent
+
+Observed result (before commit, identical committed source/test files):
+----------------------------------------------------------------------
+Ran 280 tests in 20.372s
+
+OK
+
+A preceding run hit an existing test-setup race: the artifact fixture effect marker
+preceded its record write, so immediate test lock acquisition could contend.
+Commit 01edfe4 waits boundedly for deliberate contention before measuring stop;
+the release timing assertion remains unchanged.

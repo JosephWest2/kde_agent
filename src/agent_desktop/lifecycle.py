@@ -77,7 +77,17 @@ def read_metadata(runtime, name, generation):
     return data
 
 
+def unit_quote(value, *, expand=False):
+    value = str(value).replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')
+    if not expand:
+        value = value.replace('$', '$$')
+    return '"' + value + '"'
+
+
 class Systemd:
+    def __init__(self, *, helper_command=None):
+        self.helper_command = helper_command or [sys.executable, '-I', '-m', 'agent_desktop.service_cleanup']
+
     def command(self, argv, deadline):
         try:
             manager_runtime = '/run/user/' + str(os.getuid())
@@ -110,13 +120,23 @@ class Systemd:
         # endpoints or credentials. Desktop supplies its children private values.
         env = ['PATH=/usr/bin:/bin', 'LANG=C.UTF-8', 'XDG_RUNTIME_DIR=' + str(runtime.root.parent)]
         log = str(Path(data['configuration']['artifacts']) / 'generations' / data['generation'] / 'logs' / 'worker.log').replace('%', '%%')
+        helpers = []
+        for operation, property_name in (('stop', 'ExecStop'), ('post', 'ExecStopPost')):
+            command_words = ['/usr/bin/env', '-i', *env, *self.helper_command, operation,
+                             data['session'], data['generation']]
+            # Only these manager-provided service facts undergo substitution.
+            command_words[2:2] = ['SERVICE_RESULT=${SERVICE_RESULT}', 'EXIT_CODE=${EXIT_CODE}',
+                                  'EXIT_STATUS=${EXIT_STATUS}']
+            encoded = ' '.join(unit_quote(word, expand=word.startswith(('SERVICE_RESULT=', 'EXIT_CODE=', 'EXIT_STATUS=')))
+                               for word in command_words)
+            helpers.append('--property=' + property_name + '=' + encoded)
         argv = ['/usr/bin/systemd-run', '--user', '--no-ask-password', '--no-block', '--quiet',
                 '--service-type=exec', '--unit=' + data['unit'], '--property=Slice=app.slice',
                 '--property=Restart=no', '--property=KillMode=control-group', '--property=SendSIGKILL=yes',
                 '--property=TimeoutStopSec=' + str(SYSTEMD_STOP_SECONDS) + 's', '--property=UMask=0077',
                 '--property=WatchdogSec=5s', '--property=TimeoutAbortSec=3s',
                 '--property=WatchdogSignal=SIGTERM', '--property=FinalKillSignal=SIGKILL',
-                '--property=NotifyAccess=main',
+                '--property=NotifyAccess=main', '--property=TimeoutStopFailureMode=kill', *helpers,
                 '--property=StandardOutput=append:' + log, '--property=StandardError=append:' + log,
                 '--working-directory=/', '--expand-environment=no', '--', '/usr/bin/env', '-i', '-S',
                 'NOTIFY_SOCKET=${NOTIFY_SOCKET} WATCHDOG_USEC=${WATCHDOG_USEC} WATCHDOG_PID=${WATCHDOG_PID}',
@@ -195,14 +215,20 @@ class Manager:
         return generation, data
 
     def _write(self, runtime, data):
-        atomic(runtime.socket_path(data['generation']).parent / 'lifecycle.json', data)
+        from .ownership import write_metadata
+        write_metadata(runtime, data)
 
-    def _observe(self, runtime, data, deadline):
+    def _observe(self, runtime, data, deadline, *, persist=True):
+        known_submission = data['submission']
         info = self.systemd.inspect(data, deadline)
         remaining(deadline)
-        if data['submission'] == 'uncertain' and info['LoadState'] != 'not-found':
+        # The autonomous post hook may have finalized while inspection ran.
+        data.update(read_metadata(runtime, data['session'], data['generation']))
+        if (data['submission'] == 'uncertain'
+                and (known_submission == 'acknowledged' or info['LoadState'] != 'not-found')):
             data['submission'] = 'acknowledged'
-            self._write(runtime, data)
+            if persist:
+                self._write(runtime, data)
         return info
 
     def _quiescent(self, data, info):
@@ -210,65 +236,20 @@ class Manager:
         # the reservation rather than allowing a replacement to race that start.
         return data['submission'] != 'uncertain' and settled(info)
 
-    def _records(self, data, *, failed=False):
-        from .artifacts import Store
-        try:
-            store = Store(data['configuration']['artifacts'], data['session'], data['generation'])
-            try:
-                store.generation_update(state='failed' if failed else 'stopped',
-                                        failure='session_failed' if failed else None, cleanup='complete')
-                terminal_state = store.read()['state']
-            finally:
-                store.close()
-            return terminal_state
-        except (ContractError, OSError):
-            return None
-
     def _retire(self, runtime, data, *, failed=False):
-        # Caller owns the name lock. Never remove a replacement pointer or claim.
-        if runtime.read(data['session']) != data['generation']:
-            raise ContractError('generation_mismatch', 'Cleanup generation is no longer current.')
-        data['state'] = 'failed' if failed or data['state'] == 'failed' else 'stopped'
-        self._write(runtime, data)
-        # Service quiescence is established before unlinking residual sockets.
-        import stat
-        for priority in (False, True):
-            path = runtime.socket_path(data['generation'], priority=priority)
-            try:
-                info = path.lstat()
-                if info.st_uid == os.getuid() and stat.S_ISSOCK(info.st_mode):
-                    path.unlink()
-            except FileNotFoundError:
-                pass
-        from .desktop import dispose
-        try:
-            dispose(runtime.socket_path(data['generation']).parent)
-        except (OSError, ContractError):
-            # Do not publish complete cleanup while disposable settings remain.
-            # A later lifecycle reconciliation retries the same owned subtree.
-            from .artifacts import Store
-            try:
-                store = Store(data['configuration']['artifacts'], data['session'], data['generation'])
-                try:
-                    store.generation_update(state=data['state'], cleanup='uncertain')
-                finally:
-                    store.close()
-            except (OSError, ContractError):
-                pass
-            raise ContractError('session_unavailable', 'Private settings disposal failed.',
-                                context={'cleanup': 'uncertain'}, outcome='unknown') from None
-        terminal_state = self._records(data, failed=data['state'] == 'failed')
-        if terminal_state == 'failed' and data['state'] != 'failed':
-            # Artifact access happens only after fallback cleanup. Preserve any
-            # earlier sticky failure in the routing outcome as well.
-            data['state'] = 'failed'
-            self._write(runtime, data)
-        return terminal_state is not None
+        # Unit quiescence was observed before entry; never wait with this lock.
+        from .ownership import generation_lock
+        from .service_cleanup import finalize
+        with generation_lock(runtime, data['generation']):
+            updated, preserved = finalize(runtime, data, failed=failed or data['state'] == 'failed')
+            data.update(updated)
+            return preserved
 
-    def _stop(self, runtime, data, deadline, *, failed=False):
+    def _stop(self, runtime, data, deadline, *, failed=False, requested=None):
         stop_submitted = False
+        bookkeeping_uncertain = False
         while True:
-            info = self._observe(runtime, data, deadline)
+            info = self._observe(runtime, data, deadline, persist=False)
             # Preserve failure already observed before our requested termination.
             # A later timeout/signal caused by that termination is not evidence
             # of an earlier unexpected death.
@@ -278,18 +259,37 @@ class Manager:
                 failed = True
             if self._quiescent(data, info):
                 break
+            if info['ActiveState'] == 'deactivating':
+                stop_submitted = True  # The independent stop/post job already owns cleanup.
             if not stop_submitted and info['LoadState'] != 'not-found':
                 if runtime.read(data['session']) != data['generation']:
                     raise ContractError('generation_mismatch', 'Stop generation is no longer current.')
                 # An ambiguous submission can become visible during this loop.
                 # Submit stop at its first observation, including pending jobs.
                 # Artifact attachment never precedes this fallback call.
-                data['state'] = 'failed' if failed else 'stopping'
-                self._write(runtime, data)
+                try:
+                    if requested is not None:
+                        from .ownership import generation_lock, intent
+                        with generation_lock(runtime, data['generation']):
+                            # Preserve the observation preceding requested fallback.
+                            if failed:
+                                data['state'] = 'failed'
+                            intent(runtime, data, 'manager_request', requested.request_id)
+                    data['state'] = 'failed' if failed else 'stopping'
+                    self._write(runtime, data)
+                except (OSError, ContractError) as error:
+                    if isinstance(error, ContractError) and error.code == 'generation_mismatch':
+                        raise
+                    # Bookkeeping cannot gate termination of an already-validated
+                    # exact unit. Lost intent/records must not invent preservation.
+                    bookkeeping_uncertain = True
+                if runtime.read(data['session']) != data['generation']:
+                    raise ContractError('generation_mismatch', 'Stop generation is no longer current.')
                 self.systemd.stop(data, deadline)
                 stop_submitted = True
             time.sleep(min(.02, remaining(deadline)))
-        return self._retire(runtime, data, failed=failed)
+        preserved = self._retire(runtime, data, failed=failed)
+        return preserved and not bookkeeping_uncertain
 
     def _ping(self, request, generation, deadline):
         remaining(deadline)
@@ -364,6 +364,7 @@ class Manager:
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
                 self._retire(runtime, data, failed=data['state'] != 'stopped')
+            previous = data
             generation = uuid.uuid4().hex
             unit = unit_name(generation)
             data = dict(schema_version=1, session=request.session, generation=generation, unit=unit,
@@ -374,8 +375,15 @@ class Manager:
                           disposable=[str(runtime.root.parent)])
             store.close()
             self._write(runtime, data)
-            atomic(runtime.current / (request.session + '.json'),
-                   dict(schema_version=1, session=request.session, generation=generation))
+            from .ownership import generation_lock
+            from contextlib import nullcontext
+            with generation_lock(runtime, generation) as root:
+                atomic(root / 'service-control.json', dict(schema_version=1, session=request.session,
+                       generation=generation, request_id=uuid.uuid4().hex))
+            # Old hooks validate current routing while holding this same lock.
+            with generation_lock(runtime, previous['generation']) if previous else nullcontext():
+                atomic(runtime.current / (request.session + '.json'),
+                       dict(schema_version=1, session=request.session, generation=generation))
             command = (self.worker_command(data) if self.worker_command else
                        [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
                         '--session', request.session, '--generation', generation,
@@ -452,7 +460,7 @@ class Manager:
                 # but can never silently address it.
                 unmanaged = pinned
             elif request.operation == 'session.stop':
-                preserved = self._stop(runtime, data, deadline)
+                preserved = self._stop(runtime, data, deadline, requested=request)
                 return self._result(request, generation,
                                     {'state': data['state'], 'desktop_ready': False,
                                      'cleanup': 'complete', 'records_preserved': preserved})

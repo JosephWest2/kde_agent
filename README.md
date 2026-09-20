@@ -4,7 +4,9 @@ A local CLI for a dedicated headless KWin desktop. `doctor` reports installed
 runtime prerequisites; `session start`, `status` and `stop` manage private,
 generation-owned services. Start requires real control, structured window query,
 resumed input and complete screenshot probes. Live bus/compositor observations
-and a systemd watchdog detect essential failures.
+and a systemd watchdog detect essential failures. Independent service hooks
+terminate owned descendants, remove private settings and preserve terminal
+artifacts even when the worker dies or freezes.
 
 Readiness currently uses a packaged **M1 provisional provider**. Results report
 `release_qualified: false` and replacement issue #35 (M7.1). Public desktop

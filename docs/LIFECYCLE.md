@@ -83,18 +83,19 @@ unit is inactive/failed, and the generation cgroup is absent or reports no
 population (including descendant cgroups). Accepted stop submission and empty
 MainPID alone do not establish cleanup. Uncertain cleanup preserves ownership.
 
-Artifact attachment/update happens after termination, so a blocked or damaged
-artifact record cannot prevent fallback stop. Successful stop reports
+Manager artifact attachment/update happens after termination. Intent or lifecycle
+bookkeeping failure also cannot prevent fallback stop of the verified exact unit. Successful stop reports
 `records_preserved: false` if its terminal record could not be updated; it does
 not claim that write succeeded. Repeating stop can repair that bookkeeping when
 storage becomes available. Earlier manifest failure outcomes are preserved and reconciled into the lifecycle
 result. If stop is the first call after unexpected worker death (including a clean
 exit before a stop request), it retains a failed outcome while completing cleanup.
 A timeout/signal caused by an earlier requested stop does not turn its stopped
-tombstone into a prior crash. Worker exit only records uncertain cleanup; the manager asserts completion after
-its cgroup observation. Unexpected worker death is reconciled on a later lifecycle
-call. Autonomous terminal hooks and ordered release/window-close attempts remain
-#21; capability readiness is provided provisionally by M3.3 below.
+tombstone into a prior crash. The autonomous post hook preserves early worker
+failure diagnostics even when a blocked graceful hook prevents the worker from
+updating its aggregate manifest. It records ordinary-process/runtime cleanup;
+the manager independently verifies whole-cgroup emptiness. The #21 shutdown
+section below describes these hooks; readiness remains provisional in M3.3.
 
 ## Verification
 
@@ -135,13 +136,13 @@ logs. Internal application/adapter launches require output handles and preserve
 selected executable, argv and cwd. This Python seam supports integration evidence
 and future owners; it is not a public plugin or application-launch protocol.
 
-Only after observed service quiescence does lifecycle reconciliation remove the
-exact generation's disposable `desktop/` subtree. It retains routing claims,
+The authenticated post hook removes the exact generation's disposable `desktop/`
+subtree after proving owned ordinary processes are absent. Outside lifecycle
+reconciliation waits for full service quiescence before retrying that disposal. It retains routing claims,
 lifecycle metadata and all durable artifacts. Root symlinks/unsafe ownership are
 rejected and nested links are not followed. Disposal failure returns uncertain
-cleanup and later lifecycle calls retry. Crash settings cleanup currently requires
-that later stop/status/start reconciliation; automatic post-stop cleanup remains
-#21. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
+cleanup and later lifecycle calls retry. With a functioning post hook, crash
+settings cleanup finishes automatically without a later stop/status/start call. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
 bus/KWin output, project access and environment isolation with readiness false.
 
 ## Capability readiness and live health (#20)
@@ -198,5 +199,71 @@ application/adapter environments never receive these values. Source fixtures can
 exercise this policy while still reporting starting, without claiming readiness.
 
 M7.1/#35 must replace/qualify the provisional provider and connect production
-adapters before release qualification. #21 still owns ordered graceful action
-shutdown and the autonomous terminal record/runtime cleanup hook.
+adapters before release qualification. The ordered graceful action shutdown and autonomous terminal record/runtime
+cleanup hook are implemented by #21 below.
+
+
+## Autonomous shutdown and finalization (#21)
+
+A managed stop submits an independent systemd job. Its installed `ExecStop`
+helper relays a generation-pinned priority shutdown with a fixed 2s deadline.
+The GLib owner reserves response-delivery time, cancels ordinary work, caps
+active cancellation cleanup at 0.5s, attempts tracked release for up to 0.5s,
+and attempts normal application-window close with the remaining owner budget
+(up to 1.8s total). Each hook must be bounded and nonblocking. A blocked callback
+can prevent later hook attempts; the manager then terminates it and records
+uncertainty. Cleanup continues when the initiating client disconnects.
+
+Release and application-close adapters are **not connected in M3**. Their default
+receipts say `not_connected`, `confirmed: false`, and identify #35. Internal
+fixtures prove orchestration order; they do not qualify production input release
+or application window closure. Provisional readiness resources close after the
+ordered hooks, before direct-child disposal.
+
+Systemd retains `KillMode=control-group`, `Restart=no`, a 3s `TimeoutStopSec`,
+5s watchdog and 3s abort bound, and uses `TimeoutStopFailureMode=kill` for stalled
+stop commands. `ExecStopPost` has its own fixed 2s internal deadline. The overall
+supported ordinary-process shutdown bound remains 15s; per-command systemd timers
+must not be mistaken for one overall 3s timer. The installed evidence records
+actual normal, worker/dependency death/freeze and stalled-helper paths.
+
+A stop-post command can begin while a SIGTERM-resistant descendant still lives.
+The authenticated generation finalizer therefore pins remaining members with
+pidfds, checks their exact service-cgroup membership, sends SIGKILL through those
+pidfds and rescans within a 1s survivor budget. It excludes only its own verified
+PID. It removes private desktop/settings and residual control sockets only after
+all other owned members are absent. The generation directory, metadata, immutable
+stop/relay records and routing pointer remain as ownership tombstones; they cannot
+be reused for another service generation. Artifacts remain outside this subtree.
+
+`terminal.json` preserves the stop-post's raw `SERVICE_RESULT`, `EXIT_CODE` and
+`EXIT_STATUS`, explicit stop intent, final session classification and cleanup
+observation. A `complete` post receipt means ordinary processes were absent and
+disposable files removed while the finalizer was still running; it does not claim
+the entire cgroup was empty. The independent controller verifies eventual unit
+settlement and whole-cgroup emptiness. Later CLI retries retain that original
+receipt and write `reconciliation.json` separately.
+
+Explicit Manager or admitted external stop creates immutable intent. An internal
+ExecStop relay, SIGTERM or watchdog signal cannot create user intent. Prior
+session failures and watchdog/start failures remain failed. Requested fallback
+termination, including a timeout or SIGKILL with no prior session failure,
+remains stopped; its raw service result and unconfirmed graceful stages survive.
+Unexpected clean or signal exits without explicit intent are failed.
+
+Service hooks use the generation mutation lock and never acquire the per-name
+lifecycle lock held by a waiting CLI. No generation lock is held while waiting
+for service or transport completion. All metadata transitions preserve terminal
+failure against stale startup/status snapshots, and stale hooks cannot touch a
+replacement generation. Artifact-lock/write failure cannot prevent verified
+process termination and settings disposal, but it prevents claiming the records
+were preserved. Missing pidfd support or unverifiable surviving members withholds
+settings deletion and complete status.
+
+If the stop-post recorder itself is deliberately blocked or killed, systemd still
+terminates the owned processes within the qualified bound, but that disabled
+recorder cannot promise file disposal or a complete manifest. A later explicit
+status/stop reconciliation retries cleanup after proving quiescence. The required
+worker/bus/KWin/start/client failures complete autonomously with a functioning
+recorder. Measurements assume ordinary killable processes and normal local
+storage; uninterruptible kernel/filesystem stalls are not realtime guarantees.

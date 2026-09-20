@@ -1,0 +1,4 @@
+{"event": "startup_failure", "at": 150277.875173057}
+{"event": "release_attempt", "at": 150277.883860433, "deadline": 150278.3833755}
+{"event": "release_blocked", "at": 150277.883932564}
+{"event": "application_termination", "at": 150280.012076319, "signal": 15}

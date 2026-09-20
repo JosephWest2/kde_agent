@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 135, in <module>
+    worker(*args)
+    ~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 121, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True,
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        kdotool=None if mode in ('starting', 'failedstart') else kdotool,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        factory=Task, desktop_observer=observe,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        shutdown_hooks={'release': release, 'close': close})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue21-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 211, in run
+    raise foundation_error
+  File "/home/josephwest/development/kde-agent/.local/issue21-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 102, in tick
+    desktop_observer(foundation)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 119, in observe
+    raise ContractError('session_failed', 'Injected startup failure after descendants exist.')
+agent_desktop.contracts.ContractError: Injected startup failure after descendants exist.

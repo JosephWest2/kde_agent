@@ -157,7 +157,13 @@ class LifecycleProcessTests(unittest.TestCase):
         while not all(self.gone(identity) for identity in identities):
             self.assertLess(time.monotonic(), deadline)
             time.sleep(.01)
-        status = self.cli('status')
+        # Original children may exit before the independent stop-post finishes.
+        while True:
+            status = self.cli('status')
+            if status['ok']:
+                break
+            self.assertLess(time.monotonic(), deadline, status)
+            time.sleep(.01)
         self.assertEqual(status['result']['state'], 'failed', status)
         self.assertEqual(self.manifest(live)['first_failure'], 'session_failed')
 

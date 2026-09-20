@@ -78,7 +78,7 @@ def direct_snapshot(runtime, artifacts, data):
               'settings_removed': not (disposable / 'desktop').exists(),
               'sockets_removed': all(not (disposable / item).exists()
                                      for item in ('control.sock', 'priority.sock'))}
-    for item in ('terminal.json', 'manifest.json', 'shutdown.json', 'startup-failure.json'):
+    for item in ('terminal.json', 'reconciliation.json', 'manifest.json', 'shutdown.json', 'startup-failure.json'):
         if (folder / item).exists():
             result[item] = read(folder / item)
     if (folder / 'fixture-events.jsonl').exists():
@@ -322,6 +322,8 @@ def main(output, dependencies, selected):
                     case['reconciliation'] = control('status', name, mode, data['generation'])
                     case['after_reconciliation'] = direct_snapshot(runtime, artifacts, data)
                     assert case['after_reconciliation']['terminal.json']['cleanup'] == 'complete'
+                    assert case['after_reconciliation']['manifest.json']['cleanup']['state'] == 'complete'
+                    assert case['after_reconciliation']['settings_removed'] and case['after_reconciliation']['sockets_removed']
                 else:
                     terminal = observation['terminal.json']
                     assert terminal['producer'] == 'ExecStopPost', terminal

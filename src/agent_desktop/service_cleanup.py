@@ -103,6 +103,7 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
                    runtime_removed=False, cleanup='uncertain', stop_intent=stop_intent,
                    started_at=time.monotonic())
     store = None
+    target = None
     preserved = True
     try:
         # Artifact failures cannot gate verified process termination or disposal.
@@ -112,6 +113,9 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
             previous = store.read()
         except (ContractError, OSError):
             preserved = False
+        if store is not None:
+            target = store.path / ('terminal.json' if inside or not (store.path / 'terminal.json').exists()
+                                   else 'reconciliation.json')
         receipt['state'] = classify(data, previous, stop_intent, service_result, inside=inside, exit_status=exit_status)
         data['state'] = receipt['state']
         atomic(root / 'lifecycle.json', data)
@@ -128,7 +132,6 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
                     if old.get('generation') == data['generation']:
                         for key in ('service_result', 'exit_code', 'exit_status'):
                             receipt[key] = old.get(key)
-                target = terminal if inside or not terminal.exists() else store.path / 'reconciliation.json'
                 atomic(target, receipt)
                 store.generation_update(state=data['state'],
                     failure='session_failed' if data['state'] == 'failed' else None,
@@ -157,8 +160,8 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
         receipt.update(cleanup='uncertain', error=type(error).__name__, finished_at=time.monotonic())
         if store is not None:
             try:
-                target = store.path / ('terminal.json' if inside else 'reconciliation.json')
-                atomic(target, receipt)
+                if target is not None:
+                    atomic(target, receipt)
                 store.generation_update(state=data['state'], cleanup='uncertain')
             except Exception:
                 pass

@@ -113,6 +113,14 @@ class FinalizerTests(unittest.TestCase):
         self.manager._write(runtime, stale)
         self.assertEqual(read_metadata(runtime, 'default', data['generation'])['state'], 'failed')
 
+    def test_first_outside_reconciliation_completes_its_own_terminal_receipt(self):
+        runtime, data, root = self.setup_generation()
+        with generation_lock(runtime, data['generation']):
+            finalize(runtime, data, failed=True)
+        folder = Path(data['configuration']['artifacts']) / 'generations' / data['generation']
+        self.assertEqual(json.loads((folder / 'terminal.json').read_text())['cleanup'], 'complete')
+        self.assertFalse((folder / 'reconciliation.json').exists())
+
     def test_reconciliation_keeps_original_post_receipt(self):
         runtime, data, root = self.setup_generation()
         with generation_lock(runtime, data['generation']), \

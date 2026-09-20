@@ -227,7 +227,9 @@ class ProcessTests(unittest.TestCase):
     def start_worker(self, generation=GEN, *, production=False):
         out = (self.root / (generation + ".out")).open("w")
         err = (self.root / (generation + ".err")).open("w")
-        cmd = [sys.executable, "-m", "agent_desktop.worker", "--session", "default", "--generation", generation] if production else [sys.executable, str(Path(__file__).with_name("transport_worker_fixture.py")), "default", generation]
+        artifacts = tempfile.TemporaryDirectory(prefix="adt-artifacts-")
+        self.addCleanup(artifacts.cleanup)
+        cmd = [sys.executable, "-m", "agent_desktop.worker", "--session", "default", "--generation", generation, "--artifacts", artifacts.name] if production else [sys.executable, str(Path(__file__).with_name("transport_worker_fixture.py")), "default", generation]
         proc = subprocess.Popen(cmd, env=self.env, stdout=out, stderr=err)
         self.workers.append((proc, out, err))
         pointer = self.root / "agent-desktop/current/default.json"

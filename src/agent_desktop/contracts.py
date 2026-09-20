@@ -116,6 +116,8 @@ def environment(value):
         if not isinstance(key, str) or not ENV_NAME.fullmatch(key):
             invalid("env")
         result[key] = text(val, "env", empty=True)
+    from .environment import check_overrides
+    check_overrides(result)
     return result
 
 

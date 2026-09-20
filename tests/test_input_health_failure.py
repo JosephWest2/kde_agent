@@ -77,7 +77,6 @@ class InputHealthFailure(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='ihf-') as temporary:
             root = Path(temporary)
             provider = self.provider(root)
-            provider.phase = 'input_resumed'
             provider.cancel = Mock(wraps=provider.cancel)
             provider.log = Mock()
             provider.emissions = 0

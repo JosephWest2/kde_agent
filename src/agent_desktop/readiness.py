@@ -222,7 +222,7 @@ class Readiness:
         try:
             self.desktop.tick()
             if self.fatal:
-                raise self.fatal
+                self.fail(self.fatal, 'input_resumed')
             self.bus.tick()
             now = time.monotonic()
             if self.state == 'ready':

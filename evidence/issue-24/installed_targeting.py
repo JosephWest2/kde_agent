@@ -630,7 +630,7 @@ class Run:
             'var ws=workspace.windowList(); var moved=false;\n'
             'for(var i=0;i<ws.length && i<256;i++){var w=ws[i];'
             'if(String(w.internalId).replace(/[{}]/g,"").toLowerCase()===id){'
-            'var r=w.frameGeometry; r.x=r.x+50; r.y=r.y+30; w.frameGeometry=r; moved=true; break;}}\n'
+            'var r=Object.assign({},w.frameGeometry); r.x=r.x+50; r.y=r.y+30; w.frameGeometry=r; moved=true; break;}}\n'
             'output_result(JSON.stringify({moved:moved}));\n')
         name = 'evidence-move-' + self.gen
         binary = self.receipt['dependencies']['kdotool']['executable']

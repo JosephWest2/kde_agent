@@ -1,0 +1,1 @@
+{"event": "fixture_ready", "at": 166713.184031138, "pid": 1284020, "ppid": 1282165, "start_ticks": 16671314, "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-t3code-36657.scope", "role": "root", "mode": "resistant", "deadline": 166738.183958831}

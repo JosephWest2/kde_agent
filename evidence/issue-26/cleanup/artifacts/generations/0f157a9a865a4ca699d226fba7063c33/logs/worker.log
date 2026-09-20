@@ -1,0 +1,24 @@
+ 17:12:37 | WARN | Connection error: socket disconnected
+      ... | [0;34mWARN[0m | failed to send message: Broken pipe
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 155, in <module>
+    worker(*args)
+    ~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 141, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True,
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        kdotool=None if mode in ('starting', 'failedstart') else kdotool,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        factory=Task, desktop_observer=observe,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        shutdown_hooks={'release': release, 'close': close})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue26-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 282, in run
+    raise foundation_error
+  File "/home/josephwest/development/kde-agent/.local/issue26-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 131, in tick
+    foundation.tick()
+    ~~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue26-cleanup-venv/lib/python3.14/site-packages/agent_desktop/desktop.py", line 95, in tick
+    raise ContractError('session_failed', 'An essential private desktop child exited.',
+                        context={'component': component, 'returncode': child.returncode})
+agent_desktop.contracts.ContractError: An essential private desktop child exited.

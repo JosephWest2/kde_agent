@@ -80,6 +80,9 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     if request.operation == 'close':
                         from .closing import CloseTask
                         return CloseTask(request, context, readiness.adapter, applications, launch_health)
+                    if request.operation == 'kill':
+                        from .terminating import KillTask
+                        return KillTask(request, context, applications, launch_health)
                     if request.operation in ('focus', 'wait'):
                         from .targeting import TargetTask
                         return TargetTask(request, context, readiness.adapter, applications, launch_health)
@@ -236,7 +239,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if managed and request.operation == "session.status":
                 admission.complete(result=({"state": "starting", "desktop_ready": False}
                                            if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
-                    "supported_operations": ["launch", "windows", "focus", "wait", "close"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
+                    "supported_operations": ["launch", "windows", "focus", "wait", "close", "kill"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')

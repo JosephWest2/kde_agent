@@ -1,0 +1,14 @@
+{"at": 166785.388812897, "event": "native_start", "kind": "query", "request_id": "readiness-4859b5a53be34aa2b00c4ffe02072731", "query_id": "b6c69dcdf4e344b0ad11b349f9371d56", "deadline": 166785.888786952, "mode": "normal", "window": null}
+{"at": 166785.403923475, "event": "native_spawn", "kind": "query", "request_id": "readiness-4859b5a53be34aa2b00c4ffe02072731", "query_id": "b6c69dcdf4e344b0ad11b349f9371d56", "remove": false, "pid": 1284988, "argv": ["/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool", "--name", "agent-window-4859b5a53be34aa2b00c4ffe02072731-b6c69dcdf4e344b0ad11b349f9371d56", "kwinscript", "--file", "/tmp/a24-a6paa0hk/agent-desktop/g/4859b5a53be34aa2b00c4ffe02072731/desktop/tmp/agent-window-4859b5a53be34aa2b00c4ffe02072731-b6c69dcdf4e344b0ad11b349f9371d56/input.js"], "script_name": "agent-window-4859b5a53be34aa2b00c4ffe02072731-b6c69dcdf4e344b0ad11b349f9371d56"}
+{"at": 166785.500819962, "event": "native_complete", "kind": "query", "request_id": "readiness-4859b5a53be34aa2b00c4ffe02072731", "query_id": "b6c69dcdf4e344b0ad11b349f9371d56", "deadline": 166785.888786952, "accepted_at": 166785.473675123, "clean": true, "spawned": true, "script_absent": true, "reaped": true, "returncode": 0, "temporary_removed": true, "cleanup_deadline": null, "error": null, "max_glib_gap": 0.036137271992629394}
+{"at": 166785.864192365, "event": "glib_gap", "previous_at": 166785.760116209, "gap": 0.1040672049857676}
+{"at": 166786.08030135, "event": "target_start", "request_id": "8c2e109360aa4d6d8d69f2454a498241", "condition": "exit", "admitted_at": 166786.041873734, "deadline": 166786.641873734}
+{"at": 166786.080370102, "event": "target_phase", "request_id": "8c2e109360aa4d6d8d69f2454a498241", "phase": "exit_wait", "polls": 0}
+{"at": 166786.645368057, "event": "target_cancel", "request_id": "8c2e109360aa4d6d8d69f2454a498241", "reason": "timeout"}
+{"at": 166786.785324184, "event": "target_start", "request_id": "a4efbc2ed1304f968478029196a1575a", "condition": "exit", "admitted_at": 166786.748397807, "deadline": 166789.748397807}
+{"at": 166786.785345052, "event": "target_phase", "request_id": "a4efbc2ed1304f968478029196a1575a", "phase": "exit_wait", "polls": 0}
+{"at": 166787.828705032, "event": "target_complete", "request_id": "a4efbc2ed1304f968478029196a1575a", "polls": 0}
+{"at": 166787.957567224, "event": "target_start", "request_id": "f5145774fad94d92a75b55913543a684", "condition": "exit", "admitted_at": 166787.908578753, "deadline": 166788.408578753}
+{"at": 166787.95764695, "event": "target_phase", "request_id": "f5145774fad94d92a75b55913543a684", "phase": "exit_wait", "polls": 0}
+{"at": 166787.958880863, "event": "target_complete", "request_id": "f5145774fad94d92a75b55913543a684", "polls": 0}
+{"at": 166788.208139838, "event": "worker_trace_end", "last": 166788.198576833, "max_glib_gap": 0.1040672049857676, "heartbeat_count": 470, "artifact_writes": {"count": 56, "maximum": 0.013109038001857698}}

@@ -1,0 +1,15 @@
+Processing /tmp/kde-clean-source-c3gsicki/source
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: agent-desktop
+  Building wheel for agent-desktop (pyproject.toml): started
+  Building wheel for agent-desktop (pyproject.toml): finished with status 'done'
+  Created wheel for agent-desktop: filename=agent_desktop-0.1.0-py3-none-any.whl size=109046 sha256=2214668a2ac6d125838efb26f67448081eb1d2d7c5048b4352f06514b0e31935
+  Stored in directory: /tmp/pip-ephem-wheel-cache-dlfnnryj/wheels/f3/6b/07/67bc190c19dd1322306b185ab5a21511e3d3a29412220887d3
+Successfully built agent-desktop
+Installing collected packages: agent-desktop
+  Attempting uninstall: agent-desktop
+    Found existing installation: agent-desktop 0.1.0
+    Uninstalling agent-desktop-0.1.0:
+      Successfully uninstalled agent-desktop-0.1.0
+Successfully installed agent-desktop-0.1.0

@@ -231,7 +231,8 @@ class ObservationBudgetTests(unittest.TestCase):
         self.handle()
         self.app.dirty = True
         self.app.scanner = (pid for pid in [123])
-        with patch('agent_desktop.app_processes.time.monotonic', side_effect=[1, 1.003]), \
+        clock = iter([1, 1.003])
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: next(clock, 1.003)), \
                 patch('agent_desktop.app_processes.live') as polling:
             self.app.scan_turn()
         polling.assert_not_called()
@@ -292,7 +293,8 @@ class ObservationBudgetTests(unittest.TestCase):
         batches = []
         self.store.application_processes.side_effect = lambda app_id, batch: batches.append(list(batch))
         now[0] = 2
-        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]):
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch('agent_desktop.app_processes.live', return_value=False):
             self.app.scan_turn()
         self.assertEqual(batches, [[info]])
         self.assertEqual(self.app.pending_processes, [])
@@ -475,6 +477,9 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, 'application_active')
         self.assertEqual(app.state, 'root-exited')
         (app.path / 'cgroup.events').write_text('populated 0\n')
+        # Completion cannot discard even dead retained handles: the bounded
+        # Registry owner first settles their lifetimes and index entries.
+        app.scan_turn(deadline=time.monotonic() + .1)
         self.registry.available()
         self.assertIsNone(self.registry.active)
         record = json.loads((self.store.path / 'applications' / app.id / 'record.json').read_text())

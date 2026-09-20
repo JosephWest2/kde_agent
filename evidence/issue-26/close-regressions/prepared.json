@@ -1,0 +1,10 @@
+{
+  "commit": "52dbeae70e663bcc56cd945dc77fc496ab332145",
+  "archive_sha256": "2b5171fd237ad7c768201d0bdc9a7dec66f403c6e46b64726e77d9905cd1b8b6",
+  "wheel": "/home/josephwest/development/kde-agent/.local/issue26-close-52dbeae/wheels/agent_desktop-0.1.0-py3-none-any.whl",
+  "wheel_sha256": "813e8cda5c6773a0e9a81d7c0410214899615626583dcd080d7a03c6208a8a08",
+  "source": "/home/josephwest/development/kde-agent/.local/issue26-close-52dbeae/source",
+  "python": "/home/josephwest/development/kde-agent/.local/issue26-close-52dbeae/venv/bin/python",
+  "runner_sha256": "91b8786eac04b7f7c91ebb4aa615907bdfaf7836fbec0e6b2ddaad6425acba51",
+  "support_sha256": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6"
+}

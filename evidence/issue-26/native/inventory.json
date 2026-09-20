@@ -1,0 +1,195 @@
+{
+  "python": "3.14.7 (main, Aug 10 2026, 07:46:56) [GCC 16.1.1 20260728]",
+  "executable": "/home/josephwest/development/kde-agent/.local/issue26-native-52dbeae/venv/bin/python",
+  "installed_hashes": {
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "app_launcher.py": "9b188a9108de6dc3e0b0041430d07cd16f8ddb767208574b69cf0c1f400c3426",
+    "app_processes.py": "68430c9efe72bcdb8b3c5f8196996ae61a75ad4b753a82c3a34246638488bc8a",
+    "applications.py": "91ff674573bfab3f6de576126ba3bad3cd59378db35de18c0e6ec0046127a26b",
+    "artifacts.py": "cdc03069cde690dc4a263369144863610fb14dd17359778257bfd8967f7d64f6",
+    "children.py": "7658e7d0a4eaffb9a7a9d9af60e579d7c4545094be17468c13e7540038b272c6",
+    "cli.py": "524b6c6b78f9d1a234b15c0feee7fab24c45f0e2ac3e36bd220111d66614c18f",
+    "closing.py": "7aad5a8a1edf7a95b8eaa0ff2632bca708c3d82969fb639518a20099214a2c21",
+    "contracts.py": "d2f560eda1423ffdbfbb459642cc1eef9aa1564274e17df7499dbb566008069e",
+    "desktop.py": "9616454eaf194d4ef0a1dfeb78f861cfdb3208557b5f4cb93e5d0cbbb7550748",
+    "environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "health.py": "aacc877da08c10555ef171c6752873a7dfff302ea63b1f1b5ffbb25ea190fe4d",
+    "lifecycle.py": "5d52cf5481cff8ff9fa876929ac8548dda57f4258af502837620f8f957fcafa4",
+    "ownership.py": "9ae4c992b6f9039b6f9585cf0f7afa0149435ea932a2dc78016e3d0c0809244f",
+    "paths.py": "bbfe30260a16d0598f5283450d08b1847af1d0dc5a91bb02be806b2dbda14e61",
+    "prerequisites.py": "0bbdcf41f16c8aa70f3533f60a025720cd7600dec4893980408f072624ea5a9c",
+    "private_bus.py": "cfd38503f5af750b954ee8f31615335ec2314ed69124b9209f85a9862ff86ecc",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "provisional_binding.py": "71af566a95d3d55e55c0af49bd360252b4220833d5eae8de03c9a3064b9c62b1",
+    "provisional_capture.py": "55067fe8958cc79b94c54d0be6053140c7d76a752ee7574b9ab5eb2b32192d6a",
+    "provisional_codec.py": "a5e53ca203fe02f25f063f58081c6582abe35f7124dc474e3ce30b7d149dd2fe",
+    "provisional_input.py": "8d0a367da7c008cd91fd5086ac043514d308074362876951b89b2aa44b18b480",
+    "readiness.py": "a00fbb6b556b0c0715fb6e3e564fa39aaddb4c8ece96a49b7733c1f165744bfa",
+    "records.py": "66d55588d8c2d37fe7476d4ef3792e7a714a709bc7e47d058934199519ebbd1d",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "scheduler.py": "4544bd4cd42cec12a69c25dec5ed189b89b13d9f15e0bd4af4a3dd57db1963b1",
+    "service_cleanup.py": "d160784ff279ee18a96820cb27b12ce96d862eb45d01e6b0b5146975adf4dc8b",
+    "shutdown.py": "176588fb62a9b9d122e75691433158a6633af916ea8b407e2af237a72a2f30da",
+    "targeting.py": "d980ed3520006e4dee5f83d073295a2c4fefe1f3a50fc44672073a92ea2b92e7",
+    "terminating.py": "65e42877b7b3c5429a63356d0773f3a4f76f3f153eda35a9ac4be0f1250edf70",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "watchdog.py": "8a70877e25ae2b12c04455d9577444bf770bc9fa0b5787bbfb4810f7b4434506",
+    "window_query.js": "fbca21db8f49d061edd5664056356ec60002504c95e5aa2df07d545a9929cd46",
+    "window_types.py": "a5512712856fdb7bf2af8b4997fa01a0cdd1d32df4c77c7e7c4bcac8834029a3",
+    "windows.py": "09573c33b065b8c07d6f38f7ab23e44638d974113fd1287cdecb6cb49ffbc000",
+    "worker.py": "c9fe1080bae53582dc62ac8882650df3c998bc33719a00bae7d0498556fa5c6b"
+  },
+  "prepared": {
+    "commit": "52dbeae70e663bcc56cd945dc77fc496ab332145",
+    "archive_sha256": "2b5171fd237ad7c768201d0bdc9a7dec66f403c6e46b64726e77d9905cd1b8b6",
+    "wheel": "/home/josephwest/development/kde-agent/.local/issue26-native-52dbeae/wheels/agent_desktop-0.1.0-py3-none-any.whl",
+    "wheel_sha256": "6579ac1dd1f0fcfdc69db8e6b93ef9c6dac497e1048526f37cfc1883f61213b0",
+    "source": "/home/josephwest/development/kde-agent/.local/issue26-native-52dbeae/source",
+    "python": "/home/josephwest/development/kde-agent/.local/issue26-native-52dbeae/venv/bin/python",
+    "runner_sha256": "976af154b503c2c34dc7771661bdc77b76d274189ecc75b7150c60b74abf19c1",
+    "support_hashes": {
+      "evidence/issue-24/installed_targeting.py": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6",
+      "evidence/issue-25/installed_close.py": "91b8786eac04b7f7c91ebb4aa615907bdfaf7836fbec0e6b2ddaad6425acba51",
+      "evidence/issue-26/kill_fixture.py": "30bf8bf204f27d595f55e305df3a3dd5f4db6dee072a135fab4a35984ebc9c14"
+    }
+  },
+  "runner_sha256": "976af154b503c2c34dc7771661bdc77b76d274189ecc75b7150c60b74abf19c1",
+  "fixture_sha256": "30bf8bf204f27d595f55e305df3a3dd5f4db6dee072a135fab4a35984ebc9c14",
+  "support_hashes": {
+    "evidence/issue-24/installed_targeting.py": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6",
+    "evidence/issue-25/installed_close.py": "91b8786eac04b7f7c91ebb4aa615907bdfaf7836fbec0e6b2ddaad6425acba51",
+    "evidence/issue-26/kill_fixture.py": "30bf8bf204f27d595f55e305df3a3dd5f4db6dee072a135fab4a35984ebc9c14"
+  },
+  "dependencies": {
+    "schema_version": 1,
+    "scope": "prerequisites",
+    "dependency_root": "/home/josephwest/development/kde-agent/.local/dependencies",
+    "desktop_ready": false,
+    "desktop_launched": false,
+    "provider": "m1-provisional",
+    "production_readiness": false,
+    "release_qualified": false,
+    "replacement_issue": 35,
+    "capabilities": {
+      "control": "not_tested",
+      "window_query": "not_tested",
+      "input_resumed": "not_tested",
+      "screenshot": "not_tested"
+    },
+    "unsupported_operations": [
+      "launch",
+      "windows",
+      "focus",
+      "wait",
+      "key",
+      "type",
+      "click",
+      "input.reset",
+      "screenshot",
+      "logs",
+      "close",
+      "kill"
+    ],
+    "dependencies": [
+      {
+        "name": "kdotool",
+        "status": "passed",
+        "observed": {
+          "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+          "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+          "revision": "be03ce90c09350898556436bac74ed35fe928617",
+          "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+          "patches": [],
+          "version": "kdotool v0.3.0",
+          "provenance_verified": true,
+          "source_checkout_required": false
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "libei",
+        "status": "passed",
+        "observed": {
+          "path": "/usr/lib/libei.so.1",
+          "sha256": "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501",
+          "architecture": "x86_64",
+          "audit_issue": 12,
+          "compiler_required_at_runtime": false
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "python_bindings",
+        "status": "passed",
+        "observed": {
+          "python": "3.14.7",
+          "versions": {
+            "gi": "3.56.3",
+            "dbus": "1.4.0",
+            "PIL": "12.3.0",
+            "GLib": "2.88.3"
+          },
+          "origins": {
+            "gi": "/usr/lib/python3.14/site-packages/gi/__init__.py",
+            "dbus": "/usr/lib/python3.14/site-packages/dbus/__init__.py",
+            "PIL": "/usr/lib/python3.14/site-packages/PIL/__init__.py"
+          },
+          "gio_unix_fd": true,
+          "png": true,
+          "interpreter": "/home/josephwest/development/kde-agent/.local/issue26-native-52dbeae/venv/bin/python",
+          "isolated": true
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "runtime_executables",
+        "status": "passed",
+        "observed": {
+          "kwin_wayland": "/usr/bin/kwin_wayland",
+          "dbus-daemon": "/usr/bin/dbus-daemon",
+          "dbus-send": "/usr/bin/dbus-send",
+          "systemctl": "/usr/bin/systemctl",
+          "systemd-run": "/usr/bin/systemd-run",
+          "env": "/usr/bin/env",
+          "kwin_version": "kwin 6.7.5",
+          "systemd_version": "systemd 261 (261.3-1-arch)"
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "user_manager",
+        "status": "passed",
+        "observed": {
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice",
+          "observation": "read_only",
+          "service_creation": "not_tested",
+          "events_readable": true
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      }
+    ],
+    "elapsed_seconds": 0.184815,
+    "ok": true,
+    "kdotool": {
+      "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+      "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+      "revision": "be03ce90c09350898556436bac74ed35fe928617",
+      "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+      "patches": [],
+      "version": "kdotool v0.3.0",
+      "provenance_verified": true,
+      "source_checkout_required": false
+    }
+  }
+}

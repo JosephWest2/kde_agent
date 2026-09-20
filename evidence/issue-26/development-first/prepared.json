@@ -1,0 +1,14 @@
+{
+  "commit": "c950797b09b321ab01c1d8a94625e6c94b550b09",
+  "archive_sha256": "35d1db80f3f57ad90626ce8264527f98871cbc0bbc1906cc56fdff7236a655c5",
+  "wheel": "/home/josephwest/development/kde-agent/.local/issue26-native-c950797/wheels/agent_desktop-0.1.0-py3-none-any.whl",
+  "wheel_sha256": "eaf03016ce254e5fd7504bcaca023f5791b4bacfef72a3885ade97a9e0a8ce84",
+  "source": "/home/josephwest/development/kde-agent/.local/issue26-native-c950797/source",
+  "python": "/home/josephwest/development/kde-agent/.local/issue26-native-c950797/venv/bin/python",
+  "runner_sha256": "408f7d53d0393a0bbd2f5254a4b9c1af5a6a9ee11b35bc79b9068a76e39aeaea",
+  "support_hashes": {
+    "evidence/issue-24/installed_targeting.py": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6",
+    "evidence/issue-25/installed_close.py": "91b8786eac04b7f7c91ebb4aa615907bdfaf7836fbec0e6b2ddaad6425acba51",
+    "evidence/issue-26/kill_fixture.py": "30bf8bf204f27d595f55e305df3a3dd5f4db6dee072a135fab4a35984ebc9c14"
+  }
+}

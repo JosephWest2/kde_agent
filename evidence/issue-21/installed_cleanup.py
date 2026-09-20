@@ -451,10 +451,17 @@ def main(output, dependencies, selected):
                         root = runtime / 'agent-desktop/g' / replacement['generation']
                         paths = [runtime / 'agent-desktop/current' / (name + '.json'),
                                  root / 'lifecycle.json', root / 'service-control.json']
-                        paths += sorted(path for path in (root / 'desktop').rglob('*') if path.is_file())
+                        desktop_files = sorted(path for path in (root / 'desktop').rglob('*') if path.is_file())
+                        # KWin keeps writing its own preferences/caches after readiness.
+                        # Preserve those bytes diagnostically, but only toolkit control
+                        # state and endpoint files can support an unchanged assertion.
+                        compositor_home = root / 'desktop/home'
+                        paths += [path for path in desktop_files if not path.is_relative_to(compositor_home)]
                         state = properties(replacement)
                         return {'files': {str(path.relative_to(runtime)): hashlib.sha256(path.read_bytes()).hexdigest()
                                           for path in paths},
+                                'compositor_home_files': {str(path.relative_to(runtime)): hashlib.sha256(path.read_bytes()).hexdigest()
+                                                          for path in desktop_files if path.is_relative_to(compositor_home)},
                                 'properties': {key: state[key] for key in ('MainPID', 'ActiveState', 'SubState', 'ControlGroup')},
                                 'worker': identity(int(state['MainPID'])),
                                 'descendants': [read(replacement_folder / filename)
@@ -464,7 +471,9 @@ def main(output, dependencies, selected):
                     case['stale_replay'] = control('stale', name, 'native', data['generation'])
                     assert case['stale_replay']['response']['error']['code'] == 'generation_mismatch'
                     case['replacement_after'] = replacement_snapshot()
-                    assert case['replacement_before'] == case['replacement_after']
+                    case['replacement_comparison_scope'] = 'control files, endpoint files, service properties and process identities; compositor home is diagnostic'
+                    assert {k: v for k, v in case['replacement_before'].items() if k != 'compositor_home_files'} == {
+                        k: v for k, v in case['replacement_after'].items() if k != 'compositor_home_files'}
                     assert all(alive(item) for item in case['replacement_after']['descendants'])
                     stop, _ = raw(replacement, 'session.stop')
                     try:

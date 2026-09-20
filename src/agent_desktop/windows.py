@@ -110,6 +110,7 @@ class Query:
 
     def _spawn(self, remove=False):
         reads, writes = {}, {}
+        self.streams = reads  # Own each acquired read end before the next allocation.
         try:
             for key in ('stdout', 'stderr'):
                 reads[key], writes[key] = os.pipe2(os.O_CLOEXEC)

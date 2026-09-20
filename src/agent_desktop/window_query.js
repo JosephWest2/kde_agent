@@ -3,10 +3,10 @@ function nullable(value) { return value === undefined || value === null ? null :
 function rectangle(value) {
     if (value == null) return null;
     var keys = ['x', 'y', 'width', 'height'];
-    if (keys.some(k => value[k] == null)) return null;
     // JSON.stringify otherwise silently converts NaN/Infinity into valid nulls.
-    if (keys.some(k => typeof value[k] !== 'number' || !Number.isFinite(value[k])))
+    if (keys.some(k => value[k] != null && (typeof value[k] !== 'number' || !Number.isFinite(value[k]))))
         return {invalid: true};
+    if (keys.some(k => value[k] == null)) return null;
     return {x:value.x, y:value.y, width:value.width, height:value.height};
 }
 var active = workspace.activeWindow;

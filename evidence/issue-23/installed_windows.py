@@ -73,10 +73,10 @@ def worker(name, generation, artifacts, binary, fixture):
             if not remove and self.mode != 'normal':
                 # Fixed evidence-only scripts; no public request carries source.
                 scripts = {'malformed': 'output_result("not-json");',
-                    'missing': 'var deliberatelyNoCompletion = 1;',
-                    'stopped': 'var deliberatelyNoCompletion = 1;',
+                    'missing': 'callDBus = function () {};',
+                    'stopped': 'callDBus = function () {};',
                     'slow': 'var until = Date.now() + 800; while (Date.now() < until) {} output_result("late");',
-                    'remover_stall': 'var deliberatelyNoCompletion = 1;'}
+                    'remover_stall': 'var until = Date.now() + 800; while (Date.now() < until) {} output_result("late");'}
                 if self.mode in scripts:
                     (self.folder / 'input.js').write_text(scripts[self.mode])
             if remove and self.mode == 'remover_stall':
@@ -234,14 +234,36 @@ def main(output, dependencies):
                 timings = []
                 ids = []
                 start_at = time.monotonic()
+                pending = []
+                started_times = []
                 for index in range(count):
                     if cadence:
                         time.sleep(max(0, start_at + index * cadence - time.monotonic()))
-                    q = invoke(['windows', '--session', name])
-                    assert q['response']['ok'], q
-                    timings.append(q['elapsed'])
-                    ids.append(q['response']['request_id'])
-                batches[label] = {'cli_seconds': percentiles(timings), 'request_ids': ids}
+                        started_at = time.monotonic()
+                        child = subprocess.Popen([str(cli), '--json', 'windows', '--session', name], cwd='/', env=env,
+                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        pending.append((child, started_at))
+                        started_times.append(started_at)
+                    else:
+                        q = invoke(['windows', '--session', name])
+                        assert q['response']['ok'], q
+                        timings.append(q['elapsed'])
+                        ids.append(q['response']['request_id'])
+                for child, started_at in pending:
+                    stdout, stderr = child.communicate(timeout=10)
+                    q = json.loads(stdout)
+                    assert q['ok'], (q, stderr)
+                    ids.append(q['request_id'])
+                # Receipts use worker acceptance timestamps, not delayed communicate time.
+                worker_timings = []
+                for ident in ids:
+                    r = read(folder / ('query-' + ident + '.json'))
+                    worker_timings.append(r['accepted_at'] - (r['started_deadline'] - .5))
+                batches[label] = {'worker_seconds': percentiles(worker_timings), 'request_ids': ids}
+                if timings:
+                    batches[label]['cli_seconds'] = percentiles(timings)
+                if started_times:
+                    batches[label]['actual_start_intervals'] = [b-a for a,b in zip(started_times, started_times[1:])]
             case['batches'] = batches
             case['normal_receipts'] = [read(p) for p in folder.glob('query-*.json')]
         finally:
@@ -268,6 +290,8 @@ def main(output, dependencies):
                     assert fault['recovery']['response']['ok'], fault
                 if mode == 'stopped':
                     assert fault['receipt']['stopped_after_registration'], fault
+                if mode == 'remover_stall':
+                    assert not fault['receipt']['clean'] and not fault['receipt']['script_absent'], fault
             finally:
                 fault['stop'] = stop(name, data)
                 save(output / 'receipt.json', receipt)

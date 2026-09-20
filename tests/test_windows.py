@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 
 from agent_desktop import windows
 from agent_desktop.window_types import Bounds, Decoder, Window, encoded
-from agent_desktop.contracts import ContractError
+from agent_desktop.contracts import ContractError, make_request
 from agent_desktop.children import Children
 from agent_desktop.artifacts import Store, safe_projection
 from agent_desktop.app_processes import Registry, Application, birth
@@ -237,6 +237,54 @@ class QueryTests(unittest.TestCase):
         self.assertIsNone(query.parent_fd)
         query.cancel('timeout')
         self.clean(query)
+    def test_second_pipe_allocation_failure_closes_first_read_and_write(self):
+        query = self.adapter.start('request', time.monotonic() + .5)
+        created = []
+        original = os.pipe2
+        def pipes(flags):
+            if created:
+                raise OSError('second allocation failed')
+            pair = original(flags)
+            created.extend(pair)
+            return pair
+        with patch.object(windows.os, 'pipe2', side_effect=pipes):
+            with self.assertRaises(OSError):
+                while query.child is None:
+                    query.step()
+        for fd in created:
+            with self.assertRaises(OSError):
+                os.fstat(fd)
+        query.cancel('window_query_failed')
+        self.clean(query)
+
+    def test_retained_record_pending_previous_survives_post_replace_error(self):
+        request = make_request('launch', session='default', expected_generation=GEN,
+            caller_cwd='/', arguments={'argv':['/bin/true']})
+        token = self.store.request(request, time.monotonic(), time.monotonic()+10)
+        logs = {key:str(self.store.allocate(token,key)) for key in ('stdout','stderr')}
+        appid='b'*32
+        self.store.application_prepare(token,appid,executable='/bin/true',logs=logs,cgroup='/owned/applications/'+appid)
+        first={'query_id':'1'*32,'query_artifact':'window-observations/'+('1'*32)+'.json',
+               'observed_at':1.0,'accepted_at':1.1,'windows':[{'generation':GEN,'window_id':UID}]}
+        second=first|{'query_id':'2'*32,'query_artifact':'window-observations/'+('2'*32)+'.json','windows':[]}
+        self.store.application_windows(appid,None,first,'confirmed')
+        original=self.store._write
+        def replaced(*args,**kwargs):
+            original(*args,**kwargs)
+            raise ContractError('artifact_failed','post replace fsync failure')
+        with patch.object(self.store,'_write',side_effect=replaced), self.assertRaises(ContractError):
+            self.store.application_windows(appid,first,second,'pending')
+        retained=self.store.application_read(appid)
+        self.assertEqual(retained['windows'],first['windows'])
+        self.assertEqual(retained['window_observation'],first)
+        self.assertEqual(retained['pending_observation'],second)
+        record=self.store.path/'applications'/appid/'record.json'
+        value=json.loads(record.read_text());value['logs']=None
+        record.write_text(json.dumps(value))
+        with self.assertRaises(ContractError) as caught:
+            self.store.application_read(appid)
+        self.assertEqual(caught.exception.code,'artifact_failed')
+
     def test_open_failure_after_exclusive_mkdir_retains_cleanup_ownership(self):
         query = self.adapter.start('request', time.monotonic() + .5)
         original = os.open
@@ -335,6 +383,17 @@ class AssociationTests(unittest.TestCase):
             adapter.pins[old.uuid] = ('other', 1, 2, 'boot')
             self.assertEqual(query._association(old)[1], 'identity_changed')
             self.assertEqual(len(adapter.pins), 4096)
+    def test_app_change_before_final_commit_discards_all_staged_pins(self):
+        adapter=windows.Adapter(SimpleNamespace(),GEN,'/binary');adapter.registry=self.registry
+        query=adapter.start('request',time.monotonic()+.5)
+        query.bracket=self.registry.begin_window_observation()
+        query.phase='recheck';query.result={};query.rows=[];query.delta={UID:('b'*32,self.pid,self.key[1],'boot')}
+        self.registry.active=None
+        with self.assertRaises(ContractError):
+            query.step()
+        self.assertEqual(adapter.pins,{})
+        self.assertIsNone(query.accepted_at)
+
     def test_late_publication_retains_previous_and_pending(self):
         old = {'windows': [{'generation': GEN, 'window_id': UID}]}
         self.app.window_observation = old

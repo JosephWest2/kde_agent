@@ -700,7 +700,9 @@ class Store:
                 or value.get('state') not in ('prepared', 'execution-authorized', 'running', 'root-exited', 'all-exited', 'launch-failed')
                 or type(value.get('authorized')) is not bool or type(value.get('uncertain')) is not bool
                 or not isinstance(value.get('executable'), str) or not os.path.isabs(value['executable'])
+                or not isinstance(value.get('logs'), dict) or set(value['logs']) != {'stdout', 'stderr'}
                 or self.references({'logs': value.get('logs')}).get('logs') != value.get('logs')
+                or not isinstance(value.get('cgroup'), str) or not value['cgroup'].endswith('/applications/' + application_id)
                 or not isinstance(value.get('windows'), list) or len(value['windows']) > 256):
             fail('application_schema')
         process = value.get('process')
@@ -709,8 +711,7 @@ class Store:
                 {k: process.get(k) for k in ('pid', 'start_time_ticks')}):
             fail('application_schema')
         for ref in value['windows']:
-            if handle(ref, 'window')['generation'] != self.generation:
-                fail('identity')
+            self._window_handle(ref)
         for key in ('window_observation', 'previous_observation', 'candidate_observation'):
             if value.get(key) is not None:
                 self._window_reference(value[key])
@@ -718,6 +719,15 @@ class Store:
                 **{key: value.get(key) for key in ('process', 'executable', 'logs', 'state', 'exit_code', 'windows',
                    'window_observation', 'previous_observation')},
                 'pending_observation': value.get('candidate_observation') if value.get('window_publication') != 'confirmed' else None}
+
+    def _window_handle(self, ref):
+        try:
+            parsed = handle(ref, 'window')
+        except ContractError:
+            fail('window_reference')
+        if parsed['generation'] != self.generation:
+            fail('identity')
+        return parsed
 
     def _window_reference(self, observation):
         if (not isinstance(observation, dict) or set(observation) != {'query_artifact', 'query_id', 'observed_at', 'accepted_at', 'windows'}
@@ -727,8 +737,7 @@ class Store:
                 or not isinstance(observation['windows'], list) or len(observation['windows']) > 256):
             fail('window_reference')
         for ref in observation['windows']:
-            if handle(ref, 'window')['generation'] != self.generation:
-                fail('identity')
+            self._window_handle(ref)
 
     def application_windows(self, application_id, previous, candidate, state):
         identifier(application_id)

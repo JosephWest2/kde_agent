@@ -22,7 +22,7 @@ WINDOW = "{2a63a414-1509-460a-bff9-b7c1103ba8d5}"
 REF = GEN + ":" + WINDOW
 APP = GEN + ":app-1"
 VALID = {
-    "doctor": [], "session.start": [], "session.status": [], "session.stop": [],
+    "doctor": ["--dependency-root", "/missing-kde-test"], "session.start": ["--dependency-root", "/missing-kde-test"], "session.status": [], "session.stop": [],
     "launch": ["--", "/not/executed", "--help"], "windows": [],
     "focus": ["--window", REF], "wait": ["--for", "window", "--app", APP],
     "key": ["--window", REF, "CTRL+A"], "type": ["--window", REF, "hello"],
@@ -59,13 +59,13 @@ class CLITests(unittest.TestCase):
                     self.assertEqual(result["result"]["state"], "stopped")
                     continue
                 local = operation in {"doctor", "session.start"}
-                result = self.json_cli(*operation.split("."), *options, status=5 if local else 4)
+                result = self.json_cli(*operation.split("."), *options, status=3 if local else 4)
                 self.assertFalse(result["ok"])
                 self.assertEqual(result["operation"], operation)
-                self.assertEqual(result["error"]["code"], "unsupported_operation" if local else "session_not_found")
+                self.assertEqual(result["error"]["code"], "prerequisite_missing" if local else "session_not_found")
                 self.assertEqual(result["error"]["outcome"], "not_started")
                 if local:
-                    self.assertEqual(result["error"]["context"]["implementation_issue"], OPERATIONS[operation][2])
+                    self.assertIn("prerequisite_report", result["error"]["context"])
                 self.assertEqual(result["session"], None if operation == "doctor" else {"name": "default", "generation": None})
 
     def test_readable_default_help_version_and_error(self):
@@ -76,10 +76,10 @@ class CLITests(unittest.TestCase):
             self.assertEqual(result.stderr, "")
         version = self.run_cli("--version")
         self.assertEqual(version.stdout, "agent-desktop 0.1.0\n")
-        failure = self.run_cli("session", "start")
-        self.assertEqual(failure.returncode, 5)
+        failure = self.run_cli("session", "start", "--dependency-root", "/missing-kde-test")
+        self.assertEqual(failure.returncode, 3)
         self.assertEqual(failure.stdout, "")
-        self.assertIn("unsupported_operation", failure.stderr)
+        self.assertIn("prerequisite_missing", failure.stderr)
 
     def test_json_help_version_and_nested_mode_placement(self):
         for options in (["--help"], ["session", "--help"], ["launch", "--help"], ["input", "reset", "--help"], ["--version"]):
@@ -98,7 +98,7 @@ class CLITests(unittest.TestCase):
                     result = self.json_cli("session", "stop", "--session", "work", "--generation", GEN, status=0)
                     self.assertIsNone(result["session"]["generation"])
                     continue
-                result = self.json_cli(*operation.split("."), "--session", "work", "--generation", GEN, *options, status=5 if operation == "session.start" else 4)
+                result = self.json_cli(*operation.split("."), "--session", "work", "--generation", GEN, *options, status=3 if operation == "session.start" else 4)
                 self.assertEqual(result["session"], {"name": "work", "generation": None})
                 self.assertEqual(result["error"]["context"]["expected_generation"], GEN)
 
@@ -172,13 +172,13 @@ class CLITests(unittest.TestCase):
             ["--json", "launch", "--cwd", "relative", "--", "app"],
             ["launch", "--json", "--env", "KEY=value", "--", "app"],
             ["launch", "--session", "work", "--json", "--", "app"],
-            ["session", "--json", "start", "--session", "work"],
+            ["session", "--json", "start", "--session", "work", "--dependency-root", "/missing-kde-test"],
         ):
             with self.subTest(args=args):
                 result = self.run_cli(*args)
                 local = "start" in args
-                self.assertEqual(result.returncode, 5 if local else 4)
-                self.assertEqual(json.loads(result.stdout)["error"]["code"], "unsupported_operation" if local else "session_not_found")
+                self.assertEqual(result.returncode, 3 if local else 4)
+                self.assertEqual(json.loads(result.stdout)["error"]["code"], "prerequisite_missing" if local else "session_not_found")
 
     def test_unknown_mode_is_explicitly_unsupported(self):
         self.assertEqual(self.json_cli("session", "start", "--mode", "viewer")["error"]["code"], "unsupported_operation")

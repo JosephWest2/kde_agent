@@ -370,3 +370,17 @@ continue to use the private inner desktop.
 Private XWayland, richer input, other output layouts, multiple applications, and
 MCP integration require their own capability and validation work. They do not
 justify additional runtime backends or a plugin framework in the first version.
+
+
+### M3.3 implementation decision
+
+The user approved a packaged M1 provisional readiness provider and immutable
+`session start --dependency-root` configuration; no plugin framework or runtime
+checkout import is introduced. The existing GLib owner uses cancellable Gio
+asynchronous private bus/EIS setup, the audited libei owner and a killable capture
+child. Runtime readiness is explicit about provisional support and replacement
+by M7.1/#35. The user also approved systemd watchdog termination after 5s without
+GLib heartbeats, with explicit 3s abort escalation, healthy-start heartbeats every 1s,
+and independent bus/KWin observations sharing a 1s round. These policies implement
+REQ-009/011 without background heartbeats or automatic restart. See the detailed
+[lifecycle bounds](docs/LIFECYCLE.md#capability-readiness-and-live-health-20).

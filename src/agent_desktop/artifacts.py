@@ -326,7 +326,7 @@ class Store:
             except (ValueError, AttributeError):
                 return False
         if (not all(date(value[key]) for key in ('created_at', 'updated_at'))
-                or not member(value['state'], {'starting', 'running', 'stopped', 'failed'})
+                or not member(value['state'], {'starting', 'running', 'ready', 'stopping', 'stopped', 'failed'})
                 or not member(value['outcome'], {'pending', 'stopped', 'failed'}) or not code(value['first_failure'])):
             fail('schema')
         cleanup = value['cleanup']
@@ -405,7 +405,7 @@ class Store:
             return self._read(self.fd, 'manifest.json')
 
     def generation_update(self, *, state=None, failure=None, cleanup=None):
-        if state not in (None, 'running', 'stopped', 'failed') or failure not in (None, *EXIT_CODES):
+        if state not in (None, 'running', 'ready', 'stopping', 'stopped', 'failed') or failure not in (None, *EXIT_CODES):
             fail('schema')
         if cleanup not in (None, 'in_progress', 'complete', 'uncertain'):
             fail('schema')
@@ -414,7 +414,7 @@ class Store:
             if failure:
                 value['first_failure'] = value['first_failure'] or failure
             terminal = value['state'] in ('stopped', 'failed')
-            if state and not (terminal and state == 'running'):
+            if state and not (terminal and state in ('running', 'ready', 'stopping')):
                 value['state'] = 'failed' if value['first_failure'] else state
             if cleanup:
                 value['cleanup'] = {'state': cleanup, 'failure': failure or value['cleanup']['failure']}

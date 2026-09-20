@@ -55,6 +55,7 @@ def parser():
             if target in ARGUMENTS[operation]:
                 leaf.add_argument(f"--{target}", metavar="GENERATION:ID")
     leaves["doctor"].add_argument("--dependency-root", default=".local/dependencies")
+    leaves["session.start"].add_argument("--dependency-root", default=".local/dependencies")
     leaves["session.start"].add_argument("--mode", default="headless")
     leaves["session.start"].add_argument("--artifacts", default=".agent-desktop/artifacts")
     launch = leaves["launch"]
@@ -136,8 +137,14 @@ def main(argv=None):
     operation = None
     try:
         request, local_result, operation, json_mode = parse_request(argv, request_id, os.getcwd())
-        if request is not None and operation not in {"doctor", "session.start"}:
-            if operation in {"session.status", "session.stop"}:
+        if request is not None:
+            if operation == "doctor":
+                from .prerequisites import doctor
+                payload = response(request_id, operation, result=doctor(request))
+            elif operation == "session.start":
+                from .lifecycle import Manager
+                payload = Manager().start(request)
+            elif operation in {"session.status", "session.stop"}:
                 from .lifecycle import Manager
                 payload = Manager().handle(request)
             else:

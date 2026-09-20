@@ -55,8 +55,8 @@ class LifecycleTests(unittest.TestCase):
         self.env = patch.dict(os.environ, XDG_RUNTIME_DIR=str(self.runtime))
         self.env.start()
         self.services = Services()
-        self.manager = Manager(systemd=self.services)
-        self.ping = patch.object(self.manager, '_ping', return_value={'desktop_ready': False})
+        self.manager = Manager(systemd=self.services, worker_command=lambda data: ['/fixture'])
+        self.ping = patch.object(self.manager, '_ping', return_value={'state': 'starting', 'desktop_ready': False})
         self.ping.start()
 
     def tearDown(self):
@@ -73,6 +73,73 @@ class LifecycleTests(unittest.TestCase):
 
     def start(self):
         return self.manager.start(self.request())['session']['generation']
+
+    def test_ready_status_requires_fresh_complete_correlated_health(self):
+        self.ping.stop()
+        from copy import deepcopy
+        generation = 'a' * 32
+        base = {'state': 'ready', 'desktop_ready': True, 'observed_at': time.monotonic(),
+                'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
+                'health': {key: {'state': 'passed', 'observed_at': time.monotonic()} for key in
+                           ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot')}}
+        with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': deepcopy(base)}):
+            result = self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
+            self.assertEqual(result['health']['control']['state'], 'passed')
+        variants = [dict(base, observed_at=time.monotonic()-3), dict(base, observed_at=float('nan')),
+                    dict(base, health=[]), dict(base, desktop_ready=False), dict(base, release_qualified=True)]
+        for key in base['health']:
+            changed = deepcopy(base)
+            changed['health'][key] = {'state': 'pending'}
+            variants.append(changed)
+        for component in ('bus', 'compositor'):
+            for observed in (None, True, 'recent', 10**400, -(10**400), float('nan'), float('inf'), time.monotonic()+1, time.monotonic()-3.5):
+                changed = deepcopy(base)
+                changed['health'][component]['observed_at'] = observed
+                variants.append(changed)
+            changed = deepcopy(base)
+            del changed['health'][component]['observed_at']
+            variants.append(changed)
+        for result in variants:
+            with self.subTest(result=result), patch('agent_desktop.lifecycle.exchange',
+                    return_value={'ok': True, 'result': result}), self.assertRaises(ContractError):
+                self.manager._ping(self.request('session.status'), generation, time.monotonic()+1)
+        with patch('agent_desktop.lifecycle.exchange', return_value={'ok': False}), self.assertRaises(ContractError):
+            self.manager._ping(self.request('session.status'), generation, time.monotonic()+1)
+
+    def test_old_configuration_remains_stoppable_but_not_compatible(self):
+        generation = self.start()
+        runtime = Runtime()
+        data = read_metadata(runtime, 'default', generation)
+        del data['configuration']['dependency_root']
+        self.manager._write(runtime, data)
+        with self.assertRaises(ContractError) as caught:
+            self.manager.start(self.request())
+        self.assertEqual(caught.exception.code, 'session_conflict')
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['cleanup'], 'complete')
+
+    def test_dependency_root_is_normalized_immutable_configuration(self):
+        generation = self.start()
+        runtime = Runtime()
+        data = read_metadata(runtime, 'default', generation)
+        self.assertEqual(data['configuration']['dependency_root'], str(self.root / '.local/dependencies'))
+        request = make_request('session.start', caller_cwd=str(self.root),
+            arguments={'artifacts': str(self.root / 'artifacts'), 'dependency_root': '/different'})
+        with self.assertRaises(ContractError) as caught:
+            self.manager.start(request)
+        self.assertEqual(caught.exception.code, 'session_conflict')
+
+    def test_ready_generation_unexpected_exit_remains_failed(self):
+        self.ping.stop()
+        self.ping = patch.object(self.manager, '_ping', return_value={'state': 'ready', 'desktop_ready': True})
+        self.ping.start()
+        generation = self.start()
+        runtime = Runtime()
+        data = read_metadata(runtime, 'default', generation)
+        self.assertEqual(data['state'], 'ready')
+        self.services.active[data['unit']] = False
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'failed')
 
     def test_duplicate_conflict_stop_restart_and_managed_endpoint_no_lock_deadlock(self):
         first = self.start()

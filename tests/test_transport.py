@@ -286,7 +286,7 @@ class ProcessTests(unittest.TestCase):
         self.assertEqual(code, 5)
         self.assertEqual(result["session"]["generation"], OTHER)
         self.assertEqual(result["error"]["code"], "unsupported_operation")
-        self.assertEqual(self.cli("session", "start")[0], 5)
+        self.assertEqual(self.cli("session", "start", "--dependency-root", "/missing-kde-test")[0], 3)
         self.assertEqual(self.cli("session", "stop")[0], 5)
         self.assertIsNone(self.workers[-1][0].poll())
 

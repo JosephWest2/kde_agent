@@ -1,0 +1,3341 @@
+{
+  "schema_version": 1,
+  "scope": "installed M1-provisional issue-20 evidence",
+  "production_readiness": false,
+  "release_qualified": false,
+  "replacement_issue": 35,
+  "installed_module": "/home/josephwest/development/kde-agent/.local/issue20-venv/lib/python3.14/site-packages/agent_desktop/__init__.py",
+  "interpreter": "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/python",
+  "caller_cwd": "/",
+  "dependency_root": "/home/josephwest/development/kde-agent/.local/dependencies",
+  "cases": {
+    "healthy": {
+      "start": {
+        "elapsed_seconds": 0.84555,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "dade3e430cfe4455b97a2bd9aeef72c0",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-healthy",
+            "generation": "47a7d37a4d7a4584939880603982fca1"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147186.362871236,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147186.240569537,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147186.24480893,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147186.344036338,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/47a7d37a4d7a4584939880603982fca1/readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147186.348842591
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147186.348843467
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147186.388729219
+              }
+            },
+            "failure": null,
+            "worker_pid": 884778,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-healthy",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "884778",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-47a7d37a4d7a4584939880603982fca1.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 884778,
+          "start_ticks": "14718591",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-47a7d37a4d7a4584939880603982fca1.service"
+        },
+        "bus": {
+          "pid": 884782,
+          "start_ticks": "14718602",
+          "ppid": 884778,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-47a7d37a4d7a4584939880603982fca1.service"
+        },
+        "compositor": {
+          "pid": 884786,
+          "start_ticks": "14718606",
+          "ppid": 884778,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-47a7d37a4d7a4584939880603982fca1.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "884778"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "duplicate": {
+        "elapsed_seconds": 0.251649,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "a7848c25d5cb49c2b658616870b1cefc",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-healthy",
+            "generation": "47a7d37a4d7a4584939880603982fca1"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147186.616043945,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147186.240569537,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147186.24480893,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147186.344036338,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/47a7d37a4d7a4584939880603982fca1/readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147186.348842591
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147186.348843467
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147186.643452057
+              }
+            },
+            "failure": null,
+            "worker_pid": 884778,
+            "reused": true
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-healthy",
+          "--generation",
+          "47a7d37a4d7a4584939880603982fca1",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "status": {
+        "elapsed_seconds": 0.079013,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "dc4d5a5fa9984b87aef8ae123bc8aeea",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-healthy",
+            "generation": "47a7d37a4d7a4584939880603982fca1"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147186.703802514,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147186.240569537,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147186.24480893,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147186.344036338,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/47a7d37a4d7a4584939880603982fca1/readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147186.348842591
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147186.348843467
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147186.728518497
+              }
+            },
+            "failure": null,
+            "worker_pid": 884778
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-healthy",
+          "--generation",
+          "47a7d37a4d7a4584939880603982fca1"
+        ]
+      },
+      "stop": {
+        "elapsed_seconds": 0.098202,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "6ee203020ecb4ab893d2346e53d90431",
+          "operation": "session.stop",
+          "ok": true,
+          "session": {
+            "name": "a20-healthy",
+            "generation": "47a7d37a4d7a4584939880603982fca1"
+          },
+          "result": {
+            "state": "stopped",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "records_preserved": true
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "stop",
+          "--session",
+          "a20-healthy",
+          "--generation",
+          "47a7d37a4d7a4584939880603982fca1"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 924,
+            "sha256": "0fba68df7c1158fab31e8f5bd5c7346e771ce5d428609072947a60ad4259ba8d",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 304,
+            "sha256": "0f6c573e2d8200052b58fe2384b183acc4d2dcd4462581a941864a3b8fd80ea7",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "0b385c851edd813abd0133eac4cb0380cf9fd79cad770876752d519425d8240b",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 821,
+            "sha256": "ef49b061fcc88c42a60c8325bd6f147b09872595c1504e8ea5e65219bf1e1f5e",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "52e3b88cc11aa90dd71a55dee1c4b5b492b3821db482457d01f3778525e7bcc3",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "12fcd17695411c642d4883f40f114185ed3e2254d0bd61da0fef38d7402372cb",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/request.json": {
+            "size": 574,
+            "sha256": "64e85f979ab7556366dce71c7e26aaeaf1be93cf7de6834aaab7b800482d5556",
+            "mode": "0o600"
+          },
+          "readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-7a93ba335b8d42d89b31546fd9e4ea64/result.json": {
+            "size": 979,
+            "sha256": "86494accd3eae278b04e55d23bab5bed1098c649314561c6ce45e63175ea09e9",
+            "mode": "0o600"
+          },
+          "requests/b5af0d03b93844fcac7a31d269f6a3cb/15abd6fd39e5458c8d6a8a0bfc17dbce/record.json": {
+            "size": 603,
+            "sha256": "eddb83c8a3982e3a592ad132293d59d2044985bfbec1c551474f37aa7ff49417",
+            "mode": "0o600"
+          },
+          "requests/622defe58d034c289e8f56d946554577/f96809e301ed49c3aeefb387323c8d75/record.json": {
+            "size": 603,
+            "sha256": "84627d8233b24dd2005277a69bb8fc27dc943adf314f8d49337a4e9482fde2ab",
+            "mode": "0o600"
+          },
+          "requests/5886a8e4178047acb95563ef86d26f92/dc71cff9108c487195c05ac020fb9d87/record.json": {
+            "size": 602,
+            "sha256": "36024fbf2af433993ffd92f47775b774db4a7cb73406dcd8a91fc3140a7e1d77",
+            "mode": "0o600"
+          },
+          "requests/eefd45d9c3dd4c34ba2f1b02ea57e5b4/fb2abba783894ba5861a9c53413c9aec/record.json": {
+            "size": 603,
+            "sha256": "0064be7028d782321fe97333bfd3666f9466d0eb64543dd09d8366c752495e0c",
+            "mode": "0o600"
+          },
+          "requests/a9105da37a59431f977e1316d594bd64/fcc2a76605384bc9a4c4c378bb04b319/record.json": {
+            "size": 603,
+            "sha256": "d0b89228f28fd59c0383326ecea671d0169108723528aa8b7a702370a28e128d",
+            "mode": "0o600"
+          },
+          "requests/53597328e4244625bdf9afdbe628edc5/62d2527222244d31990f0d96b3fb0d1d/record.json": {
+            "size": 605,
+            "sha256": "f1509376500066dad0554c160ab0c9696f3de78d2e7345d38e8851018991ea74",
+            "mode": "0o600"
+          },
+          "requests/413b684e9b114469973b302992b14a7d/0f38c784d4ed4a29962a7f95b3d20847/record.json": {
+            "size": 603,
+            "sha256": "d2133942a854b6490a3261d2d124791f7adf34cf605d0638e7f71e18f59aaabb",
+            "mode": "0o600"
+          },
+          "requests/487aef12775a493bb7c5f980d44b0837/0ef928d7cf1e4ad9a663dbcd4ba7b09e/record.json": {
+            "size": 603,
+            "sha256": "1dceac31151e0302f137b53b1dd0a4feba0da8ffdb39304073531111ecd29b60",
+            "mode": "0o600"
+          },
+          "requests/9494331001824f53a691ed7ab9c0c3ce/ba21a2a3a2de4e1fa8ec116df73626a7/record.json": {
+            "size": 602,
+            "sha256": "63fce85eeff8be63b90c7423c14fff6a95a2b904b86d95b86462aa44fd92fa2b",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-healthy",
+          "generation": "47a7d37a4d7a4584939880603982fca1",
+          "created_at": "2026-09-20T16:50:37.010069+00:00",
+          "updated_at": "2026-09-20T16:50:37.944256+00:00",
+          "mode": "headless",
+          "state": "stopped",
+          "outcome": "stopped",
+          "first_failure": null,
+          "cleanup": {
+            "state": "complete",
+            "failure": null
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 884778,
+            "start_ticks": "14718591",
+            "service": "agent-desktop-47a7d37a4d7a4584939880603982fca1.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        }
+      },
+      "passed": true
+    },
+    "bus-SIGKILL": {
+      "start": {
+        "elapsed_seconds": 0.80071,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "13357b8dc4564a14bf028d9c915312f2",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-bus-sigkill",
+            "generation": "58a15bc766584e8e96833aeb66363b99"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147187.609612209,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147187.472299309,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147187.477310244,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147187.575634125,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/58a15bc766584e8e96833aeb66363b99/readiness/capture-3a0d36d1ae5c4360bb4439d0b10b51c3/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147187.580833901
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147187.580834722
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147187.63582861
+              }
+            },
+            "failure": null,
+            "worker_pid": 884851,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-bus-sigkill",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "884851",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-58a15bc766584e8e96833aeb66363b99.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 884851,
+          "start_ticks": "14718716",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-58a15bc766584e8e96833aeb66363b99.service"
+        },
+        "bus": {
+          "pid": 884862,
+          "start_ticks": "14718726",
+          "ppid": 884851,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-58a15bc766584e8e96833aeb66363b99.service"
+        },
+        "compositor": {
+          "pid": 884866,
+          "start_ticks": "14718727",
+          "ppid": 884851,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-58a15bc766584e8e96833aeb66363b99.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "884851"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "bus",
+        "signal": "SIGKILL",
+        "pid": 884862
+      },
+      "rejected_work": {
+        "elapsed_seconds": 0.038189,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "5f39b0fb1398482da026a6faa0ddea29",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-bus-sigkill",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "58a15bc766584e8e96833aeb66363b99"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-bus-sigkill",
+          "--generation",
+          "58a15bc766584e8e96833aeb66363b99"
+        ]
+      },
+      "no_client_until_empty": false,
+      "empty_after_seconds": 0.238803,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.066897,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "c8fcafd15d8c497ba69bb5985f43bd23",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-bus-sigkill",
+            "generation": "58a15bc766584e8e96833aeb66363b99"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": {
+              "generation": "58a15bc766584e8e96833aeb66363b99",
+              "code": "session_failed",
+              "message": "An essential private desktop child exited.",
+              "context": {
+                "component": "bus",
+                "returncode": -9
+              }
+            }
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-bus-sigkill",
+          "--generation",
+          "58a15bc766584e8e96833aeb66363b99"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.050214,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "4f6abb31cd30433bbf576c44f6d39fdb",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-bus-sigkill",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "58a15bc766584e8e96833aeb66363b99"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-bus-sigkill",
+          "--generation",
+          "58a15bc766584e8e96833aeb66363b99"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "startup-failure.json": {
+            "size": 184,
+            "sha256": "5b517f76a1c551a1676e78f8d587ecbe6cd9356776a8d74ad5e9c875bac1e10d",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 950,
+            "sha256": "f843b9912d4225ebd4c365d1f1681f5c4286cd25ee65d07091235761dbb2e3f3",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 385,
+            "sha256": "183a900320df7efc1fcaff611db37960c9d6b5aa5b408fbbb7f536939d830171",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "752c8406faada8404d4ea0df5ef36e889d9bdd0f2652420b57f2b4620068e18c",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 1012,
+            "sha256": "31254969280789f6cf814df3abc3fc9de1a5b628d232375f2f66976544505e81",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "3872259f0d9ba1665ce13d0f1878c3cb0a68eea345d3aa089431577f58ea1f8e",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "c8506e7fc5af2d70cf756ac05769431e9b37eb94a09dc651afa98656d04bb128",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-3a0d36d1ae5c4360bb4439d0b10b51c3/request.json": {
+            "size": 574,
+            "sha256": "f3bd8f3858b05734473e993850943d5f00f614280626d1d85d58ade1ab0777b5",
+            "mode": "0o600"
+          },
+          "readiness/capture-3a0d36d1ae5c4360bb4439d0b10b51c3/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-3a0d36d1ae5c4360bb4439d0b10b51c3/result.json": {
+            "size": 979,
+            "sha256": "7ac337020ab7dd4389de555c766ff7c1e8a22e964c5b1711985b9490b9645ed3",
+            "mode": "0o600"
+          },
+          "requests/bd73610ecb794f91a20a682f70f06e45/75667b7d308447b09947c945870020fc/record.json": {
+            "size": 609,
+            "sha256": "93a2c84d2a1bc0d8fb5c477ddec1fec162107552371429e8534a6f4448613da8",
+            "mode": "0o600"
+          },
+          "requests/61458db6cf6c417c831c058bc795a4cb/2a92c3b223d0444ab1cc34f8bd7a71e5/record.json": {
+            "size": 607,
+            "sha256": "86259e3042fccf5105a13170b99d22b90cec4b175c8f35ac29961b4325004a1c",
+            "mode": "0o600"
+          },
+          "requests/c0080fefe2ba4cc09e9d0a1d9e9d6616/f4e51e9500d34f92812613d0bbe3c8c6/record.json": {
+            "size": 607,
+            "sha256": "ff0de7e7699438009130939c46f7cce634d8db2c585ddc5e7a9c41796f44c200",
+            "mode": "0o600"
+          },
+          "requests/92c1e288654a4687a14a1c78f674da2b/11f34cd285cb463197e892c758e6db24/record.json": {
+            "size": 609,
+            "sha256": "7b70609a22c8d72005b813c23bf9d77c1e8862723ed632bdff0bb805d6a325fd",
+            "mode": "0o600"
+          },
+          "requests/42e780ab1ccb40a2a88b903a56d6dd16/3a89cd7d71fa4789b57eae31d079464a/record.json": {
+            "size": 607,
+            "sha256": "7a9915e05ddbb04442d98f63369ec220f6ffc0930da924ff7e9a596c3478884e",
+            "mode": "0o600"
+          },
+          "requests/476c98f114b04df1b528c1d93361cb79/62870ff9070c4ec3b4ca791faaf025eb/record.json": {
+            "size": 607,
+            "sha256": "5255cd197216129277de32bb5b62e9de43007c41360a43f9e6fd9dd3c2ab2d40",
+            "mode": "0o600"
+          },
+          "requests/4776c61a106446a6a5717cf041fdea1f/5a5830627f3c40768a18607f9d4747ad/record.json": {
+            "size": 607,
+            "sha256": "c2720d79dbc6705d65184c20167b2fb870198d1f99257d526bfd0d7f8760e442",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-bus-sigkill",
+          "generation": "58a15bc766584e8e96833aeb66363b99",
+          "created_at": "2026-09-20T16:50:38.259158+00:00",
+          "updated_at": "2026-09-20T16:50:39.070703+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 884851,
+            "start_ticks": "14718716",
+            "service": "agent-desktop-58a15bc766584e8e96833aeb66363b99.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "startup-failure.json": {
+          "generation": "58a15bc766584e8e96833aeb66363b99",
+          "code": "session_failed",
+          "message": "An essential private desktop child exited.",
+          "context": {
+            "component": "bus",
+            "returncode": -9
+          }
+        }
+      },
+      "passed": true
+    },
+    "bus-SIGSTOP": {
+      "start": {
+        "elapsed_seconds": 0.775628,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "1b1717f3692e4c329ce944f2944b7342",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-bus-sigstop",
+            "generation": "add8079f1d7a4377bfcc2d4598e7f495"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147188.759634904,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147188.647782825,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147188.65245649,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147188.746410474,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/add8079f1d7a4377bfcc2d4598e7f495/readiness/capture-ce88e11eea28424fa84b62238bfe1406/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147188.751275268
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147188.751276201
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147188.784596661
+              }
+            },
+            "failure": null,
+            "worker_pid": 884920,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-bus-sigstop",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "884920",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-add8079f1d7a4377bfcc2d4598e7f495.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 884920,
+          "start_ticks": "14718831",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-add8079f1d7a4377bfcc2d4598e7f495.service"
+        },
+        "bus": {
+          "pid": 884924,
+          "start_ticks": "14718843",
+          "ppid": 884920,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-add8079f1d7a4377bfcc2d4598e7f495.service"
+        },
+        "compositor": {
+          "pid": 884928,
+          "start_ticks": "14718846",
+          "ppid": 884920,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-add8079f1d7a4377bfcc2d4598e7f495.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "884920"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "bus",
+        "signal": "SIGSTOP",
+        "pid": 884924
+      },
+      "rejected_work": {
+        "elapsed_seconds": 0.051931,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "efa386ddf30b43fda40c09073efb2aae",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-bus-sigstop",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "add8079f1d7a4377bfcc2d4598e7f495"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-bus-sigstop",
+          "--generation",
+          "add8079f1d7a4377bfcc2d4598e7f495"
+        ]
+      },
+      "no_client_until_empty": false,
+      "empty_after_seconds": 2.252183,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.070417,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "006dd906268c4158a142ed47600f6ee7",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-bus-sigstop",
+            "generation": "add8079f1d7a4377bfcc2d4598e7f495"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": {
+              "generation": "add8079f1d7a4377bfcc2d4598e7f495",
+              "code": "timeout",
+              "message": "Essential health observation expired.",
+              "context": {
+                "component": "bus"
+              }
+            }
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-bus-sigstop",
+          "--generation",
+          "add8079f1d7a4377bfcc2d4598e7f495"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.040305,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "ba14c77b7dbe411ca63c9bd565131466",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-bus-sigstop",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "add8079f1d7a4377bfcc2d4598e7f495"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-bus-sigstop",
+          "--generation",
+          "add8079f1d7a4377bfcc2d4598e7f495"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "startup-failure.json": {
+            "size": 154,
+            "sha256": "3bb825b6926c67f1fda304e00dcded5a03ef7241938b5485a2f69560f941d969",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 950,
+            "sha256": "b6a1c31a647d4bdba33bd4012eeea508cf23411ac4981bc07055b52fa2880826",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 373,
+            "sha256": "bfd3004cbcf488c539574cbbaac58e57f99a95bb08c46d6e0857684e0da34c90",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "20f2e19ed87c7aa57e6f67e5ce26756cb15829b1371afd7e7fd74a47780e7d45",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 992,
+            "sha256": "00bfd36110421403260ab49373f8e930cc95dba4e6efcaf481888cf338f8ae7a",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "27d8669a567134a4755e5abfb34620b73e6d56b18ef97f9ab367c22fab0462fd",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "42dfef8dba94b91b47b4f9e147ef40001a21d19f4247685a5914f48c9fc1e7d3",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-ce88e11eea28424fa84b62238bfe1406/request.json": {
+            "size": 574,
+            "sha256": "1fc2e9e71c950b305052129954688b21f36a48f20fbf722674cb572e65e132d6",
+            "mode": "0o600"
+          },
+          "readiness/capture-ce88e11eea28424fa84b62238bfe1406/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-ce88e11eea28424fa84b62238bfe1406/result.json": {
+            "size": 979,
+            "sha256": "8e65c39e960b01673af1449e0df0550a2b0ff1f3da4c8612652d07751f9aebcb",
+            "mode": "0o600"
+          },
+          "requests/e6c280c216314498adb85f41442d61d1/fd773f83b22740e4b1c87637d6547491/record.json": {
+            "size": 609,
+            "sha256": "b5ba858b1f5634b473108688727522cef8d3c3f1a192903e6cf9987c9b371bbf",
+            "mode": "0o600"
+          },
+          "requests/cbe1ac05cf444d668c66b303cf8feeec/5bd8d55aada546dd9e5725073b6da0db/record.json": {
+            "size": 609,
+            "sha256": "93700b2c6348809ae1a046bbef6cc959fb33e047459e3d0aee21643b62c69a43",
+            "mode": "0o600"
+          },
+          "requests/7674bcac30c44490bf8a8b8ba98c5c0b/69de0111e9424bd79a52eeb703f2c507/record.json": {
+            "size": 606,
+            "sha256": "9fda3da4726fb9e3caaca437a3a401a93d92c58c1fb6370d24ac63b0ae555b7e",
+            "mode": "0o600"
+          },
+          "requests/b19eb5edfdc9455e928e372513f75267/b48f442167224cec8df101fb6251cb3a/record.json": {
+            "size": 606,
+            "sha256": "5b0b5127b0b04b5c339b4e59427fd49327e664885cb2f0dfd361947cce783dfe",
+            "mode": "0o600"
+          },
+          "requests/da3d29b0964f42a6aeec4070b1228675/3e3b35a11f684214b34f99e6eab90129/record.json": {
+            "size": 609,
+            "sha256": "0a85a9fe39b1267b6fca7ccdb0a368eb88b4cb4fb38833430a308317bb4bd596",
+            "mode": "0o600"
+          },
+          "requests/4b84a0eca65c42eebd77b9ee44a3f60b/0458559e6d814d279beb56d8f772dfba/record.json": {
+            "size": 606,
+            "sha256": "eba1ebc6a1f52e6c0e7b2f96503c9a6a79ed0bb3e227049e026744d1edb03d20",
+            "mode": "0o600"
+          },
+          "requests/3ddfb0622aac4fc9a5e00dc15d76fc1c/e58beb852f8c47b390363f6708aef0bf/record.json": {
+            "size": 608,
+            "sha256": "1bd77c3ab294cb110991a520575f48bf42bea3cc3a4112c75aa7d1240718873b",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-bus-sigstop",
+          "generation": "add8079f1d7a4377bfcc2d4598e7f495",
+          "created_at": "2026-09-20T16:50:39.411815+00:00",
+          "updated_at": "2026-09-20T16:50:42.236264+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 884920,
+            "start_ticks": "14718831",
+            "service": "agent-desktop-add8079f1d7a4377bfcc2d4598e7f495.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "startup-failure.json": {
+          "generation": "add8079f1d7a4377bfcc2d4598e7f495",
+          "code": "timeout",
+          "message": "Essential health observation expired.",
+          "context": {
+            "component": "bus"
+          }
+        }
+      },
+      "passed": true
+    },
+    "compositor-SIGKILL": {
+      "start": {
+        "elapsed_seconds": 0.748499,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "9854a2bb8fa34fd7b2a8af3a7fe5b8eb",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-compositor-sigkill",
+            "generation": "5ed48f2ed95145e98e3a05ab2aeb10f0"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147191.896122932,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147191.745453782,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147191.75036006,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147191.867466862,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/5ed48f2ed95145e98e3a05ab2aeb10f0/readiness/capture-1cb1cbe6aa754e19adfaa6b6b514a6f7/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147191.872645585
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147191.87264647
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147191.919909024
+              }
+            },
+            "failure": null,
+            "worker_pid": 884995,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-compositor-sigkill",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "884995",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-5ed48f2ed95145e98e3a05ab2aeb10f0.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 884995,
+          "start_ticks": "14719143",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-5ed48f2ed95145e98e3a05ab2aeb10f0.service"
+        },
+        "bus": {
+          "pid": 885006,
+          "start_ticks": "14719151",
+          "ppid": 884995,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-5ed48f2ed95145e98e3a05ab2aeb10f0.service"
+        },
+        "compositor": {
+          "pid": 885009,
+          "start_ticks": "14719154",
+          "ppid": 884995,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-5ed48f2ed95145e98e3a05ab2aeb10f0.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "884995"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "compositor",
+        "signal": "SIGKILL",
+        "pid": 885009
+      },
+      "rejected_work": {
+        "elapsed_seconds": 0.04554,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "4759ee8327874211ba3d2cc62da22a08",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-compositor-sigkill",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "5ed48f2ed95145e98e3a05ab2aeb10f0"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-compositor-sigkill",
+          "--generation",
+          "5ed48f2ed95145e98e3a05ab2aeb10f0"
+        ]
+      },
+      "no_client_until_empty": false,
+      "empty_after_seconds": 0.245729,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.069663,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "d04d74c4344440e48fbe55e5546893f5",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-compositor-sigkill",
+            "generation": "5ed48f2ed95145e98e3a05ab2aeb10f0"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": {
+              "generation": "5ed48f2ed95145e98e3a05ab2aeb10f0",
+              "code": "session_failed",
+              "message": "An essential private desktop child exited.",
+              "context": {
+                "component": "compositor",
+                "returncode": -9
+              }
+            }
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-compositor-sigkill",
+          "--generation",
+          "5ed48f2ed95145e98e3a05ab2aeb10f0"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.042344,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "05e09c0298dd4ee3a70eee0e636a0f44",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-compositor-sigkill",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "5ed48f2ed95145e98e3a05ab2aeb10f0"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-compositor-sigkill",
+          "--generation",
+          "5ed48f2ed95145e98e3a05ab2aeb10f0"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "startup-failure.json": {
+            "size": 191,
+            "sha256": "89bd57a31c59ed5a5386f99eb042a0c9f5b4e04d9be51febb3cfdeda2a405f4a",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 957,
+            "sha256": "1a6aac377444cbb841216479297033899ea0e830b4fd0aa524f8ec84f36a633e",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 508,
+            "sha256": "352027b24c209627302a90848dcb9041242596daf14148b280a928cc5961e9c7",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "c7700ac9050b27f0f81da494415518be5911a52446c3c87549673eadfa0531a3",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 1017,
+            "sha256": "b782c0cce52e8a796cb7a1e67fd64108ddd13434516f6ac64d1bbe5367776a4b",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "fdba5128f04ad50d3ec7797af20413e86a011105196214c5dcd277fec6688754",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "acc27b065c4154a36b7204792a252d8ae35721f0d22bd9dec2baffb9d113bbe0",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-1cb1cbe6aa754e19adfaa6b6b514a6f7/request.json": {
+            "size": 574,
+            "sha256": "3e1b795114db6e8108f18f49464f8756d15d382cba4f7b000f2e0ba933559a7d",
+            "mode": "0o600"
+          },
+          "readiness/capture-1cb1cbe6aa754e19adfaa6b6b514a6f7/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-1cb1cbe6aa754e19adfaa6b6b514a6f7/result.json": {
+            "size": 979,
+            "sha256": "00f8603420f79ee1504aab00e874ea66c1f51cc7cc7b9ad622bd046fec67ec7c",
+            "mode": "0o600"
+          },
+          "requests/b549e7c389324b51b110b82cfc136cda/87ddb19c826a4204aa28af3984eacfcc/record.json": {
+            "size": 616,
+            "sha256": "c9dd77feb3bb0900feed9612a672bbe037081387bffae1df91fe54824fe8ea46",
+            "mode": "0o600"
+          },
+          "requests/60a4c40cf80f4d77bb77873a2bce5424/af11e6cec8c244cda6b50b716b2b0fcd/record.json": {
+            "size": 614,
+            "sha256": "edbcf98a42ed58a71ec58f9a14703aa5315fd57976103ca295214492175ca036",
+            "mode": "0o600"
+          },
+          "requests/df9046d3dc9e45c285887f99575de2da/94e4692c7a444871b323bc4a858fd930/record.json": {
+            "size": 616,
+            "sha256": "339d71cc9f93f54c99918142b34ae9f355f86c0a63511b5a3bae8caefd8777f4",
+            "mode": "0o600"
+          },
+          "requests/deb8f68cb7ae4f859538bcddd44843eb/5e84108f401e4e2d835dc02e46501860/record.json": {
+            "size": 616,
+            "sha256": "c34933d04c4ad93a07a61d35ab0ae3c1b383a5c7766caf2643ff116972e908fb",
+            "mode": "0o600"
+          },
+          "requests/275b95b970cf4194804d29745734500f/58ca969d5515436c975fca8ae9f86e28/record.json": {
+            "size": 616,
+            "sha256": "6dc9eb3fb7d0cce0c16ed396faee3d7fb11a1b3b494d46fbdcaa78b3ab02ce44",
+            "mode": "0o600"
+          },
+          "requests/43d3ba67d7f94876b67f22547e3d28e7/e5e04dae15de4eeeb2debf8379099045/record.json": {
+            "size": 614,
+            "sha256": "3e5ea5be6a01d6ab9f7c60b26c81997a0b056bc58617c56bef33a911fae8bab2",
+            "mode": "0o600"
+          },
+          "requests/4ecfc7e24e0941d79110cd536a52653f/2e67950ce9764ec6bcbc4f00690161ca/record.json": {
+            "size": 614,
+            "sha256": "a1278a66f4a72adecad71441691c3b5172da9417e2e38f729a59fee40e093c09",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-compositor-sigkill",
+          "generation": "5ed48f2ed95145e98e3a05ab2aeb10f0",
+          "created_at": "2026-09-20T16:50:42.544345+00:00",
+          "updated_at": "2026-09-20T16:50:43.350088+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 884995,
+            "start_ticks": "14719143",
+            "service": "agent-desktop-5ed48f2ed95145e98e3a05ab2aeb10f0.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "startup-failure.json": {
+          "generation": "5ed48f2ed95145e98e3a05ab2aeb10f0",
+          "code": "session_failed",
+          "message": "An essential private desktop child exited.",
+          "context": {
+            "component": "compositor",
+            "returncode": -9
+          }
+        }
+      },
+      "passed": true
+    },
+    "compositor-SIGSTOP": {
+      "start": {
+        "elapsed_seconds": 0.816307,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "80d67c9043284b77ae5f74a47ee958d9",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-compositor-sigstop",
+            "generation": "9dd86a046b5d48858007e8468876e27e"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147193.073453389,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147192.951431681,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147192.955487911,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147193.054696404,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/9dd86a046b5d48858007e8468876e27e/readiness/capture-d4b5f0cf839e485bb06e4dfddf7df659/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147193.059505294
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147193.059506486
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147193.100370622
+              }
+            },
+            "failure": null,
+            "worker_pid": 885111,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-compositor-sigstop",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "885111",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-9dd86a046b5d48858007e8468876e27e.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 885111,
+          "start_ticks": "14719263",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-9dd86a046b5d48858007e8468876e27e.service"
+        },
+        "bus": {
+          "pid": 885115,
+          "start_ticks": "14719273",
+          "ppid": 885111,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-9dd86a046b5d48858007e8468876e27e.service"
+        },
+        "compositor": {
+          "pid": 885119,
+          "start_ticks": "14719277",
+          "ppid": 885111,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-9dd86a046b5d48858007e8468876e27e.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "885111"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "compositor",
+        "signal": "SIGSTOP",
+        "pid": 885119
+      },
+      "rejected_work": {
+        "elapsed_seconds": 0.052229,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "645e924d125c40f1b4a966305317871c",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-compositor-sigstop",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "9dd86a046b5d48858007e8468876e27e"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-compositor-sigstop",
+          "--generation",
+          "9dd86a046b5d48858007e8468876e27e"
+        ]
+      },
+      "no_client_until_empty": false,
+      "empty_after_seconds": 2.252522,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.067056,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "0898f285aa1d402bb6f530da62ad6126",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-compositor-sigstop",
+            "generation": "9dd86a046b5d48858007e8468876e27e"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": {
+              "generation": "9dd86a046b5d48858007e8468876e27e",
+              "code": "session_failed",
+              "message": "Private compositor is unresponsive.",
+              "context": {
+                "component": "compositor"
+              }
+            }
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-compositor-sigstop",
+          "--generation",
+          "9dd86a046b5d48858007e8468876e27e"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.037912,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "b788d460c0fe48d89c3603efd4e32d33",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-compositor-sigstop",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "9dd86a046b5d48858007e8468876e27e"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-compositor-sigstop",
+          "--generation",
+          "9dd86a046b5d48858007e8468876e27e"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "startup-failure.json": {
+            "size": 166,
+            "sha256": "9ddf23f81c2b0c5b79caa3bbff79428149970ce02ed20257f2bb7821926a6295",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 957,
+            "sha256": "f05b1dec9f99a5a496bd7bf7192e77e8d8ae14b98ac4323644152abc764c6f2b",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 378,
+            "sha256": "23f049089b1065cc3aca4697e63095d2f72b3956a43f7067838e413993505b54",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "aef57c2f462382f3bb8626f9d62a52919aa27422f3071b9ee52e29e1d9ffb1fc",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 1012,
+            "sha256": "99362c88728a359f80c6ed0678d7266d0ab8596e9c470f5fb192c5e19e63d9cf",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "b9856a4c1f2f16648afe8d5cacb1477fd52d8ec8a1a3a9be37234adfb16ebe9e",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "15cab65e08af28892240fee0ef05418423ed85e247593b9ac75e72e7a24ed580",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-d4b5f0cf839e485bb06e4dfddf7df659/request.json": {
+            "size": 574,
+            "sha256": "e25860d330a27b0c399021be9d57ea7e4dc51d43542422354ce7c6c338d36e20",
+            "mode": "0o600"
+          },
+          "readiness/capture-d4b5f0cf839e485bb06e4dfddf7df659/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-d4b5f0cf839e485bb06e4dfddf7df659/result.json": {
+            "size": 979,
+            "sha256": "69f806e970cd1a9da998b714d6ee1df806c5d3bbfd8c726a55b148b54bd9e35e",
+            "mode": "0o600"
+          },
+          "requests/dce78e6669f74309b695d609e3f02b60/326d201f89814f208180706763c1773b/record.json": {
+            "size": 614,
+            "sha256": "b4f44875ccb41b585270ebbf09553878c11fe6c5411af306b5e1ba82e183afe2",
+            "mode": "0o600"
+          },
+          "requests/55ba8fd147f546669d3f9ce427b14750/b248892b3b354c019dc0a5531c74c940/record.json": {
+            "size": 616,
+            "sha256": "35dd2a3bf1acd2ad1fc1810fb5dfc483711e50f5e9613eea2c22219fd189b5fa",
+            "mode": "0o600"
+          },
+          "requests/66ffb91043fd4a08aa3588bef1372f18/126eec94eaff40c0a882ef2dbbd040ac/record.json": {
+            "size": 616,
+            "sha256": "6666ce8a6fa385fa4eff1842d3f9801b34e7f9fd802576401a7eae1feee30e39",
+            "mode": "0o600"
+          },
+          "requests/c3879f03b191447aa6c16c2918c3289c/681a3f25e01e461596b4761786451905/record.json": {
+            "size": 614,
+            "sha256": "50cb9a9a763362e913c8edfb9308e78516590fcd4f50d3627d130e2840e9fb9f",
+            "mode": "0o600"
+          },
+          "requests/c9a336dd09194c24b31c9c72687243a0/223174759759452aafb284fbbfd8c348/record.json": {
+            "size": 613,
+            "sha256": "7b8978d18ca00fb2b65e0621ed9582992536a8a1adc125e7dc6caeea3a765d24",
+            "mode": "0o600"
+          },
+          "requests/17955a29321d4b1e93d7a5b15e4346f9/ff254bb0f40742e7a182241dfebdb6c6/record.json": {
+            "size": 616,
+            "sha256": "b7001fb35101dd59ec15637bf3cb5d2bda57577fbd7e1d2762d8d9b3f1a484d2",
+            "mode": "0o600"
+          },
+          "requests/559bf4a00ac94250a375cb9372b50f07/fdf3d7b7f183495cae8bbad4fc7c826f/record.json": {
+            "size": 614,
+            "sha256": "1f9205be48104ff8da730f098d692fbfe7546395e37270e1510c1688d89c89c8",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-compositor-sigstop",
+          "generation": "9dd86a046b5d48858007e8468876e27e",
+          "created_at": "2026-09-20T16:50:43.728473+00:00",
+          "updated_at": "2026-09-20T16:50:46.551313+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 885111,
+            "start_ticks": "14719263",
+            "service": "agent-desktop-9dd86a046b5d48858007e8468876e27e.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "startup-failure.json": {
+          "generation": "9dd86a046b5d48858007e8468876e27e",
+          "code": "session_failed",
+          "message": "Private compositor is unresponsive.",
+          "context": {
+            "component": "compositor"
+          }
+        }
+      },
+      "passed": true
+    },
+    "worker-SIGKILL": {
+      "start": {
+        "elapsed_seconds": 0.760987,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "52a19cc95c9c4b71ae4b1e52f12bbe40",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-worker-sigkill",
+            "generation": "32c39e9660e3420aba05559acde71cea"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147196.205682261,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147196.087420154,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147196.092141801,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147196.187168263,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/32c39e9660e3420aba05559acde71cea/readiness/capture-b9b3c04f64cf4ec49c708d0c3d529ee6/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147196.19202845
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147196.192029134
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147196.231901887
+              }
+            },
+            "failure": null,
+            "worker_pid": 885182,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-worker-sigkill",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "885182",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-32c39e9660e3420aba05559acde71cea.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 885182,
+          "start_ticks": "14719578",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-32c39e9660e3420aba05559acde71cea.service"
+        },
+        "bus": {
+          "pid": 885186,
+          "start_ticks": "14719586",
+          "ppid": 885182,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-32c39e9660e3420aba05559acde71cea.service"
+        },
+        "compositor": {
+          "pid": 885189,
+          "start_ticks": "14719590",
+          "ppid": 885182,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-32c39e9660e3420aba05559acde71cea.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "885182"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "worker",
+        "signal": "SIGKILL",
+        "pid": 885182
+      },
+      "no_client_until_empty": true,
+      "empty_after_seconds": 0.050471,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "signal",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.084188,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "3efa67b460ef4b2e825de342c26d41da",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-worker-sigkill",
+            "generation": "32c39e9660e3420aba05559acde71cea"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": null
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-worker-sigkill",
+          "--generation",
+          "32c39e9660e3420aba05559acde71cea"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.031968,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "c7500e98591e41a8ba991c54a6a36304",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-worker-sigkill",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "32c39e9660e3420aba05559acde71cea"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-worker-sigkill",
+          "--generation",
+          "32c39e9660e3420aba05559acde71cea"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 953,
+            "sha256": "18b148f74317852bdd97ad2f55814cebbd9d40dac93bd6a3580e61a2d46c4da1",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 304,
+            "sha256": "0f6c573e2d8200052b58fe2384b183acc4d2dcd4462581a941864a3b8fd80ea7",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "dc665f064f6f8e43c4f38852551d49ccf4655d4f9f1e86a34a3575fe3d59f5e5",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 821,
+            "sha256": "d173d61d38e99a46bf4c0d423aaa209e5a936355e5d43524dc00764a62c0b968",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "a6e9451f5b8408c4a844a69858c7c856f9f950415bb6abd8cf02e153dd8bf29c",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "5ddb0d61161331fd01b8f6bf5da2e34f07538e6a5b7b4a4c0052c383bf00fa61",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-b9b3c04f64cf4ec49c708d0c3d529ee6/request.json": {
+            "size": 574,
+            "sha256": "124222456e541a7127decbca80212dc744d1e802aa8cd3235088bfb57766094c",
+            "mode": "0o600"
+          },
+          "readiness/capture-b9b3c04f64cf4ec49c708d0c3d529ee6/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-b9b3c04f64cf4ec49c708d0c3d529ee6/result.json": {
+            "size": 979,
+            "sha256": "7c5cf0292f967b2e820f10ebf9d679c8c937ab002a382c77147e289d011efd13",
+            "mode": "0o600"
+          },
+          "requests/bb8d28fc9b7e4505913e3871a22a6f8a/db0c86aac7704d0cb63ed5d34ded1e73/record.json": {
+            "size": 609,
+            "sha256": "0f815eb308496a01bebe5214ffe862043d8a855557f3d0774f0939a2fe1274fd",
+            "mode": "0o600"
+          },
+          "requests/318462bc99b642f5a6cadcfae76efa82/dc0d8adaa2d54755ba3710f2dca828b0/record.json": {
+            "size": 610,
+            "sha256": "f1489d39d25960a826376a07c9982a9a9503a3723b4ed08f5a2cf7880b542b88",
+            "mode": "0o600"
+          },
+          "requests/3d1ff08badd444a5b319c8d62a0ccd0e/f15e7da95ccc45489807fd8c973b3bdd/record.json": {
+            "size": 609,
+            "sha256": "4999a4310dd0503e6d85564984ca9eef615af82ce355707ea143292d6dd5ebad",
+            "mode": "0o600"
+          },
+          "requests/fc0404563dd34da6ad905eaa2a528683/2db4680cb24b45578de5c066fe5aeb46/record.json": {
+            "size": 609,
+            "sha256": "2afa31d1d52e9aea5ac8730ba6c532a591a78c0ae96f08e3f8094e67601fa26f",
+            "mode": "0o600"
+          },
+          "requests/50fea7cbd5274556a446cc18f517ca74/c7d8333504a848f184939ff33e90bb5a/record.json": {
+            "size": 611,
+            "sha256": "d24bc3da8afd09dbf69820a8353c7a287a158d66cb89eabedf4b4a54f1235fca",
+            "mode": "0o600"
+          },
+          "requests/12fbfcfc773146259c5a214078ae79ae/512410279fbe4bb7851ef96dea931319/record.json": {
+            "size": 609,
+            "sha256": "450c8b2f853a3ad47c65b9beecf28219cc7a0c33f76aaf5db06b33e897e05f29",
+            "mode": "0o600"
+          },
+          "requests/68c92479d619487086e008f3edb6d374/aadadc62d9f54aa18da9fbe7ee5be3b4/record.json": {
+            "size": 611,
+            "sha256": "674d5fb4eb23db66453eb53c7dab7619ccd45a3517f1c9996ed10acd0fdb725f",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 3,
+          "session": "a20-worker-sigkill",
+          "generation": "32c39e9660e3420aba05559acde71cea",
+          "created_at": "2026-09-20T16:50:46.876739+00:00",
+          "updated_at": "2026-09-20T16:50:47.505287+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 885182,
+            "start_ticks": "14719578",
+            "service": "agent-desktop-32c39e9660e3420aba05559acde71cea.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        }
+      },
+      "passed": true
+    },
+    "worker-SIGSTOP": {
+      "start": {
+        "elapsed_seconds": 0.834128,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "a43a245f107f49ae9b551866baaab0b0",
+          "operation": "session.start",
+          "ok": true,
+          "session": {
+            "name": "a20-worker-sigstop",
+            "generation": "dd7772d922df49babd6c45c42ab1f5f9"
+          },
+          "result": {
+            "provider": "m1-provisional",
+            "release_qualified": false,
+            "replacement_issue": 35,
+            "desktop_operations_supported": false,
+            "state": "ready",
+            "desktop_ready": true,
+            "observed_at": 147197.227409753,
+            "health": {
+              "window_query": {
+                "state": "passed",
+                "observed_at": 147197.102190132,
+                "windows": 0,
+                "script_unloaded": true
+              },
+              "input_resumed": {
+                "state": "passed",
+                "observed_at": 147197.106824529,
+                "resumed": true
+              },
+              "screenshot": {
+                "state": "passed",
+                "observed_at": 147197.202825908,
+                "path": "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts/generations/dd7772d922df49babd6c45c42ab1f5f9/readiness/capture-4e010e41379c49eb9e51bee3cda1e981/image.png"
+              },
+              "bus": {
+                "state": "passed",
+                "observed_at": 147197.207731554
+              },
+              "compositor": {
+                "state": "passed",
+                "observed_at": 147197.207732356
+              },
+              "control": {
+                "state": "passed",
+                "observed_at": 147197.257258548
+              }
+            },
+            "failure": null,
+            "worker_pid": 885264,
+            "reused": false
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "start",
+          "--session",
+          "a20-worker-sigstop",
+          "--artifacts",
+          "/home/josephwest/development/kde-agent/.local/issue20-health/review-641a7e4/artifacts",
+          "--dependency-root",
+          "/home/josephwest/development/kde-agent/.local/dependencies"
+        ]
+      },
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "885264",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-dd7772d922df49babd6c45c42ab1f5f9.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "identities": {
+        "worker": {
+          "pid": 885264,
+          "start_ticks": "14719679",
+          "ppid": 910,
+          "comm": "python",
+          "executable": "/usr/bin/python3.14",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-dd7772d922df49babd6c45c42ab1f5f9.service"
+        },
+        "bus": {
+          "pid": 885269,
+          "start_ticks": "14719688",
+          "ppid": 885264,
+          "comm": "dbus-daemon",
+          "executable": "/usr/bin/dbus-daemon",
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-dd7772d922df49babd6c45c42ab1f5f9.service"
+        },
+        "compositor": {
+          "pid": 885272,
+          "start_ticks": "14719692",
+          "ppid": 885264,
+          "comm": "kwin_wayland",
+          "executable": null,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-dd7772d922df49babd6c45c42ab1f5f9.service"
+        }
+      },
+      "notification_environment": {
+        "worker": {
+          "NOTIFY_SOCKET": "/run/user/1000/systemd/notify",
+          "WATCHDOG_USEC": "5000000",
+          "WATCHDOG_PID": "885264"
+        },
+        "bus": {},
+        "compositor": {
+          "inspection": "unavailable: kernel denies this /proc environ read"
+        }
+      },
+      "fault": {
+        "component": "worker",
+        "signal": "SIGSTOP",
+        "pid": 885264
+      },
+      "no_client_until_empty": true,
+      "empty_after_seconds": 4.855803,
+      "all_original_pids_dead": true,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "watchdog",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.082444,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "c5dcd52d88d5492bbde70df203cbbfb1",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-worker-sigstop",
+            "generation": "dd7772d922df49babd6c45c42ab1f5f9"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": {
+              "generation": "dd7772d922df49babd6c45c42ab1f5f9",
+              "code": "timeout",
+              "message": "Essential health observation expired.",
+              "context": {
+                "component": "bus"
+              }
+            }
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-worker-sigstop",
+          "--generation",
+          "dd7772d922df49babd6c45c42ab1f5f9"
+        ]
+      },
+      "after_failure_work": {
+        "elapsed_seconds": 0.041625,
+        "exit_code": 4,
+        "response": {
+          "schema_version": 1,
+          "request_id": "ce8bc22d1d914b0794ec7f8aa3df1f41",
+          "operation": "windows",
+          "ok": false,
+          "session": {
+            "name": "a20-worker-sigstop",
+            "generation": null
+          },
+          "result": null,
+          "error": {
+            "code": "session_unavailable",
+            "message": "Session runtime is unavailable or unsafe.",
+            "context": {
+              "expected_generation": "dd7772d922df49babd6c45c42ab1f5f9"
+            },
+            "outcome": "not_started",
+            "partial_result": null
+          }
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "windows",
+          "--session",
+          "a20-worker-sigstop",
+          "--generation",
+          "dd7772d922df49babd6c45c42ab1f5f9"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "startup-failure.json": {
+            "size": 154,
+            "sha256": "77f713d610df8b2ae63b0819691d7bebc54f530e486691fa93e8ceda932e461c",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 953,
+            "sha256": "42df7726183fa48ac4ba06cbabeca3e41cc37e5fba380f173f9d3edeffa6c1de",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 373,
+            "sha256": "bfd3004cbcf488c539574cbbaac58e57f99a95bb08c46d6e0857684e0da34c90",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 150,
+            "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 126,
+            "sha256": "305c27c75ab28720f5fa0725cf0166e9eebf52e8b028bb4cfc492027393f3cbf",
+            "mode": "0o600"
+          },
+          "readiness/health.json": {
+            "size": 993,
+            "sha256": "b60fc319cc375537893aa3bb96515bfe16306107fa89055b5a73dca6fa66e3ea",
+            "mode": "0o600"
+          },
+          "readiness/query/input.js": {
+            "size": 1526,
+            "sha256": "ab30988a8a869ce43e494c73888b688343e16c0b32a15e5bdcb83989eb9c55c7",
+            "mode": "0o600"
+          },
+          "readiness/query/stdout": {
+            "size": 170,
+            "sha256": "b5e0cd48f8e6a328fe9d3bd8cef8dbe5790e5b23672b2a6e5b2382a42513c506",
+            "mode": "0o600"
+          },
+          "readiness/query/stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "readiness/capture-4e010e41379c49eb9e51bee3cda1e981/request.json": {
+            "size": 574,
+            "sha256": "0ee120780df224ee5d30cf9770705ebb4b04309d16bc25b03db1d05ffc9d1ab5",
+            "mode": "0o600"
+          },
+          "readiness/capture-4e010e41379c49eb9e51bee3cda1e981/image.png": {
+            "size": 3653,
+            "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+            "mode": "0o600"
+          },
+          "readiness/capture-4e010e41379c49eb9e51bee3cda1e981/result.json": {
+            "size": 976,
+            "sha256": "84fe4ec6d9469a53dce500f6ea81a875586d934a4ddb0c02aad731baa5860f83",
+            "mode": "0o600"
+          },
+          "requests/05dbdb7a5ac0481ab8e91801ac6ddf64/06d5a221afb94e25888c3d994464db5b/record.json": {
+            "size": 610,
+            "sha256": "e57937ef844fc85042a9c49408e8b36bc3fe84188acac0190ae969f1bbb0d093",
+            "mode": "0o600"
+          },
+          "requests/90a57c1fca4a43349f38c62bfae20918/74a67fdac8b045df95824ff7fc9c8f03/record.json": {
+            "size": 612,
+            "sha256": "01322afeea55e5176713a5408bea453bf1007a7882e77978f66220b89d66bfff",
+            "mode": "0o600"
+          },
+          "requests/7c25848b62e54a40a0285c4d3d72e1ff/4e5c6e25444943e69bfd57ac2f42d5fe/record.json": {
+            "size": 611,
+            "sha256": "407479c75cb6ff5a4cd7cd4466113854b88d1afcba8436794f7fd8c80e4b99a4",
+            "mode": "0o600"
+          },
+          "requests/a96864e9227749c1ba900823f04dbeb0/53ef3c9ee6f247c1a68a87c52ed6e4de/record.json": {
+            "size": 610,
+            "sha256": "8b88333d83f61268f6c9ed197adaf44be299b37bdcfc712b134193419aa9084c",
+            "mode": "0o600"
+          },
+          "requests/72cff2fcdcbe414389a56fd7568ca530/271bdf1e58954cb485780512275d6aa9/record.json": {
+            "size": 610,
+            "sha256": "224ed8c57b6ad3432516af2260ca1f68c6213a0110305814db95f9455595dd61",
+            "mode": "0o600"
+          },
+          "requests/555f3a1701e74f94a5451db8dcd4da60/b281bd95c0de4fb091b8204719754002/record.json": {
+            "size": 608,
+            "sha256": "29f79849a05368ffe162aff07c0ad906d79a25b7dc0497479861c9ab39691623",
+            "mode": "0o600"
+          },
+          "requests/43ae8b73e33b44b3acec6254567eb205/a3913e2a015546aa847286af7ba5f6dc/record.json": {
+            "size": 610,
+            "sha256": "e5fcc3d4bdfa9f7cc34ad2118d0ba32f279f6640a2436603814689bba99dcfd9",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 1,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 4,
+          "session": "a20-worker-sigstop",
+          "generation": "dd7772d922df49babd6c45c42ab1f5f9",
+          "created_at": "2026-09-20T16:50:47.880076+00:00",
+          "updated_at": "2026-09-20T16:50:53.330388+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 885264,
+            "start_ticks": "14719679",
+            "service": "agent-desktop-dd7772d922df49babd6c45c42ab1f5f9.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "startup-failure.json": {
+          "generation": "dd7772d922df49babd6c45c42ab1f5f9",
+          "code": "timeout",
+          "message": "Essential health observation expired.",
+          "context": {
+            "component": "bus"
+          }
+        }
+      },
+      "passed": true
+    },
+    "healthy-starting": {
+      "start": {
+        "schema_version": 1,
+        "request_id": "5a445eec7fbe457ab2e94086863e59eb",
+        "operation": "session.start",
+        "ok": true,
+        "session": {
+          "name": "a20-starting-fixture",
+          "generation": "f18b90f5f98f43d3951ec34a1ca43839"
+        },
+        "result": {
+          "state": "starting",
+          "desktop_ready": false,
+          "worker_pid": 885340,
+          "reused": false
+        },
+        "error": null
+      },
+      "fixture": "installed worker without desktop provider; test-only command injection",
+      "healthy_starting_seconds": 6.120054,
+      "unit_properties": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "885340",
+        "Result": "success",
+        "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-f18b90f5f98f43d3951ec34a1ca43839.service",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "passed": true
+    },
+    "frozen-starting": {
+      "identity": {
+        "pid": 885340,
+        "start_ticks": "14720234",
+        "ppid": 910,
+        "comm": "python",
+        "executable": "/usr/bin/python3.14",
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-f18b90f5f98f43d3951ec34a1ca43839.service"
+      },
+      "no_client_until_empty": true,
+      "signal": "SIGSTOP",
+      "empty_after_seconds": 5.005083,
+      "post_empty_unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Restart": "no",
+        "NotifyAccess": "main",
+        "TimeoutStopUSec": "3s",
+        "TimeoutAbortUSec": "3s",
+        "WatchdogUSec": "5s",
+        "MainPID": "0",
+        "Result": "watchdog",
+        "ControlGroup": "",
+        "KillMode": "control-group",
+        "FinalKillSignal": "9",
+        "SendSIGKILL": "yes",
+        "WatchdogSignal": "15"
+      },
+      "status": {
+        "elapsed_seconds": 0.083423,
+        "exit_code": 0,
+        "response": {
+          "schema_version": 1,
+          "request_id": "b0b2d224b7f74d1ebeeb9b775c36e820",
+          "operation": "session.status",
+          "ok": true,
+          "session": {
+            "name": "a20-starting-fixture",
+            "generation": "f18b90f5f98f43d3951ec34a1ca43839"
+          },
+          "result": {
+            "state": "failed",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "failure": null
+          },
+          "error": null
+        },
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "status",
+          "--session",
+          "a20-starting-fixture",
+          "--generation",
+          "f18b90f5f98f43d3951ec34a1ca43839"
+        ]
+      },
+      "evidence": {
+        "files": {
+          "record.lock": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "events.jsonl": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "fixture-children.json": {
+            "size": 88,
+            "sha256": "e09ecd923bc0d64c21fdbe7f6c8d85df696b611b5486649b7c8ffe0393e37cfd",
+            "mode": "0o600"
+          },
+          "manifest.json": {
+            "size": 955,
+            "sha256": "e92763add0ca918b633fedbddff93d71089642cc283bfd59691da07fe1466268",
+            "mode": "0o600"
+          },
+          "logs/worker.log": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "logs/compositor.log": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "logs/bus.log": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mode": "0o600"
+          },
+          "requests/b3de3eabb4d64d23aeab7c8127e971bc/d9f54c477ca54e40aba3d92db27f2954/record.json": {
+            "size": 612,
+            "sha256": "bd372f8347d0b7e264c17b2870dab2baf6e9fa1392e27b9fe834da1973763ab2",
+            "mode": "0o600"
+          }
+        },
+        "complete_pngs": 0,
+        "manifest": {
+          "schema_version": 1,
+          "revision": 3,
+          "session": "a20-starting-fixture",
+          "generation": "f18b90f5f98f43d3951ec34a1ca43839",
+          "created_at": "2026-09-20T16:50:53.439386+00:00",
+          "updated_at": "2026-09-20T16:51:04.843333+00:00",
+          "mode": "headless",
+          "state": "failed",
+          "outcome": "failed",
+          "first_failure": "session_failed",
+          "cleanup": {
+            "state": "complete",
+            "failure": "session_failed"
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 885340,
+            "start_ticks": "14720234",
+            "service": "agent-desktop-f18b90f5f98f43d3951ec34a1ca43839.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        }
+      },
+      "passed": true
+    }
+  },
+  "source_hashes": {
+    "src/agent_desktop/__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "src/agent_desktop/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "src/agent_desktop/artifacts.py": "d367654ba662ce24f8c3877caaee194b25daccc0a27696c0f439cc2593547c40",
+    "src/agent_desktop/children.py": "345152d83b98443c4326dfa59f77340f03da4ee513312a86252dc0def4c68039",
+    "src/agent_desktop/cli.py": "524b6c6b78f9d1a234b15c0feee7fab24c45f0e2ac3e36bd220111d66614c18f",
+    "src/agent_desktop/contracts.py": "7cdad4abac1f3b63b9be41912d9578d7c1326a87d85340c2f768b55a996c5188",
+    "src/agent_desktop/desktop.py": "93fe8774802fc849362c391155722d8db1d073af1c1e4577caf10f506d60363a",
+    "src/agent_desktop/environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "src/agent_desktop/health.py": "aacc877da08c10555ef171c6752873a7dfff302ea63b1f1b5ffbb25ea190fe4d",
+    "src/agent_desktop/lifecycle.py": "b56784696c4e3176427d71eafda596d4803faefdd2fa03a36b070db80df218bb",
+    "src/agent_desktop/paths.py": "bbfe30260a16d0598f5283450d08b1847af1d0dc5a91bb02be806b2dbda14e61",
+    "src/agent_desktop/prerequisites.py": "0bbdcf41f16c8aa70f3533f60a025720cd7600dec4893980408f072624ea5a9c",
+    "src/agent_desktop/private_bus.py": "cfd38503f5af750b954ee8f31615335ec2314ed69124b9209f85a9862ff86ecc",
+    "src/agent_desktop/protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "src/agent_desktop/provisional_binding.py": "71af566a95d3d55e55c0af49bd360252b4220833d5eae8de03c9a3064b9c62b1",
+    "src/agent_desktop/provisional_capture.py": "55067fe8958cc79b94c54d0be6053140c7d76a752ee7574b9ab5eb2b32192d6a",
+    "src/agent_desktop/provisional_codec.py": "a5e53ca203fe02f25f063f58081c6582abe35f7124dc474e3ce30b7d149dd2fe",
+    "src/agent_desktop/provisional_input.py": "8d0a367da7c008cd91fd5086ac043514d308074362876951b89b2aa44b18b480",
+    "src/agent_desktop/provisional_windows.py": "04ce7199ece1ee9efbb1287192b64badc18bda427a52038defe7c8656441f91b",
+    "src/agent_desktop/readiness.py": "3c930e03d22721652278485846410dec4743d0996b17993d4c6a02b0554f700a",
+    "src/agent_desktop/readiness_query.js": "186e92bcc8fe1566f3897b6f29cf164f2fce9498adec8a6de84a91a2dad11f43",
+    "src/agent_desktop/records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",
+    "src/agent_desktop/runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "src/agent_desktop/scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
+    "src/agent_desktop/transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "src/agent_desktop/watchdog.py": "8a70877e25ae2b12c04455d9577444bf770bc9fa0b5787bbfb4810f7b4434506",
+    "src/agent_desktop/worker.py": "508785b93aa51e0122e156eca41915a87b90582f2316218fe2b481ef43358ae8"
+  },
+  "installed_hashes": {
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "artifacts.py": "d367654ba662ce24f8c3877caaee194b25daccc0a27696c0f439cc2593547c40",
+    "children.py": "345152d83b98443c4326dfa59f77340f03da4ee513312a86252dc0def4c68039",
+    "cli.py": "524b6c6b78f9d1a234b15c0feee7fab24c45f0e2ac3e36bd220111d66614c18f",
+    "contracts.py": "7cdad4abac1f3b63b9be41912d9578d7c1326a87d85340c2f768b55a996c5188",
+    "desktop.py": "93fe8774802fc849362c391155722d8db1d073af1c1e4577caf10f506d60363a",
+    "environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "health.py": "aacc877da08c10555ef171c6752873a7dfff302ea63b1f1b5ffbb25ea190fe4d",
+    "lifecycle.py": "b56784696c4e3176427d71eafda596d4803faefdd2fa03a36b070db80df218bb",
+    "paths.py": "bbfe30260a16d0598f5283450d08b1847af1d0dc5a91bb02be806b2dbda14e61",
+    "prerequisites.py": "0bbdcf41f16c8aa70f3533f60a025720cd7600dec4893980408f072624ea5a9c",
+    "private_bus.py": "cfd38503f5af750b954ee8f31615335ec2314ed69124b9209f85a9862ff86ecc",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "provisional_binding.py": "71af566a95d3d55e55c0af49bd360252b4220833d5eae8de03c9a3064b9c62b1",
+    "provisional_capture.py": "55067fe8958cc79b94c54d0be6053140c7d76a752ee7574b9ab5eb2b32192d6a",
+    "provisional_codec.py": "a5e53ca203fe02f25f063f58081c6582abe35f7124dc474e3ce30b7d149dd2fe",
+    "provisional_input.py": "8d0a367da7c008cd91fd5086ac043514d308074362876951b89b2aa44b18b480",
+    "provisional_windows.py": "04ce7199ece1ee9efbb1287192b64badc18bda427a52038defe7c8656441f91b",
+    "readiness.py": "3c930e03d22721652278485846410dec4743d0996b17993d4c6a02b0554f700a",
+    "readiness_query.js": "186e92bcc8fe1566f3897b6f29cf164f2fce9498adec8a6de84a91a2dad11f43",
+    "records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "watchdog.py": "8a70877e25ae2b12c04455d9577444bf770bc9fa0b5787bbfb4810f7b4434506",
+    "worker.py": "508785b93aa51e0122e156eca41915a87b90582f2316218fe2b481ef43358ae8"
+  },
+  "source_commit": "641a7e4736167e4aba5a4c78cd89bc0926c64b42",
+  "source_worktree": [
+    "?? evidence/issue-20/review-query/",
+    "?? planning/"
+  ],
+  "runtime_root": "/tmp/a20-health-vvwgvbt_",
+  "doctor": {
+    "elapsed_seconds": 0.224485,
+    "exit_code": 0,
+    "response": {
+      "schema_version": 1,
+      "request_id": "33a64f95d6464501839e56c24c470bfb",
+      "operation": "doctor",
+      "ok": true,
+      "session": null,
+      "result": {
+        "schema_version": 1,
+        "scope": "prerequisites",
+        "dependency_root": "/home/josephwest/development/kde-agent/.local/dependencies",
+        "desktop_ready": false,
+        "desktop_launched": false,
+        "provider": "m1-provisional",
+        "production_readiness": false,
+        "release_qualified": false,
+        "replacement_issue": 35,
+        "capabilities": {
+          "control": "not_tested",
+          "window_query": "not_tested",
+          "input_resumed": "not_tested",
+          "screenshot": "not_tested"
+        },
+        "unsupported_operations": [
+          "launch",
+          "windows",
+          "focus",
+          "wait",
+          "key",
+          "type",
+          "click",
+          "input.reset",
+          "screenshot",
+          "logs",
+          "close",
+          "kill"
+        ],
+        "dependencies": [
+          {
+            "name": "kdotool",
+            "status": "passed",
+            "observed": {
+              "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+              "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+              "revision": "be03ce90c09350898556436bac74ed35fe928617",
+              "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+              "patches": [],
+              "version": "kdotool v0.3.0",
+              "provenance_verified": true,
+              "source_checkout_required": false
+            },
+            "code": null,
+            "reason": null,
+            "repair": null
+          },
+          {
+            "name": "libei",
+            "status": "passed",
+            "observed": {
+              "path": "/usr/lib/libei.so.1",
+              "sha256": "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501",
+              "architecture": "x86_64",
+              "audit_issue": 12,
+              "compiler_required_at_runtime": false
+            },
+            "code": null,
+            "reason": null,
+            "repair": null
+          },
+          {
+            "name": "python_bindings",
+            "status": "passed",
+            "observed": {
+              "python": "3.14.7",
+              "versions": {
+                "gi": "3.56.3",
+                "dbus": "1.4.0",
+                "PIL": "12.3.0",
+                "GLib": "2.88.3"
+              },
+              "origins": {
+                "gi": "/usr/lib/python3.14/site-packages/gi/__init__.py",
+                "dbus": "/usr/lib/python3.14/site-packages/dbus/__init__.py",
+                "PIL": "/usr/lib/python3.14/site-packages/PIL/__init__.py"
+              },
+              "gio_unix_fd": true,
+              "png": true,
+              "interpreter": "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/python",
+              "isolated": true
+            },
+            "code": null,
+            "reason": null,
+            "repair": null
+          },
+          {
+            "name": "runtime_executables",
+            "status": "passed",
+            "observed": {
+              "kwin_wayland": "/usr/bin/kwin_wayland",
+              "dbus-daemon": "/usr/bin/dbus-daemon",
+              "dbus-send": "/usr/bin/dbus-send",
+              "systemctl": "/usr/bin/systemctl",
+              "systemd-run": "/usr/bin/systemd-run",
+              "env": "/usr/bin/env",
+              "kwin_version": "kwin 6.7.5",
+              "systemd_version": "systemd 261 (261.3-1-arch)"
+            },
+            "code": null,
+            "reason": null,
+            "repair": null
+          },
+          {
+            "name": "user_manager",
+            "status": "passed",
+            "observed": {
+              "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice",
+              "observation": "read_only",
+              "service_creation": "not_tested",
+              "events_readable": true
+            },
+            "code": null,
+            "reason": null,
+            "repair": null
+          }
+        ],
+        "elapsed_seconds": 0.178576,
+        "ok": true,
+        "kdotool": {
+          "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+          "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+          "revision": "be03ce90c09350898556436bac74ed35fe928617",
+          "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+          "patches": [],
+          "version": "kdotool v0.3.0",
+          "provenance_verified": true,
+          "source_checkout_required": false
+        }
+      },
+      "error": null
+    },
+    "argv": [
+      "/home/josephwest/development/kde-agent/.local/issue20-venv/bin/agent-desktop",
+      "--json",
+      "doctor",
+      "--dependency-root",
+      "/home/josephwest/development/kde-agent/.local/dependencies"
+    ]
+  },
+  "passed": true,
+  "fallback_cleanups": []
+}

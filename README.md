@@ -1,15 +1,18 @@
 # Agent Desktop Toolkit
 
-A local CLI for a dedicated headless KWin desktop. The production CLI currently
-provides command parsing, structured contracts, and a private generation-bound
-worker transport, durable records, and generation-owned service lifecycle.
-Managed status/stop are implemented; an absent stop succeeds. Desktop operations
-remain unwired. `doctor` and public `session start` remain explicitly unsupported
-until their prerequisite/readiness checks are implemented. See the
-[service lifecycle boundary](docs/LIFECYCLE.md).
+A local CLI for a dedicated headless KWin desktop. `doctor` reports installed
+runtime prerequisites; `session start`, `status` and `stop` manage private,
+generation-owned services. Start requires real control, structured window query,
+resumed input and complete screenshot probes. Live bus/compositor observations
+and a systemd watchdog detect essential failures.
 
-See [CLI installation and command contracts](docs/CLI.md), the authoritative
+Readiness currently uses a packaged **M1 provisional provider**. Results report
+`release_qualified: false` and replacement issue #35 (M7.1). Public desktop
+operations such as launch, input and screenshots remain explicitly unsupported.
+The readiness screenshot is an internal diagnostic artifact.
+
+See [CLI installation and commands](docs/CLI.md), [service lifecycle](docs/LIFECYCLE.md),
 [requirements](REQUIREMENTS.md), and [architecture](ARCHITECTURE.md).
-[Prerequisite setup](docs/SETUP.md) and the [M1 decision](docs/M1_DECISION.md)
-document the separately tested feasibility tools. They do not establish production
-CLI support. No command controls the personal desktop.
+[Prerequisite setup](docs/SETUP.md) prepares the pinned local dependency build;
+[the M1 decision](docs/M1_DECISION.md) records the source adapter evidence.
+No command controls the personal desktop.

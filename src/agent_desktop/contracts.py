@@ -138,7 +138,7 @@ class Request:
 
 # Only documented fields cross the request boundary.
 ARGUMENTS = {
-    "doctor": {"dependency_root"}, "session.start": {"mode", "artifacts"},
+    "doctor": {"dependency_root"}, "session.start": {"mode", "artifacts", "dependency_root"},
     "session.status": set(), "session.stop": set(),
     "launch": {"cwd", "env", "wait_window", "argv"},
     "windows": {"app"}, "focus": {"app", "window"},
@@ -198,6 +198,7 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         mode = text(args.get("mode", "headless"), "mode")
         if mode != "headless":
             raise ContractError("unsupported_operation", "Only headless mode is defined.")
+        args["dependency_root"] = text(args.get("dependency_root", ".local/dependencies"), "dependency-root")
         args.update(mode=mode, artifacts=text(args.get("artifacts", ".agent-desktop/artifacts"), "artifacts"))
     if operation == "launch":
         argv = args.get("argv")

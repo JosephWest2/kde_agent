@@ -1,23 +1,22 @@
 # agent-desktop command contract
 
-The CLI installs, validates requests and contacts a persistent worker over a
-private generation-bound socket. Help and version work. Desktop operations are
-unwired: absent sessions report `session_not_found`, while the transport-only
-worker returns `unsupported_operation` with its verified generation. `doctor` and
-`session start` remain locally unsupported; start is gated on #20's full readiness probes.
-Managed service status/stop, ordinary scheduling, priority cancellation and durable
-records are implemented. Stop on an absent/already stopped session succeeds.
-See [service lifecycle](LIFECYCLE.md) for internal start, generation ownership and
-manager fallback; real desktop operations follow in later milestones. See the
-[transport contract](TRANSPORT.md) for the internal worker and verified limits.
-Examples of those future results below are illustrative, not support claims.
+The CLI validates requests and manages persistent private generations. `doctor`
+checks runtime prerequisites without starting a desktop. `session start` waits for
+real control, structured window query, resumed EIS input and a complete screenshot;
+`status` observes current service and worker health; `stop` is idempotent.
+
+Readiness is supplied by the packaged `m1-provisional` provider. Results explicitly
+report `release_qualified: false`, `replacement_issue: 35` and
+`desktop_operations_supported: false`. Public launch/window/input/screenshot
+operations remain unsupported. Examples of future operation results below are
+illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
 
 ## Install and inspect
 
 Use a project virtual environment; no global installation is needed:
 
 ```sh
-python -m venv .local/cli-venv
+python -m venv --system-site-packages .local/cli-venv
 .local/cli-venv/bin/python -m pip install .
 .local/cli-venv/bin/agent-desktop --help
 .local/cli-venv/bin/agent-desktop --json session start --help
@@ -28,8 +27,10 @@ Packaging uses setuptools, requires Python >=3.11, and has no pip runtime
 dependencies. The Python floor does not claim native adapter support on all those
 interpreters. Platform native bindings remain governed by [setup](SETUP.md).
 Installing or inspecting the CLI does not import native desktop adapters or run
-feasibility scripts. `doctor` directs users to `tools/dependencies.py report` for
-the separate M1 prerequisite evaluation; it does not certify production readiness.
+feasibility scripts. `doctor` checks installed runtime executables, the pinned
+kdotool build receipt/binary, native bindings/libei and the user service manager.
+Missing/incompatible dependencies include repair instructions. It does not install
+anything or certify capability execution or release support.
 
 Output is readable by default. `--json` emits exactly one JSON object and newline
 on stdout for success, help, version, parser failures, unsupported commands and
@@ -55,7 +56,7 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | Command | Other arguments | Default / maximum work seconds |
 | --- | --- | --- |
 | `doctor` | `--dependency-root PATH` (default `.local/dependencies`) | 120 / 120 |
-| `session start` | `--mode headless`; `--artifacts PATH` (default `.agent-desktop/artifacts`) | 30 / 30 |
+| `session start` | `--mode headless`; `--artifacts PATH` (default `.agent-desktop/artifacts`); `--dependency-root PATH` (default `.local/dependencies`) | 30 / 30 |
 | `session status` | none | 3 / 3 |
 | `session stop` | none | 15 / 15 |
 | `launch` | `--cwd PATH`, repeated `--env KEY=VALUE`, `--wait-window`; required `-- PROGRAM [ARG ...]` | 10 / 60 |
@@ -70,6 +71,23 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `logs` | optional `--app APP_REF`; `--source all\|worker\|compositor\|application` (default all) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
 | `kill` | required `--app APP_REF` | 5 / 15 |
+
+For installed execution from another directory, pass absolute paths:
+
+```sh
+agent-desktop --json doctor --dependency-root /path/to/project/.local/dependencies
+agent-desktop --json session start --session work \
+  --dependency-root /path/to/project/.local/dependencies \
+  --artifacts /path/to/project/.agent-desktop/artifacts
+agent-desktop --json session status --session work
+agent-desktop --json session stop --session work
+```
+
+Dependency root participates in duplicate-start compatibility. Omitting it from a
+different cwd selects a different default root and can produce a configuration
+conflict. The wheel includes provisional Python/JS probe code; the worker never
+imports the checkout's tools/evidence or uses caller PYTHONPATH. Runtime setup does
+not require Rust/compiler tools once the pinned build is prepared.
 
 Timeout and hold values must be finite and strictly positive. No unbounded mode
 exists. Input targets always use a window; app selection for focus/close must

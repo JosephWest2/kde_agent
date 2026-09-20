@@ -1,0 +1,5 @@
+{"event": "startup_failure", "at": 159035.501395213}
+{"event": "early_manifest_write_failed", "at": 159035.502345271}
+{"event": "release_attempt", "at": 159035.506920995, "deadline": 159036.006705275}
+{"event": "release_blocked", "at": 159035.506946935}
+{"event": "application_termination", "at": 159037.648907749, "signal": 15}

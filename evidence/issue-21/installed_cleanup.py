@@ -160,9 +160,14 @@ def main(output, dependencies, selected):
                                   for p in sorted((PROJECT / 'src/agent_desktop').glob('*.py'))},
                'installed_hashes': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                                      for p in sorted(Path(agent_desktop.__file__).parent.glob('*.py'))},
+               'source_resources': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                    for p in sorted((PROJECT / 'src/agent_desktop').glob('*.js'))},
+               'installed_resources': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                       for p in sorted(Path(agent_desktop.__file__).parent.glob('*.js'))},
                'fixture_hashes': {str(path.relative_to(PROJECT)): hashlib.sha256(path.read_bytes()).hexdigest()
                                   for path in (SCRIPT, FIXTURE)}}
     assert receipt['source_hashes'] == receipt['installed_hashes'], 'Installed modules differ from source'
+    assert receipt['source_resources'] == receipt['installed_resources'], 'Installed scripts differ from source'
     names = selected or ['normalstop', 'managerstop', 'failedstart', 'failedexec', 'bus-kill', 'bus-freeze',
                          'kwin-kill', 'kwin-freeze', 'worker-kill', 'worker-freeze',
                          'worker-freeze-lock', 'worker-freeze-generation-lock', 'disconnect', 'socketsmissing', 'frozenstarting',
@@ -446,10 +451,17 @@ def main(output, dependencies, selected):
                         root = runtime / 'agent-desktop/g' / replacement['generation']
                         paths = [runtime / 'agent-desktop/current' / (name + '.json'),
                                  root / 'lifecycle.json', root / 'service-control.json']
-                        paths += sorted(path for path in (root / 'desktop').rglob('*') if path.is_file())
+                        desktop_files = sorted(path for path in (root / 'desktop').rglob('*') if path.is_file())
+                        # KWin keeps writing its own preferences/caches after readiness.
+                        # Preserve those bytes diagnostically, but only toolkit control
+                        # state and endpoint files can support an unchanged assertion.
+                        compositor_home = root / 'desktop/home'
+                        paths += [path for path in desktop_files if not path.is_relative_to(compositor_home)]
                         state = properties(replacement)
                         return {'files': {str(path.relative_to(runtime)): hashlib.sha256(path.read_bytes()).hexdigest()
                                           for path in paths},
+                                'compositor_home_files': {str(path.relative_to(runtime)): hashlib.sha256(path.read_bytes()).hexdigest()
+                                                          for path in desktop_files if path.is_relative_to(compositor_home)},
                                 'properties': {key: state[key] for key in ('MainPID', 'ActiveState', 'SubState', 'ControlGroup')},
                                 'worker': identity(int(state['MainPID'])),
                                 'descendants': [read(replacement_folder / filename)
@@ -459,13 +471,23 @@ def main(output, dependencies, selected):
                     case['stale_replay'] = control('stale', name, 'native', data['generation'])
                     assert case['stale_replay']['response']['error']['code'] == 'generation_mismatch'
                     case['replacement_after'] = replacement_snapshot()
-                    assert case['replacement_before'] == case['replacement_after']
+                    case['replacement_comparison_scope'] = 'control files, endpoint files, service properties and process identities; compositor home is diagnostic'
+                    assert {k: v for k, v in case['replacement_before'].items() if k != 'compositor_home_files'} == {
+                        k: v for k, v in case['replacement_after'].items() if k != 'compositor_home_files'}
                     assert all(alive(item) for item in case['replacement_after']['descendants'])
+                    replacement_stop_started = time.monotonic()
+                    replacement_stop_deadline = replacement_stop_started + 15
                     stop, _ = raw(replacement, 'session.stop')
                     try:
-                        wait_for(lambda: empty(replacement), time.monotonic() + 15)
+                        # Worker exit can briefly empty the cgroup before systemd
+                        # starts ExecStopPost. Observe finalization as well as empty
+                        # containment within one original stop budget.
+                        terminal = replacement_folder / 'terminal.json'
+                        wait_for(lambda: terminal.exists() and read(terminal).get('cleanup') == 'complete'
+                                 and empty(replacement), replacement_stop_deadline)
                     finally:
                         stop.close()
+                    case['replacement_stop_seconds'] = time.monotonic() - replacement_stop_started
                     case['replacement_cleanup'] = direct_snapshot(runtime, artifacts, replacement)
                     assert case['replacement_cleanup']['terminal.json']['cleanup'] == 'complete'
                 case['passed'] = True

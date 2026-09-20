@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 307, in <module>
+    main(*sys.argv[1:])
+    ~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 204, in main
+    started, data, folder = start(name)
+                            ~~~~~^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 190, in start
+    assert child.returncode == 0, child.stderr
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 305, in <module>
+    controller(*sys.argv[2:])
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 152, in controller
+    print(json.dumps(Manager(systemd=Injected()).start(req)), flush=True)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/lifecycle.py", line 403, in start
+    raise ContractError('session_failed', 'Worker service exited during startup.')
+agent_desktop.contracts.ContractError: Worker service exited during startup.
+

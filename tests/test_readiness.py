@@ -79,6 +79,49 @@ class Input:
         self.disposed = True
 
 
+class Query:
+    def __init__(self, owner, deadline):
+        self.owner, self.deadline = owner, deadline
+        self.returncode = None
+        self.cleaned = False
+        self.error = None
+        self.decoder = SimpleNamespace(output=SimpleNamespace(name='Virtual-1'))
+
+    def step(self):
+        if readiness.time.monotonic() >= self.deadline:
+            raise ContractError('timeout', 'Query expired.')
+        if self.error:
+            raise self.error
+        if self.returncode is None:
+            return None
+        if self.returncode != 0:
+            raise ContractError('window_query_failed', 'Query failed.')
+        if not self.cleaned:
+            return None
+        self.owner.active = None
+        return {'windows': []}
+
+    def cancel(self, cause):
+        self.error = cause
+
+    def cleanup(self, deadline):
+        self.owner.active = None
+        return True
+
+
+class Adapter:
+    def __init__(self, *args):
+        self.active = None
+
+    def start(self, request_id, deadline):
+        self.active = Query(self, deadline)
+        return self.active
+
+    def close(self):
+        if self.active is not None:
+            self.active.cancel('cancelled')
+
+
 class ReadinessTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -94,6 +137,9 @@ class ReadinessTests(unittest.TestCase):
         input_patch = patch.object(readiness, 'Input', Input)
         input_patch.start()
         self.addCleanup(input_patch.stop)
+        adapter_patch = patch.object(readiness, 'Adapter', Adapter)
+        adapter_patch.start()
+        self.addCleanup(adapter_patch.stop)
         self.counter = 0
         self.provider = self.make_provider()
         self.desktop = self.provider.desktop
@@ -131,7 +177,8 @@ class ReadinessTests(unittest.TestCase):
         provider = self.to_query(provider)
         provider.query.returncode = 0
         provider.tick()
-        provider.bus.complete('query_cleanup', (False,))
+        provider.query.cleaned = True
+        provider.tick()
         self.assertEqual(provider.phase, 'input_resumed')
         return provider
 
@@ -199,7 +246,7 @@ class ReadinessTests(unittest.TestCase):
         self.to_query()
         self.provider.query.returncode = 0
         self.provider.tick()
-        self.assertEqual(self.provider.phase, 'query_cleanup')
+        self.assertEqual(self.provider.phase, 'window_query')
         self.assertEqual(self.provider.health['window_query']['state'], 'pending')
         self.assertFalse(self.provider.snapshot()['desktop_ready'])
 
@@ -231,41 +278,27 @@ class ReadinessTests(unittest.TestCase):
                 self.failure(provider, component)
                 self.clock.return_value = 100.0
 
-    def test_query_metadata_identity_mismatch_cannot_be_accepted(self):
+    def test_adapter_failure_is_attributed_and_retains_cleanup_owner(self):
         self.to_query()
-        payload = json.loads(self.provider.query_out.read_text())
-        payload['request_id'] = 'stale-generation'
-        self.provider.query_out.write_text(json.dumps(payload))
-        self.provider.query.returncode = 0
+        self.provider.query.error = ContractError('window_query_failed', 'Malformed query.')
         self.failure(self.provider, 'window_query')
+        self.assertIs(self.provider.adapter.active, self.provider.query)
+        self.provider.desktop.children = SimpleNamespace(poll=Mock())
+        self.assertTrue(self.provider.cleanup_query(101.0))
 
-    def test_query_read_crossing_work_deadline_does_not_gain_cleanup_budget(self):
+    def test_query_cleanup_does_not_extend_success_deadline(self):
         self.to_query()
         self.provider.query.returncode = 0
-        original = Path.read_text
-        def late(path, *args, **kwargs):
-            value = original(path, *args, **kwargs)
-            if path == self.provider.query_out:
-                self.clock.return_value = self.provider.query_deadline
-            return value
-        with patch.object(Path, 'read_text', late):
-            self.failure(self.provider, 'window_query')
-        self.assertNotIn('query_cleanup', self.provider.bus.pending)
+        self.provider.tick()
+        self.clock.return_value = self.provider.query_deadline
+        self.provider.query.cleaned = True
+        self.failure(self.provider, 'window_query')
+        self.assertEqual(self.provider.health['window_query']['state'], 'failed')
 
-    def test_query_cleanup_has_separate_bounded_budget_capped_by_startup(self):
-        provider = self.make_provider(deadline=101.0)
+    def test_query_deadline_is_capped_by_original_startup(self):
+        provider = self.make_provider(deadline=100.1)
         self.to_query(provider)
-        self.clock.return_value = 100.4
-        provider.query.returncode = 0
-        provider.tick()
-        cleanup = provider.bus.pending['query_cleanup']
-        self.assertGreater(cleanup.deadline, provider.query_deadline)
-        self.assertLessEqual(cleanup.deadline, self.clock() + 1.5)
-        self.assertEqual(cleanup.deadline, provider.deadline)
-        self.clock.return_value = 100.7
-        provider.bus.complete('query_cleanup', (False,))
-        self.assertEqual(provider.health['window_query']['state'], 'passed')
-        self.assertLessEqual(provider.input_deadline, provider.deadline)
+        self.assertEqual(provider.query.deadline, provider.deadline)
 
     def test_paused_or_disconnected_input_invalidates_ready_generation(self):
         for cause in ('device_paused', 'disconnected'):

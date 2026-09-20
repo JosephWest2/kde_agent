@@ -1,0 +1,122 @@
+{
+  "source_directory": "/home/josephwest/development/kde-agent/.local/issue23-cleanup-7e4f8d6-serial",
+  "scope": "Unaltered negative run receipt and affected generation only; earlier successful case artifacts omitted.",
+  "copied_files": {
+    "cleanup.json": {
+      "sha256": "d9e6c1bb98f472743404e521e5ea51d70ab94a65243e8b645376f34e722b5d36",
+      "size": 293871
+    },
+    "generation/events.jsonl": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "generation/fixture-child.json": {
+      "sha256": "772914df562457e5d1b7202b50430e08094f8519d84ea4b7ea5399e3e25c17a2",
+      "size": 214
+    },
+    "generation/fixture-events.jsonl": {
+      "sha256": "63b506bdbbb3995675267d7ecf293fda974a1c64bca33e167dbe791301b33571",
+      "size": 246
+    },
+    "generation/fixture-grandchild.json": {
+      "sha256": "ae459e4a761e8e2f6fb969f952a48543082aa229ebf1a8c017506b056b2600a1",
+      "size": 214
+    },
+    "generation/fixture-worker.json": {
+      "sha256": "a284ff486f586c7cbbe3ee6daa8c583f885f1cdc7c0e8b25687ca23024f82600",
+      "size": 210
+    },
+    "generation/logs/bus.log": {
+      "sha256": "1764fb83f090c1cc15d6abc31ed6a2c2915daa1e9222bd50dcc31253bc317d0e",
+      "size": 126
+    },
+    "generation/logs/compositor.log": {
+      "sha256": "ba57c578d78f184bc4b1ff7ab8b0bdd2501feb1c0e9996d5e90b84fea3bcd777",
+      "size": 150
+    },
+    "generation/logs/worker.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "generation/manifest.json": {
+      "sha256": "efc435e9bb10ad2a4fcc4f3f54a0ea062d212be41eadfcd1c893e74c6930f054",
+      "size": 930
+    },
+    "generation/readiness/capture-34fbaafa127140f384cdb555ea84e343/image.png": {
+      "sha256": "dc59986575fe1902c1bdea4fe25019aa516d826bfe5f9e36a34a40b664276b7f",
+      "size": 3653
+    },
+    "generation/readiness/capture-34fbaafa127140f384cdb555ea84e343/request.json": {
+      "sha256": "04ac95f0ee7bd0ddb0f6f5bdbdcc8375f6663342687d3f7259f6b95b58785e8f",
+      "size": 561
+    },
+    "generation/readiness/capture-34fbaafa127140f384cdb555ea84e343/result.json": {
+      "sha256": "a786cc8325feedc3ca12fcc34480e9281d5c215912f336307d74e62651e6de57",
+      "size": 980
+    },
+    "generation/readiness/health.json": {
+      "sha256": "49f769e6b9afd3345c1676e7e7ab0e631df779ff57873f58b8ae0a02403bd6ab",
+      "size": 823
+    },
+    "generation/record.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "generation/requests/07f68e6a9abc462a9a75aa67d02251f0/bc0d001f7cbd460ca30c0061b5fb80e5/record.json": {
+      "sha256": "b7799fb35dee68153a78f2c27c728da3801f530292a8a961aa1d6b87d0fb0737",
+      "size": 606
+    },
+    "generation/requests/3bb2dd89d50c43ffa61cb9b8fa0149ff/782373ab07144daab192346b72944b7d/record.json": {
+      "sha256": "9a53f8e656303006429a3d020050620cbb34b43626e626ff861e3e8f5824a752",
+      "size": 609
+    },
+    "generation/requests/566da70c6c0f4f01b8485cf7381cd63e/0f6366b1c98646fba0254d3a7429a049/record.json": {
+      "sha256": "597e77c3369f84481cfef43ff9502f9d1d4166affe0c72e79c2d5eeca7fcc027",
+      "size": 609
+    },
+    "generation/requests/67155957c1574bb8ae24941695a95edc/4a8820cb0c29425e86ca9cf2dbff628a/record.json": {
+      "sha256": "7e94c949e97c412dd3016015b0ff11f7a5bde545666c45d252ec261b33cf7575",
+      "size": 610
+    },
+    "generation/requests/9015372f9b9a4918a633ede9f9df76c0/918177d446434692bc0f5ffc0e51df17/record.json": {
+      "sha256": "b8798b76bcec45401fbc47fc6e14b76568bee47c952b645c2ca044dfb5b55fb8",
+      "size": 608
+    },
+    "generation/requests/b4b222cf63d64902b83c14b1d1ccee87/ce5bc59c6d4647c29a14b8eb3d46537f/record.json": {
+      "sha256": "928caf0983b21c8e1588e2b2459a5a374b874345e8133b542516bfb1b61402ab",
+      "size": 608
+    },
+    "generation/requests/b8868d5101674481ad75ca7b9aafefd8/aa6208972b0a4fbda115aaf1bff7edd6/record.json": {
+      "sha256": "23374e239a0efc2fcc98dd00d8f60c8b4b022d7e9e1ad08e128c8611d4f7a2ab",
+      "size": 608
+    },
+    "generation/requests/c1ce8821e92849a9a50aae6b7db496ce/9c922effa32e4733842f77d8bea8c115/record.json": {
+      "sha256": "6be8cea70ac2fa064891b80727288cbd4e9aa4721ba70a9b8044979e73dc1ba1",
+      "size": 608
+    },
+    "generation/requests/c39f6a6e20d747c5a7c716ea4844c63b/dc06e550bbb943f4ac4d269203eb8aff/record.json": {
+      "sha256": "e8df2a2cbf6bbe3b0f0fcc4e9906de801bca9f20d220e0842dea50ad3ddb14f9",
+      "size": 608
+    },
+    "generation/requests/db7adb349f074f90b777650c8a81cc91/b12143763dd040729ba6afef15389a3d/record.json": {
+      "sha256": "8e5712548b7b54637e7be85d8663bbf2a59fac2ec41904bb3eb262abd262ccdc",
+      "size": 608
+    },
+    "generation/requests/f666635e634f43539809a534fa295670/b57a8ba7537e4b84922a682984593588/record.json": {
+      "sha256": "49a0fc55973a26dbad29207a0dad74fbabaafa1dbdb74f679a69bbdb179fc01d",
+      "size": 610
+    },
+    "generation/shutdown.json": {
+      "sha256": "985ea958087d802357e65302afa1b91371904ae0c392f4b7a4178cf0ce7833c6",
+      "size": 885
+    },
+    "generation/terminal.json": {
+      "sha256": "c966dfd89599808dfbe142953f2294625cf29cef08666a013ac7a1a6521c6d3d",
+      "size": 707
+    },
+    "generation/window-observations/556d94d342c44dd5b071b6d63b286a30.json": {
+      "sha256": "b814c98950b563454808ccf9f361d3f9080e06485cdc691524dec665eeaac950",
+      "size": 404
+    }
+  }
+}

@@ -16,7 +16,7 @@ EXIT_CODES = {
     "target_not_found": 6, "target_ambiguous": 6, "target_lost": 6,
     "application_active": 7, "application_exited": 7, "timeout": 8,
     "input_failed": 9, "input_unavailable": 9, "input_uncertain": 9,
-    "capture_failed": 10, "protocol_error": 11, "transport_error": 11,
+    "capture_failed": 10, "window_query_failed": 10, "protocol_error": 11, "transport_error": 11,
     "completion_unknown": 11, "artifact_failed": 12,
     "internal_error": 70, "cancelled": 130,
 }

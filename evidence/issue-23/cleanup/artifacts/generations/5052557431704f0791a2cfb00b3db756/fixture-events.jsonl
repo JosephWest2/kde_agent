@@ -1,0 +1,6 @@
+{"event": "action_started", "at": 158269.120441073, "request_id": "fb2ba34a834a4c66a27ff590d6d0ef05"}
+{"event": "action_cancel", "at": 158269.126110069, "reason": "cancelled"}
+{"event": "action_cleanup", "at": 158269.13410397}
+{"event": "release_attempt", "at": 158269.146816943, "deadline": 158269.646481492}
+{"event": "normal_close_attempt", "at": 158269.147454352, "deadline": 158270.926087501}
+{"event": "application_termination", "at": 158269.287999145, "signal": 15}

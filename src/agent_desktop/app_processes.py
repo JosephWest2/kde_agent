@@ -1,5 +1,7 @@
 """Generation-local kernel ownership. Durable identities are never signal handles."""
 import os
+import re
+from dataclasses import dataclass
 from collections import deque
 from pathlib import Path
 import select
@@ -115,6 +117,9 @@ class Application:
         self.completed = False
         self.last_check = self.last_write = 0
         self.dirty = False
+        self.window_observation = None
+        self.previous_observation = None
+        self.pending_observation = None
 
     @property
     def handle(self):
@@ -122,7 +127,10 @@ class Application:
 
     def snapshot(self):
         return {'application': self.handle, 'process': self.process, 'executable': self.executable,
-                'logs': self.logs, 'state': self.state, 'exit_code': self.exit_code, 'windows': []}
+                'logs': self.logs, 'state': self.state, 'exit_code': self.exit_code,
+                'windows': [] if self.window_observation is None else self.window_observation['windows'],
+                'window_observation': self.window_observation, 'previous_observation': self.previous_observation,
+                'pending_observation': self.pending_observation}
 
     def observe_exit(self):
         """Retention seam for future waits; root exit is not complete app exit."""
@@ -148,6 +156,7 @@ class Application:
         else:
             self.reap_queue.append(key)
         self.handles[key] = fd
+        self.registry.index_add(self, key)
         self.observed[key] = self.process
         self.activated = True
         self.persist()
@@ -194,6 +203,7 @@ class Application:
             self.persist()
             for path in self.logs.values():
                 self.registry.store.artifact_state(path, 'complete')
+            self.registry.checkpoint_windows()
             self.completed = True
             self.registry.active = None
             self.close()
@@ -224,6 +234,7 @@ class Application:
             if not live(fd):
                 os.close(fd)
                 del self.handles[key]
+                self.registry.index_remove(self, key)
             else:
                 self.reap_queue.append(key)
         if self.scanner is None:
@@ -261,6 +272,7 @@ class Application:
                 raise uncertain()
             info['boot_id'] = self.registry.boot_id
             self.handles[key], self.observed[key] = fd, info
+            self.registry.index_add(self, key)
             self.reap_queue.append(key)
             self.pending_processes.append(info)
         if self.pending_processes and not published and time.monotonic() < deadline:
@@ -277,6 +289,7 @@ class Application:
         for fd in self.handles.values():
             os.close(fd)
         self.handles.clear()
+        self.registry.index_clear(self)
         if self.fd is not None:
             os.close(self.fd)
             self.fd = None
@@ -297,6 +310,95 @@ class Registry:
             pass
         self.apps_fd = os.open('applications', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.root_fd)
         self.active = None
+        self.identity_index = {}
+        self.identity_revision = 0
+        self.window_checkpoint = None
+
+    def index_add(self, app, key):
+        # Compatibility with narrow unit test registries constructed via __new__.
+        self.identity_revision = getattr(self, 'identity_revision', 0) + 1
+        if not hasattr(self, 'identity_index'):
+            self.identity_index = {}
+        self.identity_index[key[0]] = (app, key, self.identity_revision)
+
+    def index_remove(self, app, key):
+        index = getattr(self, 'identity_index', {})
+        entry = index.get(key[0])
+        if entry is not None and entry[:2] == (app, key):
+            del index[key[0]]
+
+    def index_clear(self, app):
+        # Only one live application is supported; clearing invalidates all tokens.
+        if getattr(self, 'active', None) in (None, app):
+            getattr(self, 'identity_index', {}).clear()
+        self.identity_revision = getattr(self, 'identity_revision', 0) + 1
+
+    def lookup(self, handle):
+        if handle['generation'] != self.generation:
+            raise ContractError('generation_mismatch', 'Application belongs to another generation.')
+        ident = handle['application_id']
+        if not re.fullmatch(r'[0-9a-f]{32}', ident):
+            raise ContractError('target_not_found', 'Application was not found.')
+        if self.active is not None and self.active.id == ident:
+            return self.active.snapshot()
+        return self.store.application_read(ident)
+
+    def begin_window_observation(self):
+        app = self.active
+        return (self.generation, app, getattr(self, 'identity_revision', 0))
+
+    def window_identity(self, bracket, pid):
+        if pid is None:
+            return None
+        generation, app, cutoff = bracket
+        entry = getattr(self, 'identity_index', {}).get(pid)
+        if (generation != self.generation or app is None or self.active is not app
+                or app.uncertain or app.completed or entry is None or entry[0] is not app or entry[2] > cutoff):
+            return None
+        key = entry[1]
+        fd = app.handles.get(key)
+        if fd is None:
+            return None
+        try:
+            if not live(fd) or birth(pid) != key[1]:
+                return None
+            group = membership(pid)
+            if group != app.cgroup and not group.startswith(app.cgroup + '/'):
+                return None
+            if not live(fd) or birth(pid) != key[1]:
+                return None
+        except (OSError, ValueError):
+            return None
+        # Return values only, never borrowed descriptors or historic authority.
+        return {'application': app.handle, 'pid': pid, 'start_time_ticks': key[1],
+                'boot_id': self.boot_id, 'revision': entry[2]}
+
+    def checkpoint_windows(self):
+        owner = getattr(self, 'window_checkpoint', None)
+        if owner is not None:
+            self.store.application_windows(owner['application_id'], owner['previous'], owner['current'], 'confirmed')
+            self.window_checkpoint = None
+
+    def publish_windows(self, app_handle, observation, check):
+        self.checkpoint_windows()
+        current = self.lookup(app_handle)
+        previous = current.get('window_observation')
+        app = self.active if self.active is not None and self.active.handle == app_handle else None
+        if app is not None:
+            app.pending_observation = observation | {'publication': 'pending'}
+        try:
+            self.store.application_windows(app_handle['application_id'], previous, observation, 'pending')
+            check()
+        except Exception:
+            if app is not None:
+                app.pending_observation = observation | {'publication': 'uncertain'}
+            # The prior immutable artifact remains independently recoverable.
+            raise
+        if app is not None:
+            app.previous_observation, app.window_observation = previous, observation
+            app.pending_observation = None
+        self.window_checkpoint = {'application_id': app_handle['application_id'],
+                                  'previous': previous, 'current': observation}
 
     def available(self):
         if self.active is not None:
@@ -317,9 +419,13 @@ class Registry:
     def tick(self):
         app = self.active
         if app is None:
+            self.checkpoint_windows()
             return
         deadline = time.monotonic() + .002
         try:
+            self.checkpoint_windows()
+            if time.monotonic() >= deadline:
+                return
             app.observe()
             if self.active is app and time.monotonic() < deadline:
                 app.scan_turn(deadline=deadline)

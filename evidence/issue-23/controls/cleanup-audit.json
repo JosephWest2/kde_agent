@@ -1,0 +1,51 @@
+[
+  {
+    "run": ".local/issue23-controls-first",
+    "case": "controls",
+    "generation": "f63d714508684fd3a75b2c018b6ce25c",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-f63d714508684fd3a75b2c018b6ce25c.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-second",
+    "case": "controls",
+    "generation": "7331c135b6a14aaeb71acc9f7e1ee447",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-7331c135b6a14aaeb71acc9f7e1ee447.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-third",
+    "case": "controls",
+    "generation": "78646bcc481e46988b9ef086f245718c",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-78646bcc481e46988b9ef086f245718c.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-fourth",
+    "case": "controls",
+    "generation": "082c01ff95f3405e9089630be3a1ed9c",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-082c01ff95f3405e9089630be3a1ed9c.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-fourth",
+    "case": "restart",
+    "generation": "3c6f9e40a9b34325875469a82729f71c",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-3c6f9e40a9b34325875469a82729f71c.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-final",
+    "case": "controls",
+    "generation": "c4d0ce50e84d47118f19ca390988e80c",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-c4d0ce50e84d47118f19ca390988e80c.service",
+    "absent_or_unpopulated": true
+  },
+  {
+    "run": ".local/issue23-controls-final",
+    "case": "restart",
+    "generation": "2f059925c74c484899f272e82f458132",
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-2f059925c74c484899f272e82f458132.service",
+    "absent_or_unpopulated": true
+  }
+]

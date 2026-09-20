@@ -1,0 +1,29 @@
+{
+  "raw_bytes": 262144,
+  "rows": 256,
+  "iterations": 100,
+  "source_module": "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/window_types.py",
+  "encoded_bytes": 299905,
+  "seconds": {
+    "json_decode": {
+      "p50": 0.0005563330050790682,
+      "p95": 0.0005975690146442503,
+      "max": 0.0007429799879901111
+    },
+    "row_validation_total": {
+      "p50": 0.0006444890750572085,
+      "p95": 0.0007077800401020795,
+      "max": 0.0007882440113462508
+    },
+    "max_row_turn": {
+      "p50": 4.5691500417888165e-05,
+      "p95": 6.639902130700648e-05,
+      "max": 0.00015027698827907443
+    },
+    "public_encode": {
+      "p50": 0.0009324615093646571,
+      "p95": 0.0009820470004342496,
+      "max": 0.001184591994388029
+    }
+  }
+}

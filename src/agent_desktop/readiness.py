@@ -15,7 +15,7 @@ from .contracts import ContractError
 from .health import fresh
 from .private_bus import PrivateBus
 from .provisional_input import Input
-from .provisional_windows import encoded, snapshot
+from .windows import Adapter
 
 PROVIDER = {'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
             'desktop_operations_supported': False}
@@ -38,6 +38,7 @@ class Readiness:
         self.folder = desktop.store.path / 'readiness'
         self.folder.mkdir(mode=0o700)
         self.bus = PrivateBus(desktop.env['DBUS_SESSION_BUS_ADDRESS'], min(deadline, time.monotonic() + 3))
+        self.adapter = Adapter(desktop, generation, binary)
         self.query = self.capture = None
         self.round = None
         self.name_pending = False
@@ -88,46 +89,27 @@ class Readiness:
         self.phase = 'window_query'
         self.query_id = 'readiness-' + self.generation
         self.query_deadline = min(self.deadline, time.monotonic() + .5)
-        self.query_folder = self.folder / 'query'
-        self.query_folder.mkdir(mode=0o700)
-        script = self.query_folder / 'input.js'
-        script.write_text(encoded({'request_id': self.query_id}) + files('agent_desktop').joinpath('readiness_query.js').read_text())
-        script.chmod(0o600)
-        self.query_out = self.query_folder / 'stdout'
-        with self.query_out.open('xb') as output, (self.query_folder / 'stderr').open('xb') as error:
-            self.query = self.desktop.launch([self.binary, '--name', self.query_id, 'kwinscript', '--file', str(script)],
-                                             str(self.desktop.root), {}, stdout=output, stderr=error)
+        self.query = self.adapter.start(self.query_id, self.query_deadline)
 
     def _query_finish(self):
-        if time.monotonic() >= self.query_deadline:
-            self.fail(ContractError('timeout', 'Structured window query timed out.'), 'window_query')
-        if self.query.returncode is None:
+        try:
+            result = self.query.step()
+        except Exception as error:
+            self.query.cancel(error if isinstance(error, ContractError) else 'window_query_failed')
+            raise
+        if result is None:
             return
-        if self.query.returncode != 0 or self.query_out.stat().st_size > 1024 * 1024:
-            self.fail(ContractError('session_failed', 'Structured window query failed.'), 'window_query')
-        value = snapshot(json.loads(self.query_out.read_text()), self.query_id)
-        outputs = value.get('outputs')
-        if (not isinstance(outputs, list) or len(outputs) != 1 or not isinstance(outputs[0], dict)
-                or outputs[0].get('width') != 1280 or outputs[0].get('height') != 720
-                or type(outputs[0].get('width')) is not int or type(outputs[0].get('height')) is not int
-                or not isinstance(outputs[0].get('name'), str)
-                or not outputs[0]['name']):
-            self.fail(ContractError('session_failed', 'Private output does not match the fixed contract.'), 'window_query')
-        if time.monotonic() >= self.query_deadline:
-            self.fail(ContractError('timeout', 'Late structured window query result.'), 'window_query')
-        self.screen = outputs[0]['name']
-        self.window_count = len(value['windows'])
-        self.query_cleanup_deadline = min(self.deadline, time.monotonic() + 1.5)
-        self.phase = 'query_cleanup'
-        def cleaned(value, _fds, error):
-            if error or value.unpack() != (False,):
-                self.fail(ContractError('session_failed', 'Window query script cleanup was not confirmed.'), 'window_query')
-            if time.monotonic() >= self.query_cleanup_deadline:
-                self.fail(ContractError('timeout', 'Late window query acceptance.'), 'window_query')
-            self._passed('window_query', windows=self.window_count, script_unloaded=True)
-            self._input_start()
-        self._call('query_cleanup', '/Scripting', 'org.kde.kwin.Scripting', 'isScriptLoaded',
-                   self.GLib.Variant('(s)', (self.query_id,)), '(b)', self.query_cleanup_deadline, cleaned)
+        self.screen = self.query.decoder.output.name
+        self.window_count = len(result['windows'])
+        self._passed('window_query', windows=self.window_count, script_unloaded=True)
+        self._input_start()
+
+    def cleanup_query(self, deadline):
+        if self.adapter.active is None:
+            return True
+        self.adapter.active.cancel('cancelled')
+        self.desktop.children.poll()
+        return self.adapter.active.cleanup(deadline)
 
     def _input_start(self):
         self.phase = 'input_resumed'
@@ -286,6 +268,7 @@ class Readiness:
         self.bus.close()
         if self.input is not None:
             self.input.dispose()
-        for child in (self.query, self.capture):
+        self.adapter.close()
+        for child in (self.capture,):
             if child is not None and child.returncode is None:
                 child.abort()

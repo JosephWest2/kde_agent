@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows_controls.py", line 236, in <module>
+    main(*sys.argv[1:])
+    ~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows_controls.py", line 126, in main
+    assert case['initial']['response']['ok'] and len(case['initial']['response']['result']['windows']) == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

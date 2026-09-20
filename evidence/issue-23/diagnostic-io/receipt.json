@@ -1,0 +1,15 @@
+{
+  "durable": {
+    "count": 100,
+    "p50": 5.562651494983584e-05,
+    "p95": 8.023000555112958e-05,
+    "max": 0.00722179698641412
+  },
+  "nondurable": {
+    "count": 100,
+    "p50": 4.803700721822679e-05,
+    "p95": 5.409601726569235e-05,
+    "max": 6.521301111206412e-05
+  },
+  "scope": "Standalone diagnostic-I/O comparison; not causal attribution for prior worker delays."
+}

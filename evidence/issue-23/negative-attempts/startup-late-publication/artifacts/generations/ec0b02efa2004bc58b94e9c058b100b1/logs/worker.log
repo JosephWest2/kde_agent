@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 229, in tick
+    self._query_finish()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 96, in _query_finish
+    result = self.query.step()
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 103, in step
+    result = super().step()
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows_controls.py", line 38, in step
+    result = super().step()
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/windows.py", line 215, in step
+    self.check()
+    ~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/windows.py", line 83, in check
+    raise ContractError('timeout', 'Window query deadline expired.')
+agent_desktop.contracts.ContractError: Window query deadline expired.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows_controls.py", line 240, in <module>
+    worker(*sys.argv[2:])
+    ~~~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows_controls.py", line 51, in worker
+    base.worker(*args)
+    ~~~~~~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 154, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True, kdotool=binary, desktop_observer=infrastructure)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 272, in run
+    raise foundation_error
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 127, in tick
+    readiness.tick()
+    ~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 265, in tick
+    self.fail(error)
+    ~~~~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 80, in fail
+    raise self.error
+agent_desktop.contracts.ContractError: Window query deadline expired.

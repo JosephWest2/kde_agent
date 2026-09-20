@@ -109,7 +109,15 @@ class ArtifactProcessTests(unittest.TestCase):
         effect = self.wait(lambda: self.markers_of('effect'))[0]
         lock = os.open(self.generation / 'record.lock', os.O_RDWR)
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            def acquire():
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return True
+                except BlockingIOError:
+                    return False
+            # The effect marker precedes context.effects()'s record update.
+            # Establish deliberate contention before timing the stop request.
+            self.wait(acquire)
             before = time.monotonic()
             stop = self.client('session', 'stop')
             release = self.wait(lambda: self.markers_of('release'))[0]

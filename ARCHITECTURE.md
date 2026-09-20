@@ -384,3 +384,23 @@ GLib heartbeats, with explicit 3s abort escalation, healthy-start heartbeats eve
 and independent bus/KWin observations sharing a 1s round. These policies implement
 REQ-009/011 without background heartbeats or automatic restart. See the detailed
 [lifecycle bounds](docs/LIFECYCLE.md#capability-readiness-and-live-health-20).
+
+
+### M3.4 implementation decision
+
+Generation-specific `ExecStop` and `ExecStopPost` commands now provide independent
+shutdown and finalization. The owner orders cancellation, bounded tracked-release
+and normal-close hooks before service escalation; production release/close adapters
+remain explicitly unconnected until #35. Stop-post authenticates its own cgroup,
+uses pidfds to terminate remaining verified ordinary descendants, then removes
+only owned disposable settings/sockets. This active survivor step is necessary:
+on systemd 261.3 the post command can run before a resistant grandchild is killed.
+A passive post hook would leave runtime cleanup incomplete without a later client.
+
+Generation locks serialize all lifecycle record mutations without taking the
+per-name lock inside service hooks. Immutable explicit-stop intent is distinct
+from the internal stop relay and watchdog SIGTERM, preserving prior failures and
+requested-fallback outcome semantics. Durable post receipts distinguish ordinary
+process absence from an outside observation of total cgroup emptiness. See
+[the shutdown contract](docs/LIFECYCLE.md#autonomous-shutdown-and-finalization-21)
+and [installed qualification](evidence/issue-21/README.md).

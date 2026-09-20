@@ -200,3 +200,69 @@ exercise this policy while still reporting starting, without claiming readiness.
 M7.1/#35 must replace/qualify the provisional provider and connect production
 adapters before release qualification. #21 still owns ordered graceful action
 shutdown and the autonomous terminal record/runtime cleanup hook.
+
+
+## Autonomous shutdown and finalization (#21)
+
+A managed stop submits an independent systemd job. Its installed `ExecStop`
+helper relays a generation-pinned priority shutdown with a fixed 2s deadline.
+The GLib owner reserves response-delivery time, cancels ordinary work, caps
+active cancellation cleanup at 0.5s, attempts tracked release for up to 0.5s,
+and attempts normal application-window close with the remaining owner budget
+(up to 1.8s total). Each hook must be bounded and nonblocking. A blocked callback
+can prevent later hook attempts; the manager then terminates it and records
+uncertainty. Cleanup continues when the initiating client disconnects.
+
+Release and application-close adapters are **not connected in M3**. Their default
+receipts say `not_connected`, `confirmed: false`, and identify #35. Internal
+fixtures prove orchestration order; they do not qualify production input release
+or application window closure. Provisional readiness resources close after the
+ordered hooks, before direct-child disposal.
+
+Systemd retains `KillMode=control-group`, `Restart=no`, a 3s `TimeoutStopSec`,
+5s watchdog and 3s abort bound, and uses `TimeoutStopFailureMode=kill` for stalled
+stop commands. `ExecStopPost` has its own fixed 2s internal deadline. The overall
+supported ordinary-process shutdown bound remains 15s; per-command systemd timers
+must not be mistaken for one overall 3s timer. The installed evidence records
+actual normal, worker/dependency death/freeze and stalled-helper paths.
+
+A stop-post command can begin while a SIGTERM-resistant descendant still lives.
+The authenticated generation finalizer therefore pins remaining members with
+pidfds, checks their exact service-cgroup membership, sends SIGKILL through those
+pidfds and rescans within a 1s survivor budget. It excludes only its own verified
+PID. It removes private desktop/settings and residual control sockets only after
+all other owned members are absent. The generation directory, metadata, immutable
+stop/relay records and routing pointer remain as ownership tombstones; they cannot
+be reused for another service generation. Artifacts remain outside this subtree.
+
+`terminal.json` preserves the stop-post's raw `SERVICE_RESULT`, `EXIT_CODE` and
+`EXIT_STATUS`, explicit stop intent, final session classification and cleanup
+observation. A `complete` post receipt means ordinary processes were absent and
+disposable files removed while the finalizer was still running; it does not claim
+the entire cgroup was empty. The independent controller verifies eventual unit
+settlement and whole-cgroup emptiness. Later CLI retries retain that original
+receipt and write `reconciliation.json` separately.
+
+Explicit Manager or admitted external stop creates immutable intent. An internal
+ExecStop relay, SIGTERM or watchdog signal cannot create user intent. Prior
+session failures and watchdog/start failures remain failed. Requested fallback
+termination, including a timeout or SIGKILL with no prior session failure,
+remains stopped; its raw service result and unconfirmed graceful stages survive.
+Unexpected clean or signal exits without explicit intent are failed.
+
+Service hooks use the generation mutation lock and never acquire the per-name
+lifecycle lock held by a waiting CLI. No generation lock is held while waiting
+for service or transport completion. All metadata transitions preserve terminal
+failure against stale startup/status snapshots, and stale hooks cannot touch a
+replacement generation. Artifact-lock/write failure cannot prevent verified
+process termination and settings disposal, but it prevents claiming the records
+were preserved. Missing pidfd support or unverifiable surviving members withholds
+settings deletion and complete status.
+
+If the stop-post recorder itself is deliberately blocked or killed, systemd still
+terminates the owned processes within the qualified bound, but that disabled
+recorder cannot promise file disposal or a complete manifest. A later explicit
+status/stop reconciliation retries cleanup after proving quiescence. The required
+worker/bus/KWin/start/client failures complete autonomously with a functioning
+recorder. Measurements assume ordinary killable processes and normal local
+storage; uninterruptible kernel/filesystem stalls are not realtime guarantees.

@@ -5,6 +5,8 @@ import argparse
 import signal
 import sys
 import os
+import time
+import math
 from contextlib import ExitStack, redirect_stdout, redirect_stderr
 from .contracts import ContractError, dispatch
 from .runtime import Endpoint
@@ -19,7 +21,7 @@ def unsupported(request, admission):
 
 def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None,
         artifacts=None, store=None, managed=False, desktop=False, desktop_observer=None,
-        kdotool=None, startup_deadline=None, readiness_factory=None):
+        kdotool=None, startup_deadline=None, readiness_factory=None, shutdown_hooks=None):
     # Internal Python injection is for tests and future owners, never a CLI plugin.
     from .artifacts import Store
     from .records import Records, diagnostic
@@ -35,6 +37,9 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     endpoint = server = children = None
     foundation = readiness = None
     foundation_error = None
+    shutdown = None
+    stop_waiters = []
+    quit_after = None
     from .watchdog import Watchdog
     watchdog = Watchdog()
     try:
@@ -55,8 +60,33 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             foundation = Desktop(endpoint.path.parent, children, store)
             if startup_deadline is not None:
                 foundation.deadline = min(foundation.deadline, startup_deadline)
+        def shutdown_record(value):
+            if store is not None:
+                from .lifecycle import atomic
+                atomic(store.path / 'shutdown.json', value | {'generation': generation, 'session': name})
+
+        def begin_stop(deadline=None):
+            nonlocal shutdown
+            if shutdown is None:
+                from .shutdown import Shutdown
+                shutdown = Shutdown(scheduler, min(time.monotonic() + 1.8, deadline or float('inf')),
+                                    observe=shutdown_record, **(shutdown_hooks or {}))
+            return shutdown
+
         def tick():
-            nonlocal foundation_error, readiness
+            nonlocal foundation_error, readiness, quit_after
+            if shutdown is not None:
+                shutdown.tick()
+                if shutdown.done:
+                    for admission in stop_waiters:
+                        if not admission.terminal:
+                            admission.complete(result={'state': 'stopping', 'desktop_ready': False,
+                                                       'graceful': shutdown.snapshot()})
+                    if quit_after is None:
+                        quit_after = time.monotonic() + .05
+                    if time.monotonic() >= quit_after:
+                        loop.quit()
+                return
             try:
                 if foundation is not None:
                     foundation.tick()
@@ -90,8 +120,39 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                             'context': getattr(error, 'context', {})})
                     except Exception:
                         pass
-                loop.quit()
+                begin_stop()
         def dispatch_request(request, admission):
+            if managed and request.operation == 'session.stop':
+                from .ownership import generation_lock, identity_record, intent
+                from .lifecycle import read_metadata
+                runtime = endpoint.runtime
+                data = read_metadata(runtime, name, generation)
+                deadline = admission.deadline - .2
+                if len(stop_waiters) >= 32:
+                    raise ContractError('session_unavailable', 'Shutdown waiters are full.')
+                try:
+                    with generation_lock(runtime, generation) as root:
+                        control = identity_record(root, 'service-control.json', data)
+                        if request.request_id == control.get('request_id'):
+                            relay = identity_record(root, 'relay-deadline.json', data)
+                            if (relay.get('request_id') != request.request_id or type(relay.get('deadline')) not in (int, float)
+                                or not math.isfinite(relay['deadline'])):
+                                raise ContractError('protocol_error', 'Invalid stop relay deadline.')
+                            deadline = min(deadline, relay['deadline'] - .2)
+                        else:
+                            intent(runtime, data, 'admitted_request', request.request_id)
+                except (ContractError, OSError):
+                    # Missing intent never invents success; cleanup still belongs
+                    # to the owner and finalizer after a valid stop admission.
+                    begin_stop(deadline)
+                    raise
+                stop_waiters.append(admission)
+                begin_stop(deadline)
+                if records is not None:
+                    records.attach(request, admission)
+                return
+            if shutdown is not None:
+                raise ContractError('session_unavailable', 'Session shutdown is in progress.')
             tick()  # Current owner health is observed before any work admission.
             if foundation_error is not None:
                 raise ContractError('session_unavailable', 'Essential desktop health failed.',
@@ -134,7 +195,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 store.close()
         raise
     loop = GLib.MainLoop()
-    sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (loop.quit(), False)[1])
+    sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
                for sig in (signal.SIGTERM, signal.SIGINT)]
     loop_failed = False
     try:

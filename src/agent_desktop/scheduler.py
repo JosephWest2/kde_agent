@@ -315,6 +315,29 @@ class Scheduler:
                 self._finish(waiter, owner.result)
                 self.waiters.remove(waiter)
 
+    def begin_shutdown(self, deadline):
+        """Cancel emission before recording, with a capped cleanup allowance."""
+        self._guard()
+        self.stopping = True
+        self.input_available = False
+        works = [*self.queue, self.active, self.lifecycle, self.pending_stop, *self.waiters]
+        seen = set()
+        for work in works:
+            if work is None or id(work) in seen or work.terminal:
+                continue
+            seen.add(id(work))
+            self._cancel(work, 'cancelled')
+            work.cleanup_deadline = min(work.cleanup_deadline, deadline)
+
+    def drain_shutdown(self, deadline):
+        self._guard()
+        works = [self.active, self.lifecycle, self.pending_stop]
+        for work in works:
+            if work is not None and not work.terminal:
+                work.cleanup_deadline = min(work.cleanup_deadline, deadline)
+                self._advance(work)
+        return all(work is None or work.terminal for work in works)
+
     def tick(self):
         self._guard()
         now = self.clock()

@@ -16,7 +16,7 @@ CONSTRUCTION_SECONDS = 30.0
 
 
 def dispose(generation_root):
-    """Caller must hold the generation name lock and prove cgroup quiescence."""
+    """Caller holds generation cleanup lock and proves owned ordinary process absence."""
     check_directory(generation_root)
     root = generation_root / 'desktop'
     try:

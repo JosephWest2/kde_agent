@@ -70,6 +70,17 @@ def worker(name, generation, artifacts, kdotool, mode):
     from agent_desktop.contracts import ContractError
     from agent_desktop.worker import run
     root = Path(artifacts) / 'generations' / generation
+    if mode == 'blocked-release-recordfail':
+        # Worker-local record failure; independent installed service helpers
+        # import a fresh unmodified Store in separate processes.
+        from agent_desktop.artifacts import Store
+        generation_update = Store.generation_update
+        def injected_generation_update(self, **kwargs):
+            if kwargs.get('state') == 'failed':
+                event(root, 'early_manifest_write_failed')
+                raise OSError('Injected worker-only failed-state manifest write failure')
+            return generation_update(self, **kwargs)
+        Store.generation_update = injected_generation_update
     subprocess.Popen([sys.executable, '-I', str(Path(__file__).resolve()), 'child', str(root)])
     write(root / 'fixture-worker.json', identity(os.getpid()))
 
@@ -80,6 +91,15 @@ def worker(name, generation, artifacts, kdotool, mode):
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
             os.kill(os.getpid(), signal.SIGSTOP)
     signal.signal(signal.SIGUSR1, freeze_with_record_lock)
+
+    def freeze_with_generation_lock(signum, frame):
+        from agent_desktop.ownership import generation_lock
+        from agent_desktop.runtime import Runtime
+        with generation_lock(Runtime(), generation):
+            write(root / 'fixture-generation-lock-held.json', identity(os.getpid()))
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            os.kill(os.getpid(), signal.SIGSTOP)
+    signal.signal(signal.SIGUSR2, freeze_with_generation_lock)
 
     class Task:
         cleanup_seconds = .1
@@ -99,7 +119,7 @@ def worker(name, generation, artifacts, kdotool, mode):
 
     def release(now, deadline):
         event(root, 'release_attempt', deadline=deadline)
-        if mode == 'blocked-release':
+        if mode in ('blocked-release', 'blocked-release-recordfail'):
             event(root, 'release_blocked')
             while True:
                 time.sleep(.1)

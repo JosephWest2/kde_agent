@@ -36,9 +36,19 @@ Append case names to select a focused rerun. The full matrix covers normal raw
 stop, Manager stop, startup failure after ordinary descendants exist, failed
 ExecStart, bus/KWin/worker kill and freeze, a worker frozen while holding the
 artifact record lock, raw stop client disconnect after durable admission,
+and a worker frozen with the generation cleanup lock held while Manager stop
+must still submit independent service termination,
 missing control sockets, frozen starting worker, blocked ExecStop and blocked
 ExecStopPost, permanently blocked release callback, and stale finalizer replay
-after a replacement generation is ready.
+after a replacement generation is ready. The `prior-failure-stop` regression
+injects an essential failure, waits for its durable failure receipt and a blocked
+release callback, then requests Manager stop. It requires the pre-reconciliation
+terminal state and first failure to retain the earlier failure even when the
+requested service termination produces a raw timeout result.
+The `prior-failure-stop-recordfail` variant additionally makes the worker's
+failed-state manifest write raise an error, while preserving its real failure
+receipt. The fresh finalizer must retain the earlier failure even though the
+pre-stop manifest still says ready with no first failure.
 
 The fixture imports installed product modules without altering `sys.path`.
 It supplies provisional native readiness and Python-only shutdown observers.
@@ -77,3 +87,10 @@ destination bug: the first outside reconciliation wrote its initial uncertain
 state to `terminal.json`, then wrote completion to `reconciliation.json`. The
 fix at `52bf8f5` chooses the receipt destination once per finalizer invocation.
 This historical run is not selected qualification evidence.
+
+Fresh PR review subsequently reproduced an earlier essential failure being
+misclassified as stopped when release blocked and Manager stop forced a timeout.
+The untouched reproducer and receipts are retained in
+[`history/pr54-prior-failure-stop`](history/pr54-prior-failure-stop/history.json).
+The installed matrix now includes that exact ordering as `prior-failure-stop`;
+the original 18-case run did not exercise this combined fault sequence.

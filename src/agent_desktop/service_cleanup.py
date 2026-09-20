@@ -9,7 +9,7 @@ import signal
 import time
 
 from .contracts import ContractError, GENERATION, make_request
-from .lifecycle import atomic, read_metadata
+from .lifecycle import atomic, read_metadata, retained_failure
 from .ownership import current, generation_lock, identity_record
 from .runtime import Runtime
 
@@ -116,6 +116,12 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
         if store is not None:
             target = store.path / ('terminal.json' if inside or not (store.path / 'terminal.json').exists()
                                    else 'reconciliation.json')
+        early_failure = retained_failure(data)
+        if early_failure is not None:
+            # The owner records this before graceful hooks. It may die or block
+            # there before its finally block updates the aggregate manifest.
+            previous['first_failure'] = previous.get('first_failure') or early_failure['code']
+            receipt['early_failure'] = early_failure
         receipt['state'] = classify(data, previous, stop_intent, service_result, inside=inside, exit_status=exit_status)
         data['state'] = receipt['state']
         atomic(root / 'lifecycle.json', data)
@@ -134,7 +140,7 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
                             receipt[key] = old.get(key)
                 atomic(target, receipt)
                 store.generation_update(state=data['state'],
-                    failure='session_failed' if data['state'] == 'failed' else None,
+                    failure=(previous.get('first_failure') or 'session_failed') if data['state'] == 'failed' else None,
                     cleanup='complete' if complete else 'uncertain')
             except (ContractError, OSError):
                 preserved = False

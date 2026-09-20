@@ -244,6 +244,7 @@ class Manager:
 
     def _stop(self, runtime, data, deadline, *, failed=False, requested=None):
         stop_submitted = False
+        bookkeeping_uncertain = False
         while True:
             info = self._observe(runtime, data, deadline)
             # Preserve failure already observed before our requested termination.
@@ -263,19 +264,29 @@ class Manager:
                 # An ambiguous submission can become visible during this loop.
                 # Submit stop at its first observation, including pending jobs.
                 # Artifact attachment never precedes this fallback call.
-                if requested is not None:
-                    from .ownership import generation_lock, intent
-                    with generation_lock(runtime, data['generation']):
-                        # Preserve the observation preceding requested fallback.
-                        if failed:
-                            data['state'] = 'failed'
-                        intent(runtime, data, 'manager_request', requested.request_id)
-                data['state'] = 'failed' if failed else 'stopping'
-                self._write(runtime, data)
+                try:
+                    if requested is not None:
+                        from .ownership import generation_lock, intent
+                        with generation_lock(runtime, data['generation']):
+                            # Preserve the observation preceding requested fallback.
+                            if failed:
+                                data['state'] = 'failed'
+                            intent(runtime, data, 'manager_request', requested.request_id)
+                    data['state'] = 'failed' if failed else 'stopping'
+                    self._write(runtime, data)
+                except (OSError, ContractError) as error:
+                    if isinstance(error, ContractError) and error.code == 'generation_mismatch':
+                        raise
+                    # Bookkeeping cannot gate termination of an already-validated
+                    # exact unit. Lost intent/records must not invent preservation.
+                    bookkeeping_uncertain = True
+                if runtime.read(data['session']) != data['generation']:
+                    raise ContractError('generation_mismatch', 'Stop generation is no longer current.')
                 self.systemd.stop(data, deadline)
                 stop_submitted = True
             time.sleep(min(.02, remaining(deadline)))
-        return self._retire(runtime, data, failed=failed)
+        preserved = self._retire(runtime, data, failed=failed)
+        return preserved and not bookkeeping_uncertain
 
     def _ping(self, request, generation, deadline):
         remaining(deadline)

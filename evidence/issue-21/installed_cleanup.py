@@ -162,8 +162,9 @@ def main(output, dependencies, selected):
                                   for path in (SCRIPT, FIXTURE)}}
     names = selected or ['normalstop', 'managerstop', 'failedstart', 'failedexec', 'bus-kill', 'bus-freeze',
                          'kwin-kill', 'kwin-freeze', 'worker-kill', 'worker-freeze',
-                         'worker-freeze-lock', 'disconnect', 'socketsmissing', 'frozenstarting',
-                         'blocked-stop', 'blocked-post', 'blocked-release', 'stale-replay']
+                         'worker-freeze-lock', 'worker-freeze-generation-lock', 'disconnect', 'socketsmissing', 'frozenstarting',
+                         'blocked-stop', 'blocked-post', 'blocked-release', 'prior-failure-stop',
+                         'prior-failure-stop-recordfail', 'stale-replay']
     with tempfile.TemporaryDirectory(prefix='a21-') as tmp:
         runtime = Path(tmp)
         runtime.chmod(0o700)
@@ -217,7 +218,9 @@ def main(output, dependencies, selected):
         try:
             for key in names:
                 name = 'a21-' + key
-                mode = ('starting' if key == 'frozenstarting' else key
+                mode = ('blocked-release-recordfail' if key == 'prior-failure-stop-recordfail' else
+                        'blocked-release' if key == 'prior-failure-stop' else
+                        'starting' if key == 'frozenstarting' else key
                         if key in ('failedstart', 'failedexec', 'blocked-stop', 'blocked-post', 'blocked-release') else 'native')
                 case = {'mode': mode, 'no_reconciliation_before_observation': True}
                 receipt['cases'][key] = case
@@ -277,6 +280,25 @@ def main(output, dependencies, selected):
                             sockets.append(stop)
                     elif key == 'managerstop':
                         case['stop'] = control('stop', name, mode, data['generation'])
+                    elif key in ('prior-failure-stop', 'prior-failure-stop-recordfail'):
+                        (folder / 'inject-startup-failure').touch(mode=0o600)
+                        wait_for(lambda: (folder / 'startup-failure.json').exists() and
+                                 (folder / 'fixture-events.jsonl').exists() and
+                                 'release_blocked' in (folder / 'fixture-events.jsonl').read_text(),
+                                 started + 2)
+                        failure = read(folder / 'startup-failure.json')
+                        assert failure['generation'] == data['generation'] and failure['code'] == 'session_failed'
+                        events = [json.loads(line) for line in (folder / 'fixture-events.jsonl').read_text().splitlines()]
+                        blocked_at = next(event['at'] for event in events if event['event'] == 'release_blocked')
+                        case['pre_stop_failure'] = {'observed_at': time.monotonic(), 'failure': failure,
+                                                    'release_blocked_at': blocked_at,
+                                                    'manifest': read(folder / 'manifest.json')}
+                        if key == 'prior-failure-stop-recordfail':
+                            assert any(event['event'] == 'early_manifest_write_failed' for event in events)
+                            assert case['pre_stop_failure']['manifest']['first_failure'] is None
+                            assert case['pre_stop_failure']['manifest']['state'] == 'ready'
+                        case['manager_stop_submitted_at'] = time.monotonic()
+                        case['stop'] = control('stop', name, mode, data['generation'])
                     elif key == 'socketsmissing' or key.startswith('blocked-'):
                         if key == 'socketsmissing':
                             for socket_name in ('control.sock', 'priority.sock'):
@@ -289,11 +311,18 @@ def main(output, dependencies, selected):
                         signum = signal.SIGKILL if key.endswith('-kill') else signal.SIGSTOP
                         if key == 'worker-freeze-lock':
                             signum = signal.SIGUSR1
+                        elif key == 'worker-freeze-generation-lock':
+                            signum = signal.SIGUSR2
                         inject(data, case['identities'][component], signum)
                         case['fault'] = {'component': component, 'signal': signum.name}
                         if key == 'worker-freeze-lock':
                             wait_for(lambda: (folder / 'fixture-lock-held.json').exists(), started + 2)
                             case['held_record_lock'] = read(folder / 'fixture-lock-held.json')
+                        elif key == 'worker-freeze-generation-lock':
+                            wait_for(lambda: (folder / 'fixture-generation-lock-held.json').exists(), started + 2)
+                            case['held_generation_lock'] = read(folder / 'fixture-generation-lock-held.json')
+                            case['stop'] = control('stop', name, mode, data['generation'])
+                            assert case['stop']['response']['result']['records_preserved'] is False
                     transitions = []
                     previous = None
                     while not empty(data):
@@ -311,7 +340,9 @@ def main(output, dependencies, selected):
                     for sock in sockets:
                         sock.close()
                     case['autonomous'] = (read(output / ('before-reconciliation-' + name + '.json'))
-                                          if key == 'managerstop' else direct_snapshot(runtime, artifacts, data))
+                                          if key in ('managerstop', 'prior-failure-stop', 'prior-failure-stop-recordfail',
+                                                     'worker-freeze-generation-lock')
+                                          else direct_snapshot(runtime, artifacts, data))
                     assert all(not alive(item) for item in case['identities'].values())
                 observation = case['autonomous']
                 assert observation['cgroup_empty'] and observation['all_descendants_absent'], observation
@@ -335,6 +366,16 @@ def main(output, dependencies, selected):
                     assert terminal['state'] == expected, terminal
                     case['post_entry_after_seconds'] = terminal['started_at'] - started
                     case['post_duration_seconds'] = terminal['finished_at'] - terminal['started_at']
+                    if key == 'worker-freeze-generation-lock':
+                        assert terminal['stop_intent'] is None
+                    if key in ('prior-failure-stop', 'prior-failure-stop-recordfail'):
+                        assert observation['manifest.json']['first_failure'] == 'session_failed'
+                        assert terminal['stop_intent']['origin'] == 'manager_request'
+                        assert case['pre_stop_failure']['release_blocked_at'] < case['manager_stop_submitted_at']
+                        assert case['pre_stop_failure']['observed_at'] < terminal['started_at']
+                        assert observation['startup-failure.json'] == case['pre_stop_failure']['failure']
+                        assert terminal['service_result'] == 'timeout', terminal
+                        assert 'normal_close_attempt' not in [event['event'] for event in observation['events']]
                     if key == 'blocked-release':
                         kinds = [event['event'] for event in observation['events']]
                         assert 'release_blocked' in kinds and 'normal_close_attempt' not in kinds

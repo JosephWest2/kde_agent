@@ -113,11 +113,22 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         pass
                 if store is not None:
                     try:
-                        from .lifecycle import atomic
-                        atomic(store.path / 'startup-failure.json', {
-                            'generation': generation, 'code': getattr(error, 'code', 'session_failed'),
-                            'message': getattr(error, 'message', 'Private desktop owner failed.'),
-                            'context': getattr(error, 'context', {})})
+                        from .lifecycle import atomic, retained_failure
+                        first = retained_failure({'generation': generation,
+                            'configuration': {'artifacts': str(store.root)}})
+                        if first is None:
+                            atomic(store.path / 'startup-failure.json', {
+                                'generation': generation, 'code': getattr(error, 'code', 'session_failed'),
+                                'message': getattr(error, 'message', 'Private desktop owner failed.'),
+                                'context': getattr(error, 'context', {})})
+                        code = first['code'] if first is not None else getattr(error, 'code', 'session_failed')
+                    except Exception:
+                        code = getattr(error, 'code', 'session_failed')
+                    try:
+                        # Nonblocking best effort before any shutdown hook can
+                        # stall. The independent finalizer also reads the earlier
+                        # diagnostic if this aggregate update is unavailable.
+                        store.generation_update(state='failed', failure=code, cleanup='uncertain')
                     except Exception:
                         pass
                 begin_stop()

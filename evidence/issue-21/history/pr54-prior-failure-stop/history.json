@@ -1,0 +1,48 @@
+{
+  "source_directory": "/tmp/review21-7qs_9oho",
+  "source_commit": "not captured by reviewer reproducer",
+  "qualified": false,
+  "reason": "Fresh PR54 review found an already-recorded essential failure could be classified stopped after a blocked release and explicit Manager.stop; service timeout masked the earlier failure.",
+  "copied_files": {
+    "before-reconciliation-review21-failure-race.json": {
+      "sha256": "3467e602fd735f29b2510772682adcc4a9b0822f8081f54faa5a01b3de040b56",
+      "size": 3248
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/startup-failure.json": {
+      "sha256": "ce91542d1a64b88775e0046e6fb7ce9af30885198bcf8837c132685c8d7abe3f",
+      "size": 155
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/terminal.json": {
+      "sha256": "0675c4ac35a75ed820bc6aa8a03c716602ad801f102946d6685485c16144ada1",
+      "size": 720
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/manifest.json": {
+      "sha256": "70896791c227c4d604b911d1896772ab3e016e430cde0836e6229a290ac5188e",
+      "size": 934
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/reconciliation.json": {
+      "sha256": "bd63746f422c899bebaadc709a60f660c1c28c2772acce8d094eb78dbf00b7e4",
+      "size": 707
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/shutdown.json": {
+      "sha256": "263425c08f7bffcf4220ee7caa335ad64091855c44d68bf90fb8cdacd8e98c88",
+      "size": 443
+    },
+    "artifacts/generations/2eea9d491fbe46eb9095259501e10c2d/fixture-events.jsonl": {
+      "sha256": "eb848bcda9a35fe2d303cd2defc0e1deb2adb4eeaffde3dedd245b9cca0f84ef",
+      "size": 263
+    },
+    "runtime/agent-desktop/g/2eea9d491fbe46eb9095259501e10c2d/stop-intent.json": {
+      "sha256": "f67e9b7be42e713baeeebea2d8accf25f364dfd236a6b040b19c4c962cba8344",
+      "size": 243
+    },
+    "runtime/agent-desktop/g/2eea9d491fbe46eb9095259501e10c2d/lifecycle.json": {
+      "sha256": "8def94113df860404d78f90bb130782c253d8d997693a105de9bec680bc08235",
+      "size": 570
+    },
+    "reproducer.py": {
+      "sha256": "1e1857978a7ad159d3769ec48cf4983247d835a66c7734f8e7db383dc79872d3",
+      "size": 1791
+    }
+  }
+}

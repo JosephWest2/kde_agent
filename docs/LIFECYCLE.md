@@ -83,18 +83,19 @@ unit is inactive/failed, and the generation cgroup is absent or reports no
 population (including descendant cgroups). Accepted stop submission and empty
 MainPID alone do not establish cleanup. Uncertain cleanup preserves ownership.
 
-Artifact attachment/update happens after termination, so a blocked or damaged
-artifact record cannot prevent fallback stop. Successful stop reports
+Manager artifact attachment/update happens after termination. Intent or lifecycle
+bookkeeping failure also cannot prevent fallback stop of the verified exact unit. Successful stop reports
 `records_preserved: false` if its terminal record could not be updated; it does
 not claim that write succeeded. Repeating stop can repair that bookkeeping when
 storage becomes available. Earlier manifest failure outcomes are preserved and reconciled into the lifecycle
 result. If stop is the first call after unexpected worker death (including a clean
 exit before a stop request), it retains a failed outcome while completing cleanup.
 A timeout/signal caused by an earlier requested stop does not turn its stopped
-tombstone into a prior crash. Worker exit only records uncertain cleanup; the manager asserts completion after
-its cgroup observation. Unexpected worker death is reconciled on a later lifecycle
-call. Autonomous terminal hooks and ordered release/window-close attempts remain
-#21; capability readiness is provided provisionally by M3.3 below.
+tombstone into a prior crash. The autonomous post hook preserves early worker
+failure diagnostics even when a blocked graceful hook prevents the worker from
+updating its aggregate manifest. It records ordinary-process/runtime cleanup;
+the manager independently verifies whole-cgroup emptiness. The #21 shutdown
+section below describes these hooks; readiness remains provisional in M3.3.
 
 ## Verification
 
@@ -135,13 +136,13 @@ logs. Internal application/adapter launches require output handles and preserve
 selected executable, argv and cwd. This Python seam supports integration evidence
 and future owners; it is not a public plugin or application-launch protocol.
 
-Only after observed service quiescence does lifecycle reconciliation remove the
-exact generation's disposable `desktop/` subtree. It retains routing claims,
+The authenticated post hook removes the exact generation's disposable `desktop/`
+subtree after proving owned ordinary processes are absent. Outside lifecycle
+reconciliation waits for full service quiescence before retrying that disposal. It retains routing claims,
 lifecycle metadata and all durable artifacts. Root symlinks/unsafe ownership are
 rejected and nested links are not followed. Disposal failure returns uncertain
-cleanup and later lifecycle calls retry. Crash settings cleanup currently requires
-that later stop/status/start reconciliation; automatic post-stop cleanup remains
-#21. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
+cleanup and later lifecycle calls retry. With a functioning post hook, crash
+settings cleanup finishes automatically without a later stop/status/start call. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
 bus/KWin output, project access and environment isolation with readiness false.
 
 ## Capability readiness and live health (#20)
@@ -198,8 +199,8 @@ application/adapter environments never receive these values. Source fixtures can
 exercise this policy while still reporting starting, without claiming readiness.
 
 M7.1/#35 must replace/qualify the provisional provider and connect production
-adapters before release qualification. #21 still owns ordered graceful action
-shutdown and the autonomous terminal record/runtime cleanup hook.
+adapters before release qualification. The ordered graceful action shutdown and autonomous terminal record/runtime
+cleanup hook are implemented by #21 below.
 
 
 ## Autonomous shutdown and finalization (#21)

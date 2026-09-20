@@ -30,6 +30,82 @@ class FinalizerTests(unittest.TestCase):
         (root / 'desktop').mkdir(mode=0o700)
         return runtime, data, root
 
+    def test_intent_write_failure_still_submits_fallback_with_uncertain_provenance(self):
+        runtime, data, root = self.setup_generation()
+        with patch('agent_desktop.ownership.intent', side_effect=PermissionError('intent read-only')):
+            result = self.manager.handle(self.request('session.stop'))
+        self.assertIn(('stop', data['unit']), self.services.calls)
+        self.assertFalse(self.services.active[data['unit']])
+        self.assertEqual(result['result']['cleanup'], 'complete')
+        self.assertFalse(result['result']['records_preserved'])
+        self.assertEqual(result['result']['state'], 'failed')
+        self.assertFalse((root / 'stop-intent.json').exists())
+
+    def test_bookkeeping_failure_never_bypasses_current_generation_recheck(self):
+        runtime, data, root = self.setup_generation()
+        def changed(*args):
+            atomic(runtime.current / 'default.json', {'schema_version': 1, 'session': 'default',
+                                                     'generation': 'f' * 32})
+            raise PermissionError('intent failed during replacement')
+        with patch('agent_desktop.ownership.intent', side_effect=changed), self.assertRaises(ContractError) as caught:
+            self.manager.handle(self.request('session.stop'))
+        self.assertEqual(caught.exception.code, 'generation_mismatch')
+        self.assertNotIn(('stop', data['unit']), self.services.calls)
+        self.assertTrue(self.services.active[data['unit']])
+
+    def test_metadata_write_failure_still_submits_fallback(self):
+        runtime, data, root = self.setup_generation()
+        with patch.object(self.manager, '_write', side_effect=PermissionError('metadata read-only')):
+            result = self.manager.handle(self.request('session.stop'))
+        self.assertIn(('stop', data['unit']), self.services.calls)
+        self.assertFalse(self.services.active[data['unit']])
+        self.assertEqual(result['result']['cleanup'], 'complete')
+        self.assertFalse(result['result']['records_preserved'])
+        self.assertEqual(result['result']['state'], 'stopped')
+
+    def test_busy_generation_lock_cannot_prevent_verified_unit_fallback(self):
+        runtime, data, root = self.setup_generation()
+        with generation_lock(runtime, data['generation']):
+            with self.assertRaises(ContractError):
+                self.manager.handle(self.request('session.stop'))
+            self.assertIn(('stop', data['unit']), self.services.calls)
+            self.assertFalse(self.services.active[data['unit']])
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'failed')
+        self.assertEqual(result['result']['cleanup'], 'complete')
+
+    def test_early_specific_failure_precedes_requested_timeout_without_manifest_failure(self):
+        runtime, data, root = self.setup_generation()
+        data['state'] = 'ready'
+        self.manager._write(runtime, data)
+        folder = Path(data['configuration']['artifacts']) / 'generations' / data['generation']
+        early = {'generation': data['generation'], 'code': 'input_failed',
+                 'message': 'Earlier input failure', 'context': {'component': 'input'}}
+        atomic(folder / 'startup-failure.json', early)
+        self.assertIsNone(json.loads((folder / 'manifest.json').read_text())['first_failure'])
+        with generation_lock(runtime, data['generation']), \
+                patch('agent_desktop.service_cleanup.terminate_survivors', return_value=[]):
+            intent(runtime, data, 'manager_request', 'b' * 32)
+            updated, _ = finalize(runtime, data, inside=True, service_result='timeout', exit_status='KILL')
+        self.assertEqual(updated['state'], 'failed')
+        manifest = json.loads((folder / 'manifest.json').read_text())
+        terminal = json.loads((folder / 'terminal.json').read_text())
+        self.assertEqual(manifest['first_failure'], 'input_failed')
+        self.assertEqual(terminal['early_failure'], early)
+        self.assertEqual(json.loads((folder / 'startup-failure.json').read_text()), early)
+
+    def test_wrong_generation_early_failure_does_not_override_requested_stop(self):
+        runtime, data, root = self.setup_generation()
+        folder = Path(data['configuration']['artifacts']) / 'generations' / data['generation']
+        atomic(folder / 'startup-failure.json', {'generation': 'f' * 32, 'code': 'input_failed',
+                 'message': 'Other generation', 'context': {}})
+        with generation_lock(runtime, data['generation']), \
+                patch('agent_desktop.service_cleanup.terminate_survivors', return_value=[]):
+            intent(runtime, data, 'manager_request', 'b' * 32)
+            updated, _ = finalize(runtime, data, inside=True, service_result='timeout')
+        self.assertEqual(updated['state'], 'stopped')
+        self.assertNotIn('early_failure', json.loads((folder / 'terminal.json').read_text()))
+
     def test_terminal_precedence_preserves_requested_fallback_not_watchdog(self):
         for state, failure, intent_value, result, expected in (
             ('ready', None, {}, 'success', 'failed'),

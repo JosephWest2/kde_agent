@@ -346,11 +346,21 @@ class ReadinessTests(unittest.TestCase):
         provider.bus.complete('compositor', ())
         provider.tick()
         self.assertEqual(provider.state, 'ready')
-        self.clock.return_value = 110.0
+        self.clock.return_value = 101.5
         provider.tick()
-        # Delayed owner starts exactly one new round; it does not catch up in bursts.
+        # A still-fresh owner starts one round, without catch-up bursts.
         self.assertEqual(sum(call.token in ('bus', 'compositor') for call in provider.bus.calls), 4)
-        self.assertEqual(provider.round['deadline'], 111.0)
+        self.assertEqual(provider.round['deadline'], 102.5)
+
+    def test_delayed_owner_cannot_renew_stale_success_with_a_fresh_control_timestamp(self):
+        provider = self.ready()
+        before_calls = len(provider.bus.calls)
+        self.clock.return_value = 103.5
+        self.failure(provider, 'bus')
+        self.assertEqual(len(provider.bus.calls), before_calls)
+        self.assertEqual(provider.health['bus']['observed_at'], 100)
+        self.assertEqual(provider.observed_at, 100)
+        self.assertIsNone(provider.round)
 
     def test_bus_failure_makes_compositor_unknown_and_is_separate_from_compositor_failure(self):
         for component in ('bus', 'compositor'):

@@ -55,4 +55,3 @@ def snapshot(value, request_id):
     if active is not None and active not in seen:
         raise Failure("invalid_result", "Active UUID absent from snapshot")
     return value
-

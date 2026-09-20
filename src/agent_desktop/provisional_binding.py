@@ -69,4 +69,3 @@ def capabilities(function, seat):
     # va_arg consumes enum values until integer zero (headers call it NULL).
     # Explicit int zero avoids an implicit Python vararg conversion.
     function(seat, C.c_int(CONSTANTS["EI_DEVICE_CAP_KEYBOARD"]), C.c_int(0))
-

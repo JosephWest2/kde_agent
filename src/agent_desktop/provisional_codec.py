@@ -74,4 +74,3 @@ def decode(raw, metadata, screen):
     if not isinstance(raw, (bytes, bytearray)) or len(raw) != expected_bytes:
         raise Failure("capture payload length/type does not match metadata")
     return _decode_argb32(raw, (WIDTH, HEIGHT), STRIDE, sys.byteorder)
-

@@ -80,7 +80,7 @@ class LifecycleTests(unittest.TestCase):
         generation = 'a' * 32
         base = {'state': 'ready', 'desktop_ready': True, 'observed_at': time.monotonic(),
                 'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
-                'health': {key: {'state': 'passed'} for key in
+                'health': {key: {'state': 'passed', 'observed_at': time.monotonic()} for key in
                            ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot')}}
         with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': deepcopy(base)}):
             result = self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
@@ -90,6 +90,14 @@ class LifecycleTests(unittest.TestCase):
         for key in base['health']:
             changed = deepcopy(base)
             changed['health'][key] = {'state': 'pending'}
+            variants.append(changed)
+        for component in ('bus', 'compositor'):
+            for observed in (None, True, 'recent', 10**400, -(10**400), float('nan'), float('inf'), time.monotonic()+1, time.monotonic()-3.5):
+                changed = deepcopy(base)
+                changed['health'][component]['observed_at'] = observed
+                variants.append(changed)
+            changed = deepcopy(base)
+            del changed['health'][component]['observed_at']
             variants.append(changed)
         for result in variants:
             with self.subTest(result=result), patch('agent_desktop.lifecycle.exchange',

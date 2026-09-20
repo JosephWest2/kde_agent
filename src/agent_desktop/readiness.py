@@ -12,6 +12,7 @@ import time
 import uuid
 from importlib.resources import files
 from .contracts import ContractError
+from .health import fresh
 from .private_bus import PrivateBus
 from .provisional_input import Input
 from .provisional_windows import encoded, snapshot
@@ -224,6 +225,10 @@ class Readiness:
                 raise self.fatal
             self.bus.tick()
             now = time.monotonic()
+            if self.state == 'ready':
+                for component in ('bus', 'compositor'):
+                    if not fresh(self.health.get(component, {}).get('observed_at'), now):
+                        self.fail(ContractError('timeout', 'Essential health observation expired.'), component)
             if self.state == 'starting' and now >= self.deadline:
                 self.fail(ContractError('timeout', 'Shared startup deadline expired.'))
             if self.phase == 'bus' and self.bus.connection is not None and not self.name_pending and now >= self.next_name:

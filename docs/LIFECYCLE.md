@@ -150,7 +150,10 @@ One GLib owner uses Gio asynchronous explicit-address bus connection/authenticat
 finite method calls and cancellable operation tokens. Late callbacks finish/dispose
 results without installing connections or FDs. EIS FD handles are validated and
 duplicated with Gio before transfer to the M1-audited libei owner. The input
-connection remains alive, consumes events and requires a resumed keyboard. Paused,
+connection remains alive, consumes events and requires a resumed keyboard. Both
+FD and idle-continuation callback failures set sticky fatal state, gate input and
+remove pending continuations; GLib exception logging alone is never treated as
+owner failure propagation. Paused,
 removed or disconnected input makes a previously ready generation unavailable.
 
 After KWin registers on the private bus, the pinned kdotool fixed JS query validates
@@ -170,7 +173,10 @@ failures retain component-specific receipts/logs and startup error context.
 
 Bus and KWin health calls share one absolute 1s round every 1s, one round in flight
 with no catch-up bursts. The KWin probe calls its actual `supportInformation`
-method. Bus failure makes compositor health unknown; a responsive bus with a failed
+method. Successful bus/compositor observations expire after 2s. Owner ticks and
+control replies cannot refresh those timestamps: a delayed owner fails before
+scheduler work or its next watchdog heartbeat, and the manager independently
+rejects stale/missing/malformed essential timestamps. Bus failure makes compositor health unknown; a responsive bus with a failed
 KWin call identifies compositor unresponsiveness. Child exits are polled before
 scheduler effects and request admission. Status uses current manager/control and
 worker observations within its complete maximum 3s budget. A nonresponsive worker

@@ -75,13 +75,34 @@ class Input:
                                                  self.on_fd)
         self.drain()
 
+    def _fail_callback(self, exc):
+        # GLib logs callback exceptions rather than propagating them to tick().
+        # Preserve the first error, gate input and remove every continuation.
+        self.owner.fatal = self.owner.fatal or exc
+        first = self.owner.fatal
+        self.uncertain = True
+        for name in ('idle_watch', 'watch'):
+            source = getattr(self, name)
+            if source is not None:
+                setattr(self, name, None)
+                self.owner.GLib.source_remove(source)
+        try:
+            self.owner.cancel("dispatch_failure")
+        except Exception:
+            pass  # Fatal state already forces owner cleanup on its next turn.
+        finally:
+            self.owner.fatal = first
+
     def on_fd(self, fd, condition):
+        if self.owner.fatal:
+            self.watch = None
+            return False
         try:
             self.lib.ei_dispatch(self.context)
             self.drain()
         except Exception as exc:
-            self.owner.fatal = exc
-            self.owner.cancel("dispatch_failure")
+            self.watch = None  # Returning False removes this currently executing source.
+            self._fail_callback(exc)
         if self.disconnected or self.owner.fatal:
             self.watch = None
             return False
@@ -152,9 +173,12 @@ class Input:
             self.idle_watch = self.owner.GLib.idle_add(self.drain_once)
 
     def drain_once(self):
-        self.idle_watch = None
-        if self.context:
-            self.drain()
+        self.idle_watch = None  # This one-shot source is removed on return.
+        if not self.owner.fatal and self.context:
+            try:
+                self.drain()
+            except Exception as exc:
+                self._fail_callback(exc)
         return False
 
     def press(self, names):

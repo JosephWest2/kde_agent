@@ -12,6 +12,7 @@ import uuid
 
 from .contracts import ContractError, EXIT_CODES, GENERATION, make_request, response
 from .protocol import decode
+from .health import fresh
 from .runtime import Runtime, check_directory, check_file
 from .transport import exchange
 
@@ -309,13 +310,14 @@ class Manager:
             raise ContractError('protocol_error', 'Invalid worker health response.')
         if result['state'] == 'ready':
             observed = result.get('observed_at')
+            now = time.monotonic()
             health = result.get('health', {})
             if (not isinstance(health, dict) or result.get('provider') != 'm1-provisional'
                     or result.get('release_qualified') is not False or result.get('replacement_issue') != 35
-                    or result['desktop_ready'] is not True or type(observed) not in (int, float)
-                    or not 0 <= time.monotonic() - observed <= 2
+                    or result['desktop_ready'] is not True or not fresh(observed, now)
                     or any(not isinstance(health.get(key), dict) or health[key].get('state') != 'passed'
-                           for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))):
+                           for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))
+                    or any(not fresh(health[key].get('observed_at'), now) for key in ('bus', 'compositor'))):
                 raise ContractError('session_unavailable', 'Worker readiness observations are stale or incomplete.')
         remaining(deadline)
         if isinstance(result.get('health'), dict):

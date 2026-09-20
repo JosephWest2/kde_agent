@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -40,6 +41,10 @@ static uint32_t presentation_clock;
 static struct wl_output *only_output;
 static char output_name[128] = "unknown";
 static unsigned long control_id;
+static bool autonomous;
+static unsigned window_delay_ms, exit_after_ms, descendant_ms;
+static bool timed_exit;
+static int exit_code;
 
 static unsigned long long monotonic_ns(void) {
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -218,8 +223,86 @@ static void global(void *data, struct wl_registry *registry, uint32_t id, const 
 }
 static void global_remove(void *data, struct wl_registry *registry, uint32_t id) { (void)data; (void)registry; event("global_remove"); printf(",\"id\":%u}\n", id); }
 static const struct wl_registry_listener registry_listener = { .global = global, .global_remove = global_remove };
-int main(void) {
+
+/* These opt-in controls exercise public launch without the harness stdin pipe.
+ * Timers begin after registry/output validation. The detached descendant only
+ * sleeps: it retains stdout/stderr and cgroup membership, but no Wayland fd. */
+static void usage(void) {
+    fprintf(stderr, "usage: wayland-fixture [--autonomous] [--window-delay-ms N] "
+            "[--exit-after-ms N] [--exit-code N] [--descendant-ms N]\n"
+            "Durations: 0..86400000 ms; exit code: 0..255. "
+            "--descendant-ms must be positive.\n");
+}
+static unsigned option_number(const char *value, unsigned maximum) {
+    char *end;
+    errno = 0;
+    unsigned long number = strtoul(value, &end, 10);
+    if (!*value || strspn(value, "0123456789") != strlen(value) ||
+        errno || *end || number > maximum) { usage(); exit(2); }
+    return (unsigned)number;
+}
+static void start_descendant(void) {
+    int ready[2];
+    if (pipe2(ready, O_CLOEXEC)) die("descendant pipe failed");
+    pid_t original = getpid(), intermediate = fork();
+    if (intermediate < 0) die("descendant fork failed");
+    if (!intermediate) {
+        close(ready[0]);
+        /* No Wayland calls after fork, and no inherited connection held open. */
+        close(wl_display_get_fd(display));
+        if (setsid() < 0) _exit(1);
+        pid_t descendant = fork();
+        if (descendant < 0) _exit(1);
+        if (descendant) _exit(0);
+        close(STDIN_FILENO);
+        event_seq = 0;
+        event("descendant_started");
+        printf(",\"original_pid\":%d,\"session_id\":%d,\"duration_ms\":%u}\n",
+               original, getsid(0), descendant_ms);
+        pid_t own_pid = getpid();
+        if (write(ready[1], &own_pid, sizeof(own_pid)) != sizeof(own_pid)) _exit(1);
+        close(ready[1]);
+        struct timespec remaining = {descendant_ms / 1000, (descendant_ms % 1000) * 1000000L};
+        while (nanosleep(&remaining, &remaining) < 0) {
+            if (errno != EINTR) _exit(1);
+        }
+        event("descendant_exit"); printf(",\"original_pid\":%d,\"exit_code\":0}\n", original);
+        _exit(0);
+    }
+    close(ready[1]);
+    pid_t descendant;
+    ssize_t bytes;
+    do { bytes = read(ready[0], &descendant, sizeof(descendant)); } while (bytes < 0 && errno == EINTR);
+    close(ready[0]);
+    int status;
+    pid_t reaped;
+    do { reaped = waitpid(intermediate, &status, 0); } while (reaped < 0 && errno == EINTR);
+    if (bytes != sizeof(descendant) || reaped != intermediate ||
+        !WIFEXITED(status) || WEXITSTATUS(status)) die("descendant startup failed");
+    event("descendant_spawned"); printf(",\"descendant_pid\":%d,\"intermediate_pid\":%d}\n", descendant, intermediate);
+}
+static void create_window(void) {
+    surface = wl_compositor_create_surface(compositor); xdg_surface = xdg_wm_base_get_xdg_surface(shell, surface);
+    xdg_surface_add_listener(xdg_surface, &surface_listener, NULL);
+    struct xdg_toplevel *top = xdg_surface_get_toplevel(xdg_surface); xdg_toplevel_add_listener(top, &top_listener, NULL);
+    xdg_toplevel_set_title(top, "KDE Agent Native Fixture"); xdg_toplevel_set_app_id(top, "org.kde_agent.fixture");
+    xdg_toplevel_set_min_size(top, 640, 360); xdg_toplevel_set_max_size(top, 640, 360);
+    wl_surface_commit(surface);
+}
+int main(int argc, char **argv) {
+    for (int i = 1; i < argc; ++i) {
+        if (!strcmp(argv[i], "--autonomous")) { autonomous = true; continue; }
+        if (!strcmp(argv[i], "--help")) { usage(); return 0; }
+        if (i + 1 >= argc) { usage(); return 2; }
+        const char *option = argv[i], *value = argv[++i];
+        if (!strcmp(option, "--window-delay-ms")) window_delay_ms = option_number(value, 86400000);
+        else if (!strcmp(option, "--exit-after-ms")) { exit_after_ms = option_number(value, 86400000); timed_exit = true; }
+        else if (!strcmp(option, "--exit-code")) exit_code = (int)option_number(value, 255);
+        else if (!strcmp(option, "--descendant-ms")) { descendant_ms = option_number(value, 86400000); if (!descendant_ms) { usage(); return 2; } }
+        else { usage(); return 2; }
+    }
     generation = getenv("HARNESS_GENERATION");
+    if (!generation && autonomous) generation = "00000000000000000000000000000000";
     if (!generation || strlen(generation) != 32 || strspn(generation, "0123456789abcdef") != 32) return 2;
     setvbuf(stdout, NULL, _IOLBF, 0);
     if (!getenv("WAYLAND_DISPLAY") || !getenv("XDG_RUNTIME_DIR") || !getenv("DBUS_SESSION_BUS_ADDRESS")) die("missing private endpoints");
@@ -230,18 +313,26 @@ int main(void) {
     if (!compositor || !shm || !shell || !presentation) die("required Wayland/presentation global absent");
     event("output"); printf(",\"count\":%u,\"width\":%u,\"height\":%u,\"scale\":%u,\"transform\":%u}\n", output_count, output_width, output_height, output_scale, output_transform);
     if (output_count != 1 || output_width != 1280 || output_height != 720 || output_scale != 1 || output_transform != 0) die("unexpected output configuration");
-    surface = wl_compositor_create_surface(compositor); xdg_surface = xdg_wm_base_get_xdg_surface(shell, surface);
-    xdg_surface_add_listener(xdg_surface, &surface_listener, NULL);
-    struct xdg_toplevel *top = xdg_surface_get_toplevel(xdg_surface); xdg_toplevel_add_listener(top, &top_listener, NULL);
-    xdg_toplevel_set_title(top, "KDE Agent Native Fixture"); xdg_toplevel_set_app_id(top, "org.kde_agent.fixture");
-    xdg_toplevel_set_min_size(top, 640, 360); xdg_toplevel_set_max_size(top, 640, 360);
-    wl_surface_commit(surface);
+    if (descendant_ms) start_descendant();
+    unsigned long long started = monotonic_ns();
+    if (autonomous || window_delay_ms || timed_exit || descendant_ms) {
+        event("started"); printf(",\"autonomous\":%s,\"window_delay_ms\":%u,\"timed_exit\":%s,\"exit_after_ms\":%u,\"exit_code\":%d}\n",
+                                 autonomous ? "true" : "false", window_delay_ms, timed_exit ? "true" : "false", exit_after_ms, exit_code);
+    }
     char input[128]; size_t used = 0;
     while (running) {
+        unsigned long long elapsed_ms = (monotonic_ns() - started) / 1000000ULL;
+        if (timed_exit && elapsed_ms >= exit_after_ms) {
+            event("timed_exit"); printf(",\"exit_code\":%d}\n", exit_code); break;
+        }
+        if (!surface && elapsed_ms >= window_delay_ms) create_window();
+        int timeout = 100;
+        if (!surface && window_delay_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(window_delay_ms - elapsed_ms);
+        if (timed_exit && exit_after_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(exit_after_ms - elapsed_ms);
         if (wl_display_dispatch_pending(display) < 0) die("Wayland dispatch failed");
         if (wl_display_flush(display) < 0 && errno != EAGAIN) die("Wayland flush failed");
-        struct pollfd fds[2] = {{wl_display_get_fd(display), POLLIN, 0}, {STDIN_FILENO, POLLIN, 0}};
-        if (poll(fds, 2, 100) < 0) { if (errno == EINTR) continue; die("poll failed"); }
+        struct pollfd fds[2] = {{wl_display_get_fd(display), POLLIN, 0}, {autonomous ? -1 : STDIN_FILENO, POLLIN, 0}};
+        if (poll(fds, 2, timeout) < 0) { if (errno == EINTR) continue; die("poll failed"); }
         if (fds[0].revents & (POLLERR | POLLHUP)) die("Wayland disconnected");
         if ((fds[0].revents & POLLIN) && wl_display_dispatch(display) < 0) die("Wayland disconnected");
         if (fds[1].revents & (POLLERR | POLLHUP)) break;
@@ -262,5 +353,5 @@ int main(void) {
             if (used == sizeof(input) - 1) die("control message too long");
         }
     }
-    wl_display_disconnect(display); return 0;
+    wl_display_disconnect(display); return exit_code;
 }

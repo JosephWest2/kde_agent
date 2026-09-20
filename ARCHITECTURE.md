@@ -404,3 +404,9 @@ requested-fallback outcome semantics. Durable post receipts distinguish ordinary
 process absence from an outside observation of total cgroup emptiness. See
 [the shutdown contract](docs/LIFECYCLE.md#autonomous-shutdown-and-finalization-21)
 and [installed qualification](evidence/issue-21/README.md).
+
+M4.1 application ownership uses one delegated cgroup per application beneath the
+existing session service. A gated isolated helper enters containment and the
+worker retains/persists its identity before authorizing exec. Root PID exit does
+not release the one-application slot while ordinary descendants remain. See
+[application ownership and bounds](docs/APPLICATIONS.md).

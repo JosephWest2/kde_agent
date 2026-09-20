@@ -10,7 +10,8 @@ artifacts even when the worker dies or freezes.
 
 Readiness currently uses a packaged **M1 provisional provider**. Results report
 `release_qualified: false` and replacement issue #35 (M7.1). Public desktop
-operations such as launch, input and screenshots remain explicitly unsupported.
+launch is supported with durable cgroup ownership. Window waits, input and
+screenshots remain explicitly unsupported; see [application ownership](docs/APPLICATIONS.md).
 The readiness screenshot is an internal diagnostic artifact.
 
 See [CLI installation and commands](docs/CLI.md), [service lifecycle](docs/LIFECYCLE.md),

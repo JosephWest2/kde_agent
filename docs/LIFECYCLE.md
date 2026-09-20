@@ -267,3 +267,8 @@ status/stop reconciliation retries cleanup after proving quiescence. The require
 worker/bus/KWin/start/client failures complete autonomously with a functioning
 recorder. Measurements assume ordinary killable processes and normal local
 storage; uninterruptible kernel/filesystem stalls are not realtime guarantees.
+
+Application ownership now uses empty-controller delegation, the `supervisor`
+worker subgroup and exact `.control` hook authentication. Stop every live
+generation before upgrading installed code. See [applications](APPLICATIONS.md)
+for containment and supported traversal bounds.

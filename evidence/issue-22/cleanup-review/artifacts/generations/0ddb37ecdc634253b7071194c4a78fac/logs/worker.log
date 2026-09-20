@@ -1,0 +1,30 @@
+ 14:22:58 | INFO | Disconnected by EIS
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 155, in <module>
+    worker(*args)
+    ~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 141, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True,
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        kdotool=None if mode in ('starting', 'failedstart') else kdotool,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        factory=Task, desktop_observer=observe,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        shutdown_hooks={'release': release, 'close': close})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 246, in run
+    raise foundation_error
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 114, in tick
+    readiness.tick()
+    ~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 283, in tick
+    self.fail(error)
+    ~~~~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 79, in fail
+    raise self.error
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 231, in tick
+    self.fail(ContractError('timeout', 'Essential health observation expired.'), component)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue22-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 79, in fail
+    raise self.error
+agent_desktop.contracts.ContractError: Essential health observation expired.

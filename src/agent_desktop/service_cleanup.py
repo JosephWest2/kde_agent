@@ -23,19 +23,25 @@ def membership(pid):
     return next(line[3:] for line in lines if line.startswith('0::'))
 
 
-def members(cgroup):
-    root = Path('/sys/fs/cgroup' + cgroup)
-    return {int(pid) for group in root.rglob('cgroup.procs') for pid in group.read_text().split()}
+def members(cgroup, deadline=None):
+    from .app_processes import scan
+    result = set()
+    for pid in scan(Path('/sys/fs/cgroup' + cgroup)):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise CleanupTimeout('Service member scan expired.')
+        if pid is not None:
+            result.add(pid)
+    return result
 
 
 def terminate_survivors(cgroup, deadline):
     """Never signal a raw/reusable PID or cgroup.kill (which would kill us)."""
     own = os.getpid()
-    if membership(own) != cgroup:
+    if membership(own) != cgroup + '/.control':
         raise ContractError('generation_mismatch', 'Cleanup does not own the expected service cgroup.')
     observed = []
     while time.monotonic() < deadline:
-        pending = members(cgroup) - {own}
+        pending = members(cgroup, deadline) - {own}
         if not pending:
             return observed
         for pid in pending:
@@ -224,7 +230,7 @@ def main(argv=None):
     try:
         runtime = Runtime()
         data = read_metadata(runtime, args.session, args.generation)
-        if membership(os.getpid()) != data['cgroup']:
+        if membership(os.getpid()) != data['cgroup'] + '/.control':
             raise ContractError('generation_mismatch', 'Service helper cgroup does not match generation.')
         if args.operation == 'stop':
             relay(runtime, data)

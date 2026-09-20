@@ -7,9 +7,11 @@ real control, structured window query, resumed EIS input and a complete screensh
 
 Readiness is supplied by the packaged `m1-provisional` provider. Results explicitly
 report `release_qualified: false`, `replacement_issue: 35` and
-`desktop_operations_supported: false`. Public launch/window/input/screenshot
-operations remain unsupported. Examples of future operation results below are
-illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
+`desktop_operations_supported: false`. Public `launch` is supported after readiness; status lists it in
+`supported_operations`. Window/input/screenshot operations remain unsupported.
+The provider flag describes provisional desktop adapters, not the separate
+launch capability. See [application ownership](APPLICATIONS.md). Examples of
+future operation results below are illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
 
 ## Install and inspect
 

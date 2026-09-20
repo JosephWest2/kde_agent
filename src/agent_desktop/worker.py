@@ -35,7 +35,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         raise ContractError("generation_mismatch", "Artifact store identity differs from worker.")
     records = Records(store) if store is not None else None
     endpoint = server = children = None
-    foundation = readiness = None
+    foundation = readiness = applications = None
     foundation_error = None
     shutdown = None
     stop_waiters = []
@@ -60,6 +60,22 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             foundation = Desktop(endpoint.path.parent, children, store)
             if startup_deadline is not None:
                 foundation.deadline = min(foundation.deadline, startup_deadline)
+            if factory is UnsupportedTask:
+                from .app_processes import Registry
+                from .applications import LaunchTask
+                def launch_health():
+                    foundation.tick()
+                    if readiness is None or readiness.state != 'ready':
+                        raise ContractError('session_unavailable', 'Desktop is not ready for launch.')
+                    readiness.tick()
+                    if readiness.state != 'ready':
+                        raise ContractError('session_unavailable', 'Desktop health changed before launch.')
+                def production_factory(request, context):
+                    if request.operation == 'launch':
+                        return LaunchTask(request, context, applications, foundation, records, healthy=launch_health)
+                    return UnsupportedTask(request, context)
+                scheduler.factory = records.factory(production_factory)
+
         def shutdown_record(value):
             if store is not None:
                 from .lifecycle import atomic
@@ -74,7 +90,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             return shutdown
 
         def tick():
-            nonlocal foundation_error, readiness, quit_after
+            nonlocal foundation_error, readiness, quit_after, applications
             if shutdown is not None:
                 shutdown.tick()
                 if shutdown.done:
@@ -96,10 +112,17 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     if readiness is not None:
                         previous = readiness.state
                         readiness.tick()
+                        if readiness.state == 'ready' and factory is UnsupportedTask and applications is None:
+                            from .lifecycle import read_metadata
+                            metadata = read_metadata(endpoint.runtime, name, generation)
+                            applications = Registry(generation, metadata['cgroup'], store, children)
                         if previous != readiness.state:
                             store.generation_update(state=readiness.state)
                     if desktop_observer is not None:
                         desktop_observer(foundation)
+                children.poll()
+                if applications is not None:
+                    applications.tick()
                 scheduler.tick()
                 watchdog.tick()
             except Exception as error:
@@ -179,7 +202,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         raise ContractError("artifact_failed", "Request admission could not be preserved.") from None
             if managed and request.operation == "session.status":
                 admission.complete(result=({"state": "starting", "desktop_ready": False}
-                                           if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid()})
+                                           if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
+                    "supported_operations": ["launch"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')
@@ -233,6 +257,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         if readiness is not None:
             readiness.close()
         children.close()
+        if applications is not None:
+            applications.close()
         if store is not None:
             try:
                 # Infrastructure loop exit is not proof of production cgroup cleanup.

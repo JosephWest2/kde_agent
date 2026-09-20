@@ -117,6 +117,8 @@ def request_from_wire(value):
         malformed()
     if "env" in args and not isinstance(args["env"], dict):
         malformed()
+    from .paths import validate_wire
+    validate_wire(value["operation"], value["caller_cwd"], args)
     return make_request(value["operation"], arguments=args, caller_cwd=value["caller_cwd"],
                         session=value["session"], expected_generation=value["expected_generation"],
                         timeout_seconds=value["timeout_seconds"], request_id=value["request_id"])

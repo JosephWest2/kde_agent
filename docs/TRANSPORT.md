@@ -13,7 +13,7 @@ record they return `session_not_found`; an unreachable recorded worker returns
 The internal supervisor entrypoint is:
 
 ```sh
-python -m agent_desktop.worker --session NAME --generation GENERATION
+python -m agent_desktop.worker --session NAME --generation GENERATION --artifacts /absolute/durable/root
 ```
 
 Run with the distribution Python/PyGObject selected in the M1 decision, or an
@@ -22,7 +22,9 @@ the client do not import gi. The entrypoint stays in the foreground and never
 launches an adapter or service. SIGTERM/SIGINT stops this transport process and
 removes its owned endpoint; it does not pretend to implement session stop.
 Worker stdout/stderr are separate from the socket; only framed replies cross it.
-Durable worker logs and artifact records are #17 work.
+The explicit absolute artifact root must be outside disposable runtime. The worker
+creates owner-private generation records before endpoint startup, retains startup
+failures and writes Python helper output to its worker log. See [durable records](ARTIFACTS.md).
 
 The root is absolute `XDG_RUNTIME_DIR`, or `/run/user/<uid>` only when that variable
 is absent. Missing roots are not created and there is no `/tmp` fallback. Roots

@@ -107,7 +107,8 @@ def parse_request(argv, request_id, caller_cwd):
     request = make_request(operation, arguments=args, caller_cwd=caller_cwd,
                            session=values.get("session"), expected_generation=values.get("generation"),
                            timeout_seconds=values.get("timeout"), request_id=request_id)
-    return request, None, operation, json_mode
+    from .paths import normalize
+    return normalize(request), None, operation, json_mode
 
 
 def render(payload, json_mode):

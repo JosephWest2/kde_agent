@@ -111,18 +111,19 @@ checks name, generation and handles before dispatch. A correlated worker respons
 carries its verified identity. Before such a response, actual `session.generation`
 is null; an unverified expectation is never reported as an actual identity.
 
-The client captures its absolute caller cwd in each Request and currently retains
-raw path arguments. #17 implements normalization: omitted application cwd means
-caller cwd; relative cwd/artifact/output/dependency paths resolve against caller
-cwd, independently of worker cwd. Executables containing `/` resolve against the
-final application cwd; bare names use the final application PATH. Environment
-construction applies defaults, allowed explicit overrides, then protected private
-session settings; attempted protected overrides are rejected. No inherited
-environment or credentials are dumped to diagnostics or manifests.
+The client captures its absolute caller cwd and normalizes relative
+cwd/artifact/output/dependency paths before transport. Omitted application cwd
+means caller cwd. Slash-containing executable names resolve against application
+cwd; bare names use the final application PATH. No shell expansion is performed.
+Protected environment overrides are rejected by both client and worker.
 
-Durable artifacts will be generation-specific and survive cleanup; omitted
-screenshot paths will be collision-free. Desktop/settings separation is not
-filesystem or network isolation. Applications remain trusted local programs.
+Owner-private generation records survive runtime cleanup. Launch producers retain
+exact argv: keep credentials out of argv and supply them through environment
+variables or application-owned files. Environment values and typed text are never
+recorded by toolkit diagnostics; application output can itself contain sensitive
+text. See [paths, environments and durable records](ARTIFACTS.md) for defaults,
+producer boundaries, atomicity and storage-failure semantics. Desktop/settings
+separation is not filesystem or network isolation; applications remain trusted.
 
 ## Requests, results and errors
 

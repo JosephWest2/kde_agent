@@ -134,7 +134,7 @@ class CLITests(unittest.TestCase):
         self.assertFalse(mode)
         self.assertEqual(request.arguments["argv"], argv)
         self.assertEqual(request.arguments["env"], {"X": "last"})
-        self.assertEqual(request.arguments["cwd"], "relative")
+        self.assertEqual(request.arguments["cwd"], "/caller/relative")
         self.assertEqual(request.caller_cwd, "/caller")
         for args in (["launch"], ["launch", "--"], ["launch", "--cwd", "--", "app"], ["launch", "--env", "--", "app"], ["launch", "--timeout", "--", "app"]):
             self.json_cli(*args, status=2)

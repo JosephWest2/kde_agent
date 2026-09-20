@@ -1,27 +1,28 @@
 {
   "scope": "GLib transport/scheduler task doubles only; no native desktop",
-  "started_unix": 1789878063.3211167,
+  "started_unix": 1789878477.83362,
+  "elapsed_seconds": 9.702001810073853,
   "python": "3.14.7",
   "platform": "Linux-7.2.4-arch1-2-x86_64-with-glibc2.44",
-  "tests": 115,
+  "tests": 119,
   "failures": 0,
   "errors": 0,
   "metrics": {
     "saturated_control_to_cancel": {
       "samples": 1,
-      "max_ms": 5.044182005804032
+      "max_ms": 5.028501997003332
     },
     "worker_timeout_detection": {
       "samples": 1,
-      "max_ms": 1.9380910089239478
+      "max_ms": 2.397733012912795
     },
     "sigint_or_disconnect_to_cancel": {
       "samples": 2,
-      "max_ms": 3.660264002974145
+      "max_ms": 3.1802060111658648
     },
     "flood_timeout_detection": {
       "samples": 1,
-      "max_ms": 1.4454880001721904
+      "max_ms": 1.9030610128538683
     }
   },
   "source_sha256": {
@@ -32,11 +33,11 @@
     "src/agent_desktop/contracts.py": "48ef5174a2f6435c6d94db610360ac6e4fc37ea40bab905eeb3f5f10766715c8",
     "src/agent_desktop/protocol.py": "3b9f935c9077614d0baeb0639cfa9255370ce73ddc825fb1af112e63c8bb2392",
     "src/agent_desktop/runtime.py": "7ae8516991021af482b3d34cd41cb41f5ff190716a141dc2752eae569b0df3f0",
-    "src/agent_desktop/scheduler.py": "80c38a23f4819725948710cffbf337dee4fe2ab8b331b1ce61ff12e449be2737",
+    "src/agent_desktop/scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
     "src/agent_desktop/transport.py": "5a08eb546a78b794838cc53aadbaadba5fdef1bbcdc3ba4ccbaf9354f84908bb",
     "src/agent_desktop/worker.py": "4c8b2d9a6e8fcefca77d2ee8f7f758150b7f2fd0811953740391fd479e4402dd",
     "tests/scheduler_worker_fixture.py": "856b0cffe9dae69766c5c38077c35f79dcab4850971af90a4b014f9b3292b374",
-    "tests/test_scheduler.py": "39c7ff6a29a29ffdbb88ce103c4f6a8aeb8c0f60325a785da3a90170d0f83cec",
+    "tests/test_scheduler.py": "f0e9de0445ec9edfd49f9b253e71c00c3249c45d9abf08d54d74a465cedc1d10",
     "tests/test_scheduler_process.py": "a0086fa8f0767843ddb3f7236b217f0355a240e3ca519c129dbb75e91c0977e2",
     "tests/test_transport.py": "fcbd7f82d4ac33a863043ed1f83df3ac6fae002c571e63d1a14a3696df6e614e"
   }

@@ -248,6 +248,7 @@ class Scheduler:
             if self.pending_stop is None:
                 self.pending_stop = work
                 self._cancel(self.lifecycle, "cancelled")
+                self.lifecycle.cleanup_deadline = min(self.lifecycle.cleanup_deadline, owner_deadline)
             else:
                 self.waiters.append(work)
         else:
@@ -256,7 +257,8 @@ class Scheduler:
         self._observe(work, "control_admitted")
         # No disconnect hook: required lifecycle cleanup belongs to the worker.
 
-    def _advance(self, work, now):
+    def _advance(self, work):
+        now = self.clock()
         if work.terminal:
             return
         if work.error is None and now >= work.admission.deadline:
@@ -267,7 +269,7 @@ class Scheduler:
             self._cancel(work, "artifact_failed")
         if work.error is not None:
             try:
-                clean = work.task is None or work.task.cleanup(now)
+                clean = work.task is None or work.task.cleanup(self.clock())
             except Exception:
                 clean = False
             if clean:
@@ -279,6 +281,12 @@ class Scheduler:
         try:
             if work.task is None:
                 work.task = self.factory(work.request, Context(self, work))
+            # Construction is effect-free but can still consume the remaining
+            # budget. Never emit using time sampled before any callback.
+            now = self.clock()
+            if now >= work.admission.deadline:
+                self._cancel(work, "timeout")
+                return
             result = work.task.step(now)
             if result is not None:
                 if self.clock() >= work.admission.deadline:
@@ -300,34 +308,44 @@ class Scheduler:
             work.outcome = "unknown"
             self._cancel(work, "internal_error")
 
+    def _finish_waiters(self, owner):
+        for waiter in tuple(self.waiters):
+            if waiter.request.operation == owner.request.operation:
+                waiter.error, waiter.outcome, waiter.partial = owner.error, owner.outcome, owner.partial
+                self._finish(waiter, owner.result)
+                self.waiters.remove(waiter)
+
     def tick(self):
         self._guard()
         now = self.clock()
         if self.children is not None:
             self.children.poll(now)
         for work in tuple(self.queue):
-            if not work.terminal and now >= work.admission.deadline:
+            if not work.terminal and self.clock() >= work.admission.deadline:
                 self._cancel(work, "timeout")
         self.queue = deque(work for work in self.queue if not work.terminal)
         for work in tuple(self.waiters):
-            if now >= work.admission.deadline:
+            if self.clock() >= work.admission.deadline:
                 work.error = ContractError("timeout", "Control waiter deadline expired.")
                 self._finish(work)
                 self.waiters.remove(work)
+        # A pending stop owns its original deadline while superseded reset
+        # cleanup still owns mutation. Expiry reports failure/escalates now; it
+        # does not execute a second task or grant a renewed shutdown budget.
+        if (self.pending_stop is not None and not self.pending_stop.terminal
+                and self.clock() >= self.pending_stop.admission.deadline):
+            self._cancel(self.pending_stop, "timeout")
+            self._finish_waiters(self.pending_stop)
         if self.active is not None:
-            self._advance(self.active, now)
+            self._advance(self.active)
         if self.lifecycle is not None:
             owner = self.lifecycle
-            if now >= owner.admission.deadline and owner.error is None:
+            if self.clock() >= owner.admission.deadline and owner.error is None:
                 self._cancel(owner, "timeout")
             if self.active is None:
-                self._advance(owner, now)
+                self._advance(owner)
             if owner.terminal:
-                for waiter in tuple(self.waiters):
-                    if waiter.request.operation == owner.request.operation:
-                        waiter.error, waiter.outcome, waiter.partial = owner.error, owner.outcome, owner.partial
-                        self._finish(waiter, owner.result)
-                        self.waiters.remove(waiter)
+                self._finish_waiters(owner)
                 if owner.request.operation == "input.reset":
                     self.input_available = owner.error is None and not owner.observing_failed and not self.stopping
                 self.lifecycle, self.pending_stop = self.pending_stop, None
@@ -338,7 +356,7 @@ class Scheduler:
                 self.active.error = ContractError("input_unavailable", "Input requires successful reset.")
                 self._finish(self.active)
             else:
-                self._advance(self.active, self.clock())
+                self._advance(self.active)
         if self.unavailable:
             for work in tuple(self.queue):
                 if not work.terminal:

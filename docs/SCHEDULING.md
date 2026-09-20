@@ -14,7 +14,10 @@ captures one monotonic deadline after complete wire validation; queue delay coun
 A queued request expiring before execution has `timeout`, `outcome: not_started`,
 and its task factory is never invoked. Factories construct tasks without effects;
 their first step revalidates targets and starts work. Each step must return promptly.
-The worker checks time before each step and again after accepting its result.
+The worker samples fresh time before constructing each task, again immediately
+before every step (including after construction and other callbacks), and after
+accepting its result. An observer consuming another request's remaining budget
+cannot cause that request to emit using an earlier tick timestamp.
 Success at or after the original deadline is rejected, including late structured
 results containing application handles.
 
@@ -78,7 +81,10 @@ owner, wait for its cleanup, then reset under one admission-based budget <=3s.
 Failure leaves input unavailable. Stop gates new work, cancels queued/active work
 and owns its original <=15s deadline. Accepted lifecycle work survives caller loss;
 repeat callers join with separate wait deadlines and cannot extend or shorten the
-owner's deadline. Stop supersedes reset without running concurrent owner mutations.
+owner's deadline. Stop supersedes reset without running concurrent owner mutations. Superseded reset
+cleanup is clamped to the first stop owner's remaining budget. Pending stop expiry
+is enforced even while reset retains the lifecycle slot: the worker reports
+timeout/uncertainty and fails closed without starting concurrent or late stop work.
 A waiter timing out or disconnecting cannot reopen input or cancel safety cleanup.
 
 Tasks declare a bounded cleanup reserve, at most 16s, covering their entire cleanup
@@ -88,8 +94,10 @@ budgets remain query cleanup <=1.5s, local capture abort <=1s and owned shutdown
 stop owner's original deadline. Repeated stops do not grant a second shutdown phase.
 Future automatic capture-failure escalation must reuse an existing shutdown owner;
 without one, its one <=15s phase follows the <=1s local abort. This infrastructure
-provides the escalation callback; real compositor uncertainty and systemd/cgroup
-shutdown are later adapter work. No successful cleanup is fabricated here.
+provides the escalation callback, and a task-double regression demonstrates an
+automatic abort callback creating or joining exactly one shutdown owner. #33 owns
+real capture-abort routing and compositor uncertainty; #21 owns systemd/cgroup
+shutdown integration and renewed shared-budget verification. No successful cleanup is fabricated here.
 
 `Children` retains each directly spawned child independently of request lifetime.
 `Popen.poll` is its only reaper; output uses private files or DEVNULL, never undrained

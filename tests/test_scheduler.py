@@ -262,6 +262,127 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(len(self.tasks), 1)
         self.assertTrue(self.owner.unavailable)
 
+    def test_factory_crossing_deadline_never_emits_and_retains_cleanup_owner(self):
+        for construction_end in (.005, .010):
+            with self.subTest(construction_end=construction_end):
+                self.setUp()
+                factory = self.owner.factory
+                def slow_factory(request, context):
+                    task = factory(request, context)
+                    task.clean = False
+                    self.clock.now = construction_end
+                    return task
+                self.owner.factory = slow_factory
+                request = self.submit(timeout=.005)
+                self.owner.tick()
+                self.assertFalse(any(event[0] == "step" for event in self.events))
+                self.assertEqual(self.events[0][0], "cancel")
+                self.assertEqual(self.owner.active.request, request.request)
+                self.assertFalse(request.results)
+                self.tasks[0].clean = True
+                self.owner.tick()
+                self.assertEqual(request.results[0]["error"].code, "timeout")
+                self.assertEqual(request.results[0]["error"].outcome, "not_started")
+
+    def test_queued_expiry_observer_crossing_active_deadline_prevents_emission(self):
+        for observer_end in (.010, .012):
+            with self.subTest(observer_end=observer_end):
+                self.setUp()
+                active = self.submit(timeout=.010)
+                self.owner.tick()
+                self.tasks[0].clean = False
+                queued = self.submit(timeout=.005)
+                def observer(record):
+                    if record["request_id"] == queued.request.request_id and record["event"] == "finalizing":
+                        self.clock.now = observer_end
+                self.owner.observer = observer
+                self.clock.now = .006
+                self.owner.tick()
+                self.assertEqual(sum(event[0] == "step" for event in self.events), 1)
+                self.assertEqual(self.owner.active.request, active.request)
+                self.assertFalse(active.results)
+                self.assertEqual(queued.results[0]["error"].code, "timeout")
+                self.tasks[0].clean = True
+                self.owner.tick()
+                self.assertEqual(active.results[0]["error"].code, "timeout")
+                self.assertEqual(active.results[0]["error"].partial_result["app"]["application_id"], "retained")
+
+    def test_stop_deadline_includes_superseded_reset_cleanup_and_joiners(self):
+        reset = self.submit("input.reset", timeout=3)
+        reset_joined = self.submit("input.reset", timeout=2)
+        self.owner.tick()
+        self.tasks[0].clean = False
+        self.tasks[0].cleanup_seconds = 2
+        stop = self.submit("session.stop", timeout=.05)
+        long_waiter = self.submit("session.stop", timeout=1)
+        short_waiter = self.submit("session.stop", timeout=.01)
+        stop.disconnect()
+        long_waiter.disconnect()
+        escalation = Mock()
+        self.owner.escalate = escalation
+        self.assertEqual(self.owner.lifecycle.cleanup_deadline, .05)
+        self.assertEqual(self.owner.pending_stop.admission.deadline, .05)
+        self.clock.now = .01
+        self.owner.tick()
+        self.assertEqual(short_waiter.results[0]["error"].code, "timeout")
+        self.assertEqual(short_waiter.results[0]["error"].outcome, "not_started")
+        self.assertFalse(stop.results)
+        self.assertFalse(self.owner.unavailable)
+        self.clock.now = .05
+        self.owner.tick()
+        self.assertTrue(self.owner.unavailable)
+        self.assertFalse(self.owner.input_available)
+        self.assertTrue(escalation.called)
+        for waiter in (stop, long_waiter):
+            self.assertEqual(waiter.results[0]["error"].code, "timeout")
+            self.assertEqual(waiter.results[0]["error"].outcome, "unknown")
+        for waiter in (reset, reset_joined):
+            self.assertEqual(waiter.results[0]["error"].code, "cancelled")
+            self.assertEqual(waiter.results[0]["error"].outcome, "unknown")
+        self.assertEqual(len(self.tasks), 1, "No concurrent or late stop task")
+        self.owner.tick()
+        self.assertEqual(len(self.tasks), 1)
+        self.assertEqual(len(stop.results), 1)
+        self.assertEqual(len(long_waiter.results), 1)
+
+    def test_automatic_abort_escalation_joins_one_shutdown_owner(self):
+        for explicit in (False, True):
+            with self.subTest(explicit=explicit):
+                self.setUp()
+                capture = self.submit("screenshot", timeout=.01)
+                self.owner.tick()
+                self.tasks[0].clean = False
+                self.tasks[0].cleanup_seconds = .02
+                explicit_stop = self.submit("session.stop", timeout=1) if explicit else None
+                escalations = []
+                def automatic_stop(reason):
+                    # The future capture adapter routes its first unconfirmed
+                    # abort through this seam; it does not open another owner.
+                    if not escalations:
+                        escalation = Admission(self.clock, "session.stop", 15)
+                        escalations.append(escalation)
+                        self.owner.submit(escalation.request, escalation)
+                self.owner.escalate = automatic_stop
+                self.clock.now = .01
+                self.owner.tick()
+                self.clock.now = .04
+                self.owner.tick()
+                self.assertEqual(len(escalations), 1)
+                automatic = escalations[0]
+                owner = self.owner.lifecycle
+                self.assertEqual(owner.admission, explicit_stop or automatic)
+                original_deadline = owner.admission.deadline
+                self.clock.now = .05
+                repeated = self.submit("session.stop", timeout=15)
+                self.assertEqual(self.owner.lifecycle.admission.deadline, original_deadline)
+                self.assertEqual(len(self.tasks), 2)
+                self.tasks[-1].done = True
+                self.owner.tick()
+                self.assertIsNone(automatic.results[0]["error"])
+                self.assertIsNone(repeated.results[0]["error"])
+                self.assertEqual(capture.results[0]["error"].outcome, "unknown")
+                self.assertEqual(len(self.tasks), 2, "Exactly one shutdown task")
+
     def test_child_reaper_survives_request_terminalization(self):
         children = Children()
         process = Mock()

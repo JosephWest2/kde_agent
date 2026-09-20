@@ -233,6 +233,7 @@ def main(output, dependencies):
             for label, count, cadence in (('sequential',100,0), ('paced',30,.1)):
                 timings = []
                 ids = []
+                outcomes = []
                 start_at = time.monotonic()
                 pending = []
                 started_times = []
@@ -249,22 +250,46 @@ def main(output, dependencies):
                         assert q['response']['ok'], q
                         timings.append(q['elapsed'])
                         ids.append(q['response']['request_id'])
+                        outcomes.append(q['response'])
                 for child, started_at in pending:
                     stdout, stderr = child.communicate(timeout=10)
                     q = json.loads(stdout)
-                    assert q['ok'], (q, stderr)
+                    assert q['ok'] or q['error']['code'] == 'timeout', (q, stderr)
                     ids.append(q['request_id'])
-                # Receipts use worker acceptance timestamps, not delayed communicate time.
-                worker_timings = []
-                for ident in ids:
-                    r = read(folder / ('query-' + ident + '.json'))
-                    worker_timings.append(r['accepted_at'] - (r['started_deadline'] - .5))
-                batches[label] = {'worker_seconds': percentiles(worker_timings), 'request_ids': ids}
+                    outcomes.append(q)
+                # Read durable terminal timestamps: delayed communicate is not latency.
+                worker_timings, terminal_timings, failures = [], [], []
+                for result in outcomes:
+                    ident = result['request_id']
+                    records = list((folder / 'requests' / ident).glob('*/record.json'))
+                    assert len(records) == 1
+                    record = read(records[0])
+                    terminal_timings.append(record['terminal_observed_monotonic'] - record['admitted_at'])
+                    query_path = folder / ('query-' + ident + '.json')
+                    if result['ok']:
+                        r = read(query_path)
+                        assert r['accepted_at'] < r['started_deadline'] and r['clean']
+                        worker_timings.append(r['accepted_at'] - (r['started_deadline'] - .5))
+                    else:
+                        failure = {'response': result, 'terminal_record': record}
+                        if query_path.exists():
+                            r = read(query_path)
+                            assert r['accepted_at'] is None and r['clean'] and r['script_absent'] and r['temporary_removed'], r
+                            failure['query_receipt'] = r
+                        failures.append(failure)
+                batches[label] = {'submitted': count, 'successes': len(worker_timings), 'timeouts': len(failures),
+                    'worker_success_seconds': percentiles(worker_timings) if worker_timings else None,
+                    'terminal_seconds': percentiles(terminal_timings), 'request_ids': ids,
+                    'outcomes': [{'request_id': value['request_id'], 'ok': value['ok'],
+                                  'code': None if value['ok'] else value['error']['code']} for value in outcomes],
+                    'failures': failures}
                 if timings:
                     batches[label]['cli_seconds'] = percentiles(timings)
                 if started_times:
                     batches[label]['actual_start_intervals'] = [b-a for a,b in zip(started_times, started_times[1:])]
             case['batches'] = batches
+            case['sustained_recovery'] = [invoke(['windows', '--session', name]) for _ in range(5)]
+            assert all(q['response']['ok'] for q in case['sustained_recovery']), case['sustained_recovery']
             case['normal_receipts'] = [read(p) for p in folder.glob('query-*.json')]
         finally:
             case['stop'] = stop(name, data)

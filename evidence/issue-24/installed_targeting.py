@@ -25,7 +25,7 @@ SCRIPT = Path(__file__).resolve()
 CASES = ('focus', 'noop', 'delayed', 'before-map-exit', 'launch-retention',
          'launch-cancel', 'launch-disconnect', 'queued-resize', 'queued-vanish',
          'focus-vanish', 'subtree-exit', 'slow-query', 'stopped-query',
-         'stop-wait', 'bus-death', 'kwin-death', 'worker-death', 'focus-transition', 'queued-move', 'restart')
+         'stop-wait', 'bus-death', 'kwin-death', 'worker-death', 'focus-transition', 'queued-move', 'selection', 'restart')
 
 
 def read(path):
@@ -453,6 +453,22 @@ class Run:
         snapshot = self.call(self.args('windows', '--app', self.appref))
         assert snapshot['active_window'] == other['window'], snapshot
 
+    def selection(self):
+        self.launch('--sibling', '--dialog', '--child-window-ms', '10000', '--exit-after-ms', '12000', flags=('--wait-window',))
+        rows = wait(lambda: (found if len(found := self.rows()) == 4 else None))
+        self.case['selected'] = []
+        labels = {640: 'primary', 480: 'sibling', 320: 'dialog', 400: 'child'}
+        for row in rows:
+            label = labels[row['client']['width']]
+            at = time.monotonic()
+            result = self.call(self.args('focus', '--window', self.wref(row)))
+            independent = self.call(self.args('windows'))
+            assert result['focused'] and independent['active_window'] == row['window']
+            receipt = wait(lambda: next((e for e in reversed(self.fixture_events())
+                if e['event'] == 'configure' and e.get('surface') == label and e.get('activated')
+                and e['monotonic_ns'] / 1e9 >= at), None))
+            self.case['selected'].append({'label': label, 'result': result, 'fixture': receipt})
+
     def focus_transition(self):
         self.launch('--sibling', '--exit-after-ms', '7000', flags=('--wait-window',))
         rows = wait(lambda: (found if len(found := self.rows()) == 2 else None))
@@ -506,6 +522,8 @@ class Run:
         self.case['retained_record'] = self.app_record()
         result = self.call(self.wait_args('window', timeout='3'))
         assert len(result['windows']) == 1
+        focused = self.call(self.args('focus', '--app', self.appref))
+        assert focused['focused'] and focused['window'] == result['windows'][0]['window']
         self.case['fixture_events'] = self.fixture_events()
 
     def launch_control(self, disconnect=False):
@@ -718,6 +736,7 @@ class Run:
                     elif label == 'worker-death': self.failure_during_wait('worker')
                     elif label == 'focus-transition': self.focus_transition()
                     elif label == 'queued-move': self.queued_move()
+                    elif label == 'selection': self.selection()
                     elif label == 'restart':
                         self.launch('--exit-after-ms', '5000', flags=('--wait-window',))
                         oldapp, oldwindow, oldgen = self.appref, self.wref(self.rows()[0]), self.gen

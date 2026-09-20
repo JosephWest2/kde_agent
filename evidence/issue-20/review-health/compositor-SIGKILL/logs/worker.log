@@ -1,0 +1,5 @@
+/home/josephwest/development/kde-agent/.local/issue20-venv/lib/python3.14/site-packages/agent_desktop/worker.py:137: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (loop.quit(), False)[1])
+ 11:50:43 | WARN | Connection error: socket disconnected
+      ... | [0;34mWARN[0m | failed to send message: Broken pipe
+agent-desktop worker: session_failed: An essential private desktop child exited.

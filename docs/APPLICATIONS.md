@@ -13,7 +13,7 @@ birth identity, selected executable, stdout/stderr paths, lifetime state, observ
 root exit code and discovered window references. `--wait-window` waits passively
 for one or more current associated windows under the original launch deadline;
 all current candidates are returned without selecting a target. `application_active` (exit 7) includes the current
-handle when the application or any ordinary descendant is still living.
+handle when application lifetime observation or cleanup remains pending.
 
 ## Kernel ownership and lifecycle
 
@@ -43,8 +43,12 @@ rechecked `/proc` birth/membership observations. Popen remains the sole reaper o
 the original child. Descendant exit codes are unknown unless directly observed.
 
 Root exit and complete application exit differ. Only a positive recursive
-`cgroup.events` populated=0 observation after settled launch/root reaping releases
-the active slot. Missing/malformed/unreadable data cannot prove emptiness.
+`cgroup.events` populated=0 observation after settled launch/root reaping,
+deferred identity publication, and incremental settlement of every retained pidfd
+releases the active slot. A forced observation cannot bypass this gate. A live
+retained member outside the application subtree is ownership uncertainty; it
+cannot be discarded to declare completion. Missing/malformed/unreadable data
+cannot prove emptiness.
 Cancellation, client disconnection and subsequent processing failure close request
 protocol endpoints and retain application ownership and durable references. A
 preauthorization helper may be aborted; an authorized application is not killed
@@ -95,3 +99,48 @@ constant-size cached aggregate from existing cgroup observation, not a complete
 process list or signal authority. `remaining_processes: null` and
 `enumeration: unavailable` are deliberate; even 4096 retained identities do not
 turn close reporting into an additional process walk. See [window close semantics](WINDOWS.md#graceful-selected-window-close).
+
+## Explicit termination
+
+`kill --app REF` is a serialized application operation that needs no windows.
+It pins that generation and exact application owner and submits signals only
+through retained, live pidfds after checking birth identity and exact/subtree
+membership. Historical records never grant signal authority. Repeating kill for
+a completed application succeeds with `already_exited: true` and zero signals,
+even when a different application is active.
+
+The original 5-second default / 15-second maximum includes queue time. At
+resolution time `t0`, with remaining time `R` and original deadline `D`, TERM ends
+at `t0 + min(1 second, R/3)`, all signals end at `D - min(250 ms, R/5)`, and the
+remaining time is observation only. Each retained lifetime gets at most one
+TERM and one KILL attempt per explicit request. New descendants join the current
+phase, including KILL without a renewed TERM grace. Registry discovery,
+retained-handle settlement, verification, dispatch and progress publication
+share the existing 2 ms scheduling allowance; at most 16 retained candidates are
+visited per turn. The allowance does not preempt filesystem calls or persistence.
+
+Intent and phase entry are persisted before dispatch. A successful signal syscall
+means submission, not acknowledgment or exit. Success requires positive settled
+whole-application completion in time. `exit_status`/`root_returncode` describe only
+the original child; descendant codes remain null. Cancellation, deadline expiry,
+disconnect and stop synchronously revoke this request's further signals. Kill
+cleanup does not wait or escalate; Registry keeps ownership for later wait or a
+new explicit kill. Independently justified service failure/stop cleanup has its
+own authority and does not count as application-kill success.
+
+`kill_state` retains fixed cutoffs, phase, attempt/submission counts and at most
+64 verified birth-identity observations with their actual timestamps. Samples
+are observations, not an exact current process count; `enumeration_incomplete`
+stays true until positive completion. `sample_truncated` means the sample reached
+its capacity and may omit members. Unavailable samples are null, never an invented
+empty list. Detected live foreign identities are reported separately as ownership
+uncertainty. Complete success reports `remaining_processes: []`. Request records
+retain this typed bounded summary alongside application/process/log references.
+
+Pidfds prevent PID-reuse retargeting. Membership observations do not atomically
+prevent hostile same-user migration after the last check; an unobserved process
+deliberately moved away before acquisition is outside cooperative containment.
+No raw PID, process-group, `cgroup.kill`, or systemd app-kill fallback is used.
+Launch, wait and close never construct termination authority. Production shutdown
+integration, input/capture and representative third-party application qualification
+remain separate issue #35 work.

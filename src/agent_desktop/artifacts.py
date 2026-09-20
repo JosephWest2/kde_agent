@@ -175,6 +175,66 @@ def safe_projection(value, generation):
         if state.get('enumeration') == 'unavailable':
             typed['enumeration'] = 'unavailable'
         out['process_state'] = typed
+    kill = value.get('kill_state')
+    if isinstance(kill, dict):
+        typed = {}
+        if type(kill.get('phase')) is str and kill['phase'] in ('resolve', 'term', 'kill', 'observe'):
+            typed['phase'] = kill['phase']
+        for key in ('intent', 'dispatch_revoked', 'enumeration_incomplete', 'sample_truncated'):
+            if type(kill.get(key)) is bool:
+                typed[key] = kill[key]
+        for key in ('started_at', 'term_cutoff', 'signal_cutoff', 'deadline', 'phase_started_at',
+                    'last_signal_at', 'exit_observed_at'):
+            item = kill.get(key)
+            if item is None or (type(item) in (int, float) and 0 <= item < 2 ** 53 and math.isfinite(item)):
+                typed[key] = item
+        counts = kill.get('counts')
+        if isinstance(counts, dict):
+            typed['counts'] = {key: counts[key] for key in ('term_attempted', 'term_submitted',
+                'kill_attempted', 'kill_submitted', 'raced_exit')
+                if type(counts.get(key)) is int and 0 <= counts[key] <= 8192}
+        def sample(item):
+            if not isinstance(item, dict):
+                return None
+            ident = {key: item[key] for key in ('pid', 'start_time_ticks')
+                     if type(item.get(key)) is int and 0 < item[key] < 2 ** 63}
+            when = item.get('observed_at')
+            if len(ident) != 2 or type(when) not in (int, float) or not 0 <= when < 2 ** 53 or not math.isfinite(when):
+                return None
+            return ident | {'observed_at': when}
+        remaining = kill.get('remaining_processes')
+        if remaining is None:
+            typed['remaining_processes'] = None
+        elif isinstance(remaining, list) and len(remaining) <= 64:
+            typed['remaining_processes'] = [row for item in remaining if (row := sample(item)) is not None]
+        if kill.get('enumeration') in ('complete', 'sampled', 'unavailable'):
+            typed['enumeration'] = kill['enumeration']
+        foreign = sample(kill.get('ownership_uncertain'))
+        typed['ownership_uncertain'] = foreign
+        out['kill_state'] = typed
+        for key in ('exited', 'already_exited'):
+            if value.get(key) is None or type(value[key]) is bool:
+                out[key] = value.get(key)
+        for key in ('exit_status', 'root_returncode'):
+            code = value.get(key)
+            if code is None or (type(code) is int and -(2 ** 31) <= code < 2 ** 31):
+                out[key] = code
+        snapshot = value.get('application_snapshot')
+        if isinstance(snapshot, dict):
+            # Fixed-shape references only; never persist the arbitrary snapshot
+            # or recursively copy its window payloads/environment/path values.
+            retained = safe_projection({key: snapshot.get(key) for key in ('application', 'process')}, generation)
+            if snapshot.get('state') in ('prepared', 'execution-authorized', 'running', 'root-exited',
+                                          'all-exited', 'launch-failed'):
+                retained['state'] = snapshot['state']
+            code = snapshot.get('exit_code')
+            if code is None or (type(code) is int and -(2 ** 31) <= code < 2 ** 31):
+                retained['exit_code'] = code
+            for name in ('window_observation', 'previous_observation', 'pending_observation'):
+                observation = snapshot.get(name)
+                if isinstance(observation, dict):
+                    retained[name] = safe_projection({'query_artifact': observation.get('query_artifact')}, generation)
+            out['application_snapshot'] = retained
     return out
 
 

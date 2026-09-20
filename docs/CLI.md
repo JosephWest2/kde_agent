@@ -241,6 +241,18 @@ an existing unassociated surface gives `unsupported_operation` with reason
 absence is expected and does not satisfy app exit. See [close semantics](WINDOWS.md#graceful-selected-window-close).
 No generic success claim is made when an application remains alive.
 
+Explicit `kill --app` uses a fixed TERM → KILL → observe-only sequence under its
+original deadline, including queue time. Cancellation or disconnect stops further
+signals immediately; it does not undo submissions or terminate survivors during
+cleanup. `kill_state` contains the phase, fixed cutoffs, bounded attempt/submission
+counts and up to 64 verified identity samples with observation timestamps.
+Samples are incomplete unless whole-app completion is positively established;
+unavailable `remaining_processes` is null, while successful completion reports
+`[]`. `sample_truncated` indicates possible omission at sample capacity, not an
+exact omitted count. A completed historical handle succeeds with
+`already_exited: true` and zero signals. `exit_status` is the original child's
+code, not a descendant aggregate. See [termination semantics](APPLICATIONS.md#explicit-termination).
+
 ## Deadlines and cleanup
 
 The command table defines finite *work* budgets. The transport worker admits a

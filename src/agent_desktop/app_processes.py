@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from collections import deque
 from pathlib import Path
 import select
+import signal
 import time
 import uuid
 
@@ -49,6 +50,30 @@ def identity(pid, cgroup, *, exact=False):
     finally:
         if not retained:
             os.close(fd)
+
+
+def retained_identity(app, key, fd):
+    """Check a retained lifetime; false means positive pidfd exit, never reuse.
+
+    Sequential membership checks do not prevent hostile concurrent migration.
+    A live descriptor with unreadable/foreign proc identity is uncertainty.
+    """
+    if not live(fd):
+        return False
+    try:
+        before = birth(key[0])
+        group = membership(key[0])
+        after = birth(key[0])
+    except (OSError, ValueError, IndexError):
+        if not live(fd):
+            return False
+        raise uncertain() from None
+    if not live(fd):
+        return False
+    if (before != key[1] or after != key[1]
+            or (group != app.cgroup and not group.startswith(app.cgroup + '/'))):
+        raise uncertain()
+    return True
 
 
 def scan(root):
@@ -121,6 +146,11 @@ class Application:
         self.window_observation = None
         self.previous_observation = None
         self.pending_observation = None
+        self.termination = None
+        # Registry-owned lifetime marks survive request detachment. Entries are
+        # reclaimed with their handles, never by a request-time bulk teardown.
+        self.signal_marks = {}
+        self.scan_first = False
 
     @property
     def handle(self):
@@ -202,7 +232,7 @@ class Application:
         if empty and self.settled and (self.child is None or self.child.returncode is not None):
             # A prior scan may have used its entire turn before persistence.
             # Do not discard those observed identities when retiring ownership.
-            if self.pending_processes:
+            if self.pending_processes or self.handles or self.reap_queue:
                 return
             self.state = 'all-exited' if self.authorized and self.state != 'launch-failed' else 'launch-failed'
             self.dirty = True
@@ -221,6 +251,39 @@ class Application:
             except OSError:
                 pass
 
+    def reap_turn(self, deadline):
+        cursor = self.termination
+        for _ in range(min(16, len(self.reap_queue))):
+            if time.monotonic() >= deadline:
+                return
+            key = self.reap_queue.popleft()
+            fd = self.handles.get(key)
+            if fd is None:
+                continue
+            living = live(fd)
+            if living and self.process_state is not None and self.process_state['subtree_populated'] is False:
+                try:
+                    living = retained_identity(self, key, fd)
+                except ContractError as error:
+                    self.reap_queue.append(key)
+                    if cursor is not None:
+                        cursor.ownership_uncertain = {'pid': key[0], 'start_time_ticks': key[1],
+                                                      'observed_at': time.monotonic()}
+                        cursor.samples.pop(key, None)
+                        cursor.fail(error)
+                    raise
+            if not living:
+                os.close(fd)
+                del self.handles[key]
+                self.signal_marks.pop(key, None)
+                self.registry.index_remove(self, key)
+                if cursor is not None:
+                    cursor.samples.pop(key, None)
+            else:
+                self.reap_queue.append(key)
+                if cursor is not None and time.monotonic() < deadline:
+                    cursor.visit(key, fd)
+
     def scan_turn(self, *, deadline=None):
         if deadline is None:
             deadline = time.monotonic() + .002
@@ -231,19 +294,25 @@ class Application:
             self.registry.store.application_processes(self.id, self.pending_processes)
             self.pending_processes.clear()
             published = True
-        for _ in range(min(16, len(self.reap_queue))):
-            if time.monotonic() >= deadline:
-                return
-            key = self.reap_queue.popleft()
-            fd = self.handles.get(key)
-            if fd is None:
-                continue
-            if not live(fd):
-                os.close(fd)
-                del self.handles[key]
-                self.registry.index_remove(self, key)
-            else:
-                self.reap_queue.append(key)
+        # Alternate priority so either a slow discovery or a slow retained
+        # verification cannot starve the other. Both use this one deadline.
+        scan_first = self.scan_first
+        self.scan_first = not scan_first
+        if not scan_first:
+            self.reap_turn(deadline)
+        self.discover_turn(deadline)
+        if scan_first:
+            self.reap_turn(deadline)
+        if self.pending_processes and not published and time.monotonic() < deadline:
+            self.registry.store.application_processes(self.id, self.pending_processes)
+            self.pending_processes.clear()
+        now = time.monotonic()
+        if self.dirty and now < deadline and now - self.last_write >= .05:
+            self.persist()
+
+    def discover_turn(self, deadline):
+        if time.monotonic() >= deadline:
+            return
         if self.scanner is None:
             self.scanner = scan(self.path)
         identities = 0
@@ -282,14 +351,10 @@ class Application:
             self.registry.index_add(self, key)
             self.reap_queue.append(key)
             self.pending_processes.append(info)
-        if self.pending_processes and not published and time.monotonic() < deadline:
-            self.registry.store.application_processes(self.id, self.pending_processes)
-            self.pending_processes.clear()
-        now = time.monotonic()
-        if self.dirty and now < deadline and now - self.last_write >= .05:
-            self.persist()
 
     def close(self):
+        if self.termination is not None:
+            self.termination.detach()
         if self.scanner is not None:
             self.scanner.close()
             self.scanner = None
@@ -300,6 +365,123 @@ class Application:
         if self.fd is not None:
             os.close(self.fd)
             self.fd = None
+
+
+class Termination:
+    """Opaque, fixed-sequence dispatch cursor. Only Registry owns descriptors."""
+    def __init__(self, app, deadline, term_cutoff, signal_cutoff, guard, effects):
+        self.app, self.deadline = app, deadline
+        self.generation = app.registry.generation
+        self.term_cutoff, self.signal_cutoff = term_cutoff, signal_cutoff
+        self.guard, self.effects = guard, effects
+        self.token = object()
+        self.phase = 'resolve'
+        self.revoked = False
+        self.error = None
+        self.dirty = False
+        self.samples = {}
+        self.ownership_uncertain = None
+        self.counts = {'term_attempted': 0, 'term_submitted': 0,
+                       'kill_attempted': 0, 'kill_submitted': 0, 'raced_exit': 0}
+        self.last_signal_at = None
+        self.phase_started_at = time.monotonic()
+
+    def detach(self):
+        self.revoked = True
+        if self.app.termination is self:
+            self.app.termination = None
+        # Bounded samples only; the lifetime marks remain Registry-owned.
+        self.guard = self.effects = None
+
+    def check(self):
+        if self.revoked:
+            return False
+        app = self.app
+        if app.termination is not self or app.registry.active is not app or app.completed or app.fd is None or app.uncertain:
+            raise uncertain()
+        self.guard()
+        return time.monotonic() < self.deadline
+
+    def fail(self, error):
+        if self.error is None:
+            self.error = error
+        self.detach()
+
+    def prepare(self):
+        try:
+            if not self.check():
+                return
+            now = time.monotonic()
+            phase = 'observe' if now >= self.signal_cutoff else 'kill' if now >= self.term_cutoff else 'term'
+            if phase != self.phase:
+                self.phase, self.phase_started_at = phase, now
+                self.dirty = True
+                self.publish()  # Durable phase intent precedes any dispatch.
+        except ContractError as error:
+            self.fail(error)
+
+    def publish(self):
+        if self.revoked or not self.dirty:
+            return
+        try:
+            self.effects()
+            self.dirty = False
+        except ContractError as error:
+            self.fail(error)
+
+    def visit(self, key, fd):
+        try:
+            if self.revoked:
+                return
+            app = self.app
+            entry = app.registry.identity_index.get(key[0])
+            if entry is None or entry[:2] != (app, key) or app.handles.get(key) != fd:
+                raise uncertain()
+            if not self.check():
+                return
+            try:
+                verified = retained_identity(app, key, fd)
+            except ContractError:
+                self.ownership_uncertain = {'pid': key[0], 'start_time_ticks': key[1],
+                                            'observed_at': time.monotonic()}
+                self.samples.pop(key, None)
+                app.uncertain = True
+                raise
+            if not verified:
+                self.samples.pop(key, None)
+                return
+            observed = time.monotonic()
+            if key in self.samples or len(self.samples) < 64:
+                self.samples[key] = {'pid': key[0], 'start_time_ticks': key[1], 'observed_at': observed}
+            phase = self.phase
+            cutoff = self.term_cutoff if phase == 'term' else self.signal_cutoff
+            if phase not in ('term', 'kill') or observed >= cutoff:
+                return
+            if app.signal_marks.get(key) == (self.token, phase):
+                return
+            # No yield or publication between the final identity/revision/time
+            # guard and the pidfd syscall. Numeric PIDs never grant authority.
+            if (self.revoked or app.termination is not self or app.registry.active is not app
+                    or app.registry.generation != self.generation
+                    or app.uncertain or app.completed or app.registry.identity_index.get(key[0]) != entry
+                    or app.handles.get(key) != fd):
+                return
+            if time.monotonic() >= cutoff:
+                return
+            app.signal_marks[key] = (self.token, phase)
+            self.counts[phase + '_attempted'] += 1
+            self.dirty = True
+            try:
+                signal.pidfd_send_signal(fd, signal.SIGTERM if phase == 'term' else signal.SIGKILL, None, 0)
+            except ProcessLookupError:
+                self.counts['raced_exit'] += 1
+            except OSError:
+                raise uncertain() from None
+            else:
+                self.counts[phase + '_submitted'] += 1
+                self.last_signal_at = time.monotonic()
+        except ContractError as error:
+            self.fail(error)
 
 
 class Registry:
@@ -354,11 +536,21 @@ class Registry:
         app = self.active
         return (self.generation, app, getattr(self, 'identity_revision', 0))
 
-    def observe_application_exit(self, handle, *, force=False):
+    def begin_termination(self, handle, deadline, term_cutoff, signal_cutoff, guard, effects):
+        self.lookup(handle)
+        app = self.active
+        if app is None or app.handle != handle or app.completed or app.uncertain or app.termination is not None:
+            raise uncertain()
+        cursor = Termination(app, deadline, term_cutoff, signal_cutoff, guard, effects)
+        app.termination = cursor
+        return cursor
+
+    def observe_application_exit(self, handle, *, force=False, cached=False):
         snapshot = self.lookup(handle)
         app = self.active
         if app is not None and app.handle == handle:
-            app.observe(force=force)
+            if not cached:
+                app.observe(force=force)
             return app.snapshot(), app.completed
         if snapshot['state'] not in ('all-exited', 'launch-failed'):
             raise uncertain()
@@ -440,7 +632,7 @@ class Registry:
         if self.active is not None:
             self.active.observe(force=True)
         if self.active is not None:
-            raise ContractError('application_active', 'An application or its descendants remain active.',
+            raise ContractError('application_active', 'Application lifetime observation or cleanup remains pending.',
                                 context={'application': self.active.handle})
 
     def reserve(self):
@@ -463,8 +655,13 @@ class Registry:
             if time.monotonic() >= deadline:
                 return
             app.observe()
+            cursor = app.termination
+            if cursor is not None and time.monotonic() < deadline:
+                cursor.prepare()
             if self.active is app and time.monotonic() < deadline:
                 app.scan_turn(deadline=deadline)
+            if cursor is not None and time.monotonic() < deadline:
+                cursor.publish()
         except Exception:
             app.uncertain = True
             raise

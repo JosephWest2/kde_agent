@@ -135,6 +135,35 @@ class CLITests(unittest.TestCase):
         self.assertEqual(result.returncode, 5)
         self.assertEqual(result.stdout, "")
 
+    def test_json_flag_does_not_repair_missing_option_values(self):
+        cases = [
+            ["launch", "--cwd", "--json", "relative", "--", "app"],
+            ["launch", "--env", "--json", "KEY=value", "--", "app"],
+            ["launch", "--timeout", "--json", "1", "--", "app"],
+            ["launch", "--session", "--json", "work", "--", "app"],
+            ["session", "start", "--session", "--json", "work"],
+        ]
+        for args in cases:
+            with self.subTest(args=args):
+                result = self.run_cli(*args)
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(len(result.stdout.splitlines()), 1)
+                self.assertEqual(json.loads(result.stdout)["error"]["code"], "invalid_arguments")
+                with patch.object(cli, "dispatch") as send, redirect_stdout(io.StringIO()):
+                    self.assertEqual(cli.main(args), 2)
+                    send.assert_not_called()
+        for args in (
+            ["--json", "launch", "--cwd", "relative", "--", "app"],
+            ["launch", "--json", "--env", "KEY=value", "--", "app"],
+            ["launch", "--session", "work", "--json", "--", "app"],
+            ["session", "--json", "start", "--session", "work"],
+        ):
+            with self.subTest(args=args):
+                result = self.run_cli(*args)
+                self.assertEqual(result.returncode, 5)
+                self.assertEqual(json.loads(result.stdout)["error"]["code"], "unsupported_operation")
+
     def test_unknown_mode_is_explicitly_unsupported(self):
         self.assertEqual(self.json_cli("session", "start", "--mode", "viewer")["error"]["code"], "unsupported_operation")
 

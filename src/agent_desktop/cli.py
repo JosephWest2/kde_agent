@@ -39,6 +39,7 @@ def parser():
             leaves[operation] = commands.add_parser(operation)
     for family, actions in (("session", ("start", "status", "stop")), ("input", ("reset",))):
         group = commands.add_parser(family)
+        group.add_argument("--json", action="store_true", help="emit one JSON result")
         sub = group.add_subparsers(dest="action", required=True)
         for action in actions:
             leaves[f"{family}.{action}"] = sub.add_parser(action)
@@ -78,19 +79,20 @@ def split_cli(argv):
     boundary = argv.index("--") if "--" in argv else len(argv)
     prefix, tail = argv[:boundary], argv[boundary:]
     json_mode = "--json" in prefix
-    # Recognize mode at all command nesting levels, without inspecting app argv.
-    prefix = [token for token in prefix if token != "--json"]
+    # Detect rendering mode without rewriting option/value adjacency.
     return prefix, tail, json_mode
 
 
 def parse_request(argv, request_id, caller_cwd):
     prefix, tail, json_mode = split_cli(argv)
     root = parser()
-    if prefix == ["--version"] and not tail:
+    if [token for token in prefix if token != "--json"] == ["--version"] and not tail:
         return None, dict(version=__version__), "version", json_mode
     if "--version" in prefix:
         raise ContractError("invalid_arguments", "Use --version without a command.")
-    launch = bool(prefix and prefix[0] == "launch")
+    # Root accepts only valueless --json before a command. Keep every token
+    # in its original position when argparse validates options and their values.
+    launch = next((token for token in prefix if token != "--json"), None) == "launch"
     try:
         namespace = root.parse_args(prefix if launch else prefix + tail)
     except HelpRequested as help_result:

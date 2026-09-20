@@ -475,11 +475,19 @@ def main(output, dependencies, selected):
                     assert {k: v for k, v in case['replacement_before'].items() if k != 'compositor_home_files'} == {
                         k: v for k, v in case['replacement_after'].items() if k != 'compositor_home_files'}
                     assert all(alive(item) for item in case['replacement_after']['descendants'])
+                    replacement_stop_started = time.monotonic()
+                    replacement_stop_deadline = replacement_stop_started + 15
                     stop, _ = raw(replacement, 'session.stop')
                     try:
-                        wait_for(lambda: empty(replacement), time.monotonic() + 15)
+                        # Worker exit can briefly empty the cgroup before systemd
+                        # starts ExecStopPost. Observe finalization as well as empty
+                        # containment within one original stop budget.
+                        terminal = replacement_folder / 'terminal.json'
+                        wait_for(lambda: terminal.exists() and read(terminal).get('cleanup') == 'complete'
+                                 and empty(replacement), replacement_stop_deadline)
                     finally:
                         stop.close()
+                    case['replacement_stop_seconds'] = time.monotonic() - replacement_stop_started
                     case['replacement_cleanup'] = direct_snapshot(runtime, artifacts, replacement)
                     assert case['replacement_cleanup']['terminal.json']['cleanup'] == 'complete'
                 case['passed'] = True

@@ -194,6 +194,45 @@ class QueryTests(unittest.TestCase):
         self.assertFalse(action.folder.exists())
         self.assertIsNone(self.adapter.active)
 
+    def test_normal_close_native_process_cleanup_and_no_fabricated_observation(self):
+        action = self.adapter.request_close('request', time.monotonic() + .5,
+            {'generation': GEN, 'window_id': UID}, Mock())
+        self.assertEqual(action._argv()[-2:], ['windowclose', '{' + UID + '}'])
+        with patch.object(self.store, 'window_observation') as publish:
+            result = self.drive(action)
+        self.assertIn('close_transport_completed_at', result)
+        self.assertNotIn('windows', result)
+        publish.assert_not_called()
+        self.assertFalse(action.folder.exists())
+        self.assertIsNotNone(action.child.returncode)
+        self.assertIsNone(self.adapter.active)
+
+    def test_close_hook_with_real_adapter_child_requires_host_progress(self):
+        from agent_desktop.closing import CloseHook
+        from test_targeting import APP, HANDLES, snapshot
+        selected = Mock(step=Mock(return_value=snapshot()), recheck_selected=Mock(return_value=True))
+        exited = [False]
+        registry = SimpleNamespace(generation=GEN,
+            observe_application_exit=lambda *a, **kw: ({'state': 'running', 'exit_code': None}, exited[0]),
+            application_process_state=lambda *a: {'subtree_populated': not exited[0]})
+        hook = CloseHook('hook', GEN, self.adapter, registry, lambda: None, Mock(), window=HANDLES[0])
+        deadline = time.monotonic() + 1
+        with patch.object(self.adapter, 'start', return_value=selected):
+            self.assertIsNone(hook(time.monotonic(), deadline))
+        native = hook.owner.operation
+        for _ in range(1000):
+            self.children.poll()  # Required owner responsibility, not hook magic.
+            if hook.owner.dispatch == 'transport_completed':
+                exited[0] = True
+            result = hook(time.monotonic(), deadline)
+            if result is not None:
+                break
+            time.sleep(.001)
+        self.assertEqual(result['state'], 'complete')
+        self.assertIsNotNone(native.child.returncode)
+        self.assertFalse(native.folder.exists())
+        self.assertIsNone(self.adapter.active)
+
     def test_activation_guard_runs_after_collision_and_failure_spawns_nothing(self):
         def guard():
             self.assertEqual(action.phase, 'collision')

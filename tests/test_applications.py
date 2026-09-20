@@ -120,6 +120,55 @@ class ObservationBudgetTests(unittest.TestCase):
             self.assertEqual(first, {'root_returncode': 7, 'all_exited': True, 'state': 'all-exited'})
             self.assertEqual(self.app.observe_exit(), first)
 
+    def test_process_state_reports_actual_empty_bit_before_root_reaping(self):
+        self.app.child = SimpleNamespace(returncode=None)
+        self.app.settled = True
+        self.app.observe(force=True)
+        state = self.registry.application_process_state(self.app.handle)
+        self.assertFalse(state['subtree_populated'])
+        self.assertFalse(state['root_reaped'])
+        self.assertFalse(state['all_exited'])
+        self.assertIsNone(state['remaining_processes'])
+
+    def test_missing_root_metadata_remains_unavailable(self):
+        self.app.observe(force=True)
+        state = self.registry.application_process_state(self.app.handle)
+        self.assertIsNone(state['root_reaped'])
+        self.assertIsNone(state['root_returncode'])
+
+    def test_cached_process_state_is_constant_size_and_uncertainty_is_explicit(self):
+        (self.root / 'cgroup.events').write_text('populated 1\n')
+        self.app.observe(force=True)
+        # Historic identities are not current liveness or an enumeration.
+        self.app.observed = {n: object() for n in range(4096)}
+        with patch.object(self.app, 'populated', side_effect=AssertionError('unexpected read')):
+            state = self.registry.application_process_state(self.app.handle)
+            self.assertEqual(len(state), 7)
+            self.assertTrue(state['subtree_populated'])
+            self.assertEqual(state['enumeration'], 'unavailable')
+            self.app.uncertain = True
+            self.assertIsNone(self.registry.application_process_state(self.app.handle)['subtree_populated'])
+
+    def test_pending_publication_blocks_completion_but_does_not_invent_populated(self):
+        self.app.child = SimpleNamespace(returncode=7)
+        self.app.authorized = self.app.settled = True
+        self.app.pending_processes = [{'pid': 42}]
+        self.app.observe(force=True)
+        state = self.registry.application_process_state(self.app.handle)
+        self.assertFalse(state['subtree_populated'])
+        self.assertFalse(state['all_exited'])
+        self.assertTrue(state['root_reaped'])
+        self.assertEqual(state['root_returncode'], 7)
+        self.assertIs(self.registry.active, self.app)
+
+    def test_historical_process_completion_does_not_invent_observation_time(self):
+        self.registry.active = None
+        self.store.application_read.return_value = {'state': 'all-exited', 'exit_code': 7}
+        state = self.registry.application_process_state(self.app.handle)
+        self.assertTrue(state['all_exited'])
+        self.assertFalse(state['subtree_populated'])
+        self.assertIsNone(state['observed_at'])
+
     def test_live_launch_failed_is_not_retired_exit(self):
         self.app.state = 'launch-failed'
         self.app.settled = True

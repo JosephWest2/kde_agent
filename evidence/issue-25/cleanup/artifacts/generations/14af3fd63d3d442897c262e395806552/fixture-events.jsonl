@@ -1,0 +1,6 @@
+{"event": "action_started", "at": 164023.03341109, "request_id": "aabe0a793dc64ee69fe4a17b79ea84cf"}
+{"event": "action_cancel", "at": 164023.045746653, "reason": "cancelled"}
+{"event": "action_cleanup", "at": 164023.055771679}
+{"event": "release_attempt", "at": 164023.075945242, "deadline": 164023.575383437}
+{"event": "release_blocked", "at": 164023.07607463}
+{"event": "application_termination", "at": 164027.499425914, "signal": 15}

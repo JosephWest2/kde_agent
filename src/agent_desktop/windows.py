@@ -48,6 +48,13 @@ class Adapter:
         self.active = operation
         return operation
 
+    def request_close(self, request_id, deadline, window, guard):
+        if self.active is not None:
+            raise ContractError('session_unavailable', 'Window operation cleanup is unresolved.')
+        operation = NativeClose(self, request_id, deadline, window, guard)
+        self.active = operation
+        return operation
+
 
 class Query:
     cleanup_seconds = 1.5
@@ -466,6 +473,18 @@ class Activation(Query):
             return {'activation_completed_at': time.monotonic(), 'cleanup': {
                 'child_reaped': True, 'script_absent': True, 'temporary_removed': True}}
         return super().step()
+
+
+class NativeClose(Activation):
+    """One normal close request; completion proves only transport and cleanup."""
+    def _argv(self):
+        return [self.owner.binary, '--name', self.name, 'windowclose', '{' + self.window + '}']
+
+    def step(self):
+        result = super().step()
+        if result is not None:
+            result['close_transport_completed_at'] = result.pop('activation_completed_at')
+        return result
 
 
 class WindowsTask:

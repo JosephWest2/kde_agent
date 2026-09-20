@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -142,6 +143,38 @@ def safe_projection(value, generation):
     phase = value.get('phase')
     if isinstance(phase, str) and phase in PHASES:
         out['phase'] = phase
+    close = value.get('close_state')
+    if isinstance(close, dict):
+        typed = {}
+        for key, choices in (('phase', ('resolve', 'close_request', 'exit_wait', 'cleanup')),
+                             ('dispatch', ('not_started', 'uncertain', 'transport_completed'))):
+            if type(close.get(key)) is str and close[key] in choices:
+                typed[key] = close[key]
+        native = close.get('native_operation_id')
+        if native is None or (type(native) is str and re.fullmatch(r'[0-9a-f]{32}', native)):
+            typed['native_operation_id'] = native
+        for key in ('transport_completed_at', 'exit_observed_at'):
+            item = close.get(key)
+            if item is None or (type(item) in (int, float) and 0 <= item < 2 ** 53 and math.isfinite(item)):
+                typed[key] = item
+        out['close_state'] = typed
+    state = value.get('process_state')
+    if isinstance(state, dict):
+        typed = {}
+        for key in ('root_reaped', 'subtree_populated', 'all_exited'):
+            if state.get(key) is None or type(state[key]) is bool:
+                typed[key] = state.get(key)
+        code = state.get('root_returncode')
+        if code is None or (type(code) is int and -(2 ** 31) <= code < 2 ** 31):
+            typed['root_returncode'] = code
+        observed = state.get('observed_at')
+        if observed is None or (type(observed) in (int, float) and 0 <= observed < 2 ** 53 and math.isfinite(observed)):
+            typed['observed_at'] = observed
+        if state.get('remaining_processes') is None:
+            typed['remaining_processes'] = None
+        if state.get('enumeration') == 'unavailable':
+            typed['enumeration'] = 'unavailable'
+        out['process_state'] = typed
     return out
 
 

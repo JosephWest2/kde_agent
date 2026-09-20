@@ -228,6 +228,17 @@ window handles. Uncertain release returns `input_uncertain`, `outcome: unknown`,
 and context describing the uncertainty; further input is blocked until a safe
 reset or stop. Close/kill report `application`, `exited`, `exit_status` (null if
 unknown), and `remaining_processes`; timeout retains available partial outcomes.
+For close, `exit_status` is the root return code (also `root_returncode`), and
+`remaining_processes` is null because complete enumeration is unavailable. The
+bounded `process_state` reports cached subtree population, root reaping and
+whole-app completion with observation time. `exited` is null when liveness is
+unknown. `application_snapshot` and exact `window`/query references remain in
+partial failures. `close_state` distinguishes uncertain dispatch from completed
+transport; transport completion does not prove application acknowledgment.
+Explicit UUID close requires a positively verified owned application association;
+an existing unassociated surface gives `unsupported_operation` with reason
+`application_association_unavailable` before dispatch. After dispatch window
+absence is expected and does not satisfy app exit. See [close semantics](WINDOWS.md#graceful-selected-window-close).
 No generic success claim is made when an application remains alive.
 
 ## Deadlines and cleanup
@@ -241,7 +252,7 @@ Individually valid settings do not guarantee completion within that time.
 
 The work limits retain M1 choices; 10/60s wait and 5s close/kill defaults are
 provisional interface choices, not performance measurements. Separate cleanup
-reserves remain finite: window query/activation cleanup 1.5s; capture abort 1s plus owned-service
+reserves remain finite: window query/activation/close cleanup 1.5s; capture abort 1s plus owned-service
 stop up to 15s if compositor cleanup is unconfirmed; failed-startup cleanup up to
 15s. Complete session stop is bounded by 15s. A failed capture can therefore take
 up to 19s including work and cleanup. Strict success acceptance deadlines do not

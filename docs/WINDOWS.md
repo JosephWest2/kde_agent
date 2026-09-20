@@ -159,3 +159,44 @@ surface existed. Configure receipts include labeled activated state. Client
 resize does not claim control over global placement. Installed evidence and
 its measured bounds are recorded under `evidence/issue-24`; they do not qualify
 representative applications, held input, capture or release readiness.
+
+## Graceful selected-window close
+
+`close --window WIN` and `close --app APP` select exactly one window from a fresh
+execution-time observation. App selection requires a unique positively associated
+window. Explicit UUID selection also requires an owned application lifetime to
+observe: a real unassociated surface returns `unsupported_operation`, reason
+`application_association_unavailable`, before native dispatch. Explicit focus
+continues to support unassociated surfaces. Missing/ambiguous targets return the
+same documented selection errors, with exact window/query references.
+
+Close sends one fixed `windowclose {uuid}` operation after checking the selected
+process identity before and after persisting effect intent. Native completion
+proves transport and adapter cleanup, not application acknowledgment or causation.
+Success requires observed whole-application exit before the original deadline;
+root exit or window disappearance alone is insufficient. After dispatch the
+selected window may disappear, be replaced by a confirmation, or leave a sibling
+alive. Close keeps waiting on the pinned application and never retargets, repeats
+the close, dismisses a dialog, sends input, or signals an application.
+
+Results and partial failures include the selected `window`, `application` handle,
+`application_snapshot`, last accepted `windows` and query/timestamps, observational
+`window_state`, and typed `close_state` with phase, native operation ID, uncertain
+or completed transport, and exit-observation time. `exited` is true for complete
+exit, false for a positively observed populated subtree, and null when unknown.
+`root_returncode` / `exit_status` report the root code; descendant codes are unknown.
+`remaining_processes` is null. The constant-size `process_state` gives the actual
+cached cgroup populated bit, root reaping/code, whole-app completion and observation
+time, with `enumeration: unavailable`. Empty cgroup before root reaping or pending
+publication is not completion. Historical completion has no invented timestamp.
+Old accepted observations remain labeled with their original times.
+
+Close uses the same 5-second default / 60-second maximum admission budget, 500 ms
+native/query cap, 100 ms query-start spacing and 50 ms lifetime observation cadence.
+If app exit supersedes an in-flight read-only query, that query retains its single
+1.5-second cleanup reserve. Success requires cleanup acceptance strictly before
+the work deadline. If the deadline wins, timeout cleanup can use the remainder of
+that same reserve, clipped only by actual scheduler/shutdown cleanup bounds.
+Cancellation/disconnect retains exact effect identity and cleans only owned adapter
+resources. Unconfirmed adapter cleanup or essential session failure follows the
+independent failed-session policy; an ordinary close timeout does not escalate.

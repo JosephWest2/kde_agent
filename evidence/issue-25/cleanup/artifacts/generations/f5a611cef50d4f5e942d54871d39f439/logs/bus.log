@@ -1,0 +1,2 @@
+method return time=1789939840.060401 sender=org.freedesktop.DBus -> destination=:1.0 serial=1 reply_serial=1
+   string ":1.0"

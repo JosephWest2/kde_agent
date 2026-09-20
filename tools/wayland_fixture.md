@@ -58,7 +58,68 @@ the acknowledged serial and current client size. `map` means the first buffer
 commit (`receipt: first_buffer_commit`); only `presented` proves compositor
 presentation. Dimensions in configure/commit receipts describe content size,
 not frame position or decoration size. `close` records `control`, `compositor`,
-or `shutdown` as its source.
+or `shutdown` as its source. Per-surface receipts also include `role`, normally
+the surface label; a close-confirmation dialog has role `confirmation`.
+
+For graceful-close evidence, select a deterministic compositor-close mode:
+
+| Option | Effect |
+| --- | --- |
+| `--close-mode normal` | Default: destroy only the requested surface; exit when no surfaces remain |
+| `--close-mode refuse` | Record every close callback and leave all surfaces alive |
+| `--close-mode delay --close-delay-ms N` | Destroy the selected surface N ms after its first close callback; repeated callbacks do not restart the timer |
+| `--close-mode confirmation` | First close callback creates a parented custom-rendered dialog in the reserved `dialog` slot; retain the selected surface until explicit dialog acknowledgment |
+
+Non-normal modes require a positive `--exit-after-ms` later than the initial
+window delay. `--close-delay-ms` must be positive in delay mode and is invalid
+in other modes. Durations remain bounded by 86400000 ms. The autonomous expiry
+is fixture cleanup, not a response to the close request. Set it beyond the
+close observation interval when proving refusal or confirmation persistence.
+Existing per-surface resize/destroy schedules remain independent cleanup
+controls and should likewise be placed outside that interval.
+
+Confirmation mode reserves the dialog slot, so it rejects `--dialog`, dialog
+schedules, and the `open dialog` control command. The dialog is parented to the
+selected surface, including a selected sibling. Its acknowledgment button is
+the white rectangle at client coordinates `16 <= x < width - 16` and
+`height - 56 <= y < height - 16` (default `16..303`, `124..163`). Only a subsequent
+Wayland Return/keypad Enter **press while the dialog has keyboard focus**, or a
+left-button **press inside that rectangle on the dialog**, acknowledges it.
+Key releases, unrelated input, repeated parent close callbacks, and dialog close
+callbacks cannot acknowledge it. Acknowledgment destroys the dialog and its
+selected parent; another sibling remains alive. The fixed slot allows one
+confirmation per fixture process; afterward any surviving sibling uses normal
+close behavior. Stdin `close`/`close LABEL` bypass these modes for explicit test
+cleanup, and cannot stand in for evidence of compositor close or dialog input.
+
+Every receipt includes `monotonic_ns`, `fixture_pid`, and `seq`.
+`close_requested` records each actual xdg_toplevel close callback, its surface,
+mode, and increasing per-surface `request_count`. `close_refused`,
+`close_delayed` (including the original absolute `due_ns`),
+`confirmation_opened`, and `confirmation_pending` describe the response.
+`confirmation_accepted` identifies its selected `target` and input `source`.
+Key, button, motion, and axis receipts carry the actual input `surface` and
+`role`, or null when there is no known input surface. `close` precedes protocol
+object destruction; `destroy` follows it with the same source. Additional
+destruction sources are `scheduled`, `delayed_compositor`, and `confirmation`.
+`fixture_exit` records normal fixture-main completion after Wayland disconnect;
+independent process observation must still establish actual process exit.
+
+For example, use `--autonomous --close-mode confirmation --exit-after-ms 15000`
+to prove a close timeout leaves a discoverable dialog, or
+`--autonomous --close-mode delay --close-delay-ms 3000 --exit-after-ms 15000`
+to exercise a late exit. Assert exactly one `close_requested` on the selected
+surface and zero dialog close callbacks, input receipts, or
+`confirmation_accepted` before any explicit follow-up input. Fixture receipts
+alone do not establish the production application's observed lifetime.
+
+With `--sibling --exit-after-ms N`, a normal close destroys the selected surface
+while its sibling and root remain alive. With `--descendant-ms N`, closing the
+last root-process surface exits that root while the existing detached sleeping
+descendant remains alive until its own timer. Its existing `descendant_started`
+and `descendant_exit` receipts, plus independent cgroup/process observations,
+distinguish root exit from whole-application exit. Neither case needs a new
+surface or process infrastructure path.
 
 Empty and omitted metadata do not promise that KWin reports JSON null: record
 its actual caption/class values, including defaults or empty strings. Native

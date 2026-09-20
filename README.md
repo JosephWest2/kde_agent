@@ -2,9 +2,11 @@
 
 A local CLI for a dedicated headless KWin desktop. The production CLI currently
 provides command parsing, structured contracts, and a private generation-bound
-worker transport. Desktop operations remain unwired: absent sessions report
-`session_not_found`, and a transport-only worker reports `unsupported_operation`.
-`doctor` and `session start` remain explicitly unsupported.
+worker transport, durable records, and generation-owned service lifecycle.
+Managed status/stop are implemented; an absent stop succeeds. Desktop operations
+remain unwired. `doctor` and public `session start` remain explicitly unsupported
+until their prerequisite/readiness checks are implemented. See the
+[service lifecycle boundary](docs/LIFECYCLE.md).
 
 See [CLI installation and command contracts](docs/CLI.md), the authoritative
 [requirements](REQUIREMENTS.md), and [architecture](ARCHITECTURE.md).

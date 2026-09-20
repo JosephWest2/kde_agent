@@ -1,0 +1,220 @@
+{
+  "cases": {
+    "concurrent_duplicate_and_ordinary_descendants": {
+      "all_owned_lifetimes_exited": true,
+      "generation": "a25a67f274544bc695964b5a79d6dbef",
+      "identities": [
+        {
+          "pid": 751560,
+          "producer": "worker",
+          "service": "agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
+          "start_ticks": "11085515",
+          "state": "collected"
+        },
+        {
+          "pid": 751564,
+          "start_ticks": "11085519"
+        },
+        {
+          "pid": 751566,
+          "start_ticks": "11085521"
+        }
+      ],
+      "manifest": {
+        "cleanup": {
+          "failure": null,
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T06:45:06.269735+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": null,
+        "generation": "a25a67f274544bc695964b5a79d6dbef",
+        "mode": "headless",
+        "outcome": "stopped",
+        "output": {
+          "observed": null,
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "not_collected"
+        },
+        "process": {
+          "pid": 751560,
+          "producer": "worker",
+          "service": "agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
+          "start_ticks": "11085515",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 4,
+        "schema_version": 1,
+        "session": "default",
+        "state": "stopped",
+        "updated_at": "2026-09-20T06:45:06.604757+00:00"
+      },
+      "properties": [
+        "Restart=no",
+        "TimeoutStopUSec=3s",
+        "ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
+        "KillMode=control-group"
+      ],
+      "stop_seconds": 0.07471454500046093
+    },
+    "packaged_worker_separate_installed_cli": {
+      "controller_exited": true,
+      "generation": "1a8aab0bc96f4cd7a2f6361c83ed47aa",
+      "manifest": {
+        "cleanup": {
+          "failure": null,
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T06:45:06.010523+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": null,
+        "generation": "1a8aab0bc96f4cd7a2f6361c83ed47aa",
+        "mode": "headless",
+        "outcome": "stopped",
+        "output": {
+          "observed": null,
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "not_collected"
+        },
+        "process": {
+          "pid": 751537,
+          "producer": "worker",
+          "service": "agent-desktop-1a8aab0bc96f4cd7a2f6361c83ed47aa.service",
+          "start_ticks": "11085489",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 3,
+        "schema_version": 1,
+        "session": "packaged",
+        "state": "stopped",
+        "updated_at": "2026-09-20T06:45:06.235960+00:00"
+      }
+    },
+    "replacement_stale_requests_frozen_lock_missing_socket": {
+      "all_owned_lifetimes_exited": true,
+      "generation": "e1058dab56274e7cb7a2aeafffcbee0e",
+      "manifest": {
+        "cleanup": {
+          "failure": null,
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T06:45:06.645531+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": null,
+        "generation": "e1058dab56274e7cb7a2aeafffcbee0e",
+        "mode": "headless",
+        "outcome": "stopped",
+        "output": {
+          "observed": null,
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "not_collected"
+        },
+        "process": {
+          "pid": 751588,
+          "producer": "worker",
+          "service": "agent-desktop-e1058dab56274e7cb7a2aeafffcbee0e.service",
+          "start_ticks": "11085553",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 2,
+        "schema_version": 1,
+        "session": "default",
+        "state": "stopped",
+        "updated_at": "2026-09-20T06:45:10.213375+00:00"
+      },
+      "status_error": "session_unavailable",
+      "status_seconds": 0.1494187329954002,
+      "stop_seconds": 3.1111080260016024
+    }
+  },
+  "desktop_ready": false,
+  "installed_module": "/tmp/kde-agent-issue18-venv/lib/python3.14/site-packages/agent_desktop/__init__.py",
+  "installed_source_sha256": {
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "artifacts.py": "5efd9fd9d4fe8f1d89ab4bc82d1b6c4dfe7a33f86dfb607000a751c8feacfedf",
+    "children.py": "644263b4a4a89c2a11d6efa21b7017685f06ba4d144b70b12282bbeff2a391bb",
+    "cli.py": "babc665c96eaf0abfd313b584fb5753280f2065bc80c24dd0bf789c8d5af6b03",
+    "contracts.py": "99c60803f90846d20c0b8875b320ef0e30c3b923eeba8e68b6479931db58cb7f",
+    "environment.py": "b56d042fa430f4e9dd430ab5105553bcd364e141704115f11f60e8c55e453b3c",
+    "lifecycle.py": "0fec4052cc596fe0bd881405a73914d0712c67ae0bbb1fe7556bc06410b46b13",
+    "paths.py": "329640a381c2cfe8fc0cdae0ca832413ccff07e2b7b4caa1ab40bc1e6b45a767",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "worker.py": "53732958f22671062e702d2586cb959b8f73790b15b1799c8e392b3ca49997ed"
+  },
+  "public_start_gated_on_readiness": true,
+  "systemd": "systemd 261 (261.3-1-arch)"
+}

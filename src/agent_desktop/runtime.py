@@ -1,7 +1,7 @@
 """Private disposable routing, never durable session health or artifact state."""
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import fcntl
 import os
 from pathlib import Path
@@ -9,6 +9,7 @@ import socket
 import stat
 import struct
 import uuid
+import time
 from .contracts import ContractError, GENERATION, NAME
 from .protocol import decode
 
@@ -72,16 +73,22 @@ class Runtime:
         return path
 
     @contextmanager
-    def lock(self, name):
+    def lock(self, name, *, deadline=None):
         if not isinstance(name, str) or not NAME.fullmatch(name):
             failure("protocol_error")
         fd = os.open(self.current / (name + ".lock"), os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
         try:
             check_file(fd)
-            try:
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                failure("session_conflict")
+            while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise ContractError("timeout", "Lifecycle lock deadline expired.")
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if deadline is None:
+                        failure("session_conflict")
+                    time.sleep(min(.01, max(0, deadline - time.monotonic())))
             yield
         finally:
             os.close(fd)
@@ -127,7 +134,7 @@ class Runtime:
 
 
 class Endpoint:
-    def __init__(self, name, generation):
+    def __init__(self, name, generation, *, managed=False):
         import json
         if not isinstance(name, str) or not NAME.fullmatch(name):
             failure("protocol_error")
@@ -142,13 +149,19 @@ class Endpoint:
         self.published = False
         try:
             # Never remove this exclusive lifetime claim, even after failure/exit.
-            try:
-                self.path.parent.mkdir(mode=0o700)
-            except FileExistsError:
-                failure("session_conflict")
-            with self.runtime.lock(name):
+            if managed:
+                from .lifecycle import read_metadata
+                read_metadata(self.runtime, name, generation)
+                if self.runtime.read(name) != generation:
+                    failure("generation_mismatch")
+            else:
+                try:
+                    self.path.parent.mkdir(mode=0o700)
+                except FileExistsError:
+                    failure("session_conflict")
+            with nullcontext() if managed else self.runtime.lock(name):
                 pointer = self.runtime.current / (name + ".json")
-                if os.path.lexists(pointer):
+                if not managed and os.path.lexists(pointer):
                     failure("session_conflict")
                 self.listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 old_mask = os.umask(0o177)
@@ -168,6 +181,8 @@ class Endpoint:
                 self.priority_inode = self.priority_path.lstat().st_ino
                 self.priority_listener.listen(8)
                 self.priority_listener.setblocking(False)
+                if managed:
+                    return
                 temp = self.runtime.current / ("." + uuid.uuid4().hex)
                 try:
                     fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)

@@ -1,0 +1,25 @@
+{
+  "cases": {
+    "concurrent_duplicate_and_ordinary_descendants": {
+      "generation": "a25a67f274544bc695964b5a79d6dbef",
+      "stop_seconds": 0.07471454500046093
+    },
+    "packaged_worker_separate_installed_cli": {
+      "generation": "1a8aab0bc96f4cd7a2f6361c83ed47aa"
+    },
+    "replacement_stale_requests_frozen_lock_missing_socket": {
+      "generation": "e1058dab56274e7cb7a2aeafffcbee0e",
+      "status_seconds": 0.1494187329954002,
+      "stop_seconds": 3.1111080260016024
+    }
+  },
+  "desktop_ready": false,
+  "full_suite": {
+    "result": "passed",
+    "seconds": 14.721,
+    "tests": 165
+  },
+  "installed_source_matches_checkout": true,
+  "public_start_gated": true,
+  "wheel_sha256": "2b41fcc82ca71e095a6830e6a7fb6f7c86ea8efd4f21ce659d8fd86e4d6b02b6"
+}

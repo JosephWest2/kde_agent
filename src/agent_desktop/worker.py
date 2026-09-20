@@ -18,7 +18,7 @@ def unsupported(request, admission):
 
 
 def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None,
-        artifacts=None, store=None):
+        artifacts=None, store=None, managed=False):
     # Internal Python injection is for tests and future owners, never a CLI plugin.
     from .artifacts import Store
     from .records import Records, diagnostic
@@ -26,7 +26,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     if artifacts is not None and store is not None:
         raise ContractError("invalid_arguments", "Supply a store or an artifact root, not both.")
     if artifacts is not None:
-        store = Store(artifacts, name, generation, create=True,
+        store = Store(artifacts, name, generation, create=not managed,
                       disposable=[os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")])
     if store is not None and (store.session != name or store.generation != generation):
         raise ContractError("generation_mismatch", "Artifact store identity differs from worker.")
@@ -34,7 +34,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     endpoint = server = children = None
     try:
         from gi.repository import GLib
-        endpoint = Endpoint(name, generation)
+        endpoint = Endpoint(name, generation, managed=managed)
         children = Children()
         def observe(record):
             if records is not None:
@@ -53,12 +53,17 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         records._ensure(records.live[request.request_id])
                     except Exception:
                         raise ContractError("artifact_failed", "Request admission could not be preserved.") from None
-            (handler or scheduler.submit)(request, admission)
+            if managed and request.operation == "session.status":
+                admission.complete(result={"state": "starting", "desktop_ready": False,
+                                           "worker_pid": os.getpid()})
+            else:
+                (handler or scheduler.submit)(request, admission)
         server = Server(endpoint, GLib, dispatch_request,
                         cancel=scheduler.cancel, after_io=scheduler.tick)
         if store is not None:
-            store.worker_identity()
-            store.generation_update(state="running")
+            store.worker_identity(managed=managed)
+            if not managed:
+                store.generation_update(state="running")
     except BaseException:
         if server is not None:
             server.close()
@@ -68,7 +73,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             endpoint.close()
         if store is not None:
             try:
-                store.generation_update(state="failed", failure="session_failed", cleanup="complete")
+                store.generation_update(state="failed", failure="session_failed", cleanup="uncertain" if managed else "complete")
             except Exception:
                 diagnostic()
             if owned_store:
@@ -116,10 +121,11 @@ def main(argv=None):
     parser = Parser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--session", required=True)
     parser.add_argument("--generation", required=True)
+    parser.add_argument("--managed", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--artifacts", required=True, help="absolute durable artifact root")
     try:
         args = parser.parse_args(argv)
-        run(args.session, args.generation, artifacts=args.artifacts)
+        run(args.session, args.generation, artifacts=args.artifacts, managed=args.managed)
         return 0
     except ImportError:
         print("agent-desktop worker: prerequisite_missing: distribution PyGObject is required.", file=sys.stderr)

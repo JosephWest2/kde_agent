@@ -1,0 +1,1 @@
+{"receipt": "/home/josephwest/development/kde-agent/.local/issue25-native-exitwait/receipt.json", "failed_cases": []}

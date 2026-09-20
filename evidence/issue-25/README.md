@@ -21,10 +21,10 @@ Production shutdown policy/wiring remains #35. Superseded read-only queries keep
 one existing cleanup reserve; success still requires acceptance before the work
 deadline. Actual scheduler/shutdown deadlines hard-clip that same reserve.
 
-The final integrated unit/process suite passed **383 tests in 22.172 seconds** at
-`57d644a2`. The later hook-only correction reports unresolved foreign adapter
-ownership as unconfirmed without touching that owner; all 21 affected close tests
-passed. Focused close tests include the five reviewed supersession
+The final integrated unit/process suite passed **383 tests in 21.883 seconds** at
+`71f5d57c` (product source `9584243e`), after native qualification. The hook reports
+unresolved foreign adapter ownership as unconfirmed without touching that owner.
+Focused close tests include the five reviewed supersession
 boundaries, a real Query cleanup/reuse check, and retained terminal identity after
 disconnect. Application tests cover missing root metadata, empty-before-reap,
 pending publication, historical completion and constant-size 4096-identity reporting.
@@ -66,9 +66,12 @@ request budget so the hook itself reaches terminal state; this is an evidence-on
 host, not production lifecycle wiring. Supplied deadline and terminal idempotence
 are traced. Native bus/KWin-death receipts preserve unconfirmed adapter script/temp
 cleanup and the independent failed-session finalization. Those faults and worker
-kill landed during native-close cleanup; supplemental exit-wait fault observations
-are being added before final review. Stop, SIGINT and disconnect already reached
-exit wait and retained the live app until independent cleanup.
+kill landed during native-close cleanup. [Supplemental receipts](native-exitwait/receipt.json)
+then deliberately synchronized those three faults to a traced `exit_wait` phase;
+all passed with no new 100 ms lifetime-gap violations. Both phases remain retained.
+Thus the evidence includes 31 finite scenario executions across 32 generations,
+with no failed functional attempt or retry-until-pass sequence. Stop, SIGINT and
+disconnect already reached exit wait and retained the live app until independent cleanup.
 
 Measured query starts were at least 100.163 ms apart. Selected status/cancellation
 measurements use internal worker request records, separately from full CLI latency:
@@ -86,7 +89,10 @@ The slow-query full CLI status exceeds 100 ms. Lifetime GLib gaps of **102.895 m
 unchanged target. These remain negative evidence; selected internal status/cancel
 measurements alone qualify their passing scopes. Diagnostic writes are bounded
 atomic replacements/JSONL without fsync; production durability is unchanged.
-Native and complete installed cleanup suites ran one at a time.
+Native and complete installed cleanup suites ran one at a time. Initial/remaining
+runs use archive `b9274455`; supplemental runs use archive `71f5d57c`. Product
+Python/JS and fixture source are identical at both commits and to `9584243e`.
+Only the evidence runner added explicit exit-wait synchronization.
 
 ## Scope and limitations
 

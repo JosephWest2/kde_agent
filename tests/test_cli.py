@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -31,9 +32,13 @@ VALID = {
 
 
 class CLITests(unittest.TestCase):
+    def setUp(self):
+        self.runtime = tempfile.TemporaryDirectory(prefix="adt-cli-")
+        self.addCleanup(self.runtime.cleanup)
+
     def run_cli(self, *args):
         return subprocess.run([sys.executable, "-m", "agent_desktop", *args],
-                              env=os.environ | {"PYTHONPATH": str(SRC)},
+                              env=os.environ | {"PYTHONPATH": str(SRC), "XDG_RUNTIME_DIR": self.runtime.name},
                               capture_output=True, text=True, timeout=5)
 
     def json_cli(self, *args, status=5):
@@ -49,12 +54,14 @@ class CLITests(unittest.TestCase):
     def test_every_operation_explicitly_unwired(self):
         for operation, options in VALID.items():
             with self.subTest(operation=operation):
-                result = self.json_cli(*operation.split("."), *options)
+                local = operation in {"doctor", "session.start"}
+                result = self.json_cli(*operation.split("."), *options, status=5 if local else 4)
                 self.assertFalse(result["ok"])
                 self.assertEqual(result["operation"], operation)
-                self.assertEqual(result["error"]["code"], "unsupported_operation")
+                self.assertEqual(result["error"]["code"], "unsupported_operation" if local else "session_not_found")
                 self.assertEqual(result["error"]["outcome"], "not_started")
-                self.assertEqual(result["error"]["context"]["implementation_issue"], OPERATIONS[operation][2])
+                if local:
+                    self.assertEqual(result["error"]["context"]["implementation_issue"], OPERATIONS[operation][2])
                 self.assertEqual(result["session"], None if operation == "doctor" else {"name": "default", "generation": None})
 
     def test_readable_default_help_version_and_error(self):
@@ -75,15 +82,15 @@ class CLITests(unittest.TestCase):
             self.assertTrue(self.json_cli(*options, status=0)["ok"])
         for options in (["session", "--json", "status"], ["session", "status", "--json"], ["input", "--json", "reset"]):
             result = self.run_cli(*options)
-            self.assertEqual(result.returncode, 5)
-            self.assertEqual(json.loads(result.stdout)["error"]["code"], "unsupported_operation")
+            self.assertEqual(result.returncode, 4)
+            self.assertEqual(json.loads(result.stdout)["error"]["code"], "session_not_found")
 
     def test_every_session_operation_accepts_generation(self):
         for operation, options in VALID.items():
             if operation == "doctor":
                 continue
             with self.subTest(operation=operation):
-                result = self.json_cli(*operation.split("."), "--session", "work", "--generation", GEN, *options)
+                result = self.json_cli(*operation.split("."), "--session", "work", "--generation", GEN, *options, status=5 if operation == "session.start" else 4)
                 self.assertEqual(result["session"], {"name": "work", "generation": None})
                 self.assertEqual(result["error"]["context"]["expected_generation"], GEN)
 
@@ -132,7 +139,7 @@ class CLITests(unittest.TestCase):
         for args in (["launch"], ["launch", "--"], ["launch", "--cwd", "--", "app"], ["launch", "--env", "--", "app"], ["launch", "--timeout", "--", "app"]):
             self.json_cli(*args, status=2)
         result = self.run_cli("launch", "--", "app", "--json", "--help")
-        self.assertEqual(result.returncode, 5)
+        self.assertEqual(result.returncode, 4)
         self.assertEqual(result.stdout, "")
 
     def test_json_flag_does_not_repair_missing_option_values(self):
@@ -161,8 +168,9 @@ class CLITests(unittest.TestCase):
         ):
             with self.subTest(args=args):
                 result = self.run_cli(*args)
-                self.assertEqual(result.returncode, 5)
-                self.assertEqual(json.loads(result.stdout)["error"]["code"], "unsupported_operation")
+                local = "start" in args
+                self.assertEqual(result.returncode, 5 if local else 4)
+                self.assertEqual(json.loads(result.stdout)["error"]["code"], "unsupported_operation" if local else "session_not_found")
 
     def test_unknown_mode_is_explicitly_unsupported(self):
         self.assertEqual(self.json_cli("session", "start", "--mode", "viewer")["error"]["code"], "unsupported_operation")
@@ -170,7 +178,7 @@ class CLITests(unittest.TestCase):
     def test_internal_failure_and_interrupt_are_structured_and_safe(self):
         for exc, expected in ((RuntimeError("SECRET_EXCEPTION"), 70), (KeyboardInterrupt(), 130)):
             out, err = io.StringIO(), io.StringIO()
-            with patch.object(cli, "dispatch", side_effect=exc), redirect_stdout(out), redirect_stderr(err):
+            with patch("agent_desktop.transport.exchange", side_effect=exc), redirect_stdout(out), redirect_stderr(err):
                 code = cli.main(["--json", "windows"])
             self.assertEqual(code, expected)
             self.assertNotIn("SECRET_EXCEPTION", out.getvalue() + err.getvalue())

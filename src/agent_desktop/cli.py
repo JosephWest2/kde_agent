@@ -135,9 +135,14 @@ def main(argv=None):
     operation = None
     try:
         request, local_result, operation, json_mode = parse_request(argv, request_id, os.getcwd())
-        result = dispatch(request) if request is not None else local_result
-        payload = response(request_id, operation, session=request.session if request else None, result=result)
-        status = 0
+        if request is not None and operation not in {"doctor", "session.start"}:
+            from .transport import exchange
+            payload = exchange(request)
+            status = 0 if payload["ok"] else EXIT_CODES[payload["error"]["code"]]
+        else:
+            result = dispatch(request) if request is not None else local_result
+            payload = response(request_id, operation, session=request.session if request else None, result=result)
+            status = 0
     except KeyboardInterrupt:
         error = ContractError("cancelled", "Request interrupted.", outcome="unknown" if request else "not_started")
         payload = response(request_id, operation, session=request.session if request else None, error=error)

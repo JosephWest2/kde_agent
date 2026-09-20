@@ -102,7 +102,7 @@ class Systemd:
 
     def start(self, data, runtime, command, deadline):
         # A clean worker environment avoids importing the user manager's desktop
-        # endpoints or credentials. #19 supplies private desktop/settings values.
+        # endpoints or credentials. Desktop supplies its children private values.
         env = ['PATH=/usr/bin:/bin', 'LANG=C.UTF-8', 'XDG_RUNTIME_DIR=' + str(runtime.root.parent)]
         log = str(Path(data['configuration']['artifacts']) / 'generations' / data['generation'] / 'logs' / 'worker.log').replace('%', '%%')
         argv = ['/usr/bin/systemd-run', '--user', '--no-ask-password', '--no-block', '--quiet',
@@ -211,6 +211,23 @@ class Manager:
                     path.unlink()
             except FileNotFoundError:
                 pass
+        from .desktop import dispose
+        try:
+            dispose(runtime.socket_path(data['generation']).parent)
+        except (OSError, ContractError):
+            # Do not publish complete cleanup while disposable settings remain.
+            # A later lifecycle reconciliation retries the same owned subtree.
+            from .artifacts import Store
+            try:
+                store = Store(data['configuration']['artifacts'], data['session'], data['generation'])
+                try:
+                    store.generation_update(state=data['state'], cleanup='uncertain')
+                finally:
+                    store.close()
+            except (OSError, ContractError):
+                pass
+            raise ContractError('session_unavailable', 'Private settings disposal failed.',
+                                context={'cleanup': 'uncertain'}, outcome='unknown') from None
         terminal_state = self._records(data, failed=data['state'] == 'failed')
         if terminal_state == 'failed' and data['state'] != 'failed':
             # Artifact access happens only after fallback cleanup. Preserve any

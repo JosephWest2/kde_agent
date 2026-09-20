@@ -1,0 +1,2 @@
+/tmp/issue19-venv/lib/python3.14/site-packages/agent_desktop/worker.py:103: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (loop.quit(), False)[1])

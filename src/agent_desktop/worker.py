@@ -18,7 +18,7 @@ def unsupported(request, admission):
 
 
 def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None,
-        artifacts=None, store=None, managed=False):
+        artifacts=None, store=None, managed=False, desktop=False, desktop_observer=None):
     # Internal Python injection is for tests and future owners, never a CLI plugin.
     from .artifacts import Store
     from .records import Records, diagnostic
@@ -32,6 +32,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         raise ContractError("generation_mismatch", "Artifact store identity differs from worker.")
     records = Records(store) if store is not None else None
     endpoint = server = children = None
+    foundation = None
+    foundation_error = None
     try:
         from gi.repository import GLib
         endpoint = Endpoint(name, generation, managed=managed)
@@ -43,6 +45,24 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 observer(record)
         scheduler = Scheduler(factory=records.factory(factory) if records else factory,
                               capabilities=capabilities, observer=observe, children=children)
+        if desktop:
+            if not managed or store is None:
+                raise ContractError('invalid_arguments', 'Private desktop requires an owned service and artifacts.')
+            from .desktop import Desktop
+            foundation = Desktop(endpoint.path.parent, children, store)
+        def tick():
+            nonlocal foundation_error
+            try:
+                scheduler.tick()
+                if foundation is not None:
+                    foundation.tick()
+                    if desktop_observer is not None:
+                        desktop_observer(foundation)
+            except Exception as error:
+                # GLib otherwise reports callback exceptions and leaves the
+                # worker running. A failed owner must exit the service instead.
+                foundation_error = error
+                loop.quit()
         def dispatch_request(request, admission):
             if records is not None:
                 records.attach(request, admission)
@@ -59,7 +79,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             else:
                 (handler or scheduler.submit)(request, admission)
         server = Server(endpoint, GLib, dispatch_request,
-                        cancel=scheduler.cancel, after_io=scheduler.tick)
+                        cancel=scheduler.cancel, after_io=tick)
         if store is not None:
             store.worker_identity(managed=managed)
             if not managed:
@@ -92,6 +112,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 output.enter_context(redirect_stdout(stream))
                 output.enter_context(redirect_stderr(stream))
             loop.run()
+            if foundation_error is not None:
+                raise foundation_error
     except BaseException:
         loop_failed = True
         raise
@@ -125,7 +147,8 @@ def main(argv=None):
     parser.add_argument("--artifacts", required=True, help="absolute durable artifact root")
     try:
         args = parser.parse_args(argv)
-        run(args.session, args.generation, artifacts=args.artifacts, managed=args.managed)
+        run(args.session, args.generation, artifacts=args.artifacts, managed=args.managed,
+            desktop=args.managed)
         return 0
     except ImportError:
         print("agent-desktop worker: prerequisite_missing: distribution PyGObject is required.", file=sys.stderr)

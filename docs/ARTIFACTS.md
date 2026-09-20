@@ -16,27 +16,42 @@ containing `/` from normalized application cwd, and searches a bare name only in
 the final application PATH. Relative and empty PATH entries mean application cwd;
 an explicitly empty PATH has one such entry. Missing PATH uses `os.defpath`,
 installed as a default, not the worker's ambient PATH. The selected executable
-must be an executable regular file. Future launch rechecks cwd/spawn failures at
-execution; selection alone does not establish process identity.
+must be an executable regular file. The internal desktop launcher passes that
+selected absolute path as Popen executable while preserving argv and cwd. The
+public application launch/identity producer remains #22.
 
-The environment helper removes protected values from the supplied base, applies
-allowed explicit overrides (last duplicate wins), then installs private values.
-PATH remains overridable. Protected settings are HOME, XDG_RUNTIME_DIR,
-XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME, XDG_STATE_HOME and XDG_CONFIG_DIRS.
-The latter accepts exactly one private directory; colon-separated lists and
-colon-containing config paths are rejected. XDG_DATA_DIRS can retain ordinary
-system resource search. Missing required private settings, session bus or Wayland
-values fail closed. Private settings and bus paths must remain under private
-runtime. M3 provisions those paths and verifies actual environment isolation.
+The production desktop owner uses a clean base (`PATH=/usr/bin:/bin`,
+`LANG=C.UTF-8`, `LC_ALL=C.UTF-8`), independent of controller, worker or user-manager
+variables. The environment helper strips protected values from a supplied base,
+applies allowed explicit overrides (last duplicate wins), then installs private
+values and fixed desktop policy. PATH and ordinary application variables remain
+overridable; credentials are never inherited implicitly.
+
+Protected settings are HOME, XDG_RUNTIME_DIR, XDG_CONFIG_HOME, XDG_CACHE_HOME,
+XDG_DATA_HOME, XDG_STATE_HOME, XDG_CONFIG_DIRS and TMPDIR. Each names a path below
+the generation's disposable `desktop/` tree. XDG_CONFIG_DIRS accepts exactly one
+private directory; colon-containing search paths are rejected. XDG_DATA_DIRS is
+fixed to `/usr/local/share:/usr/share` for installed read-only resources. Missing
+private settings, session bus or Wayland endpoints fail closed.
 
 DISPLAY, XAUTHORITY, WAYLAND_DISPLAY, WAYLAND_SOCKET, DBUS_SESSION_BUS_ADDRESS,
 DBUS_SESSION_BUS_PID, DBUS_SESSION_BUS_WINDOWID, DBUS_SYSTEM_BUS_ADDRESS and
-AT_SPI_BUS_ADDRESS are protected too. X11 and AT-SPI endpoints stay absent;
-QT_ACCESSIBILITY=0, QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0 and NO_AT_BRIDGE=1 cannot be
-overridden. The system-bus address names an absent private runtime socket, matching
-the feasibility policy. Bus addresses allow one literal private `unix:path=`
-address; alternate-address, option and percent-escape syntax is rejected. This is
-not a sandbox against trusted programs deliberately contacting host endpoints.
+AT_SPI_BUS_ADDRESS are protected. Host D-Bus starter addresses, SESSION_MANAGER,
+KDE_FULL_SESSION and KDE_APPLICATIONS_AS_SCOPE hints are also removed/protected.
+X11 and AT-SPI endpoints stay absent; QT_ACCESSIBILITY=0,
+QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0 and NO_AT_BRIDGE=1 cannot be overridden. The
+system-bus address names an absent private socket. Bus addresses allow one literal
+private `unix:path=` address; alternate-address, option and percent-escape syntax
+is rejected. QT_QPA_PLATFORM=wayland, XDG_SESSION_TYPE=wayland,
+KDE_SESSION_VERSION=6 and XKB_DEFAULT_LAYOUT=us are fixed. All KWIN_* controls are
+removed from adapter/application environments and rejected as overrides; only the
+owned compositor receives KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1.
+
+Protected overrides fail before executable lookup or child launch. Applications
+and adapters share this construction policy and explicit private endpoints. This
+is desktop/settings separation for trusted programs, not filesystem or network
+isolation: applications can read their ordinary project files and use the network.
+It does not prevent deliberate connections to unrelated host endpoints.
 
 ## Store and producer boundaries
 

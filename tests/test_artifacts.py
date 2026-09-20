@@ -60,7 +60,7 @@ class PathEnvironmentTests(unittest.TestCase):
         return {'HOME': str(root / 'home'), 'XDG_RUNTIME_DIR': str(root),
                 'XDG_CONFIG_HOME': str(root / 'config'), 'XDG_CACHE_HOME': str(root / 'cache'),
                 'XDG_DATA_HOME': str(root / 'data'), 'XDG_STATE_HOME': str(root / 'state'),
-                'XDG_CONFIG_DIRS': str(root / 'empty'), 'WAYLAND_DISPLAY': 'wayland-private',
+                'TMPDIR': str(root / 'tmp'), 'XDG_CONFIG_DIRS': str(root / 'empty'), 'WAYLAND_DISPLAY': 'wayland-private',
                 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(root / 'bus'),
                 'DBUS_SYSTEM_BUS_ADDRESS': 'unix:path=' + str(root / 'no-bus')}
 

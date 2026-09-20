@@ -476,6 +476,9 @@ class Run(base.Run):
         started = wait(lambda: next((e for e in self.native_trace() if e['event'] == 'close_start'
                                   and e['at'] >= pending[1]['started_at']), None))
         wait(lambda: any(e['event'] == 'close_requested' for e in self.fixture_events()))
+        waiting = wait(lambda: next((e for e in self.native_trace() if e['event'] == 'close_phase'
+            and e['request_id'] == started['request_id'] and e['phase'] == 'exit_wait'), None))
+        self.case['control_phase'] = {'phase': 'exit_wait', 'observed_at': waiting['at']}
         if kind in ('cancel', 'disconnect'):
             self.status_measurement()
             at = time.monotonic()

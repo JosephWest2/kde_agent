@@ -35,16 +35,58 @@ pumps child reaping. The fixture compiled with
 The baseline source `3ec00739` passed the complete installed **21-case cleanup
 regression**, with all 35 Python modules plus packaged JS matching the archive,
 no import fallback, and a maximum observed cleanup duration of 7.632 seconds.
-Final corrected-source installed qualification will be recorded before review.
+Final corrected-source installed qualification passed all **21 cases** at product
+`9584243e`, with exact installed hashes and a maximum observed cleanup of 7.556
+seconds. See [cleanup qualification](CLEANUP.md).
 
 ## Installation and native qualification
 
-Native evidence is being prepared; no native acceptance claim is made by this
-intermediate record. The runner uses a clean committed source archive, a
-noneditable isolated wheel install, and installed/source Python and packaged-JS
-hash comparisons. It operates only on generation-private endpoints, records
-bounded traces and independent fixture receipts, and preserves failed runs.
-Native suites and the complete installed cleanup regression run one at a time.
+`installed_close.py prepare NEW --commit SHA` builds an isolated noneditable
+wheel from a clean git archive. `run` verifies all 35 installed Python modules and
+packaged query JS, runner/support hashes, fixture build and pinned dependencies.
+Runs use separate public CLI invocations and generation-private endpoints.
+
+[Initial receipts](native-initial/receipt.json) pass normal selected-window close,
+confirmation persistence/discovery/focus without dialog input, and the bounded
+hook timeout. [Remaining receipts](native-remaining/receipt.json) pass the other
+25 cases: app/normalized UUID selection, ambiguous app rejection, selected sibling
+and dialog closure with remaining process lifetime, refusal and finite delays,
+root exit with a live detached descendant and later whole-subtree completion,
+queued disappearance/new dialog/expiry/cancellation, native successful no-op,
+SIGINT/disconnect/stop, service failures, bounded slow/stopped adapter faults,
+hook success and restart generation rejection. This is **28 scenarios across 29
+generations**, all functionally passed, with finalizer recording plus independently
+observed cgroup emptiness inside each original 15-second stop bound (maximum
+0.401 seconds). Each selected folder includes a hash inventory and exact tested
+runner/support; no failed attempt or latency outlier was discarded.
+
+The hook host uses the real Adapter/Registry while the actual scheduler pumps
+Children and Registry. Its timeout bound is 350 ms inside the outer public
+request budget so the hook itself reaches terminal state; this is an evidence-only
+host, not production lifecycle wiring. Supplied deadline and terminal idempotence
+are traced. Native bus/KWin-death receipts preserve unconfirmed adapter script/temp
+cleanup and the independent failed-session finalization. Those faults and worker
+kill landed during native-close cleanup; supplemental exit-wait fault observations
+are being added before final review. Stop, SIGINT and disconnect already reached
+exit wait and retained the live app until independent cleanup.
+
+Measured query starts were at least 100.163 ms apart. Selected status/cancellation
+measurements use internal worker request records, separately from full CLI latency:
+
+| Scenario | Worker status ms | Full status CLI ms | Cancel dispatch ms |
+| --- | ---: | ---: | ---: |
+| SIGINT after close | 0.340 | 68.820 | 2.846 |
+| CLI disconnect | 0.153 | 74.257 | 4.594 |
+| Slow query | 0.122 | 112.323 | n/a |
+| Stopped query | 0.120 | 91.516 | 5.171 |
+| Stopped close child | 0.107 | 85.701 | 1.649 |
+
+The slow-query full CLI status exceeds 100 ms. Lifetime GLib gaps of **102.895 ms**
+(queued cancellation) and **111.008 ms** (worker-death generation) also fail that
+unchanged target. These remain negative evidence; selected internal status/cancel
+measurements alone qualify their passing scopes. Diagnostic writes are bounded
+atomic replacements/JSONL without fsync; production durability is unchanged.
+Native and complete installed cleanup suites ran one at a time.
 
 ## Scope and limitations
 
@@ -59,3 +101,10 @@ Public key/click confirmation input remains #28/#29. A separately labeled privat
 fixture input control, if used, is evidence-only. These cases do not qualify
 representative third-party applications, production lifecycle wiring, or the
 future twenty-run release acceptance.
+
+Controlled process migration is not qualified here. The inherited lifetime observer
+can retire an empty application cgroup after root reaping even if a previously
+acquired live descendant was deliberately moved elsewhere. These native cases
+cover cooperative descendants retaining inherited membership. Issue #26 must add
+a bounded retained-pidfd completion check and report foreign-membership uncertainty
+without signaling it before parent #4 can be considered complete.

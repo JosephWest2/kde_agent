@@ -93,7 +93,8 @@ class ObservationBudgetTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'cgroup.events').write_text('populated 0\n')
         self.store = Mock()
-        self.registry = SimpleNamespace(generation=GEN, store=self.store, boot_id='test-boot')
+        self.registry = object.__new__(Registry)
+        self.registry.generation, self.registry.store, self.registry.boot_id = GEN, self.store, 'test-boot'
         self.app = Application(self.registry, 'b' * 32, os.open(self.root, os.O_RDONLY), self.root, '/owned')
         self.registry.active = self.app
 

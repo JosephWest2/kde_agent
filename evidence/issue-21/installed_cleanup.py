@@ -160,9 +160,14 @@ def main(output, dependencies, selected):
                                   for p in sorted((PROJECT / 'src/agent_desktop').glob('*.py'))},
                'installed_hashes': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                                      for p in sorted(Path(agent_desktop.__file__).parent.glob('*.py'))},
+               'source_resources': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                    for p in sorted((PROJECT / 'src/agent_desktop').glob('*.js'))},
+               'installed_resources': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                       for p in sorted(Path(agent_desktop.__file__).parent.glob('*.js'))},
                'fixture_hashes': {str(path.relative_to(PROJECT)): hashlib.sha256(path.read_bytes()).hexdigest()
                                   for path in (SCRIPT, FIXTURE)}}
     assert receipt['source_hashes'] == receipt['installed_hashes'], 'Installed modules differ from source'
+    assert receipt['source_resources'] == receipt['installed_resources'], 'Installed scripts differ from source'
     names = selected or ['normalstop', 'managerstop', 'failedstart', 'failedexec', 'bus-kill', 'bus-freeze',
                          'kwin-kill', 'kwin-freeze', 'worker-kill', 'worker-freeze',
                          'worker-freeze-lock', 'worker-freeze-generation-lock', 'disconnect', 'socketsmissing', 'frozenstarting',

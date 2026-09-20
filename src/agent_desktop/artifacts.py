@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import stat
 import time
 import uuid
@@ -130,9 +131,14 @@ def safe_projection(value, generation):
         if len(identity) == 2:
             out['process'] = identity
     windows = value.get('windows')
-    if isinstance(windows, list) and len(windows) <= 64:
-        out['windows'] = [ref['window'] for window in windows
-                          if (ref := safe_projection({'window': window}, generation)).get('window')]
+    if isinstance(windows, list) and len(windows) <= 256:
+        out['windows'] = [ref['window'] for window in windows[:64]
+                          if (ref := safe_projection({'window': window.get('window', window) if isinstance(window, dict) else window}, generation)).get('window')]
+        if len(windows) > 64:
+            out['windows_omitted'] = len(windows) - 64
+    query = value.get('query_artifact')
+    if isinstance(query, str) and re.fullmatch(r'window-observations/[0-9a-f]{32}\.json', query):
+        out['query_artifact'] = query
     phase = value.get('phase')
     if isinstance(phase, str) and phase in PHASES:
         out['phase'] = phase
@@ -503,6 +509,9 @@ class Store:
                 return str(path)
             except (ValueError, OSError, ContractError):
                 return None
+        if 'query_artifact' in result:
+            if owned_path(str(self.path / result['query_artifact'])) is None:
+                del result['query_artifact']
         artifacts = value.get('artifacts')
         if isinstance(artifacts, list) and len(artifacts) <= 64:
             result['artifacts'] = [path for item in artifacts if (path := owned_path(item)) is not None]
@@ -677,6 +686,80 @@ class Store:
             value.update(state=state, process=process, exit_code=exit_code, authorized=authorized,
                          uncertain=uncertain, revision=value['revision'] + 1, updated_at=timestamp())
             self._write(directory, 'record.json', value)
+
+    def application_read(self, application_id):
+        identifier(application_id)
+        try:
+            with self.directory('applications', application_id) as directory:
+                value = self._read(directory, 'record.json')
+        except FileNotFoundError:
+            raise ContractError('target_not_found', 'Application was not found.') from None
+        except OSError:
+            fail('application_read')
+        if (value.get('application_id') != application_id or value.get('owner') != 'cgroup-v2'
+                or value.get('state') not in ('prepared', 'execution-authorized', 'running', 'root-exited', 'all-exited', 'launch-failed')
+                or type(value.get('authorized')) is not bool or type(value.get('uncertain')) is not bool
+                or not isinstance(value.get('executable'), str) or not os.path.isabs(value['executable'])
+                or self.references({'logs': value.get('logs')}).get('logs') != value.get('logs')
+                or not isinstance(value.get('windows'), list) or len(value['windows']) > 256):
+            fail('application_schema')
+        process = value.get('process')
+        if process is not None and (not isinstance(process, dict) or
+                safe_projection({'process': process}, self.generation).get('process') !=
+                {k: process.get(k) for k in ('pid', 'start_time_ticks')}):
+            fail('application_schema')
+        for ref in value['windows']:
+            if handle(ref, 'window')['generation'] != self.generation:
+                fail('identity')
+        for key in ('window_observation', 'previous_observation', 'candidate_observation'):
+            if value.get(key) is not None:
+                self._window_reference(value[key])
+        return {'application': {'generation': self.generation, 'application_id': application_id},
+                **{key: value.get(key) for key in ('process', 'executable', 'logs', 'state', 'exit_code', 'windows',
+                   'window_observation', 'previous_observation')},
+                'pending_observation': value.get('candidate_observation') if value.get('window_publication') != 'confirmed' else None}
+
+    def _window_reference(self, observation):
+        if (not isinstance(observation, dict) or set(observation) != {'query_artifact', 'query_id', 'observed_at', 'accepted_at', 'windows'}
+                or not isinstance(observation['query_id'], str) or not re.fullmatch(r'[0-9a-f]{32}', observation['query_id'])
+                or observation['query_artifact'] != 'window-observations/' + observation['query_id'] + '.json'
+                or any(type(observation[k]) not in (int, float) or not 0 < observation[k] < float('inf') for k in ('observed_at', 'accepted_at'))
+                or not isinstance(observation['windows'], list) or len(observation['windows']) > 256):
+            fail('window_reference')
+        for ref in observation['windows']:
+            if handle(ref, 'window')['generation'] != self.generation:
+                fail('identity')
+
+    def application_windows(self, application_id, previous, candidate, state):
+        identifier(application_id)
+        if state not in ('pending', 'confirmed'):
+            fail('schema')
+        for value in (previous, candidate):
+            if value is not None:
+                self._window_reference(value)
+        with self.lock(), self.directory('applications', application_id) as directory:
+            value = self._read(directory, 'record.json')
+            confirmed = candidate if state == 'confirmed' else previous
+            value.update(previous_observation=previous, candidate_observation=candidate,
+                         window_observation=confirmed, window_publication=state,
+                         windows=[] if confirmed is None else confirmed['windows'],
+                         revision=value['revision'] + 1, updated_at=timestamp())
+            self._write(directory, 'record.json', value)
+
+    def window_observation(self, query_id, value):
+        identifier(query_id)
+        # Exclusive immutable publication; an existing name is never overwritten.
+        raw = packed(value, 1024 * 1024)
+        with self.lock():
+            mkdir_durable(self.fd, 'window-observations')
+            with self.directory('window-observations') as directory:
+                fd = os.open(query_id + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+                with os.fdopen(fd, 'wb') as stream:
+                    stream.write(raw)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.fsync(directory)
+        return 'window-observations/' + query_id + '.json'
 
     def application_processes(self, application_id, batch):
         identifier(application_id)

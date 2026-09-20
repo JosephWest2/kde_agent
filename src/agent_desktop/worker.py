@@ -71,6 +71,9 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     if readiness.state != 'ready':
                         raise ContractError('session_unavailable', 'Desktop health changed before launch.')
                 def production_factory(request, context):
+                    if request.operation == 'windows':
+                        from .windows import WindowsTask
+                        return WindowsTask(request, context, readiness.adapter, launch_health)
                     if request.operation == 'launch':
                         return LaunchTask(request, context, applications, foundation, records, healthy=launch_health)
                     return UnsupportedTask(request, context)
@@ -92,6 +95,16 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         def tick():
             nonlocal foundation_error, readiness, quit_after, applications
             if shutdown is not None:
+                if (shutdown.phase == 'cancel' and readiness is not None
+                        and getattr(readiness, 'state', None) != 'ready'
+                        and hasattr(readiness, 'cleanup_query')):
+                    try:
+                        if not readiness.cleanup_query(shutdown.phase_end) and time.monotonic() < shutdown.phase_end:
+                            children.poll()
+                            return
+                    except Exception:
+                        if time.monotonic() < shutdown.phase_end:
+                            return
                 shutdown.tick()
                 if shutdown.done:
                     for admission in stop_waiters:
@@ -116,6 +129,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                             from .lifecycle import read_metadata
                             metadata = read_metadata(endpoint.runtime, name, generation)
                             applications = Registry(generation, metadata['cgroup'], store, children)
+                            if hasattr(readiness, 'adapter'):
+                                readiness.adapter.registry = applications
                         if previous != readiness.state:
                             store.generation_update(state=readiness.state)
                     if desktop_observer is not None:
@@ -155,6 +170,17 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     except Exception:
                         pass
                 begin_stop()
+        def escalate_query_cleanup(reason):
+            nonlocal foundation_error
+            foundation_error = ContractError('session_failed', 'Owned operation cleanup could not be confirmed.')
+            if readiness is not None:
+                try:
+                    readiness.fail(foundation_error)
+                except Exception:
+                    pass
+            begin_stop()
+        scheduler.escalate = escalate_query_cleanup
+
         def dispatch_request(request, admission):
             if managed and request.operation == 'session.stop':
                 from .ownership import generation_lock, identity_record, intent
@@ -203,7 +229,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if managed and request.operation == "session.status":
                 admission.complete(result=({"state": "starting", "desktop_ready": False}
                                            if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
-                    "supported_operations": ["launch"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
+                    "supported_operations": ["launch", "windows"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')

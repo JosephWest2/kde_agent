@@ -23,24 +23,41 @@ static struct wl_compositor *compositor;
 static struct wl_shm *shm;
 static struct xdg_wm_base *shell;
 static struct wp_presentation *presentation;
-static struct wl_surface *surface;
-static struct xdg_surface *xdg_surface;
+/* Fixed slots keep callback ownership valid even after a surface is closed. */
+struct fixture_surface {
+    const char *label;
+    struct wl_surface *wl;
+    struct xdg_surface *xdg;
+    struct xdg_toplevel *top;
+    bool configured, pending, dirty, closed, mapped;
+    unsigned long revision, control_id;
+    unsigned state;
+    int width, height;
+    const char *source;
+};
+static struct fixture_surface surfaces[3] = {
+    {.label = "primary", .width = 640, .height = 360, .source = "initial"},
+    {.label = "sibling", .width = 480, .height = 300, .source = "initial"},
+    {.label = "dialog", .width = 320, .height = 180, .source = "initial"},
+};
+static struct fixture_surface *keyboard_surface, *pointer_surface;
+static bool sibling_window, dialog_window, child_surface, windows_created;
+static unsigned child_window_ms;
+static pid_t window_child;
+static const char *title_mode = "normal", *app_id_mode = "normal";
 static struct wl_keyboard *keyboard;
 static struct wl_pointer *pointer;
 static struct xkb_context *xkb_context;
 static struct xkb_keymap *keymap;
 static struct xkb_state *xkb_state;
 static const char *generation;
-static bool running = true, configured, pending, dirty;
-static unsigned long event_seq, revision;
-static unsigned state_value, output_count, output_width, output_height, output_scale, output_transform;
-static int width = 640, height = 360;
+static bool running = true;
+static unsigned long event_seq;
+static unsigned output_count, output_width, output_height, output_scale, output_transform;
 static double pointer_x, pointer_y;
-static const char *next_source = "initial";
 static uint32_t presentation_clock;
 static struct wl_output *only_output;
 static char output_name[128] = "unknown";
-static unsigned long control_id;
 static bool autonomous;
 static unsigned window_delay_ms, exit_after_ms, descendant_ms;
 static bool timed_exit;
@@ -66,76 +83,110 @@ static void quoted(const char *s) {
 static void die(const char *message) {
     event("error"); printf(",\"message\":"); quoted(message); puts("}"); exit(1);
 }
+static void surface_event(const char *type, const struct fixture_surface *s) {
+    event(type); printf(",\"surface\":"); quoted(s->label);
+}
+static struct fixture_surface *find_surface(struct wl_surface *wl) {
+    for (unsigned i = 0; i < 3; ++i) if (surfaces[i].wl == wl) return &surfaces[i];
+    return NULL;
+}
 struct buffer { struct wl_buffer *wl; void *pixels; size_t size; };
 static void release(void *data, struct wl_buffer *wl) {
     struct buffer *b = data; wl_buffer_destroy(wl); munmap(b->pixels, b->size); free(b);
 }
 static const struct wl_buffer_listener buffer_listener = { .release = release };
-struct frame { unsigned long revision; unsigned state; uint32_t checksum; const char *source; unsigned long control_id; bool output_matched; bool sync_received; };
-static void render(void);
+struct frame { struct fixture_surface *surface; unsigned long revision; unsigned state; uint32_t checksum; const char *source; unsigned long control_id; bool output_matched; bool sync_received; };
+static void render(struct fixture_surface *s);
 static void sync_output(void *data, struct wp_presentation_feedback *f, struct wl_output *output) {
     (void)f; struct frame *frame = data; frame->output_matched = output == only_output; frame->sync_received = true;
 }
 static void presented(void *data, struct wp_presentation_feedback *f, uint32_t hi, uint32_t lo,
                       uint32_t ns, uint32_t refresh, uint32_t seq_hi, uint32_t seq_lo, uint32_t flags) {
     struct frame *frame = data;
-    event("presented");
+    surface_event("presented", frame->surface);
     printf(",\"control_id\":%lu,\"sync_output_received\":%s,\"output_matched\":%s,\"sole_output_name\":", frame->control_id, frame->sync_received ? "true" : "false", frame->output_matched ? "true" : "false"); quoted(output_name);
     printf(",\"revision\":%lu,\"state\":%u,\"source\":\"%s\",\"checksum\":%u,\"clock_id\":%u,\"presentation_seconds\":%llu,\"presentation_ns\":%u,\"refresh_ns\":%u,\"presentation_seq\":%llu,\"flags\":%u}\n",
            frame->revision, frame->state, frame->source, frame->checksum, presentation_clock,
            ((unsigned long long)hi << 32) | lo, ns, refresh, ((unsigned long long)seq_hi << 32) | seq_lo, flags);
-    wp_presentation_feedback_destroy(f); free(frame); pending = false; if (dirty) render();
+    struct fixture_surface *s = frame->surface;
+    wp_presentation_feedback_destroy(f); free(frame); s->pending = false; if (s->dirty) render(s);
 }
 static void discarded(void *data, struct wp_presentation_feedback *f) {
-    struct frame *frame = data; event("discarded");
+    struct frame *frame = data; surface_event("discarded", frame->surface);
     printf(",\"control_id\":%lu", frame->control_id);
     printf(",\"revision\":%lu,\"state\":%u,\"source\":\"%s\"}\n", frame->revision, frame->state, frame->source);
-    wp_presentation_feedback_destroy(f); free(frame); pending = false; if (dirty) render();
+    struct fixture_surface *s = frame->surface;
+    wp_presentation_feedback_destroy(f); free(frame); s->pending = false; if (s->dirty) render(s);
 }
 static const struct wp_presentation_feedback_listener feedback_listener = {
     .sync_output = sync_output, .presented = presented, .discarded = discarded
 };
-static void render(void) {
-    if (!configured || pending || !dirty) return;
+static void render(struct fixture_surface *s) {
+    if (s->closed || !s->configured || s->pending || !s->dirty) return;
     struct buffer *b = calloc(1, sizeof(*b));
     if (!b) die("allocation failed");
-    b->size = (size_t)width * height * 4;
+    b->size = (size_t)s->width * s->height * 4;
     int fd = memfd_create("kde-agent-fixture", MFD_CLOEXEC);
     if (fd < 0 || ftruncate(fd, b->size)) die("shared memory failed");
     b->pixels = mmap(NULL, b->size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (b->pixels == MAP_FAILED) die("mapping failed");
     uint32_t *pixels = b->pixels, checksum = 2166136261u;
     const uint32_t colors[] = {0x00204080u, 0x00e06020u, 0x0030c080u, 0x009040c0u};
-    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
-        uint32_t color = colors[((x >= width / 2) + 2 * (y >= height / 2) + state_value) % 4];
+    for (int y = 0; y < s->height; ++y) for (int x = 0; x < s->width; ++x) {
+        uint32_t color = colors[((x >= s->width / 2) + 2 * (y >= s->height / 2) + s->state) % 4];
         if (y >= 16 && y < 48 && x >= 16 && x < 272)
-            color = (state_value & (1u << ((x - 16) / 8))) ? 0x00ffffffu : 0;
-        pixels[y * width + x] = color; checksum = (checksum ^ color) * 16777619u;
+            color = (s->state & (1u << ((x - 16) / 8))) ? 0x00ffffffu : 0;
+        pixels[y * s->width + x] = color; checksum = (checksum ^ color) * 16777619u;
     }
     struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, b->size);
-    b->wl = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_XRGB8888);
+    b->wl = wl_shm_pool_create_buffer(pool, 0, s->width, s->height, s->width * 4, WL_SHM_FORMAT_XRGB8888);
     wl_shm_pool_destroy(pool); close(fd); wl_buffer_add_listener(b->wl, &buffer_listener, b);
     struct frame *frame = calloc(1, sizeof(*frame));
     if (!frame) die("allocation failed");
-    *frame = (struct frame){++revision, state_value, checksum, next_source, control_id, false, false};
-    struct wp_presentation_feedback *feedback = wp_presentation_feedback(presentation, surface);
+    *frame = (struct frame){s, ++s->revision, s->state, checksum, s->source, s->control_id, false, false};
+    struct wp_presentation_feedback *feedback = wp_presentation_feedback(presentation, s->wl);
     wp_presentation_feedback_add_listener(feedback, &feedback_listener, frame);
-    wl_surface_attach(surface, b->wl, 0, 0); wl_surface_damage_buffer(surface, 0, 0, width, height);
-    wl_surface_commit(surface); pending = true; dirty = false;
-    event("committed"); printf(",\"control_id\":%lu", frame->control_id); printf(",\"revision\":%lu,\"state\":%u,\"source\":\"%s\",\"checksum\":%u,\"width\":%d,\"height\":%d}\n",
-                              frame->revision, frame->state, frame->source, checksum, width, height);
+    wl_surface_attach(s->wl, b->wl, 0, 0); wl_surface_damage_buffer(s->wl, 0, 0, s->width, s->height);
+    wl_surface_commit(s->wl); s->pending = true; s->dirty = false;
+    if (!s->mapped) {
+        s->mapped = true;
+        surface_event("map", s); printf(",\"receipt\":\"first_buffer_commit\",\"width\":%d,\"height\":%d}\n", s->width, s->height);
+    }
+    surface_event("committed", s); printf(",\"control_id\":%lu", frame->control_id); printf(",\"revision\":%lu,\"state\":%u,\"source\":\"%s\",\"checksum\":%u,\"width\":%d,\"height\":%d}\n",
+                              frame->revision, frame->state, frame->source, checksum, s->width, s->height);
 }
 static void ping(void *data, struct xdg_wm_base *base, uint32_t serial) { (void)data; xdg_wm_base_pong(base, serial); }
 static const struct xdg_wm_base_listener shell_listener = { .ping = ping };
-static void configure(void *data, struct xdg_surface *s, uint32_t serial) {
-    (void)data; xdg_surface_ack_configure(s, serial); if (!configured) dirty = true; configured = true; render();
+static void configure(void *data, struct xdg_surface *xdg, uint32_t serial) {
+    struct fixture_surface *s = data;
+    xdg_surface_ack_configure(xdg, serial);
+    surface_event("configure", s);
+    printf(",\"serial\":%u,\"width\":%d,\"height\":%d}\n", serial, s->width, s->height);
+    if (!s->configured) s->dirty = true;
+    s->configured = true; render(s);
 }
 static const struct xdg_surface_listener surface_listener = { .configure = configure };
 static void top_configure(void *data, struct xdg_toplevel *top, int32_t w, int32_t h, struct wl_array *states) {
-    (void)data; (void)top; (void)states;
-    if (w > 0 && h > 0) { if (w > 1280 || h > 720) die("unexpected client size"); if (width != w || height != h) dirty = true; width = w; height = h; }
+    struct fixture_surface *s = data; (void)top; (void)states;
+    if (w > 0 && h > 0) {
+        if (w > 1280 || h > 720) die("unexpected client size");
+        if (s->width != w || s->height != h) s->dirty = true;
+        s->width = w; s->height = h;
+    }
 }
-static void top_close(void *data, struct xdg_toplevel *top) { (void)data; (void)top; event("close"); puts("}"); running = false; }
+static void close_surface(struct fixture_surface *s, const char *source) {
+    if (!s->wl || s->closed) return;
+    surface_event("close", s); printf(",\"source\":"); quoted(source); puts("}");
+    s->closed = true;
+    if (keyboard_surface == s) keyboard_surface = NULL;
+    if (pointer_surface == s) pointer_surface = NULL;
+    xdg_toplevel_destroy(s->top); xdg_surface_destroy(s->xdg); wl_surface_destroy(s->wl);
+    s->top = NULL; s->xdg = NULL; s->wl = NULL;
+    bool any_open = false;
+    for (unsigned i = 0; i < 3; ++i) if (surfaces[i].wl) any_open = true;
+    if (!any_open) running = false;
+}
+static void top_close(void *data, struct xdg_toplevel *top) { (void)top; close_surface(data, "compositor"); }
 static void bounds(void *data, struct xdg_toplevel *top, int32_t w, int32_t h) { (void)data; (void)top; (void)w; (void)h; }
 static void wm_capabilities(void *data, struct xdg_toplevel *top, struct wl_array *caps) { (void)data; (void)top; (void)caps; }
 static const struct xdg_toplevel_listener top_listener = { .configure = top_configure, .close = top_close, .configure_bounds = bounds, .wm_capabilities = wm_capabilities };
@@ -164,17 +215,18 @@ static void keyboard_map(void *data, struct wl_keyboard *k, uint32_t format, int
     xkb_state = xkb_state_new(keymap); if (!xkb_state) die("invalid xkb state");
 }
 static void keyboard_enter(void *data, struct wl_keyboard *k, uint32_t serial, struct wl_surface *s, struct wl_array *keys) {
-    (void)data; (void)k; (void)s; event("keyboard_enter"); printf(",\"serial\":%u,\"held_count\":%zu}\n", serial, keys->size / sizeof(uint32_t));
+    (void)data; (void)k; keyboard_surface = find_surface(s); event("keyboard_enter"); printf(",\"serial\":%u,\"held_count\":%zu}\n", serial, keys->size / sizeof(uint32_t));
 }
 static void keyboard_leave(void *data, struct wl_keyboard *k, uint32_t serial, struct wl_surface *s) {
-    (void)data; (void)k; (void)s; event("keyboard_leave"); printf(",\"serial\":%u}\n", serial);
+    (void)data; (void)k; (void)s; keyboard_surface = NULL; event("keyboard_leave"); printf(",\"serial\":%u}\n", serial);
 }
 static void key(void *data, struct wl_keyboard *k, uint32_t serial, uint32_t time, uint32_t code, uint32_t state) {
     (void)data; (void)k; char text[128] = "";
     xkb_keysym_t sym = XKB_KEY_NoSymbol;
     if (xkb_state) { sym = xkb_state_key_get_one_sym(xkb_state, code + 8); xkb_state_key_get_utf8(xkb_state, code + 8, text, sizeof(text)); }
     event("key"); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"key\":%u,\"state\":%u,\"keysym\":%u,\"text\":", serial, time, code, state, sym); quoted(text); puts("}");
-    ++state_value; dirty = true; next_source = "input"; control_id = 0; render();
+    struct fixture_surface *s = keyboard_surface ? keyboard_surface : &surfaces[0];
+    ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
 static void modifiers(void *data, struct wl_keyboard *k, uint32_t serial, uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group) {
     (void)data; (void)k; if (xkb_state) xkb_state_update_mask(xkb_state, depressed, latched, locked, 0, 0, group);
@@ -183,17 +235,18 @@ static void modifiers(void *data, struct wl_keyboard *k, uint32_t serial, uint32
 static void repeat(void *data, struct wl_keyboard *k, int32_t rate, int32_t delay) { (void)data; (void)k; (void)rate; (void)delay; }
 static const struct wl_keyboard_listener keyboard_listener = { .keymap = keyboard_map, .enter = keyboard_enter, .leave = keyboard_leave, .key = key, .modifiers = modifiers, .repeat_info = repeat };
 static void pointer_enter(void *data, struct wl_pointer *p, uint32_t serial, struct wl_surface *s, wl_fixed_t x, wl_fixed_t y) {
-    (void)data; (void)p; (void)s; pointer_x = wl_fixed_to_double(x); pointer_y = wl_fixed_to_double(y);
+    (void)data; (void)p; pointer_surface = find_surface(s); pointer_x = wl_fixed_to_double(x); pointer_y = wl_fixed_to_double(y);
     event("pointer_enter"); printf(",\"serial\":%u,\"x\":%.3f,\"y\":%.3f}\n", serial, pointer_x, pointer_y);
 }
-static void pointer_leave(void *data, struct wl_pointer *p, uint32_t serial, struct wl_surface *s) { (void)data; (void)p; (void)s; event("pointer_leave"); printf(",\"serial\":%u}\n", serial); }
+static void pointer_leave(void *data, struct wl_pointer *p, uint32_t serial, struct wl_surface *s) { (void)data; (void)p; (void)s; pointer_surface = NULL; event("pointer_leave"); printf(",\"serial\":%u}\n", serial); }
 static void motion(void *data, struct wl_pointer *p, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
     (void)data; (void)p; pointer_x = wl_fixed_to_double(x); pointer_y = wl_fixed_to_double(y);
     event("motion"); printf(",\"time_ms\":%u,\"x\":%.3f,\"y\":%.3f}\n", time, pointer_x, pointer_y);
 }
 static void button(void *data, struct wl_pointer *p, uint32_t serial, uint32_t time, uint32_t code, uint32_t state) {
     (void)data; (void)p; event("button"); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"button\":%u,\"state\":%u,\"x\":%.3f,\"y\":%.3f}\n", serial, time, code, state, pointer_x, pointer_y);
-    ++state_value; dirty = true; next_source = "input"; control_id = 0; render();
+    struct fixture_surface *s = pointer_surface ? pointer_surface : &surfaces[0];
+    ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
 static void axis(void *d, struct wl_pointer *p, uint32_t t, uint32_t a, wl_fixed_t v) { (void)d; (void)p; event("axis"); printf(",\"time_ms\":%u,\"axis\":%u,\"value\":%.3f}\n", t, a, wl_fixed_to_double(v)); }
 /* Bind pointer v5: all events through v5 have handlers. */
@@ -230,8 +283,10 @@ static const struct wl_registry_listener registry_listener = { .global = global,
 static void usage(void) {
     fprintf(stderr, "usage: wayland-fixture [--autonomous] [--window-delay-ms N] "
             "[--exit-after-ms N] [--exit-code N] [--descendant-ms N]\n"
+            "  [--sibling] [--dialog] [--child-window-ms N]\n"
+            "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
-            "--descendant-ms must be positive.\n");
+            "--descendant-ms and --child-window-ms must be positive.\n");
 }
 static unsigned option_number(const char *value, unsigned maximum) {
     char *end;
@@ -281,17 +336,44 @@ static void start_descendant(void) {
         !WIFEXITED(status) || WEXITSTATUS(status)) die("descendant startup failed");
     event("descendant_spawned"); printf(",\"descendant_pid\":%d,\"intermediate_pid\":%d}\n", descendant, intermediate);
 }
-static void create_window(void) {
-    surface = wl_compositor_create_surface(compositor); xdg_surface = xdg_wm_base_get_xdg_surface(shell, surface);
-    xdg_surface_add_listener(xdg_surface, &surface_listener, NULL);
-    struct xdg_toplevel *top = xdg_surface_get_toplevel(xdg_surface); xdg_toplevel_add_listener(top, &top_listener, NULL);
-    xdg_toplevel_set_title(top, "KDE Agent Native Fixture"); xdg_toplevel_set_app_id(top, "org.kde_agent.fixture");
-    xdg_toplevel_set_min_size(top, 640, 360); xdg_toplevel_set_max_size(top, 640, 360);
-    wl_surface_commit(surface);
+static void create_window(struct fixture_surface *s, struct fixture_surface *parent) {
+    if (s->wl || s->closed) die("surface slot already used");
+    s->wl = wl_compositor_create_surface(compositor);
+    s->xdg = xdg_wm_base_get_xdg_surface(shell, s->wl);
+    xdg_surface_add_listener(s->xdg, &surface_listener, s);
+    s->top = xdg_surface_get_toplevel(s->xdg);
+    xdg_toplevel_add_listener(s->top, &top_listener, s);
+    if (strcmp(title_mode, "omitted")) xdg_toplevel_set_title(s->top, !strcmp(title_mode, "empty") ? "" : "KDE Agent Native Fixture");
+    if (strcmp(app_id_mode, "omitted")) xdg_toplevel_set_app_id(s->top, !strcmp(app_id_mode, "empty") ? "" : "org.kde_agent.fixture");
+    if (parent) xdg_toplevel_set_parent(s->top, parent->top);
+    xdg_toplevel_set_min_size(s->top, s->width, s->height);
+    xdg_toplevel_set_max_size(s->top, s->width, s->height);
+    surface_event("surface_created", s);
+    printf(",\"parent\":"); if (parent) quoted(parent->label); else printf("null");
+    printf(",\"title_mode\":"); quoted(title_mode); printf(",\"app_id_mode\":"); quoted(app_id_mode);
+    printf(",\"width\":%d,\"height\":%d}\n", s->width, s->height);
+    wl_surface_commit(s->wl);
+}
+static void start_window_child(void) {
+    window_child = fork();
+    if (window_child < 0) die("window child fork failed");
+    if (!window_child) {
+        /* Exec opens a fresh Wayland connection; inherited cgroup is unchanged. */
+        close(wl_display_get_fd(display));
+        char duration[24]; snprintf(duration, sizeof(duration), "%u", child_window_ms);
+        execl("/proc/self/exe", "wayland-fixture", "--autonomous", "--child-surface",
+              "--exit-after-ms", duration, "--title-mode", title_mode,
+              "--app-id-mode", app_id_mode, (char *)NULL);
+        _exit(127);
+    }
+    event("window_child_spawned"); printf(",\"child_pid\":%d,\"duration_ms\":%u}\n", window_child, child_window_ms);
 }
 int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "--autonomous")) { autonomous = true; continue; }
+        if (!strcmp(argv[i], "--sibling")) { sibling_window = true; continue; }
+        if (!strcmp(argv[i], "--dialog")) { dialog_window = true; continue; }
+        if (!strcmp(argv[i], "--child-surface")) { child_surface = true; continue; }
         if (!strcmp(argv[i], "--help")) { usage(); return 0; }
         if (i + 1 >= argc) { usage(); return 2; }
         const char *option = argv[i], *value = argv[++i];
@@ -299,7 +381,16 @@ int main(int argc, char **argv) {
         else if (!strcmp(option, "--exit-after-ms")) { exit_after_ms = option_number(value, 86400000); timed_exit = true; }
         else if (!strcmp(option, "--exit-code")) exit_code = (int)option_number(value, 255);
         else if (!strcmp(option, "--descendant-ms")) { descendant_ms = option_number(value, 86400000); if (!descendant_ms) { usage(); return 2; } }
+        else if (!strcmp(option, "--child-window-ms")) { child_window_ms = option_number(value, 86400000); if (!child_window_ms) { usage(); return 2; } }
+        else if (!strcmp(option, "--title-mode") || !strcmp(option, "--app-id-mode")) {
+            if (strcmp(value, "normal") && strcmp(value, "empty") && strcmp(value, "omitted")) { usage(); return 2; }
+            if (!strcmp(option, "--title-mode")) title_mode = value; else app_id_mode = value;
+        }
         else { usage(); return 2; }
+    }
+    if (child_surface) {
+        if (!autonomous || !timed_exit || sibling_window || dialog_window || child_window_ms) { usage(); return 2; }
+        surfaces[0].label = "child"; surfaces[0].width = 400; surfaces[0].height = 240;
     }
     generation = getenv("HARNESS_GENERATION");
     if (!generation && autonomous) generation = "00000000000000000000000000000000";
@@ -314,6 +405,7 @@ int main(int argc, char **argv) {
     event("output"); printf(",\"count\":%u,\"width\":%u,\"height\":%u,\"scale\":%u,\"transform\":%u}\n", output_count, output_width, output_height, output_scale, output_transform);
     if (output_count != 1 || output_width != 1280 || output_height != 720 || output_scale != 1 || output_transform != 0) die("unexpected output configuration");
     if (descendant_ms) start_descendant();
+    if (child_window_ms) start_window_child();
     unsigned long long started = monotonic_ns();
     if (autonomous || window_delay_ms || timed_exit || descendant_ms) {
         event("started"); printf(",\"autonomous\":%s,\"window_delay_ms\":%u,\"timed_exit\":%s,\"exit_after_ms\":%u,\"exit_code\":%d}\n",
@@ -325,9 +417,21 @@ int main(int argc, char **argv) {
         if (timed_exit && elapsed_ms >= exit_after_ms) {
             event("timed_exit"); printf(",\"exit_code\":%d}\n", exit_code); break;
         }
-        if (!surface && elapsed_ms >= window_delay_ms) create_window();
+        if (!windows_created && elapsed_ms >= window_delay_ms) {
+            create_window(&surfaces[0], NULL);
+            if (sibling_window) create_window(&surfaces[1], NULL);
+            if (dialog_window) create_window(&surfaces[2], &surfaces[0]);
+            windows_created = true;
+        }
+        if (window_child > 0) {
+            int status; pid_t reaped = waitpid(window_child, &status, WNOHANG);
+            if (reaped == window_child) {
+                event("window_child_exit"); printf(",\"child_pid\":%d,\"wait_status\":%d}\n", window_child, status);
+                window_child = 0;
+            } else if (reaped < 0 && errno != EINTR) die("window child reap failed");
+        }
         int timeout = 100;
-        if (!surface && window_delay_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(window_delay_ms - elapsed_ms);
+        if (!windows_created && window_delay_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(window_delay_ms - elapsed_ms);
         if (timed_exit && exit_after_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(exit_after_ms - elapsed_ms);
         if (wl_display_dispatch_pending(display) < 0) die("Wayland dispatch failed");
         if (wl_display_flush(display) < 0 && errno != EAGAIN) die("Wayland flush failed");
@@ -341,17 +445,36 @@ int main(int argc, char **argv) {
             char *newline;
             while ((newline = strchr(input, '\n'))) {
                 *newline = 0;
-                if (!strcmp(input, "close")) { running = false; event("close"); puts("}"); }
+                if (!strcmp(input, "close")) {
+                    running = false;
+                    for (unsigned i = 0; i < 3; ++i) close_surface(&surfaces[i], "control");
+                }
+                else if (!strncmp(input, "close ", 6)) {
+                    bool found = false;
+                    for (unsigned i = 0; i < 3; ++i) if (!strcmp(input + 6, surfaces[i].label) && surfaces[i].wl) {
+                        close_surface(&surfaces[i], "control"); found = true; break;
+                    }
+                    if (!found) die("unknown open surface");
+                }
+                else if (!strcmp(input, "open sibling")) create_window(&surfaces[1], NULL);
+                else if (!strcmp(input, "open dialog")) {
+                    if (!surfaces[0].top) die("dialog requires primary");
+                    create_window(&surfaces[2], &surfaces[0]);
+                }
                 else {
                     unsigned value; unsigned long request_control_id; char extra;
                     if (sscanf(input, "state %u %lu%c", &value, &request_control_id, &extra) != 2) die("invalid control command");
-                    if (pending || dirty) { event("control_busy"); printf(",\"control_id\":%lu}\n", request_control_id); }
-                    else { state_value = value; control_id = request_control_id; next_source = "control"; dirty = true; render(); }
+                    struct fixture_surface *s = &surfaces[0];
+                    if (s->closed) die("primary surface closed");
+                    if (s->pending || s->dirty) { surface_event("control_busy", s); printf(",\"control_id\":%lu}\n", request_control_id); }
+                    else { s->state = value; s->control_id = request_control_id; s->source = "control"; s->dirty = true; render(s); }
                 }
                 size_t consumed = (size_t)(newline - input) + 1; memmove(input, input + consumed, used - consumed); used -= consumed; input[used] = 0;
             }
             if (used == sizeof(input) - 1) die("control message too long");
         }
     }
+    for (unsigned i = 0; i < 3; ++i) close_surface(&surfaces[i], "shutdown");
+    wl_display_flush(display);
     wl_display_disconnect(display); return exit_code;
 }

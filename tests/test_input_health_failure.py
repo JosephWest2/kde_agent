@@ -32,6 +32,7 @@ class InputHealthFailure(unittest.TestCase):
         provider.folder = root / 'readiness'
         provider.folder.mkdir(mode=0o700)
         provider.query = provider.capture = provider.round = None
+        provider.adapter = SimpleNamespace(active=None, close=lambda: None)
         provider.input = SimpleNamespace(ready=lambda: True, dispose=Mock())
         provider.next_health = time.monotonic() + 1
         provider.deadline = time.monotonic() + 30

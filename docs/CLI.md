@@ -7,10 +7,10 @@ real control, structured window query, resumed EIS input and a complete screensh
 
 Readiness is supplied by the packaged `m1-provisional` provider. Results explicitly
 report `release_qualified: false`, `replacement_issue: 35` and
-`desktop_operations_supported: false`. Public `launch` is supported after readiness; status lists it in
-`supported_operations`. Window/input/screenshot operations remain unsupported.
+`desktop_operations_supported: false`. Public `launch` and `windows` are supported after readiness; status lists them in
+`supported_operations`. Focus, waits, input and screenshot commands remain unsupported.
 The provider flag describes provisional desktop adapters, not the separate
-launch capability. See [application ownership](APPLICATIONS.md). Examples of
+launch and discovery capabilities. See [application ownership](APPLICATIONS.md) and [window discovery](WINDOWS.md). Examples of
 future operation results below are illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
 
 ## Install and inspect
@@ -194,14 +194,14 @@ Launch and input are never automatically retried. Request IDs support correlatio
 and cancellation, not exactly-once execution. Cancellation cannot undo a completed
 launch, click or GUI change.
 
-Illustrative future result objects (not currently returned by desktop commands):
+Representative launch and window candidate shapes (full discovery also returns observation and cleanup metadata):
 
 ```json
 {"application":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","application_id":"app-1"},"process":{"pid":1234,"start_time_ticks":5678},"logs":{"stdout":"/artifacts/app-1.stdout.log","stderr":"/artifacts/app-1.stderr.log"},"windows":[]}
 ```
 
 ```json
-{"windows":[{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","window_id":"{2a63a414-1509-460a-bff9-b7c1103ba8d5}","pid":1234,"title":null,"application_class":null,"client_bounds":{"x":0,"y":0,"width":640,"height":480},"focused":true}]}
+{"windows":[{"window":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","window_id":"2a63a414-1509-460a-bff9-b7c1103ba8d5"},"pid":1234,"title":null,"class":null,"client":{"x":0,"y":0,"width":640,"height":480},"frame":null,"active":true,"app":null,"association":{"reason":"unverified_process","verified_at":null,"process":null}}]}
 ```
 
 ```json

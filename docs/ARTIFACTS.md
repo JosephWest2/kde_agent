@@ -167,3 +167,12 @@ launch-failed state, cgroup ownership, original birth identity and log reference
 Bounded per-process records live below `applications/<id>/processes/`. Lifetime
 updates continue after request termination. Environment values never enter these
 records; exact argv/cwd remain in the dedicated request launch record.
+
+Window discovery adds exclusive immutable `window-observations/<query-id>.json`
+(up to 1 MiB). These are explicitly observed, potentially unaccepted data.
+Application records retain `window_observation`, `previous_observation`,
+`candidate_observation` and `window_publication` (`pending` or `confirmed`). Only
+confirmed references populate retained `windows` (up to 256 within 64 KiB).
+Generic projections include at most 64 handles plus `windows_omitted` and an
+owned query artifact reference. Adapter acceptance and final request success are
+separate; see [window observation publication](WINDOWS.md).

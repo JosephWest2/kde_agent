@@ -13,7 +13,7 @@ from importlib.resources import files
 from .contracts import ContractError
 from .private_bus import PrivateBus
 from .protocol import encode
-from .window_types import Decoder, encoded
+from .window_types import Decoder, encoded, window_id
 
 MAX_PINS = 4096
 
@@ -40,6 +40,13 @@ class Adapter:
         if self.active is not None:
             self.active.cancel('cancelled')
         self.pins.clear()
+
+    def activate(self, request_id, deadline, window, guard):
+        if self.active is not None:
+            raise ContractError('session_unavailable', 'Window operation cleanup is unresolved.')
+        operation = Activation(self, request_id, deadline, window, guard)
+        self.active = operation
+        return operation
 
 
 class Query:
@@ -116,7 +123,9 @@ class Query:
                 reads[key], writes[key] = os.pipe2(os.O_CLOEXEC)
                 os.set_blocking(reads[key], False)
             self.streams = reads
-            argv = [self.owner.binary, '--remove', self.name] if remove else [self.owner.binary, '--name', self.name, 'kwinscript', '--file', str(self.folder / 'input.js')]
+            argv = [self.owner.binary, '--remove', self.name] if remove else self._argv()
+            if not remove:
+                self._dispatch_guard()
             child = self.desktop.children.start(argv, env=self.desktop.env | {'TMPDIR': str(self.folder)},
                 cwd=str(self.desktop.root), stdout=writes['stdout'], stderr=writes['stderr'])
             if remove:
@@ -129,6 +138,36 @@ class Query:
         finally:
             for fd in writes.values():
                 os.close(fd)
+
+    def _argv(self):
+        return [self.owner.binary, '--name', self.name, 'kwinscript', '--file', str(self.folder / 'input.js')]
+
+    def _dispatch_guard(self):
+        self.check()
+
+    def _prepare_script(self):
+        fd = os.open('input.js', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=self.dir_fd)
+        with os.fdopen(fd, 'w') as stream:
+            stream.write(encoded(self.name) + files('agent_desktop').joinpath('window_query.js').read_text())
+
+    def _received(self):
+        self.decoder = Decoder(bytes(self.buffers['stdout']), self.name)
+        self.phase = 'decode'
+
+    def recheck_selected(self, handle, application):
+        """Revalidate one final returned row against its original identity pair."""
+        ident = window_id(handle['window_id'])
+        if (not self.done or self.phase != 'done' or handle['generation'] != self.owner.generation
+                or self.registry is None or self.result is None):
+            return False
+        final = next((r for r in self.result['windows'] if r['window']['window_id'] == ident), None)
+        if final is None or final['app'] != application:
+            return False
+        for window, identity in zip(self.decoder.windows, self.identities):
+            if window.uuid == ident:
+                return (identity is not None and identity['application'] == application
+                        and self.registry.window_identity(self.bracket, window.pid) == identity)
+        return False
 
     def _close_streams(self):
         for fd in self.streams.values():
@@ -223,9 +262,7 @@ class Query:
             self.directory_created = True
             self.dir_fd = os.open(self.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.parent_fd)
             self.folder = self.desktop.root / 'tmp' / self.name
-            fd = os.open('input.js', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=self.dir_fd)
-            with os.fdopen(fd, 'w') as stream:
-                stream.write(encoded(self.name) + files('agent_desktop').joinpath('window_query.js').read_text())
+            self._prepare_script()
             self.phase = 'collision'
         if self.phase == 'collision' and self._bus(self.deadline):
             loaded = self._loaded(self.deadline)
@@ -241,9 +278,8 @@ class Query:
                 if self.child.returncode != 0:
                     raise failure()
                 self.observed_at = time.monotonic()
-                self.decoder = Decoder(bytes(self.buffers['stdout']), self.name)
+                self._received()
                 self.check()
-                self.phase = 'decode'
         elif self.phase == 'decode':
             if self.decoder.step(min(self.deadline, time.monotonic() + .002), time.monotonic):
                 self.phase = 'associate'
@@ -395,6 +431,41 @@ class Query:
                 self.owner.active = None
                 return True
         return False
+
+
+class Activation(Query):
+    """Exact native action with the same exclusive cleanup owner as queries."""
+    def __init__(self, owner, request_id, deadline, window, guard):
+        super().__init__(owner, request_id, deadline, None)
+        if window['generation'] != owner.generation:
+            raise ContractError('generation_mismatch', 'Window belongs to another generation.')
+        self.window = window_id(window['window_id'])
+        self.guard = guard
+
+    def _argv(self):
+        return [self.owner.binary, '--name', self.name, 'windowactivate', '{' + self.window + '}']
+
+    def _prepare_script(self):
+        pass
+
+    def _dispatch_guard(self):
+        self.check()
+        self.guard()
+        self.check()
+
+    def _received(self):
+        self.phase = 'absence'
+
+    def step(self):
+        # Transport completion carries no window observation or app publication.
+        if self.phase == 'observation':
+            self.check()
+            self.done = True
+            self.phase = 'done'
+            self.owner.active = None
+            return {'activation_completed_at': time.monotonic(), 'cleanup': {
+                'child_reaped': True, 'script_absent': True, 'temporary_removed': True}}
+        return super().step()
 
 
 class WindowsTask:

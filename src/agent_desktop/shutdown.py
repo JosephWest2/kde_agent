@@ -13,7 +13,7 @@ def unavailable(now, deadline):
 
 class Shutdown:
     def __init__(self, scheduler, deadline, *, release=unavailable, close=unavailable,
-                 clock=time.monotonic, observe=None):
+                 clock=time.monotonic, observe=None, failure=False):
         self.scheduler, self.clock, self.observe = scheduler, clock, observe
         self.deadline = deadline
         self.hooks = {'release': release, 'close': close}
@@ -23,7 +23,10 @@ class Shutdown:
         self.done = False
         self.started_at = clock()
         self.phase_end = min(deadline, self.started_at + .5)
-        scheduler.begin_shutdown(self.phase_end)
+        if failure:
+            scheduler.begin_shutdown(self.phase_end, failure=True)
+        else:
+            scheduler.begin_shutdown(self.phase_end)
         self._event('cancel', 'started')
 
     def _event(self, stage, state):

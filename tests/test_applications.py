@@ -120,6 +120,29 @@ class ObservationBudgetTests(unittest.TestCase):
             self.assertEqual(first, {'root_returncode': 7, 'all_exited': True, 'state': 'all-exited'})
             self.assertEqual(self.app.observe_exit(), first)
 
+    def test_live_launch_failed_is_not_retired_exit(self):
+        self.app.state = 'launch-failed'
+        self.app.settled = True
+        self.app.child = SimpleNamespace(returncode=None)
+        (self.root / 'cgroup.events').write_text('populated 1\n')
+        snapshot, exited = self.registry.observe_application_exit(self.app.handle, force=True)
+        self.assertEqual(snapshot['state'], 'launch-failed')
+        self.assertFalse(exited)
+        self.assertIs(self.registry.active, self.app)
+
+    def test_retained_terminal_records_are_readonly_but_nonterminal_fails_closed(self):
+        self.registry.active = None
+        for state in ('all-exited', 'launch-failed', 'running'):
+            self.store.application_read.return_value = {'state': state, 'exit_code': 7}
+            if state == 'running':
+                with self.assertRaises(ContractError) as caught:
+                    self.registry.observe_application_exit(self.app.handle)
+                self.assertEqual(caught.exception.code, 'session_failed')
+            else:
+                snapshot, exited = self.registry.observe_application_exit(self.app.handle)
+                self.assertTrue(exited)
+                self.assertEqual(snapshot['exit_code'], 7)
+
     def test_close_without_empty_observation_preserves_uncertainty(self):
         self.app.close()
         self.assertFalse(self.app.completed)
@@ -350,7 +373,7 @@ class LaunchTests(unittest.TestCase):
         self.member.start()
 
     def tearDown(self):
-        self.task.request_cancel('test')
+        self.task.request_cancel('cancelled')
         if self.task.app is not None and self.task.app.child is not None:
             self.task.app.child.abort()
             self.task.app.child.process.wait(timeout=2)
@@ -490,13 +513,17 @@ class LaunchTests(unittest.TestCase):
         self.assertIsNone(self.task.status)
         self.assertNotIn(self.request.request_id, records.live)
 
-    def test_wait_window_is_rejected_before_allocating_or_spawning(self):
+    def test_wait_window_shares_launch_deadline_and_retains_application_on_cancel(self):
         self.request.arguments['wait_window'] = True
-        with self.assertRaises(ContractError) as caught:
-            self.task.prepare()
-        self.assertEqual(caught.exception.code, 'unsupported_operation')
-        self.assertIsNone(self.registry.active)
-        self.assertFalse(self.children.owned)
+        self.advance(lambda: self.task.phase == 'window_wait')
+        self.assertEqual(self.task.window_wait.deadline, self.context.work.admission.deadline)
+        self.assertIsNone(self.task.handshake)
+        self.assertIsNone(self.task.status)
+        self.task.request_cancel('cancelled')
+        self.assertIsNone(self.task.app.child.process.poll())
+        self.assertEqual(self.effects[-1]['application'], self.task.app.handle)
+        self.assertEqual(self.effects[-1]['logs'], self.task.app.logs)
+        self.assertIs(self.registry.active, self.task.app)
 
     def test_prelaunch_artifact_failure_prevents_spawn(self):
         with patch.object(self.store, 'allocate', side_effect=ContractError('artifact_failed', 'test')):

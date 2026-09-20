@@ -10,8 +10,9 @@ and settings cannot be overridden.
 
 The result supplies a generation-qualified application handle, original process
 birth identity, selected executable, stdout/stderr paths, lifetime state, observed
-root exit code and an initially empty window list. `--wait-window` is rejected
-before launch until issue #24. `application_active` (exit 7) includes the current
+root exit code and discovered window references. `--wait-window` waits passively
+for one or more current associated windows under the original launch deadline;
+all current candidates are returned without selecting a target. `application_active` (exit 7) includes the current
 handle when the application or any ordinary descendant is still living.
 
 ## Kernel ownership and lifecycle
@@ -59,8 +60,14 @@ code replacement needs a future versioned layout protocol; it is not supported.
 
 The helper gate deadline is the earlier of the request deadline and two seconds
 after helper setup; exec acknowledgment is capped at one second after release and
-never extends the request deadline. Request cleanup allows 0.2 seconds, with the
-registry retaining unfinished reaping. Normal root/cgroup liveness checks occur
+never extends the request deadline. Launch-only request cleanup allows 0.2 seconds, with the
+registry retaining unfinished reaping. After exec acknowledgment, `--wait-window`
+stops applying the helper handshake clock and shares the original work deadline.
+An owned window query instead uses the shared 1.5-second cleanup reserve.
+Timeout/cancellation/query failure retains the app, process identity, logs and
+confirmed window references; an authorized application is never killed to complete
+request cleanup. Confirmed references can survive a later outer request failure;
+pending observations remain diagnostic uncertainty. Normal root/cgroup liveness checks occur
 every 50 ms or synchronously before another launch.
 
 Member scanning streams at most 4 KiB of input and 16 new member identities per

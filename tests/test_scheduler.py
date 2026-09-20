@@ -84,6 +84,26 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(len(first.results), 1)
         self.assertEqual(self.owner.active.request, third.request)
 
+    def test_failed_session_cancels_work_distinctly_and_preserves_prior_cause(self):
+        first = self.submit()
+        self.owner.tick()
+        queued = self.submit()
+        self.owner.begin_shutdown(.5, failure=True)
+        self.owner.drain_shutdown(.5)
+        for admission in (first, queued):
+            error = admission.results[0]['error']
+            self.assertEqual(error.code, 'session_failed')
+            self.assertIn('health failed', error.message)
+        self.assertEqual(first.results[0]['error'].partial_result['app']['application_id'], 'retained')
+
+    def test_failed_shutdown_does_not_replace_existing_cancel_or_timeout(self):
+        first = self.submit()
+        self.owner.tick()
+        self.owner.cancel(first.request.request_id, code='timeout')
+        self.owner.begin_shutdown(.5, failure=True)
+        self.owner.drain_shutdown(.5)
+        self.assertEqual(first.results[0]['error'].code, 'timeout')
+
     def test_disconnect_targets_only_matching_queued_or_active(self):
         first = self.submit()
         self.owner.tick()

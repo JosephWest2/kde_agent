@@ -347,6 +347,17 @@ class Registry:
         app = self.active
         return (self.generation, app, getattr(self, 'identity_revision', 0))
 
+    def observe_application_exit(self, handle, *, force=False):
+        snapshot = self.lookup(handle)
+        app = self.active
+        if app is not None and app.handle == handle:
+            app.observe(force=force)
+            return app.snapshot(), app.completed
+        if snapshot['state'] not in ('all-exited', 'launch-failed'):
+            raise uncertain()
+        # Historical launch-failed records retire only after complete emptiness.
+        return snapshot, True
+
     def window_identity(self, bracket, pid):
         if pid is None:
             return None

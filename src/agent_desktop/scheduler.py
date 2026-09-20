@@ -315,7 +315,7 @@ class Scheduler:
                 self._finish(waiter, owner.result)
                 self.waiters.remove(waiter)
 
-    def begin_shutdown(self, deadline):
+    def begin_shutdown(self, deadline, *, failure=False):
         """Cancel emission before recording, with a capped cleanup allowance."""
         self._guard()
         self.stopping = True
@@ -326,7 +326,9 @@ class Scheduler:
             if work is None or id(work) in seen or work.terminal:
                 continue
             seen.add(id(work))
-            self._cancel(work, 'cancelled')
+            failed = failure and work.request.operation not in CONTROL_OPERATIONS
+            self._cancel(work, 'session_failed' if failed else 'cancelled',
+                         ContractError('session_failed', 'Essential session health failed.') if failed else None)
             work.cleanup_deadline = min(work.cleanup_deadline, deadline)
 
     def drain_shutdown(self, deadline):

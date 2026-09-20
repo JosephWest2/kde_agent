@@ -458,8 +458,11 @@ class Run:
         rows = wait(lambda: (found if len(found := self.rows()) == 4 else None))
         self.case['selected'] = []
         labels = {640: 'primary', 480: 'sibling', 320: 'dialog', 400: 'child'}
+        rows.sort(key=lambda row: row['active'])
         for row in rows:
-            label = labels[row['client']['width']]
+            width = min(labels, key=lambda width: abs(width - row['client']['width']))
+            assert abs(width - row['client']['width']) < .5
+            label = labels[width]
             at = time.monotonic()
             result = self.call(self.args('focus', '--window', self.wref(row)))
             independent = self.call(self.args('windows'))
@@ -481,6 +484,7 @@ class Run:
         # not public focus queued behind wait, and accepts no script source.
         root = self.runtime / 'agent-desktop/g' / self.gen / 'desktop'
         env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'XDG_RUNTIME_DIR': str(root),
+               'KDE_SESSION_VERSION': '6',
                'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(root / 'bus'),
                'WAYLAND_DISPLAY': 'wayland-private'}
         binary = self.receipt['dependencies']['kdotool']['executable']
@@ -539,7 +543,10 @@ class Run:
         status = self.invoke(['session', 'status', '--session', self.name])
         self.case['status_during_wait'] = status
         assert status['response']['ok'], status
-        status_records = list(self.folder.glob('requests/' + status['response']['request_id'] + '/*/record.json'))
+        # Lifecycle status relays a distinct internal worker request ID.
+        status_records = [path for path in self.folder.glob('requests/*/*/record.json')
+                          if (value := read(path)).get('operation') == 'session.status'
+                          and status['started_at'] <= value.get('admitted_at', 0) <= status['ended_at']]
         assert len(status_records) == 1
         timing = read(status_records[0])
         self.case['status_worker_seconds'] = timing['terminal_observed_monotonic'] - timing['admitted_at']
@@ -614,6 +621,7 @@ class Run:
         assert not any(e['event'] == 'native_start' and e.get('request_id') == admission['request_id'] for e in self.native_trace())
         root = self.runtime / 'agent-desktop/g' / self.gen / 'desktop'
         env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'XDG_RUNTIME_DIR': str(root),
+               'KDE_SESSION_VERSION': '6',
                'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(root / 'bus'), 'TMPDIR': str(root / 'tmp')}
         script = self.folder / 'fixed-queued-move.js'
         # Fixed evidence-only action: exact fixture UUID, bounded window list,

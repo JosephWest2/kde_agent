@@ -234,6 +234,7 @@ class Run(support.Run):
 
     @contextmanager
     def generation(self, label):
+        self.kill_case = label
         with super().generation(label):
             try:
                 yield
@@ -261,6 +262,10 @@ class Run(support.Run):
                 continue
             assert states, (start, signals)
             state = states[-1]
+            terminal_summary = any(e['event'] in ('kill_complete', 'kill_cancel')
+                                   and e['request_id'] == request_id for e in trace)
+            if not terminal_summary:
+                assert self.kill_case == 'worker-death', (self.kill_case, start)
             group = self.case['metadata']['cgroup'] + '/applications/' + start['application']['application_id']
             unique = set()
             for event in signals:
@@ -279,10 +284,20 @@ class Run(support.Run):
                 unique.add(token)
             for phase, sig in (('term', signal.SIGTERM), ('kill', signal.SIGKILL)):
                 matching = [e for e in signals if e['signal'] == sig]
-                assert state['counts'][phase + '_attempted'] == len(matching), (state, matching)
-                assert state['counts'][phase + '_submitted'] == sum(e['submitted'] for e in matching), (state, matching)
+                attempted, submitted = len(matching), sum(e['submitted'] for e in matching)
+                if terminal_summary:
+                    assert state['counts'][phase + '_attempted'] == attempted, (state, matching)
+                    assert state['counts'][phase + '_submitted'] == submitted, (state, matching)
+                else:
+                    # Worker death can interrupt the bounded publication batch.
+                    # A stale prefix is evidence of uncertainty, not a receipt
+                    # claiming no additional submissions occurred.
+                    assert 0 <= state['counts'][phase + '_attempted'] <= attempted, (state, matching)
+                    assert 0 <= state['counts'][phase + '_submitted'] <= submitted, (state, matching)
             summaries.append({'request_id': request_id, 'application_cgroup': group,
                               'signals': len(signals), 'counts': state['counts'],
+                              'terminal_summary_observed': terminal_summary,
+                              'unpublished_tail_unknown': not terminal_summary,
                               'max_wrapper_identity_seconds': max(e['wrapper_identity_seconds'] for e in signals)})
         self.case['dispatch_audit'] = summaries
         self.case['dispatch_audit_qualification'] = ('Evidence wrapper reads fdinfo and process identity before syscall; '

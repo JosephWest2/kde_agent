@@ -128,8 +128,8 @@ class QueryTests(unittest.TestCase):
                 source = 'pass'
             elif self.mode == 'hang':
                 source = 'import time; time.sleep(10)'
-            elif self.mode == 'flood':
-                source = 'import os;\nwhile True: os.write(1,b"x"*4096)'
+            elif self.mode in ('flood', 'stderr_flood'):
+                source = 'import os;\nwhile True: os.write(' + ('2' if self.mode == 'stderr_flood' else '1') + ',b"x"*4096)'
             elif self.mode == 'bad':
                 source = 'print("not JSON")'
             else:
@@ -178,7 +178,7 @@ class QueryTests(unittest.TestCase):
         self.assertEqual(result['windows'][0]['app'], None)
         self.assertLess(result['accepted_at'], query.deadline)
     def test_crash_malformed_hung_and_flood_cleanup(self):
-        for mode in ('bad', 'hang', 'flood'):
+        for mode in ('bad', 'hang', 'flood', 'stderr_flood'):
             with self.subTest(mode=mode):
                 self.mode = mode
                 query = self.adapter.start('request', time.monotonic() + .1)

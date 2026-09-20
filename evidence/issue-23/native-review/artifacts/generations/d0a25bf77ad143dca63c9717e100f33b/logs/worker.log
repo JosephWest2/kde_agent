@@ -1,0 +1,11 @@
+ 15:18:19 | INFO | Disconnected by EIS
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 349, in <module>
+    worker(*sys.argv[2:])
+    ~~~~~~^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-23/installed_windows.py", line 154, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True, kdotool=binary, desktop_observer=infrastructure)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-review-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 272, in run
+    raise foundation_error
+agent_desktop.contracts.ContractError: Owned operation cleanup could not be confirmed.

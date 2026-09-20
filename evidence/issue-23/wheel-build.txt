@@ -1,0 +1,15 @@
+Processing /tmp/issue23-wheel-7e4f8d6
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: agent-desktop
+  Building wheel for agent-desktop (pyproject.toml): started
+  Building wheel for agent-desktop (pyproject.toml): finished with status 'done'
+  Created wheel for agent-desktop: filename=agent_desktop-0.1.0-py3-none-any.whl size=96225 sha256=d155941702a005ab372e85d521c948170ad19d6527e7cb5d4bedbdc74fb7c2cf
+  Stored in directory: /tmp/pip-ephem-wheel-cache-v0et7uv7/wheels/67/a9/f2/e8479382447e9d37e937d863df0632261ba5f4d5c351a083df
+Successfully built agent-desktop
+Installing collected packages: agent-desktop
+Successfully installed agent-desktop-0.1.0

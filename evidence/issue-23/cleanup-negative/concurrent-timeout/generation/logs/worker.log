@@ -1,0 +1,39 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 229, in tick
+    self._query_finish()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 96, in _query_finish
+    result = self.query.step()
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/windows.py", line 215, in step
+    self.check()
+    ~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/windows.py", line 83, in check
+    raise ContractError('timeout', 'Window query deadline expired.')
+agent_desktop.contracts.ContractError: Window query deadline expired.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 155, in <module>
+    worker(*args)
+    ~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/tests/issue21_fixture.py", line 141, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True,
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        kdotool=None if mode in ('starting', 'failedstart') else kdotool,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        factory=Task, desktop_observer=observe,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        shutdown_hooks={'release': release, 'close': close})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 272, in run
+    raise foundation_error
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 127, in tick
+    readiness.tick()
+    ~~~~~~~~~~~~~~^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 265, in tick
+    self.fail(error)
+    ~~~~~~~~~^^^^^^^
+  File "/home/josephwest/development/kde-agent/.local/issue23-cleanup-venv/lib/python3.14/site-packages/agent_desktop/readiness.py", line 80, in fail
+    raise self.error
+agent_desktop.contracts.ContractError: Window query deadline expired.

@@ -1,0 +1,6 @@
+{"event": "helper_entry", "at": 158332.322797504, "operation": "stop", "identity": {"pid": 1122443, "start_ticks": "15833225", "ppid": 910, "sid": 1122443, "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-7187f527b7984260a5a0d34bae8c9130.service/.control"}}
+{"event": "release_attempt", "at": 158332.332548161, "deadline": 158332.832442211}
+{"event": "normal_close_attempt", "at": 158332.332746641, "deadline": 158334.127799847}
+{"event": "application_termination", "at": 158332.351351674, "signal": 15}
+{"event": "helper_entry", "at": 158332.457743961, "operation": "post", "identity": {"pid": 1122449, "start_ticks": "15833242", "ppid": 910, "sid": 1122449, "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-7187f527b7984260a5a0d34bae8c9130.service/.control"}}
+{"event": "helper_blocked", "at": 158332.457774663, "operation": "post"}

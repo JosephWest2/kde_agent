@@ -1,12 +1,11 @@
 # Generation-owned service lifecycle
 
-M3.1 implements service ownership, duplicate-start compatibility, live control
-observation, and manager-side stop. The public `session start` command remains
-`unsupported_operation` until #20 can require control, window, input and capture
-probes. The internal Python manager and explicit tests-only controllers exercise
-service creation in this milestone; there is no production fake-desktop flag.
-A live infrastructure worker reports `state: starting, desktop_ready: false`.
-A successful manager observation is not desktop readiness.
+M3.1/M3.2 provide generation-owned services and private desktop construction.
+M3.3 enables public start after real capability probes and adds live essential
+health monitoring. A correlated control response and every required probe must
+pass before start returns `state: ready, desktop_ready: true`. Installed probes
+are explicitly `m1-provisional`, with `release_qualified: false` and replacement
+owner #35 (M7.1); public desktop operations remain unsupported.
 
 `session status` and `session stop` recognize managed generations. Standalone
 foreground workers retain the previous transport behavior. Stop on an absent or
@@ -23,15 +22,16 @@ The manager takes a bounded per-name flock across each lifecycle decision.
 A random 32-hex generation determines `agent-desktop-TOKEN.service`, its exclusive
 runtime directory, and its durable artifact directory. All currently supported
 configuration participates in compatible-start comparison: headless mode, normalized
-absolute artifact root, and the fixed 1280×720 scale-1 output. Timeouts, request IDs
+absolute artifact root, normalized dependency root, and the fixed 1280×720 scale-1 output. Timeouts, request IDs
 and the caller cwd itself are not persistent configuration. A live compatible
-internal start returns the same identity only after a correlated control response;
+start returns the same identity only after correlated control and current readiness;
 a conflict fails. A name-only start after positive old-service quiescence creates
 a fresh token. An expected-generation start never creates a replacement lifetime.
 
 Runtime storage adds `g/TOKEN/lifecycle.json` to the existing private layout. It
 contains validated identity, derived unit name, expected cgroup path, configuration,
-submission certainty and lifecycle state. The manager initializes durable records
+submission certainty and lifecycle state. Older configuration records remain safely stoppable, but cannot silently
+match a new dependency configuration. The manager initializes durable records
 and publishes this ownership before submitting the service. Managed workers attach
 the claim and artifact store; they never contend for the name lock or publish or
 remove the name pointer. This avoids a startup-lock deadlock. Standalone workers
@@ -65,7 +65,7 @@ its bus, compositor, adapters and applications; see [environment policy](ARTIFAC
 The installed Python runs the packaged worker with isolated Python imports from
 `/`, without source cwd or PYTHONPATH dependence. The transient unit uses
 `Type=exec`, `Restart=no`, `KillMode=control-group`, `SendSIGKILL=yes`, `UMask=0077`
-and `TimeoutStopSec=3s`. It has no runtime expiry. Early service stdout/stderr append
+and `TimeoutStopSec=3s`. It has no runtime expiry. Watchdog behavior is described below. Early service stdout/stderr append
 to the generation's private durable worker log. Ordinary descendants inherit the
 service cgroup; deliberate escape is outside the supported contract.
 
@@ -94,7 +94,7 @@ A timeout/signal caused by an earlier requested stop does not turn its stopped
 tombstone into a prior crash. Worker exit only records uncertain cleanup; the manager asserts completion after
 its cgroup observation. Unexpected worker death is reconciled on a later lifecycle
 call. Autonomous terminal hooks and ordered release/window-close attempts remain
-#21; full capability readiness remains #20.
+#21; capability readiness is provided provisionally by M3.3 below.
 
 ## Verification
 
@@ -119,9 +119,8 @@ observed direct children. Its GLib owner polls startup without blocking control:
 private bus socket, successful explicit bus Hello, then private KWin socket.
 Construction shares a 30s monotonic deadline and continuously monitors bus/KWin
 exit afterwards. Any essential exit or startup error makes the worker exit
-nonzero; systemd terminates the generation's remaining cgroup. Public start is
-still gated and status still says `starting`, `desktop_ready: false`: sockets
-alone do not establish the #20 query/input/capture readiness contract.
+nonzero; systemd terminates the generation's remaining cgroup. Construction alone still says `starting`, `desktop_ready: false`; sockets
+alone do not establish the query/input/capture readiness contract.
 
 `g/TOKEN/desktop/` contains exclusive 0700 runtime and HOME/XDG/TMP directories,
 0600 bus configuration and owner-only bus/Wayland sockets. The bus has no service
@@ -144,3 +143,54 @@ cleanup and later lifecycle calls retry. Crash settings cleanup currently requir
 that later stop/status/start reconciliation; automatic post-stop cleanup remains
 #21. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
 bus/KWin output, project access and environment isolation with readiness false.
+
+## Capability readiness and live health (#20)
+
+One GLib owner uses Gio asynchronous explicit-address bus connection/authentication,
+finite method calls and cancellable operation tokens. Late callbacks finish/dispose
+results without installing connections or FDs. EIS FD handles are validated and
+duplicated with Gio before transfer to the M1-audited libei owner. The input
+connection remains alive, consumes events and requires a resumed keyboard. Paused,
+removed or disconnected input makes a previously ready generation unavailable.
+
+After KWin registers on the private bus, the pinned kdotool fixed JS query validates
+structured window metadata and observes the sole output name/dimensions. An empty
+window list is valid. Successful script cleanup must be observed. A separate owned
+capture process uses real ScreenShot2, drains full raw bytes through EOF, validates
+fixed scale-1 metadata and a complete PNG, then publishes a receipt before the
+parent's acceptance deadline. Any unconfirmed capture abort fails the session and
+initiates owned-service cleanup; no host fallback or silent retry exists.
+
+Prerequisites, service submission, private construction and all readiness phases
+share the caller's maximum 30s startup budget. Query work is at most 0.5s, query
+cleanup at most a separate 1.5s, input connection/resumption at most 3s and capture
+acceptance at most 3s, each also capped by the remaining startup budget. Failed
+startup has the existing independent maximum 15s cleanup reserve. Capability
+failures retain component-specific receipts/logs and startup error context.
+
+Bus and KWin health calls share one absolute 1s round every 1s, one round in flight
+with no catch-up bursts. The KWin probe calls its actual `supportInformation`
+method. Bus failure makes compositor health unknown; a responsive bus with a failed
+KWin call identifies compositor unresponsiveness. Child exits are polled before
+scheduler effects and request admission. Status uses current manager/control and
+worker observations within its complete maximum 3s budget. A nonresponsive worker
+reports unavailable with cleanup pending; status does not wait a second 15s budget.
+
+The approved systemd policy is `WatchdogSec=5s`, `WatchdogSignal=SIGTERM`,
+`TimeoutAbortSec=3s`, `TimeoutStopSec=3s`, `FinalKillSignal=SIGKILL`,
+`SendSIGKILL=yes`, `KillMode=control-group`, `NotifyAccess=main`, `Restart=no`.
+A healthy GLib owner sends a heartbeat every 1s, including during starting while
+its shared startup deadline remains valid. There is no heartbeat thread. A freeze
+starts watchdog termination approximately 5s after the last heartbeat, with up to
+3 additional seconds for forced termination. False timeouts fail the generation;
+no automatic restart is permitted. These budgets assume normal host scheduling
+and storage, not realtime guarantees under machine starvation.
+
+Only systemd's notification socket/watchdog variables are preserved through the
+fixed `env -i -S` bootstrap expansion; no caller text enters that expansion and
+application/adapter environments never receive these values. Source fixtures can
+exercise this policy while still reporting starting, without claiming readiness.
+
+M7.1/#35 must replace/qualify the provisional provider and connect production
+adapters before release qualification. #21 still owns ordered graceful action
+shutdown and the autonomous terminal record/runtime cleanup hook.

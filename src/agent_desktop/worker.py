@@ -1,4 +1,4 @@
-"""Internal foreground transport worker. No production desktop readiness yet."""
+"""Generation-owned GLib worker with provisional M1 readiness and live health."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,8 @@ def unsupported(request, admission):
 
 
 def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None,
-        artifacts=None, store=None, managed=False, desktop=False, desktop_observer=None):
+        artifacts=None, store=None, managed=False, desktop=False, desktop_observer=None,
+        kdotool=None, startup_deadline=None, readiness_factory=None):
     # Internal Python injection is for tests and future owners, never a CLI plugin.
     from .artifacts import Store
     from .records import Records, diagnostic
@@ -32,8 +33,10 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         raise ContractError("generation_mismatch", "Artifact store identity differs from worker.")
     records = Records(store) if store is not None else None
     endpoint = server = children = None
-    foundation = None
+    foundation = readiness = None
     foundation_error = None
+    from .watchdog import Watchdog
+    watchdog = Watchdog()
     try:
         from gi.repository import GLib
         endpoint = Endpoint(name, generation, managed=managed)
@@ -50,20 +53,49 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 raise ContractError('invalid_arguments', 'Private desktop requires an owned service and artifacts.')
             from .desktop import Desktop
             foundation = Desktop(endpoint.path.parent, children, store)
+            if startup_deadline is not None:
+                foundation.deadline = min(foundation.deadline, startup_deadline)
         def tick():
-            nonlocal foundation_error
+            nonlocal foundation_error, readiness
             try:
-                scheduler.tick()
                 if foundation is not None:
                     foundation.tick()
+                    if readiness is None and foundation.phase == 'constructed' and (kdotool or readiness_factory):
+                        from .readiness import Readiness
+                        readiness = (readiness_factory or Readiness)(foundation, generation, kdotool, foundation.deadline)
+                    if readiness is not None:
+                        previous = readiness.state
+                        readiness.tick()
+                        if previous != readiness.state:
+                            store.generation_update(state=readiness.state)
                     if desktop_observer is not None:
                         desktop_observer(foundation)
+                scheduler.tick()
+                watchdog.tick()
             except Exception as error:
                 # GLib otherwise reports callback exceptions and leaves the
                 # worker running. A failed owner must exit the service instead.
                 foundation_error = error
+                if readiness is not None and readiness.error is None:
+                    try:
+                        readiness.fail(error)
+                    except Exception:
+                        pass
+                if store is not None:
+                    try:
+                        from .lifecycle import atomic
+                        atomic(store.path / 'startup-failure.json', {
+                            'generation': generation, 'code': getattr(error, 'code', 'session_failed'),
+                            'message': getattr(error, 'message', 'Private desktop owner failed.'),
+                            'context': getattr(error, 'context', {})})
+                    except Exception:
+                        pass
                 loop.quit()
         def dispatch_request(request, admission):
+            tick()  # Current owner health is observed before any work admission.
+            if foundation_error is not None:
+                raise ContractError('session_unavailable', 'Essential desktop health failed.',
+                                    context=getattr(foundation_error, 'context', {}))
             if records is not None:
                 records.attach(request, admission)
                 # Test-only raw handlers bypass scheduler admission. Gate ordinary
@@ -74,9 +106,11 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     except Exception:
                         raise ContractError("artifact_failed", "Request admission could not be preserved.") from None
             if managed and request.operation == "session.status":
-                admission.complete(result={"state": "starting", "desktop_ready": False,
-                                           "worker_pid": os.getpid()})
+                admission.complete(result=({"state": "starting", "desktop_ready": False}
+                                           if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid()})
             else:
+                if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
+                    raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')
                 (handler or scheduler.submit)(request, admission)
         server = Server(endpoint, GLib, dispatch_request,
                         cancel=scheduler.cancel, after_io=tick)
@@ -124,6 +158,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if context.find_source_by_id(source) is not None:
                 GLib.source_remove(source)
         server.close()
+        if readiness is not None:
+            readiness.close()
         children.close()
         if store is not None:
             try:
@@ -143,12 +179,14 @@ def main(argv=None):
     parser = Parser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--session", required=True)
     parser.add_argument("--generation", required=True)
+    parser.add_argument("--kdotool", help=argparse.SUPPRESS)
+    parser.add_argument("--startup-deadline", type=float, help=argparse.SUPPRESS)
     parser.add_argument("--managed", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--artifacts", required=True, help="absolute durable artifact root")
     try:
         args = parser.parse_args(argv)
         run(args.session, args.generation, artifacts=args.artifacts, managed=args.managed,
-            desktop=args.managed)
+            desktop=args.managed, kdotool=args.kdotool, startup_deadline=args.startup_deadline)
         return 0
     except ImportError:
         print("agent-desktop worker: prerequisite_missing: distribution PyGObject is required.", file=sys.stderr)

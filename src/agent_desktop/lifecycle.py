@@ -1,4 +1,4 @@
-"""Generation-owned service lifecycle. Public readiness is implemented in M3.3."""
+"""Generation-owned service lifecycle, live readiness and bounded fallback cleanup."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -10,7 +10,7 @@ import sys
 import time
 import uuid
 
-from .contracts import ContractError, GENERATION, make_request, response
+from .contracts import ContractError, EXIT_CODES, GENERATION, make_request, response
 from .protocol import decode
 from .runtime import Runtime, check_directory, check_file
 from .transport import exchange
@@ -61,14 +61,18 @@ def read_metadata(runtime, name, generation):
             or not data['cgroup'].startswith('/') or '..' in Path(data['cgroup']).parts
             or not data['cgroup'].endswith('/app.slice/' + data['unit'])
             or data['submission'] not in ('reserved', 'uncertain', 'acknowledged')
-            or data['state'] not in ('starting', 'stopped', 'failed')):
+            or data['state'] not in ('starting', 'ready', 'stopping', 'stopped', 'failed')):
         raise ContractError('protocol_error', 'Invalid lifecycle ownership record.')
     config = data['configuration']
-    if (not isinstance(config, dict) or set(config) != {'mode', 'artifacts', 'output'}
+    if (not isinstance(config, dict) or set(config) not in ({'mode', 'artifacts', 'output'}, {'mode', 'artifacts', 'output', 'dependency_root'})
             or config['mode'] != 'headless' or config['output'] != {'width': 1280, 'height': 720, 'scale': 1}
             or not isinstance(config['artifacts'], str) or not config['artifacts'].startswith('/')
             or os.path.normpath(config['artifacts']) != config['artifacts']):
         raise ContractError('protocol_error', 'Invalid lifecycle configuration.')
+    if 'dependency_root' in config and (not isinstance(config['dependency_root'], str)
+            or not config['dependency_root'].startswith('/')
+            or os.path.normpath(config['dependency_root']) != config['dependency_root']):
+        raise ContractError('protocol_error', 'Invalid dependency root configuration.')
     return data
 
 
@@ -109,8 +113,13 @@ class Systemd:
                 '--service-type=exec', '--unit=' + data['unit'], '--property=Slice=app.slice',
                 '--property=Restart=no', '--property=KillMode=control-group', '--property=SendSIGKILL=yes',
                 '--property=TimeoutStopSec=' + str(SYSTEMD_STOP_SECONDS) + 's', '--property=UMask=0077',
+                '--property=WatchdogSec=5s', '--property=TimeoutAbortSec=3s',
+                '--property=WatchdogSignal=SIGTERM', '--property=FinalKillSignal=SIGKILL',
+                '--property=NotifyAccess=main',
                 '--property=StandardOutput=append:' + log, '--property=StandardError=append:' + log,
-                '--working-directory=/', '--expand-environment=no', '--', '/usr/bin/env', '-i', *env, *command]
+                '--working-directory=/', '--expand-environment=no', '--', '/usr/bin/env', '-i', '-S',
+                'NOTIFY_SOCKET=${NOTIFY_SOCKET} WATCHDOG_USEC=${WATCHDOG_USEC} WATCHDOG_PID=${WATCHDOG_PID}',
+                *env, *command]
         self.command(argv, deadline)
 
     def inspect(self, data, deadline):
@@ -133,6 +142,25 @@ class Systemd:
 
     def stop(self, data, deadline):
         self.command(self.control('stop', '--no-block', data['unit']), deadline)
+
+
+
+def retained_failure(data):
+    """Historical diagnostic only; never used as evidence of live readiness."""
+    path = Path(data['configuration']['artifacts']) / 'generations' / data['generation'] / 'startup-failure.json'
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        try:
+            check_file(fd)
+            value = decode(os.read(fd, 16385))
+        finally:
+            os.close(fd)
+        if (value.get('generation') == data['generation'] and value.get('code') in EXIT_CODES
+                and isinstance(value.get('message'), str) and isinstance(value.get('context'), dict)):
+            return value
+    except (OSError, ContractError, ValueError):
+        pass
+    return None
 
 
 def settled(info):
@@ -243,8 +271,8 @@ class Manager:
             # Preserve failure already observed before our requested termination.
             # A later timeout/signal caused by that termination is not evidence
             # of an earlier unexpected death.
-            prior_exit = self._quiescent(data, info) and data['state'] == 'starting'
-            if (not stop_submitted and data['state'] == 'starting'
+            prior_exit = self._quiescent(data, info) and data['state'] in ('starting', 'ready')
+            if (not stop_submitted and data['state'] in ('starting', 'ready')
                     and (prior_exit or info['ActiveState'] == 'failed' or info['Result'] != 'success')):
                 failed = True
             if self._quiescent(data, info):
@@ -255,6 +283,8 @@ class Manager:
                 # An ambiguous submission can become visible during this loop.
                 # Submit stop at its first observation, including pending jobs.
                 # Artifact attachment never precedes this fallback call.
+                data['state'] = 'failed' if failed else 'stopping'
+                self._write(runtime, data)
                 self.systemd.stop(data, deadline)
                 stop_submitted = True
             time.sleep(min(.02, remaining(deadline)))
@@ -273,17 +303,43 @@ class Manager:
             raise
         if not payload['ok']:
             raise ContractError('session_unavailable', 'Managed worker did not confirm live control.')
-        return payload['result']
+        result = payload['result']
+        if (not isinstance(result, dict) or result.get('state') not in ('starting', 'ready', 'stopping', 'stopped', 'failed')
+                or type(result.get('desktop_ready')) is not bool):
+            raise ContractError('protocol_error', 'Invalid worker health response.')
+        if result['state'] == 'ready':
+            observed = result.get('observed_at')
+            health = result.get('health', {})
+            if (not isinstance(health, dict) or result.get('provider') != 'm1-provisional'
+                    or result.get('release_qualified') is not False or result.get('replacement_issue') != 35
+                    or result['desktop_ready'] is not True or type(observed) not in (int, float)
+                    or not 0 <= time.monotonic() - observed <= 2
+                    or any(not isinstance(health.get(key), dict) or health[key].get('state') != 'passed'
+                           for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))):
+                raise ContractError('session_unavailable', 'Worker readiness observations are stale or incomplete.')
+        remaining(deadline)
+        if isinstance(result.get('health'), dict):
+            result['health']['control'] = {'state': 'passed', 'observed_at': time.monotonic()}
+        return result
 
     def start(self, request):
-        """Internal infrastructure start. Public start stays gated until #20."""
+        """Wait for real capability readiness and correlated live control."""
         from .artifacts import Store
         from .paths import normalize
         request = normalize(request)
         deadline = time.monotonic() + request.timeout_seconds
-        runtime = Runtime(create=True)
         configuration = dict(mode=request.arguments['mode'], artifacts=request.arguments['artifacts'],
+                             dependency_root=request.arguments['dependency_root'],
                              output=dict(width=1280, height=720, scale=1))
+        prerequisite = None
+        if self.worker_command is None:
+            from .prerequisites import check
+            try:
+                prerequisite = check(configuration['dependency_root'], deadline)
+            except ContractError as error:
+                error.context['expected_generation'] = request.expected_generation
+                raise
+        runtime = Runtime(create=True)
         with runtime.lock(request.session, deadline=deadline):
             generation, data = self._read(runtime, request)
             if generation is not None:
@@ -295,8 +351,14 @@ class Manager:
                         raise ContractError('session_conflict', 'Session configuration differs.')
                     if info['ActiveState'] != 'active':
                         raise ContractError('session_unavailable', 'Existing service is not live.')
-                    self._ping(request, generation, deadline)
-                    return self._result(request, generation, {'state': 'starting', 'desktop_ready': False, 'reused': True})
+                    while True:
+                        result = self._ping(request, generation, deadline)
+                        if result['state'] == 'ready' or self.worker_command is not None:
+                            remaining(deadline)
+                            return self._result(request, generation, result | {'reused': True})
+                        if result['state'] != 'starting':
+                            raise ContractError('session_unavailable', 'Existing generation is not ready.', context=result)
+                        time.sleep(min(.02, remaining(deadline)))
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
                 self._retire(runtime, data, failed=data['state'] != 'stopped')
@@ -315,7 +377,8 @@ class Manager:
             command = (self.worker_command(data) if self.worker_command else
                        [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
                         '--session', request.session, '--generation', generation,
-                        '--artifacts', configuration['artifacts']])
+                        '--artifacts', configuration['artifacts'],
+                        '--kdotool', prerequisite['kdotool']['executable'], '--startup-deadline', str(deadline)])
             try:
                 remaining(deadline)
                 data['submission'] = 'uncertain'
@@ -329,14 +392,25 @@ class Manager:
                         raise ContractError('session_failed', 'Worker service exited during startup.')
                     if info['ActiveState'] == 'active':
                         try:
-                            self._ping(request, generation, min(deadline, time.monotonic() + .2))
-                            return self._result(request, generation,
-                                                {'state': 'starting', 'desktop_ready': False, 'reused': False})
+                            result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
+                            if result['state'] == 'ready' or self.worker_command is not None:
+                                if result['state'] == 'ready':
+                                    data['state'] = 'ready'
+                                    self._write(runtime, data)
+                                remaining(deadline)
+                                return self._result(request, generation, result | {'reused': False})
+                            if result['state'] == 'failed':
+                                raise ContractError('session_failed', 'Capability startup failed.', context=result)
                         except ContractError as error:
                             if error.code not in ('session_unavailable', 'completion_unknown', 'timeout', 'transport_error'):
                                 raise
                     time.sleep(min(.02, remaining(deadline)))
             except BaseException as error:
+                if isinstance(error, ContractError):
+                    failure = retained_failure(data)
+                    if failure:
+                        error.code, error.message = failure['code'], failure['message']
+                        error.context.update(failure['context'])
                 # Separate finite cleanup reserve follows the start work budget.
                 cleanup, preserved = 'uncertain', False
                 try:
@@ -385,9 +459,19 @@ class Manager:
                 if self._quiescent(data, info):
                     self._retire(runtime, data, failed=data['state'] != 'stopped')
                     return self._result(request, generation,
-                                        {'state': data['state'], 'desktop_ready': False, 'cleanup': 'complete'})
+                                        {'state': data['state'], 'desktop_ready': False, 'cleanup': 'complete',
+                                         'failure': retained_failure(data) if data['state'] == 'failed' else None})
                 if info['ActiveState'] != 'active':
-                    raise ContractError('session_unavailable', 'Managed service is not active.')
-                self._ping(pinned, generation, deadline)
-                return self._result(request, generation, {'state': 'starting', 'desktop_ready': False})
+                    raise ContractError('session_unavailable', 'Managed service is not active.',
+                                        context={'state': 'failed', 'cleanup': 'pending', 'component': 'service',
+                                                 'failure': retained_failure(data), 'service': data['unit']})
+                try:
+                    result = self._ping(pinned, generation, deadline)
+                except ContractError as error:
+                    error.context.update(state='failed', component='worker', cleanup='pending',
+                                         resolved_generation=generation, service=data['unit'])
+                    raise
+                if result['state'] in ('failed', 'stopping', 'stopped'):
+                    raise ContractError('session_unavailable', 'Managed generation is unavailable.', context=result)
+                return self._result(request, generation, result)
         return exchange(unmanaged, deadline=deadline)

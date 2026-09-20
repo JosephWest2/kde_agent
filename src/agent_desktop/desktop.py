@@ -90,9 +90,10 @@ class Desktop:
     def tick(self, now=None):
         now = time.monotonic() if now is None else now
         self.children.poll(now)
-        for child in (self.bus, self.compositor):
+        for component, child in (('bus', self.bus), ('compositor', self.compositor)):
             if child is not None and child.returncode is not None:
-                raise ContractError('session_failed', 'An essential private desktop child exited.')
+                raise ContractError('session_failed', 'An essential private desktop child exited.',
+                                    context={'component': component, 'returncode': child.returncode})
         if self.phase != 'constructed' and now >= self.deadline:
             raise ContractError('timeout', 'Private desktop construction timed out.')
         if self.phase == 'bus' and self._socket('bus'):

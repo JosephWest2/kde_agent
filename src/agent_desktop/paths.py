@@ -11,7 +11,7 @@ def absolute(value, base):
 
 
 def fields(operation):
-    return {'launch': ('cwd',), 'session.start': ('artifacts',),
+    return {'launch': ('cwd',), 'session.start': ('artifacts', 'dependency_root'),
             'screenshot': ('output',), 'doctor': ('dependency_root',)}.get(operation, ())
 
 

@@ -78,6 +78,11 @@ class TypesTests(unittest.TestCase):
                 encoded(attack)
         self.assertEqual(encoded('query'), 'const request = {"request_id": "query"};\n')
 
+    def test_output_scale_unavailable_is_explicit_null(self):
+        value = payload()
+        value['outputs'][0]['scale'] = None
+        self.assertIsNone(decoded(value).output.scale)
+
     def test_max_rows_and_bounded_decode_turns(self):
         value = payload([row(uuid=str(uuid.uuid4())) for _ in range(256)])
         result = Decoder(json.dumps(value).encode(), 'query')

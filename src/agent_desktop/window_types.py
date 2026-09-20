@@ -88,7 +88,7 @@ class Output:
     name: str
     width: int
     height: int
-    scale: float
+    scale: float | None
 
 
 class Decoder:
@@ -114,7 +114,7 @@ class Decoder:
                 or not isinstance(o['name'], str) or not 0 < len(o['name']) <= 256
                 or type(o['width']) is not int or o['width'] != 1280
                 or type(o['height']) is not int or o['height'] != 720
-                or type(o['scale']) not in (int, float) or o['scale'] != 1):
+                or (o['scale'] is not None and (type(o['scale']) not in (int, float) or o['scale'] != 1))):
             invalid()
         self.output = Output(**o)
         self.pending, self.windows, self.seen = iter(value['windows']), [], set()

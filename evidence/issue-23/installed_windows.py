@@ -132,7 +132,7 @@ def worker(name, generation, artifacts, binary, fixture):
         if desktop.phase == 'constructed' and not unassociated:
             path = folder / 'unassociated-events.jsonl'
             with path.open('xb') as output:
-                child = desktop.launch([fixture, '--autonomous-ms', '60000'], str(desktop.root), {}, stdout=output, stderr=output)
+                child = desktop.launch([fixture, '--autonomous', '--exit-after-ms', '60000'], str(desktop.root), {}, stdout=output, stderr=output)
             unassociated.append(child)
             save(folder / 'unassociated.json', identity(child.process.pid))
     run(name, generation, artifacts=artifacts, managed=True, desktop=True, kdotool=binary, desktop_observer=infrastructure)
@@ -204,7 +204,7 @@ def main(output, dependencies):
         started, data, folder = start(name)
         case = receipt['cases']['native'] = {'start': started, 'metadata': data, 'unassociated': read(folder / 'unassociated.json')}
         try:
-            launch = invoke(['launch', '--session', name, '--', str(fixture), '--autonomous-ms', '50000', '--sibling', '--dialog', '--child-window-ms', '45000'])
+            launch = invoke(['launch', '--session', name, '--', str(fixture), '--autonomous', '--exit-after-ms', '50000', '--sibling', '--dialog', '--child-window-ms', '45000'])
             assert launch['response']['ok'], launch
             app = launch['response']['result']['application']
             case['launch'] = launch

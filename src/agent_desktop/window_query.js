@@ -14,7 +14,7 @@ var activeId = active == null ? null : nullable(active.internalId);
 if (activeId !== null) activeId = String(activeId);
 output_result(JSON.stringify({schema_version:1, request_id:request.request_id,
     active_uuid:activeId,
-    outputs:workspace.screens.map(o => ({name:o.name, width:o.geometry.width, height:o.geometry.height, scale:o.scale})),
+    outputs:workspace.screens.map(o => ({name:o.name, width:o.geometry.width, height:o.geometry.height, scale:nullable(o.scale)})),
     windows:workspace.windowList().map(w => ({uuid:w.internalId == null ? null : String(w.internalId),
         pid:w.pid == null || w.pid === 0 ? null : w.pid,
         title:nullable(w.caption), class:nullable(w.resourceClass),

@@ -1,0 +1,28 @@
+{
+  "argv": [
+    "/usr/bin/gcc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "/home/josephwest/development/kde-agent/.local/issue24-native-suite/fixture-build",
+    "/tmp/kde-issue24-native-suite/source/tools/wayland_fixture.c",
+    "/home/josephwest/development/kde-agent/.local/issue24-native-suite/fixture-build/xdg-shell-protocol.c",
+    "/home/josephwest/development/kde-agent/.local/issue24-native-suite/fixture-build/presentation-time-protocol.c",
+    "-lwayland-client",
+    "-lm",
+    "-lxkbcommon",
+    "-o",
+    "/home/josephwest/development/kde-agent/.local/issue24-native-suite/fixture-build/wayland-fixture"
+  ],
+  "binary_sha256": "55e22dc1682c74e33ef5972989ee359a5b880ef39e0388be382550aa3defb6cf",
+  "compiler": "gcc (GCC) 16.2.1 20260810",
+  "elapsed_seconds": 0.336,
+  "protocols": {
+    "/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml": "dffac93bcb2bb1d8c385e72b8a8c2c0d4d79a336866322f3ba886dce2b27b1e2",
+    "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "7ba7f9c8473deee674cb1f154a18abd0bb0cc072604fc055b0c15e459fc4c7df"
+  },
+  "source_sha256": "a9024c7d7e1e151fa5c8d10fbb8631bc6a9dbfde0ad40823b2b1686e8e0a53bf"
+}

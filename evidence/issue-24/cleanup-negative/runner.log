@@ -1,0 +1,13 @@
+normalstop passed
+managerstop passed
+failedstart passed
+failedexec passed
+bus-kill passed
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-21/installed_cleanup.py", line 519, in <module>
+    main(sys.argv[1], sys.argv[2], sys.argv[3:])
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-21/installed_cleanup.py", line 389, in main
+    terminal = observation['terminal.json']
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'terminal.json'

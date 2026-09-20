@@ -1,0 +1,3 @@
+{"event": "release_attempt", "at": 162216.680478913, "deadline": 162217.180361002}
+{"event": "normal_close_attempt", "at": 162216.680699401, "deadline": 162218.480056178}
+{"event": "application_termination", "at": 162216.757205942, "signal": 15}

@@ -32,6 +32,18 @@ def save(path, value):
     atomic(Path(path), value)
 
 
+def diagnostic(path, value):
+    """Bounded diagnostic publication; production Store durability is unchanged."""
+    raw = json.dumps(value, ensure_ascii=True, allow_nan=False).encode()
+    assert len(raw) <= 1024 * 1024
+    path = Path(path)
+    temporary = path.with_name('.' + path.name + '.tmp')
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as stream:
+        stream.write(raw)
+    os.replace(temporary, path)
+
+
 def wait(condition, seconds=5):
     end = time.monotonic() + seconds
     while True:
@@ -115,7 +127,9 @@ def worker(name, generation, artifacts, binary, fixture):
             if self.saved:
                 return
             self.saved = True
-            save(folder / ('query-' + self.request_id + '.json'), {'mode': self.mode, 'request_id': self.request_id,
+            diagnostic_started = time.monotonic()
+            diagnostic(folder / ('query-' + self.request_id + '.json'), {'mode': self.mode, 'request_id': self.request_id,
+                'diagnostic_durability': 'atomic-replace-without-fsync', 'spawned': self.spawned,
                 'name': self.name, 'started_deadline': self.deadline, 'accepted_at': self.accepted_at,
                 'cancel_at': self.cancel_at, 'cleanup_deadline': self.cleanup_deadline, 'clean': clean,
                 'error': None if self.error is None else self.error.code, 'script_absent': self.absent,
@@ -126,6 +140,8 @@ def worker(name, generation, artifacts, binary, fixture):
                 'stopped_after_registration': self.stop_sent, 'max_glib_gap': samples['max_gap'],
                 'stdout': bytes(self.buffers['stdout']).decode('utf8', errors='replace'),
                 'stderr': bytes(self.buffers['stderr']).decode('utf8', errors='replace'), 'at': time.monotonic()})
+            diagnostic(folder / ('diagnostic-' + self.request_id + '.json'),
+                       {'request_id': self.request_id, 'receipt_write_seconds': time.monotonic() - diagnostic_started})
     windows.Query = EvidenceQuery
     unassociated = []
     def infrastructure(desktop):
@@ -274,7 +290,10 @@ def main(output, dependencies):
                         failure = {'response': result, 'terminal_record': record}
                         if query_path.exists():
                             r = read(query_path)
-                            assert r['accepted_at'] is None and r['clean'] and r['script_absent'] and r['temporary_removed'], r
+                            assert (r['accepted_at'] is None or r['accepted_at'] < r['started_deadline']), r
+                            assert r['clean'] and (not r['spawned'] or r['script_absent']) and r['temporary_removed'], r
+                            failure['adapter_acceptance'] = 'before-request-failure' if r['accepted_at'] is not None else 'not-accepted'
+                            failure['native_ownership'] = 'spawned-and-cleaned' if r['spawned'] else 'not-spawned'
                             failure['query_receipt'] = r
                         failures.append(failure)
                 batches[label] = {'submitted': count, 'successes': len(worker_timings), 'timeouts': len(failures),
@@ -291,6 +310,8 @@ def main(output, dependencies):
             case['sustained_recovery'] = [invoke(['windows', '--session', name]) for _ in range(5)]
             assert all(q['response']['ok'] for q in case['sustained_recovery']), case['sustained_recovery']
             case['normal_receipts'] = [read(p) for p in folder.glob('query-*.json')]
+            case['diagnostic_timings'] = [read(p) for p in folder.glob('diagnostic-*.json')]
+            assert max(r['max_glib_gap'] for r in case['normal_receipts']) < .1, case['normal_receipts'][-1]
         finally:
             case['stop'] = stop(name, data)
             save(output / 'receipt.json', receipt)

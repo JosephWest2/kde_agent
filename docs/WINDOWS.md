@@ -84,3 +84,13 @@ there is no rollback claim and no inference of request success from a file or
 accepted timestamp. Historical references assert observations, not present windows.
 Generic request records retain at most 64 handles, an explicit `windows_omitted`
 count and a validated owned `query_artifact` reference, never arbitrary titles.
+
+Durable application publication stores at most two window-reference arrays:
+confirmed top-level `windows` plus a full previous observation (confirmed state)
+or proposed candidate (pending state). Other observation pointers carry metadata
+without repeating arrays; the validated reader reconstructs those views using the
+explicit publication state. Both pending and deferred confirmed encodings are
+size-checked before publication, so 256 supported rows do not create an oversized
+checkpoint on the next registry turn. Cleanup reuse also requires a fresh clock
+check after its final local filesystem operation, strictly within the latched
+reserve; a late cleanup observation remains a fail-closed result.

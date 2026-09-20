@@ -712,9 +712,24 @@ class Store:
             fail('application_schema')
         for ref in value['windows']:
             self._window_handle(ref)
+        publication = value.get('window_publication')
+        if publication not in (None, 'pending', 'confirmed'):
+            fail('window_reference')
         for key in ('window_observation', 'previous_observation', 'candidate_observation'):
-            if value.get(key) is not None:
-                self._window_reference(value[key])
+            observation = value.get(key)
+            if observation is not None:
+                if not isinstance(observation, dict) or publication is None:
+                    fail('window_reference')
+                # Exactly two sets of references are ever stored: the confirmed
+                # top-level list and either previous or proposed references.
+                compact = (key == 'window_observation' or
+                           key == ('previous_observation' if publication == 'pending' else 'candidate_observation'))
+                if compact:
+                    if 'windows' in observation:
+                        fail('window_reference')
+                    observation = observation | {'windows': value['windows']}
+                self._window_reference(observation)
+                value[key] = observation
         return {'application': {'generation': self.generation, 'application_id': application_id},
                 **{key: value.get(key) for key in ('process', 'executable', 'logs', 'state', 'exit_code', 'windows',
                    'window_observation', 'previous_observation')},
@@ -739,21 +754,32 @@ class Store:
         for ref in observation['windows']:
             self._window_handle(ref)
 
+    def _application_window_value(self, value, previous, candidate, state):
+        def pointer(observation):
+            return None if observation is None else {k: v for k, v in observation.items() if k != 'windows'}
+        confirmed = candidate if state == 'confirmed' else previous
+        return value | {
+            'previous_observation': previous if state == 'confirmed' else pointer(previous),
+            'candidate_observation': pointer(candidate) if state == 'confirmed' else candidate,
+            'window_observation': pointer(confirmed), 'window_publication': state,
+            'windows': [] if confirmed is None else confirmed['windows'],
+            'revision': value['revision'] + 1, 'updated_at': timestamp()}
+
     def application_windows(self, application_id, previous, candidate, state):
         identifier(application_id)
         if state not in ('pending', 'confirmed'):
             fail('schema')
-        for value in (previous, candidate):
-            if value is not None:
-                self._window_reference(value)
+        for observation in (previous, candidate):
+            if observation is not None:
+                self._window_reference(observation)
         with self.lock(), self.directory('applications', application_id) as directory:
             value = self._read(directory, 'record.json')
-            confirmed = candidate if state == 'confirmed' else previous
-            value.update(previous_observation=previous, candidate_observation=candidate,
-                         window_observation=confirmed, window_publication=state,
-                         windows=[] if confirmed is None else confirmed['windows'],
-                         revision=value['revision'] + 1, updated_at=timestamp())
-            self._write(directory, 'record.json', value)
+            # A pending success must not authorize an oversized deferred checkpoint.
+            pending = self._application_window_value(value, previous, candidate, 'pending')
+            confirmed = self._application_window_value(value, previous, candidate, 'confirmed')
+            packed(pending)
+            packed(confirmed)
+            self._write(directory, 'record.json', pending if state == 'pending' else confirmed)
 
     def window_observation(self, query_id, value):
         identifier(query_id)

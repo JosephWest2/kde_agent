@@ -389,6 +389,8 @@ class Query:
                 if self.parent_fd is not None:
                     os.close(self.parent_fd)
                     self.parent_fd = None
+                if time.monotonic() >= self.cleanup_deadline:
+                    return False
                 self.done = True
                 self.owner.active = None
                 return True

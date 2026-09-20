@@ -176,3 +176,12 @@ confirmed references populate retained `windows` (up to 256 within 64 KiB).
 Generic projections include at most 64 handles plus `windows_omitted` and an
 owned query artifact reference. Adapter acceptance and final request success are
 separate; see [window observation publication](WINDOWS.md).
+
+The durable publication representation avoids repeated reference lists. Top-level
+`windows` contains confirmed references. In `pending` state the candidate carries
+its proposed `windows`; previous/current observation pointers omit that array and
+the reader reconstructs them from top-level `windows`. In `confirmed` state the
+previous observation retains its own list; candidate/current pointers use the
+top-level confirmed list. At most two 256-reference arrays are encoded, and both
+pending and future checkpoint envelopes are preflighted against 64 KiB. The
+validated reader and live application API return complete observation objects.

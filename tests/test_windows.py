@@ -257,6 +257,52 @@ class QueryTests(unittest.TestCase):
         query.cancel('window_query_failed')
         self.clean(query)
 
+    def test_cleanup_last_filesystem_call_cannot_cross_shared_reserve(self):
+        for finished in (2.5, 2.501):
+            with self.subTest(finished=finished):
+                adapter = windows.Adapter(self.desktop, GEN, '/test/kdotool')
+                query = adapter.start('request', 2.0)
+                clock = [1.0]
+                def late():
+                    clock[0] = finished
+                    return True
+                with patch.object(windows.time, 'monotonic', side_effect=lambda: clock[0]):
+                    query.cancel('timeout')
+                    query.cleanup_phase = 'local'
+                    with patch.object(query, '_local_cleanup', side_effect=late):
+                        self.assertFalse(query.cleanup())
+                    self.assertEqual(query.cleanup_deadline, 2.5)
+                    self.assertEqual(query.error.code, 'timeout')
+                    self.assertFalse(query.done)
+                    self.assertIs(adapter.active, query)
+
+    def test_256_refs_survive_repeated_pending_and_confirmed_checkpoints(self):
+        request = make_request('launch',session='default',expected_generation=GEN,
+                              caller_cwd='/',arguments={'argv':['/bin/true']})
+        token = self.store.request(request,time.monotonic(),time.monotonic()+10)
+        logs = {key:str(self.store.allocate(token,key)) for key in ('stdout','stderr')}
+        appid = 'b'*32
+        self.store.application_prepare(token,appid,executable='/bin/true',logs=logs,cgroup='/owned/applications/'+appid)
+        registry=object.__new__(Registry);registry.generation=GEN;registry.store=self.store;registry.active=None
+        previous=None
+        for sequence in range(4):
+            queryid=('%032x' % (sequence+1))
+            current={'query_id':queryid,'query_artifact':'window-observations/'+queryid+'.json',
+                     'observed_at':1.0+sequence,'accepted_at':1.1+sequence,
+                     'windows':[{'generation':GEN,'window_id':str(uuid.UUID(int=sequence*256+i+1))} for i in range(256)]}
+            registry.publish_windows({'generation':GEN,'application_id':appid},current,lambda:None)
+            pending=self.store.application_read(appid)
+            self.assertEqual(pending['window_observation'],previous)
+            self.assertEqual(pending['pending_observation'],current)
+            registry.tick()
+            retained=self.store.application_read(appid)
+            self.assertEqual(retained['windows'],current['windows'])
+            self.assertEqual(retained['window_observation'],current)
+            self.assertEqual(retained['previous_observation'],previous)
+            self.assertIsNone(retained['pending_observation'])
+            self.assertLess((self.store.path/'applications'/appid/'record.json').stat().st_size,65536)
+            previous=current
+
     def test_retained_record_pending_previous_survives_post_replace_error(self):
         request = make_request('launch', session='default', expected_generation=GEN,
             caller_cwd='/', arguments={'argv':['/bin/true']})

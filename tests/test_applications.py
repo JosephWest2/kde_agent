@@ -241,6 +241,79 @@ class LaunchTests(unittest.TestCase):
             self.registry.available()
         self.assertIsNotNone(self.registry.active)
 
+    def test_protocol_loss_after_authorization_is_unknown_and_retained(self):
+        self.advance(lambda: self.task.phase == 'exec')
+        app = self.task.app
+        app.child.abort()
+        app.child.process.wait(timeout=2)
+        with self.assertRaises(ContractError) as caught:
+            self.advance(lambda: self.task.phase == 'done')
+        self.assertEqual(caught.exception.code, 'completion_unknown')
+        self.assertTrue(app.authorized)
+        self.assertIs(self.registry.active, app)
+
+    def test_gate_timeout_aborts_without_authorization(self):
+        self.task.prepare()
+        self.task.handshake = time.monotonic() - 1
+        with self.assertRaises(ContractError) as caught:
+            self.task.step(time.monotonic())
+        self.assertEqual(caught.exception.code, 'timeout')
+        self.task.request_cancel('timeout')
+        self.assertFalse(self.task.app.authorized)
+        self.task.app.child.process.wait(timeout=2)
+
+    def test_target_inherits_only_standard_descriptors(self):
+        self.advance(lambda: self.task.phase == 'done')
+        paths = sorted(int(path.name) for path in Path('/proc', str(self.task.app.child.process.pid), 'fd').iterdir())
+        self.assertEqual(paths, [0, 1, 2])
+
+    def test_scheduler_exception_calls_cleanup_and_retains_real_effects(self):
+        from agent_desktop.scheduler import Scheduler
+        from agent_desktop.records import Records
+        from agent_desktop.contracts import response
+        class Admission:
+            def __init__(self, request):
+                self.request = request
+                self.admitted_at = time.monotonic()
+                self.deadline = self.admitted_at + 10
+                self.disconnected = False
+                self.on_terminal = None
+                self.final = None
+            def complete(self, result=None, error=None):
+                self.final = response(self.request.request_id, self.request.operation, session='default',
+                                      generation=GEN, result=result, error=error)
+                if self.on_terminal:
+                    self.on_terminal(self.final)
+        admission = Admission(self.request)
+        records = Records(self.store)
+        records.attach(self.request, admission)
+        def factory(req, context):
+            self.task = LaunchTask(req, context, self.registry, self.desktop, records)
+            original = self.task.step
+            def failing(now):
+                result = original(now)
+                if result is not None:
+                    raise ContractError('timeout', 'Injected post-launch wait failure.')
+            self.task.step = failing
+            return self.task
+        scheduler = Scheduler(factory=records.factory(factory), observer=records.observe, children=self.children)
+        scheduler.submit(self.request, admission)
+        until = time.monotonic() + 2
+        while admission.final is None:
+            self.assertLess(time.monotonic(), until)
+            scheduler.tick()
+            time.sleep(.005)
+        self.assertEqual(admission.final['error']['code'], 'timeout')
+        self.assertEqual(admission.final['error']['outcome'], 'partial')
+        refs = admission.final['error']['partial_result']
+        self.assertEqual(refs['application'], self.task.app.handle)
+        self.assertEqual(refs['logs'], self.task.app.logs)
+        self.assertIsNone(self.task.app.child.process.poll())
+        self.assertTrue(self.task.cancelled)
+        self.assertIsNone(self.task.gate)
+        self.assertIsNone(self.task.status)
+        self.assertNotIn(self.request.request_id, records.live)
+
     def test_wait_window_is_rejected_before_allocating_or_spawning(self):
         self.request.arguments['wait_window'] = True
         with self.assertRaises(ContractError) as caught:

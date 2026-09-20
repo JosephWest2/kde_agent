@@ -1,0 +1,4 @@
+{"generation":"42f2fe68018742c69d60a3ca64dcc236","request_id":"87b187c627b149d1b9214b18eb89e75f","attempt":"018eee92cea6485585adc6fd5bfd0be9","phase":"admitted","at":"2026-09-20T19:08:11.680513+00:00"}
+{"generation":"42f2fe68018742c69d60a3ca64dcc236","request_id":"87b187c627b149d1b9214b18eb89e75f","attempt":"018eee92cea6485585adc6fd5bfd0be9","phase":"started","at":"2026-09-20T19:08:11.739240+00:00"}
+{"generation":"42f2fe68018742c69d60a3ca64dcc236","request_id":"87b187c627b149d1b9214b18eb89e75f","attempt":"018eee92cea6485585adc6fd5bfd0be9","phase":"cancelling","at":"2026-09-20T19:08:11.883187+00:00"}
+{"generation":"42f2fe68018742c69d60a3ca64dcc236","request_id":"87b187c627b149d1b9214b18eb89e75f","attempt":"018eee92cea6485585adc6fd5bfd0be9","phase":"finalizing","at":"2026-09-20T19:08:11.948257+00:00"}

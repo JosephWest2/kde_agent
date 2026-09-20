@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-desktop"
+version = "0.1.0"
+description = "Headless private KWin desktop automation CLI"
+requires-python = ">=3.11"
+
+[project.scripts]
+agent-desktop = "agent_desktop.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

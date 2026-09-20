@@ -66,6 +66,25 @@ def worker(name, generation, artifacts, binary, fixture):
     folder = Path(artifacts) / 'generations' / generation
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     samples = {'last': time.monotonic(), 'max_gap': 0}
+    # Observe original durable calls without extra per-call I/O or changed semantics.
+    from agent_desktop.artifacts import Store
+    from agent_desktop import lifecycle
+    durable_timings = {}
+    def timed(label, original):
+        stats = durable_timings[label] = {'count': 0, 'max_seconds': 0, 'max_started_at': None}
+        def call(*args, **kwargs):
+            started = time.monotonic()
+            try:
+                return original(*args, **kwargs)
+            finally:
+                duration = time.monotonic() - started
+                stats['count'] += 1
+                if duration > stats['max_seconds']:
+                    stats['max_seconds'], stats['max_started_at'] = duration, started
+        return call
+    Store._write = timed('store_write', Store._write)
+    Store.window_observation = timed('window_observation', Store.window_observation)
+    lifecycle.atomic = timed('lifecycle_atomic', lifecycle.atomic)
     def heartbeat():
         now = time.monotonic()
         samples['max_gap'] = max(samples['max_gap'], now - samples['last'])
@@ -138,6 +157,7 @@ def worker(name, generation, artifacts, binary, fixture):
                 'remover_returncode': None if self.remover is None else self.remover.returncode,
                 'temporary_removed': self.folder is None or not self.folder.exists(),
                 'stopped_after_registration': self.stop_sent, 'max_glib_gap': samples['max_gap'],
+                'durable_call_timings': durable_timings,
                 'stdout': bytes(self.buffers['stdout']).decode('utf8', errors='replace'),
                 'stderr': bytes(self.buffers['stderr']).decode('utf8', errors='replace'), 'at': time.monotonic()})
             diagnostic(folder / ('diagnostic-' + self.request_id + '.json'),

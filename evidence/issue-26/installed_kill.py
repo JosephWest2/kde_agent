@@ -56,7 +56,7 @@ def worker(name, generation, artifacts, binary):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     stream = (folder / 'kill-trace.jsonl').open('x', buffering=1)
     counts = {'events': 0, 'bytes': 0}
-    active = {'request_id': None}
+    active = {'request_id': None, 'task': None}
     fault_state = {'kill_started': None, 'reported': False, 'migration': None, 'retained_reported': False}
     def fault():
         path = folder / 'kill-fault.json'
@@ -78,15 +78,21 @@ def worker(name, generation, artifacts, binary):
         except FileNotFoundError:
             target = None
         at = time.monotonic()
+        task = active['task']
+        root = None if task is None or task.pinned is None else task.pinned.child
+        root_reaped = root is not None and root.returncode is not None
+        root_returncode = None if root is None else root.returncode
         try:
             result = original_signal(fd, sig, *args, **kwargs)
         except OSError as exc:
             emit('pidfd_signal', wrapper_entered_at=entered_at, submitted_at=at,
                  wrapper_identity_seconds=at - entered_at, fd=fd, signal=int(sig), identity=target,
+                 root_reaped=root_reaped, root_returncode=root_returncode,
                  request_id=active['request_id'], submitted=False, errno=exc.errno)
             raise
         emit('pidfd_signal', wrapper_entered_at=entered_at, submitted_at=at,
              wrapper_identity_seconds=at - entered_at, fd=fd, signal=int(sig), identity=target,
+             root_reaped=root_reaped, root_returncode=root_returncode,
              request_id=active['request_id'], submitted=True)
         return result
     signal.pidfd_send_signal = observed_signal
@@ -170,6 +176,7 @@ def worker(name, generation, artifacts, binary):
             self.evidence_context = context
             super().__init__(request, context, *args, **kwargs)
             active['request_id'] = request.request_id
+            active['task'] = self
             emit('kill_start', request_id=request.request_id,
                  application=request.arguments['app'],
                  admitted_at=context.work.admission.admitted_at,
@@ -189,12 +196,14 @@ def worker(name, generation, artifacts, binary):
             if result is not None:
                 emit('kill_complete', request_id=self.evidence_request.request_id, result=result)
                 active['request_id'] = None
+                active['task'] = None
             return result
         def request_cancel(self, reason):
             super().request_cancel(reason)
             emit('kill_cancel', request_id=self.evidence_request.request_id, reason=reason,
                  projection=self.projection())
             active['request_id'] = None
+            active['task'] = None
     terminating.KillTask = ObservedKill
     try:
         base.worker(name, generation, artifacts, binary)
@@ -391,6 +400,9 @@ class Run(support.Run):
                 descendant_kills = [e['submitted_at'] for e in submitted if e['signal'] == signal.SIGKILL
                                     and e['identity'] and e['identity']['pid'] != self.launched['process']['pid']]
                 assert descendant_kills and root_exit < min(descendant_kills), (root_exit, descendant_kills)
+                assert all(e['root_reaped'] and e['root_returncode'] == 0 for e in submitted
+                    if e['signal'] == signal.SIGKILL and e['identity']
+                    and e['identity']['pid'] != self.launched['process']['pid']), submitted
             if mode in ('late', 'kill-late'):
                 assert any(e.get('role') == 'late-descendant' for e in receipts), receipts
             if mode == 'kill-late':

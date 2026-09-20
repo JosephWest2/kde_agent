@@ -25,7 +25,7 @@ SCRIPT = Path(__file__).resolve()
 CASES = ('focus', 'noop', 'delayed', 'before-map-exit', 'launch-retention',
          'launch-cancel', 'launch-disconnect', 'queued-resize', 'queued-vanish',
          'focus-vanish', 'subtree-exit', 'slow-query', 'stopped-query',
-         'stop-wait', 'bus-death', 'kwin-death', 'worker-death', 'focus-transition', 'restart')
+         'stop-wait', 'bus-death', 'kwin-death', 'worker-death', 'focus-transition', 'queued-move', 'restart')
 
 
 def read(path):
@@ -129,11 +129,27 @@ def worker(name, generation, artifacts, binary):
         stream.write(raw)
     def heartbeat():
         now = time.monotonic()
+        if now - samples['last'] >= .1:
+            emit('glib_gap', previous_at=samples['last'], gap=now - samples['last'])
         samples['max_glib_gap'] = max(samples['max_glib_gap'], now - samples['last'])
         samples['last'] = now
         samples['heartbeat_count'] += 1
         return True
     GLib.timeout_add(5, heartbeat)
+    from agent_desktop.artifacts import Store
+    original_write = Store._write
+    write_timing = {'count': 0, 'maximum': 0}
+    def measured_write(self, *args, **kwargs):
+        before = time.monotonic()
+        try:
+            return original_write(self, *args, **kwargs)
+        finally:
+            elapsed = time.monotonic() - before
+            write_timing['count'] += 1
+            write_timing['maximum'] = max(write_timing['maximum'], elapsed)
+            if elapsed >= .05:
+                emit('artifact_write_interval', started_at=before, elapsed=elapsed)
+    Store._write = measured_write
     def mode():
         path = folder / 'fault.json'
         return read(path)['mode'] if path.exists() else 'normal'
@@ -228,7 +244,7 @@ def worker(name, generation, artifacts, binary):
     try:
         run(name, generation, artifacts=artifacts, managed=True, desktop=True, kdotool=binary)
     finally:
-        emit('worker_trace_end', **samples)
+        emit('worker_trace_end', **samples, artifact_writes=write_timing)
         stream.close()
 
 
@@ -561,6 +577,55 @@ class Run:
         self.call(self.args('focus', '--window', self.wref(sibling)))
         self.call(self.wait_args('focus', self.wref(primary), '3'), error='target_lost')
 
+    def queued_move(self):
+        self.launch('--sibling', '--exit-after-ms', '7000', flags=('--wait-window',))
+        rows = wait(lambda: (found if len(found := self.rows()) == 2 else None))
+        primary = next(r for r in rows if r['client']['width'] == 640)
+        sibling = next(r for r in rows if r['client']['width'] == 480)
+        self.call(self.args('focus', '--window', self.wref(sibling)))
+        blocker = self.pending(self.wait_args('exit', timeout='1.2'))
+        self.target_started(blocker[1]['started_at'], 'exit')
+        queued = self.pending(self.args('focus', '--window', self.wref(primary)))
+        def admitted():
+            for path in self.folder.glob('requests/*/*/record.json'):
+                value = read(path)
+                if value.get('operation') == 'focus' and value.get('admitted_at', 0) >= queued[1]['started_at']:
+                    return value
+            return None
+        admission = wait(admitted, .5)
+        assert not any(e['event'] == 'native_start' and e.get('request_id') == admission['request_id'] for e in self.native_trace())
+        root = self.runtime / 'agent-desktop/g' / self.gen / 'desktop'
+        env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'XDG_RUNTIME_DIR': str(root),
+               'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(root / 'bus'), 'TMPDIR': str(root / 'tmp')}
+        script = self.folder / 'fixed-queued-move.js'
+        # Fixed evidence-only action: exact fixture UUID, bounded window list,
+        # constant displacement; never accepted through production request fields.
+        script.write_text('var id=' + json.dumps(primary['window']['window_id']) + ';\n'
+            'var ws=workspace.windowList(); var moved=false;\n'
+            'for(var i=0;i<ws.length && i<256;i++){var w=ws[i];'
+            'if(String(w.internalId).replace(/[{}]/g,"").toLowerCase()===id){'
+            'var r=w.frameGeometry; r.x=r.x+50; r.y=r.y+30; w.frameGeometry=r; moved=true; break;}}\n'
+            'output_result(JSON.stringify({moved:moved}));\n')
+        name = 'evidence-move-' + self.gen
+        binary = self.receipt['dependencies']['kdotool']['executable']
+        argv = [binary, '--name', name, 'kwinscript', '--file', str(script)]
+        at = time.monotonic()
+        moved = subprocess.run(argv, env=env, cwd='/', capture_output=True, text=True, timeout=2)
+        self.case['private_move'] = {'argv': argv, 'started_at': at, 'ended_at': time.monotonic(),
+            'source_sha256': digest(script), 'stdout': moved.stdout, 'stderr': moved.stderr,
+            'exit_code': moved.returncode, 'private_bus': env['DBUS_SESSION_BUS_ADDRESS'], 'before': primary}
+        assert moved.returncode == 0 and json.loads(moved.stdout)['moved'], self.case['private_move']
+        self.remember_pending(blocker)
+        response = self.remember_pending(queued)['response']
+        assert response['ok'], response
+        current = next(r for r in self.rows() if r['window'] == primary['window'])
+        self.case['independent_after'] = current
+        self.case['admission'] = admission
+        assert response['result']['client'] == current['client']
+        assert (current['client']['x'], current['client']['y']) != (primary['client']['x'], primary['client']['y'])
+        starts = [e for e in self.native_trace() if e['event'] == 'native_start' and e.get('request_id') == admission['request_id']]
+        assert starts and min(e['at'] for e in starts) > self.case['private_move']['ended_at']
+
     def subtree_exit(self):
         self.launch('--exit-after-ms', '250', '--descendant-ms', '1800')
         descendant = wait(lambda: next((e for e in self.fixture_events() if e['event'] == 'descendant_spawned'), None))
@@ -652,6 +717,7 @@ class Run:
                     elif label == 'kwin-death': self.failure_during_wait('kwin')
                     elif label == 'worker-death': self.failure_during_wait('worker')
                     elif label == 'focus-transition': self.focus_transition()
+                    elif label == 'queued-move': self.queued_move()
                     elif label == 'restart':
                         self.launch('--exit-after-ms', '5000', flags=('--wait-window',))
                         oldapp, oldwindow, oldgen = self.appref, self.wref(self.rows()[0]), self.gen

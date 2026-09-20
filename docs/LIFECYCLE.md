@@ -272,3 +272,14 @@ Application ownership now uses empty-controller delegation, the `supervisor`
 worker subgroup and exact `.control` hook authentication. Stop every live
 generation before upgrading installed code. See [applications](APPLICATIONS.md)
 for containment and supported traversal bounds.
+
+Issue #25 supplies `closing.CloseOperation` and `CloseHook` for one externally
+selected window/app. Construction emits no effect. A hook caller supplies one
+finite deadline covering work and cleanup, pumps Children reaping and Registry
+observation between bounded calls, and owns any subsequent service cleanup.
+The hook cannot acquire another request budget, retry close, signal applications,
+or interact with confirmations. It returns pending or an idempotent terminal
+result including uncertainty and cleanup confirmation. Unresolved adapter ownership
+prevents competing dispatch. Production release-before-close integration, shutdown
+selection/fan-out policy and owner pumping remain #35; the existing production
+`not_connected` hook/qualification status is unchanged by this primitive.

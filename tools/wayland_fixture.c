@@ -6,6 +6,7 @@
 #include "presentation-time-client-protocol.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/input-event-codes.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -26,6 +27,7 @@ static struct wp_presentation *presentation;
 /* Fixed slots keep callback ownership valid even after a surface is closed. */
 struct fixture_surface {
     const char *label;
+    const char *role;
     struct wl_surface *wl;
     struct xdg_surface *xdg;
     struct xdg_toplevel *top;
@@ -33,14 +35,16 @@ struct fixture_surface {
     bool resize_scheduled, destroy_scheduled, resize_done, destroy_done;
     unsigned resize_after_ms, destroy_after_ms, resize_width, resize_height;
     unsigned long revision, control_id;
+    unsigned close_requests;
+    unsigned long long close_due_ns;
     unsigned state;
     int width, height;
     const char *source;
 };
 static struct fixture_surface surfaces[3] = {
-    {.label = "primary", .width = 640, .height = 360, .source = "initial"},
-    {.label = "sibling", .width = 480, .height = 300, .source = "initial"},
-    {.label = "dialog", .width = 320, .height = 180, .source = "initial"},
+    {.label = "primary", .role = "primary", .width = 640, .height = 360, .source = "initial"},
+    {.label = "sibling", .role = "sibling", .width = 480, .height = 300, .source = "initial"},
+    {.label = "dialog", .role = "dialog", .width = 320, .height = 180, .source = "initial"},
 };
 static struct fixture_surface *keyboard_surface, *pointer_surface;
 static bool sibling_window, dialog_window, child_surface, windows_created;
@@ -64,6 +68,9 @@ static bool autonomous;
 static unsigned window_delay_ms, exit_after_ms, descendant_ms;
 static bool timed_exit;
 static int exit_code;
+static const char *close_mode = "normal";
+static unsigned close_delay_ms;
+static struct fixture_surface *confirmation_target;
 
 static unsigned long long monotonic_ns(void) {
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -87,6 +94,11 @@ static void die(const char *message) {
 }
 static void surface_event(const char *type, const struct fixture_surface *s) {
     event(type); printf(",\"surface\":"); quoted(s->label);
+    printf(",\"role\":"); quoted(s->role);
+}
+static void input_event(const char *type, const struct fixture_surface *s) {
+    if (s) surface_event(type, s);
+    else { event(type); printf(",\"surface\":null,\"role\":null"); }
 }
 static struct fixture_surface *find_surface(struct wl_surface *wl) {
     for (unsigned i = 0; i < 3; ++i) if (surfaces[i].wl == wl) return &surfaces[i];
@@ -99,6 +111,7 @@ static void release(void *data, struct wl_buffer *wl) {
 static const struct wl_buffer_listener buffer_listener = { .release = release };
 struct frame { struct fixture_surface *surface; unsigned long revision; unsigned state; uint32_t checksum; const char *source; unsigned long control_id; bool output_matched; bool sync_received; };
 static void render(struct fixture_surface *s);
+static void create_window(struct fixture_surface *s, struct fixture_surface *parent);
 static void sync_output(void *data, struct wp_presentation_feedback *f, struct wl_output *output) {
     (void)f; struct frame *frame = data; frame->output_matched = output == only_output; frame->sync_received = true;
 }
@@ -138,6 +151,9 @@ static void render(struct fixture_surface *s) {
         uint32_t color = colors[((x >= s->width / 2) + 2 * (y >= s->height / 2) + s->state) % 4];
         if (y >= 16 && y < 48 && x >= 16 && x < 272)
             color = (s->state & (1u << ((x - 16) / 8))) ? 0x00ffffffu : 0;
+        if (s == &surfaces[2] && confirmation_target &&
+            x >= 16 && x < s->width - 16 && y >= s->height - 56 && y < s->height - 16)
+            color = 0x00ffffffu;
         pixels[y * s->width + x] = color; checksum = (checksum ^ color) * 16777619u;
     }
     struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, b->size);
@@ -190,16 +206,51 @@ static void top_configure(void *data, struct xdg_toplevel *top, int32_t w, int32
 static void close_surface(struct fixture_surface *s, const char *source) {
     if (!s->wl || s->closed) return;
     surface_event("close", s); printf(",\"source\":"); quoted(source); puts("}");
-    s->closed = true;
+    s->closed = true; s->close_due_ns = 0;
     if (keyboard_surface == s) keyboard_surface = NULL;
     if (pointer_surface == s) pointer_surface = NULL;
     xdg_toplevel_destroy(s->top); xdg_surface_destroy(s->xdg); wl_surface_destroy(s->wl);
     s->top = NULL; s->xdg = NULL; s->wl = NULL;
+    surface_event("destroy", s); printf(",\"source\":"); quoted(source); puts("}");
     bool any_open = false;
     for (unsigned i = 0; i < 3; ++i) if (surfaces[i].wl) any_open = true;
     if (!any_open) running = false;
 }
-static void top_close(void *data, struct xdg_toplevel *top) { (void)top; close_surface(data, "compositor"); }
+static void top_close(void *data, struct xdg_toplevel *top) {
+    (void)top;
+    struct fixture_surface *s = data;
+    surface_event("close_requested", s);
+    printf(",\"source\":\"compositor\",\"request_count\":%u,\"close_mode\":", ++s->close_requests);
+    quoted(close_mode); puts("}");
+    if (!strcmp(close_mode, "refuse") || (confirmation_target && s == &surfaces[2])) {
+        surface_event("close_refused", s); puts("}");
+    } else if (!strcmp(close_mode, "delay")) {
+        if (!s->close_due_ns) s->close_due_ns = monotonic_ns() + close_delay_ms * 1000000ULL;
+        surface_event("close_delayed", s);
+        printf(",\"delay_ms\":%u,\"due_ns\":%llu}\n", close_delay_ms, s->close_due_ns);
+    } else if (!strcmp(close_mode, "confirmation")) {
+        if (!confirmation_target) {
+            confirmation_target = s;
+            surfaces[2].role = "confirmation";
+            create_window(&surfaces[2], s);
+            surface_event("confirmation_opened", &surfaces[2]);
+            printf(",\"target\":"); quoted(s->label); puts("}");
+        } else {
+            surface_event("confirmation_pending", s);
+            printf(",\"target\":"); quoted(confirmation_target->label); puts("}");
+        }
+    } else close_surface(s, "compositor");
+}
+static bool acknowledge_confirmation(struct fixture_surface *s, const char *source) {
+    if (!confirmation_target || s != &surfaces[2] || !s->mapped || s->closed) return false;
+    struct fixture_surface *target = confirmation_target;
+    surface_event("confirmation_accepted", s);
+    printf(",\"source\":"); quoted(source); printf(",\"target\":"); quoted(target->label); puts("}");
+    /* One confirmation per fixed dialog slot; remaining siblings close normally. */
+    confirmation_target = NULL; close_mode = "normal";
+    close_surface(s, "confirmation"); close_surface(target, "confirmation");
+    return true;
+}
 static void bounds(void *data, struct xdg_toplevel *top, int32_t w, int32_t h) { (void)data; (void)top; (void)w; (void)h; }
 static void wm_capabilities(void *data, struct xdg_toplevel *top, struct wl_array *caps) { (void)data; (void)top; (void)caps; }
 static const struct xdg_toplevel_listener top_listener = { .configure = top_configure, .close = top_close, .configure_bounds = bounds, .wm_capabilities = wm_capabilities };
@@ -237,7 +288,9 @@ static void key(void *data, struct wl_keyboard *k, uint32_t serial, uint32_t tim
     (void)data; (void)k; char text[128] = "";
     xkb_keysym_t sym = XKB_KEY_NoSymbol;
     if (xkb_state) { sym = xkb_state_key_get_one_sym(xkb_state, code + 8); xkb_state_key_get_utf8(xkb_state, code + 8, text, sizeof(text)); }
-    event("key"); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"key\":%u,\"state\":%u,\"keysym\":%u,\"text\":", serial, time, code, state, sym); quoted(text); puts("}");
+    input_event("key", keyboard_surface); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"key\":%u,\"state\":%u,\"keysym\":%u,\"text\":", serial, time, code, state, sym); quoted(text); puts("}");
+    if (state == WL_KEYBOARD_KEY_STATE_PRESSED && (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) &&
+        acknowledge_confirmation(keyboard_surface, "key")) return;
     struct fixture_surface *s = keyboard_surface ? keyboard_surface : &surfaces[0];
     ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
@@ -254,14 +307,18 @@ static void pointer_enter(void *data, struct wl_pointer *p, uint32_t serial, str
 static void pointer_leave(void *data, struct wl_pointer *p, uint32_t serial, struct wl_surface *s) { (void)data; (void)p; (void)s; pointer_surface = NULL; event("pointer_leave"); printf(",\"serial\":%u}\n", serial); }
 static void motion(void *data, struct wl_pointer *p, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
     (void)data; (void)p; pointer_x = wl_fixed_to_double(x); pointer_y = wl_fixed_to_double(y);
-    event("motion"); printf(",\"time_ms\":%u,\"x\":%.3f,\"y\":%.3f}\n", time, pointer_x, pointer_y);
+    input_event("motion", pointer_surface); printf(",\"time_ms\":%u,\"x\":%.3f,\"y\":%.3f}\n", time, pointer_x, pointer_y);
 }
 static void button(void *data, struct wl_pointer *p, uint32_t serial, uint32_t time, uint32_t code, uint32_t state) {
-    (void)data; (void)p; event("button"); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"button\":%u,\"state\":%u,\"x\":%.3f,\"y\":%.3f}\n", serial, time, code, state, pointer_x, pointer_y);
+    (void)data; (void)p; input_event("button", pointer_surface); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"button\":%u,\"state\":%u,\"x\":%.3f,\"y\":%.3f}\n", serial, time, code, state, pointer_x, pointer_y);
+    if (pointer_surface == &surfaces[2] && code == BTN_LEFT && state == WL_POINTER_BUTTON_STATE_PRESSED &&
+        pointer_x >= 16 && pointer_x < pointer_surface->width - 16 &&
+        pointer_y >= pointer_surface->height - 56 && pointer_y < pointer_surface->height - 16 &&
+        acknowledge_confirmation(pointer_surface, "button")) return;
     struct fixture_surface *s = pointer_surface ? pointer_surface : &surfaces[0];
     ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
-static void axis(void *d, struct wl_pointer *p, uint32_t t, uint32_t a, wl_fixed_t v) { (void)d; (void)p; event("axis"); printf(",\"time_ms\":%u,\"axis\":%u,\"value\":%.3f}\n", t, a, wl_fixed_to_double(v)); }
+static void axis(void *d, struct wl_pointer *p, uint32_t t, uint32_t a, wl_fixed_t v) { (void)d; (void)p; input_event("axis", pointer_surface); printf(",\"time_ms\":%u,\"axis\":%u,\"value\":%.3f}\n", t, a, wl_fixed_to_double(v)); }
 /* Bind pointer v5: all events through v5 have handlers. */
 static void pointer_frame(void *d, struct wl_pointer *p) { (void)d; (void)p; }
 static void axis_source(void *d, struct wl_pointer *p, uint32_t s) { (void)d; (void)p; (void)s; }
@@ -297,10 +354,13 @@ static void usage(void) {
     fprintf(stderr, "usage: wayland-fixture [--autonomous] [--window-delay-ms N] "
             "[--exit-after-ms N] [--exit-code N] [--descendant-ms N]\n"
             "  [--sibling] [--dialog] [--child-window-ms N]\n"
+            "  [--close-mode normal|refuse|delay|confirmation] [--close-delay-ms N]\n"
             "  [--resize-after-ms LABEL:MS:WIDTH:HEIGHT] [--destroy-after-ms LABEL:MS]\n"
             "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
             "--descendant-ms and --child-window-ms must be positive.\n"
+            "Non-normal close modes require positive --exit-after-ms; delay requires positive\n"
+            "--close-delay-ms. Confirmation reserves the dialog slot (no --dialog).\n"
             "One resize and destroy per enabled primary/sibling/dialog; timers start at started.\n"
             "Resize dimensions: 1..1280 by 1..720; schedule times must follow window delay.\n");
 }
@@ -450,6 +510,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(option, "--exit-code")) exit_code = (int)option_number(value, 255);
         else if (!strcmp(option, "--descendant-ms")) { descendant_ms = option_number(value, 86400000); if (!descendant_ms) { usage(); return 2; } }
         else if (!strcmp(option, "--child-window-ms")) { child_window_ms = option_number(value, 86400000); if (!child_window_ms) { usage(); return 2; } }
+        else if (!strcmp(option, "--close-delay-ms")) close_delay_ms = option_number(value, 86400000);
+        else if (!strcmp(option, "--close-mode")) {
+            if (strcmp(value, "normal") && strcmp(value, "refuse") && strcmp(value, "delay") && strcmp(value, "confirmation")) { usage(); return 2; }
+            close_mode = value;
+        }
         else if (!strcmp(option, "--resize-after-ms")) schedule_option(value, true);
         else if (!strcmp(option, "--destroy-after-ms")) schedule_option(value, false);
         else if (!strcmp(option, "--title-mode") || !strcmp(option, "--app-id-mode")) {
@@ -458,6 +523,9 @@ int main(int argc, char **argv) {
         }
         else { usage(); return 2; }
     }
+    if ((strcmp(close_mode, "normal") && (!timed_exit || !exit_after_ms || exit_after_ms <= window_delay_ms)) ||
+        (!strcmp(close_mode, "delay") ? !close_delay_ms : close_delay_ms != 0) ||
+        (!strcmp(close_mode, "confirmation") && dialog_window)) { usage(); return 2; }
     for (unsigned i = 0; i < 3; ++i) {
         struct fixture_surface *s = &surfaces[i];
         if ((s->resize_scheduled || s->destroy_scheduled) &&
@@ -467,7 +535,7 @@ int main(int argc, char **argv) {
     }
     if (child_surface) {
         if (!autonomous || !timed_exit || sibling_window || dialog_window || child_window_ms) { usage(); return 2; }
-        surfaces[0].label = "child"; surfaces[0].width = 400; surfaces[0].height = 240;
+        surfaces[0].label = "child"; surfaces[0].role = "child"; surfaces[0].width = 400; surfaces[0].height = 240;
     }
     generation = getenv("HARNESS_GENERATION");
     if (!generation && autonomous) generation = "00000000000000000000000000000000";
@@ -485,8 +553,9 @@ int main(int argc, char **argv) {
     if (child_window_ms) start_window_child();
     unsigned long long started = monotonic_ns();
     if (autonomous || window_delay_ms || timed_exit || descendant_ms) {
-        event("started"); printf(",\"autonomous\":%s,\"window_delay_ms\":%u,\"timed_exit\":%s,\"exit_after_ms\":%u,\"exit_code\":%d}\n",
+        event("started"); printf(",\"autonomous\":%s,\"window_delay_ms\":%u,\"timed_exit\":%s,\"exit_after_ms\":%u,\"exit_code\":%d,\"close_mode\":",
                                  autonomous ? "true" : "false", window_delay_ms, timed_exit ? "true" : "false", exit_after_ms, exit_code);
+        quoted(close_mode); printf(",\"close_delay_ms\":%u}\n", close_delay_ms);
     }
     for (unsigned i = 0; i < 3; ++i) {
         struct fixture_surface *s = &surfaces[i];
@@ -512,6 +581,14 @@ int main(int argc, char **argv) {
             windows_created = true;
         }
         for (unsigned i = 0; i < 3; ++i) run_surface_schedule(&surfaces[i], elapsed_ms);
+        unsigned long long now_ns = monotonic_ns();
+        for (unsigned i = 0; i < 3; ++i) {
+            struct fixture_surface *s = &surfaces[i];
+            if (s->close_due_ns && now_ns >= s->close_due_ns) {
+                s->close_due_ns = 0;
+                close_surface(s, "delayed_compositor");
+            }
+        }
         if (!running) break;
         if (window_child > 0) {
             int status; pid_t reaped = waitpid(window_child, &status, WNOHANG);
@@ -529,6 +606,11 @@ int main(int argc, char **argv) {
                 timeout = (int)(s->resize_after_ms - elapsed_ms);
             if (s->destroy_scheduled && !s->destroy_done && s->destroy_after_ms - elapsed_ms < (unsigned)timeout)
                 timeout = (int)(s->destroy_after_ms - elapsed_ms);
+            if (s->close_due_ns) {
+                unsigned long long remaining_ms = s->close_due_ns > now_ns ?
+                    (s->close_due_ns - now_ns + 999999ULL) / 1000000ULL : 0;
+                if (remaining_ms < (unsigned)timeout) timeout = (int)remaining_ms;
+            }
         }
         if (wl_display_dispatch_pending(display) < 0) die("Wayland dispatch failed");
         if (wl_display_flush(display) < 0 && errno != EAGAIN) die("Wayland flush failed");
@@ -555,6 +637,7 @@ int main(int argc, char **argv) {
                 }
                 else if (!strcmp(input, "open sibling")) create_window(&surfaces[1], NULL);
                 else if (!strcmp(input, "open dialog")) {
+                    if (!strcmp(close_mode, "confirmation")) die("confirmation reserves dialog slot");
                     if (!surfaces[0].top) die("dialog requires primary");
                     create_window(&surfaces[2], &surfaces[0]);
                 }
@@ -573,5 +656,7 @@ int main(int argc, char **argv) {
     }
     for (unsigned i = 0; i < 3; ++i) close_surface(&surfaces[i], "shutdown");
     wl_display_flush(display);
-    wl_display_disconnect(display); return exit_code;
+    wl_display_disconnect(display);
+    event("fixture_exit"); printf(",\"exit_code\":%d}\n", exit_code);
+    return exit_code;
 }

@@ -117,6 +117,7 @@ class Application:
         self.completed = False
         self.last_check = self.last_write = 0
         self.dirty = False
+        self.process_state = None
         self.window_observation = None
         self.previous_observation = None
         self.pending_observation = None
@@ -191,7 +192,12 @@ class Application:
             if self.state not in ('root-exited', 'all-exited', 'launch-failed'):
                 self.state = 'root-exited' if self.authorized else 'launch-failed'
                 self.dirty = True
-        empty = not self.populated()
+        populated = self.populated()
+        self.process_state = {'root_reaped': self.child is not None and self.child.returncode is not None,
+                              'root_returncode': self.exit_code, 'subtree_populated': populated,
+                              'all_exited': False, 'observed_at': time.monotonic(),
+                              'remaining_processes': None, 'enumeration': 'unavailable'}
+        empty = not populated
         # Empty before helper enters the group is NOT application completion.
         if empty and self.settled and (self.child is None or self.child.returncode is not None):
             # A prior scan may have used its entire turn before persistence.
@@ -205,6 +211,7 @@ class Application:
                 self.registry.store.artifact_state(path, 'complete')
             self.registry.checkpoint_windows()
             self.completed = True
+            self.process_state = self.process_state | {'all_exited': True}
             self.registry.active = None
             self.close()
             # cgroup rmdir requires empty nested groups, which ordinary apps do
@@ -357,6 +364,24 @@ class Registry:
             raise uncertain()
         # Historical launch-failed records retire only after complete emptiness.
         return snapshot, True
+
+    def application_process_state(self, handle):
+        """Constant-size cached lifetime truth; never enumerates or acquires authority."""
+        snapshot = self.lookup(handle)
+        app = self.active
+        if app is not None and app.handle == handle:
+            cached = app.process_state
+            if app.uncertain or cached is None:
+                return {'root_reaped': None, 'root_returncode': snapshot.get('exit_code'),
+                        'subtree_populated': None, 'all_exited': None, 'observed_at': None,
+                        'remaining_processes': None, 'enumeration': 'unavailable'}
+            return dict(cached)
+        completed = snapshot['state'] in ('all-exited', 'launch-failed')
+        return {'root_reaped': True if snapshot.get('exit_code') is not None else None,
+                'root_returncode': snapshot.get('exit_code'),
+                'subtree_populated': False if completed else None,
+                'all_exited': True if completed else None, 'observed_at': None,
+                'remaining_processes': None, 'enumeration': 'unavailable'}
 
     def window_identity(self, bracket, pid):
         if pid is None:

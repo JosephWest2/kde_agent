@@ -65,7 +65,9 @@ unsigned big-endian length followed by that many UTF-8 JSON bytes. Both payloads
 are limited to 1 MiB and 32 nested containers. Zero/oversized lengths, invalid UTF-8,
 duplicate keys, trailing bytes, non-object roots, nonfinite numbers (including
 exponent overflow), incompatible versions and malformed field types are rejected.
-There is no pipelining; additional bytes never dispatch another operation. A peer
+Before dispatch, one nonblocking one-byte peek rejects already queued trailing
+data, including at receive-chunk boundaries. There is no pipelining; additional
+bytes never dispatch another operation. A peer
 can send bytes after an already valid request has executed; their later arrival
 does not undo that execution. Normal clients keep both socket directions open:
 EOF/HUP means client departure, not an end-of-frame marker.
@@ -135,7 +137,9 @@ response, also unknown to the client.
 The GLib owner performs nonblocking socket I/O. Internal handlers receive an
 Admission with monotonic admitted_at/deadline, complete(result/error), disconnected
 state and an on_disconnect callback. They must return promptly; this is not a
-permission for blocking adapter calls. Completion cannot accept late success.
+permission for blocking adapter calls. Completion cannot accept late success; a late structured result is retained as
+the timeout's partial result so available handles and recovery paths survive.
+Oversized or unencodable late results use the same bounded safe-handle fallback.
 Disconnect leaves the active ID owned until terminal completion and notifies the
 corresponding unfinished admission once. #16 adds the serialized ordinary queue,
 priority control admission, cancellable task stepping and cleanup continuation.

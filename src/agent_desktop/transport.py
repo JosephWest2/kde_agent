@@ -97,7 +97,8 @@ class Admission:
         if server.active.get(self.request.request_id) is self:
             del server.active[self.request.request_id]
         if error is None and time.monotonic() >= self.deadline:
-            error = ContractError("timeout", "Request deadline expired.", outcome="unknown")
+            error = ContractError("timeout", "Request deadline expired.", outcome="unknown",
+                                  partial_result=result if isinstance(result, dict) else None)
         payload = response(self.request.request_id, self.request.operation, session=server.name,
                            generation=server.generation, result=result, error=error)
         self.connection.reply(payload, dispatched=True)
@@ -126,9 +127,8 @@ class Connection:
         if self.closed or self.watch:
             return
         glib = self.server.glib
-        events = glib.IO_IN | glib.IO_HUP | glib.IO_ERR
-        if self.output is not None:
-            events |= glib.IO_OUT
+        events = glib.IO_HUP | glib.IO_ERR
+        events |= glib.IO_OUT if self.output is not None else glib.IO_IN
         self.watch = glib.io_add_watch(self.sock.fileno(), glib.PRIORITY_DEFAULT, events, self.ready)
 
     def close(self):
@@ -199,6 +199,17 @@ class Connection:
                     return False
                 value = self.decoder.feed(data)
                 if value is not None:
+                    # A frame may end exactly at the recv chunk boundary. Check
+                    # already queued bytes once; do not wait for future bytes.
+                    try:
+                        trailing = self.sock.recv(1, socket.MSG_PEEK)
+                    except BlockingIOError:
+                        trailing = None
+                    if trailing == b"":
+                        self.close()
+                        return False
+                    if trailing:
+                        raise ContractError("protocol_error", "Trailing request bytes are not allowed.")
                     self.dispatch(value)
             if not self.closed and condition & glib.IO_OUT and self.output is not None:
                 if time.monotonic() >= self.deadline:

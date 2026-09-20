@@ -32,8 +32,12 @@ def handle(request, admission):
         elif mode == "partial":
             admission.complete(error=ContractError("timeout", "Fixture timeout.", outcome="partial",
                                partial_result={"app": {"generation": request.expected_generation, "application_id": "retained"}}))
-        elif mode == "late":
-            GLib.timeout_add(30, lambda: (admission.complete(result={"late": True}), False)[1])
+        elif mode in {"late", "late_large"}:
+            result = {"application": {"generation": request.expected_generation, "application_id": "late-app"},
+                      "log_paths": {"stdout": "/fixture/late-app.out"}}
+            if mode == "late_large":
+                result["data"] = "x" * (MAX_FRAME + 1)
+            GLib.timeout_add(30, lambda: (admission.complete(result=result), False)[1])
         else:
             admission.complete(result={"dispatched": True, "application_acknowledged": False})
     else:

@@ -309,6 +309,53 @@ class ProcessTests(unittest.TestCase):
         code, payload = self.type_cli("late", "--timeout", ".01")
         self.assertEqual(code, 8)
         self.assertEqual(payload["error"]["outcome"], "unknown")
+        self.assertEqual(payload["error"]["partial_result"]["application"]["application_id"], "late-app")
+        self.assertEqual(payload["error"]["partial_result"]["log_paths"], {"stdout": "/fixture/late-app.out"})
+        code, payload = self.type_cli("late_large", "--timeout", ".01")
+        self.assertEqual(code, 11)
+        self.assertEqual(payload["error"]["outcome"], "unknown")
+        self.assertEqual(payload["error"]["partial_result"]["application"]["application_id"], "late-app")
+        self.assertNotIn("data", payload["error"]["partial_result"])
+        self.assertEqual(len((self.root / "effects").read_text().splitlines()), 6)
+
+    def test_queued_trailing_bytes_at_receive_boundary_never_dispatch(self):
+        worker = self.workers[0][0]
+        for size in (65535, 65536, 65537):
+            for extra in (b"!", b""):
+                with self.subTest(size=size, extra=extra):
+                    req = request("type", arguments={"window": GEN + ":" + WINDOW, "text": "x"})
+                    payload = req.payload()
+                    payload["arguments"]["text"] += "x" * (size - len(encode(payload)))
+                    frame = encode(payload)
+                    self.assertEqual(len(frame), size)
+                    with socket.socket(socket.AF_UNIX) as sock:
+                        sock.settimeout(3)
+                        # Stop and observe before queuing all bytes; this avoids
+                        # relying on scheduler timing for the malformed case.
+                        worker.send_signal(signal.SIGSTOP)
+                        _, stopped = os.waitpid(worker.pid, os.WUNTRACED)
+                        self.assertTrue(os.WIFSTOPPED(stopped))
+                        try:
+                            sock.connect(str(self.root / "agent-desktop/g" / GEN / "control.sock"))
+                            sock.sendall(frame + extra)
+                        finally:
+                            worker.send_signal(signal.SIGCONT)
+                        decoder = Decoder()
+                        while True:
+                            data = sock.recv(65536)
+                            self.assertTrue(data, "Expected one bounded reply")
+                            result = decoder.feed(data)
+                            if result is not None:
+                                break
+                        self.assertEqual(result["ok"], not bool(extra))
+                        if extra:
+                            self.assertEqual(result["error"]["code"], "protocol_error")
+                            self.assertEqual(result["error"]["outcome"], "not_started")
+                            effects = (self.root / "effects").read_text() if (self.root / "effects").exists() else ""
+                            self.assertNotIn(req.request_id, effects)
+                        else:
+                            self.assertIn(req.request_id, (self.root / "effects").read_text())
+        self.assertEqual(len((self.root / "effects").read_text().splitlines()), 3)
 
     def test_slow_peer_deadline_and_responsive_other_client(self):
         with socket.socket(socket.AF_UNIX) as sock:

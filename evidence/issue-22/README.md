@@ -1,8 +1,8 @@
 # Issue #22 installed launch evidence
 
-Selected implementation: `6eff7aa507081a4119c9114a19664cf572b90cad`.
+Selected corrected implementation: `98745c82d15f8058f37a0c4b213a69343388bfe1`.
 The installed wheel's 32 Python module hashes match the source hashes in
-[launch/launch.json](launch/launch.json). Evidence used a separate virtual
+[launch-review/launch.json](launch-review/launch.json). Evidence used a separate virtual
 environment with system site packages, clean caller environments and different
 caller/worker working directories. The native fixture was rebuilt from the
 committed C source with `-Wall -Wextra -Werror`.
@@ -23,7 +23,7 @@ committed C source with `-Wall -Wextra -Werror`.
   preserve the application/process/log references in real terminal request
   records and leave the authorized target alive. No launch is retried.
 - The cancellation case includes 64 living descendants. Measured cancellation
-  dispatch was 4.883 ms, below the existing 100 ms target. Each generation's stop
+  dispatch was 4.803 ms, below the existing 100 ms target. Each generation's stop
   independently verifies entire service cgroup emptiness and durable logs remain.
 
 The wait injection subclasses the real installed launch task after it completes;
@@ -42,7 +42,7 @@ implementation, including worker kill/freeze, essential-service failures, blocke
 hooks, retained prior failures and stale-generation replay. It verifies the new
 exact supervisor/control-subgroup layout without widening the 15-second bound.
 
-[tests.txt](tests.txt) records the complete suite; focused coverage includes gate
+[review-tests.txt](review-tests.txt) records all 306 passing tests; focused coverage includes gate
 EOF/expiry, before-release persistence failure, post-release protocol death,
 retained scheduler failures, descriptor closure, PID reuse/foreign membership,
 high-numbered pidfds, missing membership input, and finite traversal limits.
@@ -55,7 +55,13 @@ older build:
   .local/issue22-launch-new .local/dependencies
 ```
 
-`launch/` contains unaltered selected receipts and generation artifacts. Absolute
+`launch-review/` contains the current unaltered selected receipts and generation artifacts.
+`launch/` and `tests.txt` retain the historical pre-review qualification on `6eff7aa`.
+The corrected source makes retained completed exit observations idempotent and
+shares the registry turn deadline across scanning, reaping and publication,
+retaining deferred process batches for later turns. Ten new regressions cover
+completion and budget exhaustion during iteration, acquisition, reaping and writes,
+including sharing the remaining tick budget after lifetime observation. Absolute
 paths name their original qualification location; artifacts were copied here
 without rewriting receipts. Failed harness-development runs are not selected
 qualification evidence.

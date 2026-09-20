@@ -1,0 +1,3 @@
+{"event": "helper_entry", "at": 156346.706338291, "operation": "stop", "identity": {"pid": 1065422, "start_ticks": "15634664", "ppid": 910, "sid": 1065422, "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-4aa3427a600647f3aa7d379ad92a6a89.service/.control"}}
+{"event": "helper_blocked", "at": 156346.706371664, "operation": "stop"}
+{"event": "helper_entry", "at": 156349.740841867, "operation": "post", "identity": {"pid": 1065501, "start_ticks": "15634968", "ppid": 910, "sid": 1065501, "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-4aa3427a600647f3aa7d379ad92a6a89.service/.control"}}

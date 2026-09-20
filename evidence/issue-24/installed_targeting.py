@@ -113,6 +113,7 @@ def worker(name, generation, artifacts, binary):
     from gi.repository import GLib
     from agent_desktop import windows, targeting
     from agent_desktop.worker import run
+    original_query = windows.Query
     assert not Path(agent_desktop.__file__).resolve().is_relative_to(PROJECT / 'src')
     folder = Path(artifacts) / 'generations' / generation
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -148,7 +149,7 @@ def worker(name, generation, artifacts, binary):
             def _prepare_script(self):
                 if kind == 'activation' and self.evidence_mode == 'noop':
                     # Real successful native kwinscript, fixed source, no focus effect.
-                    windows.Query._prepare_script(self)
+                    original_query._prepare_script(self)
                     (self.folder / 'input.js').write_text('output_result("noop");')
                 else:
                     super()._prepare_script()

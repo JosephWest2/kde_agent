@@ -30,6 +30,11 @@ def compose(base, overrides, private):
         raise ContractError('session_unavailable', 'Private environment is incomplete.')
     if any(not isinstance(v, str) or not v or '\0' in v for v in private.values()):
         raise ContractError('session_unavailable', 'Private environment is invalid.')
+    # XDG_CONFIG_DIRS is a search list, not one opaque pathname. This
+    # version supports exactly one private directory, including when a root
+    # name itself would introduce a colon into that value.
+    if ':' in private['XDG_CONFIG_DIRS']:
+        raise ContractError('session_unavailable', 'Private config search must be one directory.')
     root = Path(private['XDG_RUNTIME_DIR'])
     if not root.is_absolute():
         raise ContractError('session_unavailable', 'Private runtime must be absolute.')

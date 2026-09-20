@@ -1,0 +1,19 @@
+{
+  "src/agent_desktop/__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+  "src/agent_desktop/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+  "src/agent_desktop/artifacts.py": "a0b80f4b5907a01e9a75b447dc4fa152bb60f71ba57ffac34c8d908a848b41fa",
+  "src/agent_desktop/children.py": "644263b4a4a89c2a11d6efa21b7017685f06ba4d144b70b12282bbeff2a391bb",
+  "src/agent_desktop/cli.py": "039d159a797843ba6fe5a49938e6d679919c46041f2c3246947cabb731158bc5",
+  "src/agent_desktop/contracts.py": "d66e724b98a29b4d04446bd04941262c7b73e0ae2c95d1d4dbd753a6734b43e4",
+  "src/agent_desktop/environment.py": "b56d042fa430f4e9dd430ab5105553bcd364e141704115f11f60e8c55e453b3c",
+  "src/agent_desktop/paths.py": "329640a381c2cfe8fc0cdae0ca832413ccff07e2b7b4caa1ab40bc1e6b45a767",
+  "src/agent_desktop/protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+  "src/agent_desktop/records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",
+  "src/agent_desktop/runtime.py": "7ae8516991021af482b3d34cd41cb41f5ff190716a141dc2752eae569b0df3f0",
+  "src/agent_desktop/scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
+  "src/agent_desktop/transport.py": "5a08eb546a78b794838cc53aadbaadba5fdef1bbcdc3ba4ccbaf9354f84908bb",
+  "src/agent_desktop/worker.py": "2069076b913e4931ef05d6921b22fe2152c6d52d6fc756902b66df3b98e44cbf",
+  "tests/test_artifacts.py": "38d828a02031e0e5835db85e039fd178b9367fb24dc3804ece287a115980b742",
+  "tests/test_artifact_process.py": "3c09a906f9ba97a7a4cd7c44fb1c7b307800ab93eab3855b7a843da9568206cf",
+  "tests/artifact_worker_fixture.py": "5d255a069b3c0abfce40ac4862d5978bea18b2aaebe486bcfa2e21a0d205b454"
+}

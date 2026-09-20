@@ -80,6 +80,14 @@ class PathEnvironmentTests(unittest.TestCase):
             for key in private:
                 with self.subTest(key=key), self.assertRaises(ContractError):
                     compose({}, {}, {k: v for k, v in private.items() if k != key})
+            for config in (str(Path(directory) / 'empty') + ':/etc/xdg',
+                           str(Path(directory) / 'empty') + ':',
+                           str(Path(directory) / 'name:colon')):
+                with self.subTest(config=config), self.assertRaises(ContractError):
+                    compose({}, {}, private | {'XDG_CONFIG_DIRS': config})
+            colon_root = self.private(Path(directory) / 'root:colon')
+            with self.assertRaises(ContractError):
+                compose({}, {}, colon_root)
             for extra in (';unix:path=/host', ',guid=abc', '%2fhost'):
                 with self.assertRaises(ContractError):
                     compose({}, {}, private | {'DBUS_SESSION_BUS_ADDRESS': private['DBUS_SESSION_BUS_ADDRESS'] + extra})
@@ -222,6 +230,115 @@ class StoreTests(unittest.TestCase):
                               dependencies=[{'component': 'fixture', 'version': 'test', 'patches': 'none'}])
         self.assertEqual(self.store.read()['output']['state'], 'collected')
 
+    def test_directory_links_fsynced_before_descendant_allocation(self):
+        calls = []
+        original_mkdir, original_fsync = os.mkdir, os.fsync
+        def mkdir(path, *args, **kwargs):
+            original_mkdir(path, *args, **kwargs)
+            parent = Path(os.readlink(f"/proc/self/fd/{kwargs['dir_fd']}"))
+            calls.append(('mkdir', parent / path, parent))
+        def fsync(fd):
+            if stat.S_ISDIR(os.fstat(fd).st_mode):
+                calls.append(('fsync', Path(os.readlink(f'/proc/self/fd/{fd}'))))
+            original_fsync(fd)
+        with patch('agent_desktop.artifacts.os.mkdir', side_effect=mkdir), patch('agent_desktop.artifacts.os.fsync', side_effect=fsync):
+            nested = Store(self.root / 'new-parent/deep/root', 'default', 'e' * 32, create=True)
+            nested.close()
+            token = self.token()
+        for index, call in enumerate(calls):
+            if call[0] != 'mkdir':
+                continue
+            self.assertEqual(calls[index + 1], ('fsync', call[2]), call)
+        self.assertIn(('fsync', self.store.path / 'requests'), calls)
+        self.assertIn(('fsync', self.root), calls)
+        self.assertIn(('fsync', self.root / 'new-parent'), calls)
+        self.assertTrue(self.record(token))
+
+    def test_ancestor_swap_cannot_redirect_store(self):
+        durable = self.root / 'race-root'
+        disposable = self.root / 'runtime'
+        disposable.mkdir(mode=0o700)
+        (disposable / 'generations').mkdir(mode=0o700)
+        original_open = os.open
+        swapped = False
+        def open_swapped(path, flags, *args, **kwargs):
+            nonlocal swapped
+            if path == 'generations' and not swapped:
+                swapped = True
+                durable.rename(self.root / 'original-root')
+                durable.symlink_to(disposable, target_is_directory=True)
+            return original_open(path, flags, *args, **kwargs)
+        with patch('agent_desktop.artifacts.os.open', side_effect=open_swapped), self.assertRaises(ContractError):
+            Store(durable, 'default', 'e' * 32, create=True, disposable=[disposable])
+        self.assertTrue(swapped)
+        self.assertEqual(list((disposable / 'generations').iterdir()), [])
+        self.assertEqual(list((self.root / 'original-root/generations').iterdir()), [])
+
+    def test_reopen_refuses_missing_layout_lock_and_incomplete_manifest(self):
+        for index, missing in enumerate(('requests', 'applications', 'logs/worker.log', 'record.lock', 'events.jsonl')):
+            root = self.root / f'broken-{index}'
+            store = Store(root, 'default', GEN, create=True)
+            path = store.path
+            store.close()
+            victim = path / missing
+            victim.rmdir() if victim.is_dir() else victim.unlink()
+            with self.subTest(missing=missing), self.assertRaises(ContractError):
+                Store(root, 'default', GEN)
+            self.assertFalse(victim.exists())
+        manifest = self.store.path / 'manifest.json'
+        good = json.loads(manifest.read_text())
+        malformed = [dict(schema_version=1, revision=0, session='default', generation=GEN),
+                     good | {'schema_version': True}, good | {'cleanup': {}},
+                     good | {'dependencies': {'state': 'partial'}}, good | {'records': {}},
+                     good | {'output': {'state': 'collected'}}, good | {'process': {'state': 'collected'}}]
+        for value in malformed:
+            manifest.write_text(json.dumps(value))
+            with self.assertRaises(ContractError):
+                Store(self.root / 'durable', 'default', GEN)
+        manifest.write_text(json.dumps(good))
+        self.assertEqual(self.store.read(), good)
+        lock = self.store.path / 'record.lock'
+        held = os.open(lock, os.O_RDWR)
+        try:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock.unlink()
+            with self.assertRaises(ContractError):
+                self.store.read()
+            self.assertFalse(lock.exists())
+            lock.touch(mode=0o600)
+            with self.assertRaises(ContractError):
+                self.store.read()
+        finally:
+            os.close(held)
+
+    def test_interrupted_initialization_has_no_attachable_manifest(self):
+        root = self.root / 'interrupted'
+        original = Store._initialize_file
+        def interrupted(store, directory, name):
+            if name == 'bus.log':
+                raise OSError()
+            return original(store, directory, name)
+        with patch.object(Store, '_initialize_file', interrupted), self.assertRaises(ContractError):
+            Store(root, 'default', GEN, create=True)
+        self.assertFalse((root / 'generations' / GEN / 'manifest.json').exists())
+        with self.assertRaises(ContractError):
+            Store(root, 'default', GEN)
+
+    def test_stable_start_and_terminal_observation_times(self):
+        token = self.token()
+        self.store.transition(token, 'started')
+        started = self.record(token)
+        self.store.transition(token, 'effects', outcome='partial', references={'app': APP})
+        self.store.transition(token, 'finalizing')
+        self.store.transition(token, 'terminal', outcome='success')
+        terminal = self.record(token)
+        self.assertEqual(terminal['started_at'], started['started_at'])
+        self.assertEqual(terminal['started_monotonic'], started['started_monotonic'])
+        self.assertIsNotNone(terminal['terminal_observed_at'])
+        self.assertGreaterEqual(terminal['terminal_observed_monotonic'], terminal['started_monotonic'])
+        self.store.transition(token, 'terminal', outcome='unknown')
+        self.assertEqual(self.record(token), terminal)
+
     def test_bounded_history_projection_and_application_records(self):
         manifest = (self.store.path / 'manifest.json').read_bytes()
         for _ in range(80):
@@ -311,6 +428,23 @@ class BridgeTests(StoreTests):
         self.assertIn('session.stop', effects)
         self.assertEqual(stop.final_payload['error']['code'], 'artifact_failed')
         self.assertEqual(records.live, {})
+
+    def test_request_parent_fsync_failure_prevents_factory_effects(self):
+        records = Records(self.store)
+        factory = Mock()
+        scheduler = Scheduler(factory=records.factory(factory), observer=records.observe)
+        admission = self.admission()
+        records.attach(admission.request, admission)
+        original = os.fsync
+        def fsync(fd):
+            if os.readlink(f'/proc/self/fd/{fd}') == str(self.store.path / 'requests'):
+                raise OSError()
+            return original(fd)
+        with patch('agent_desktop.artifacts.os.fsync', side_effect=fsync), redirect_stderr(io.StringIO()):
+            scheduler.submit(admission.request, admission)
+            scheduler.tick()
+        factory.assert_not_called()
+        self.assertEqual(admission.final_payload['error']['code'], 'artifact_failed')
 
     def test_cancellation_calls_release_before_failed_persistence(self):
         records = Records(self.store)

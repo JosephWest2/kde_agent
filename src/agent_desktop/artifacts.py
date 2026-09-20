@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import platform
 import stat
+import time
 import uuid
 
 from . import __version__
@@ -56,6 +57,54 @@ def check_fd(fd, directory=False):
         fail('permissions')
 
 
+
+def mkdir_durable(parent, name, *, exclusive=False):
+    """Persist the parent entry before any descendant can authorize effects."""
+    try:
+        os.mkdir(name, mode=0o700, dir_fd=parent)
+    except FileExistsError:
+        if exclusive:
+            raise
+    os.fsync(parent)
+
+
+@contextmanager
+def root_directory(path, *, create=False):
+    """Anchor each component before opening the next; O_NOFOLLOW on every hop."""
+    fd = os.open('/', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in path.parts[1:]:
+            if part in ('', '.', '..'):
+                fail('root')
+            if create:
+                try:
+                    os.mkdir(part, mode=0o700, dir_fd=fd)
+                except FileExistsError:
+                    pass
+                else:
+                    os.fsync(fd)
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+        info = os.fstat(fd)
+        if info.st_uid != os.getuid():
+            fail('root')
+        yield fd
+    finally:
+        os.close(fd)
+
+
+def actual_path(fd):
+    # Linux is the worker's supported platform. procfs reflects renamed/unlinked
+    # directory identities, unlike a prior Path.resolve check.
+    return Path(os.readlink(f'/proc/self/fd/{fd}'))
+
+
+def record_layout():
+    return {'requests': 'requests', 'applications': 'applications', 'events': 'events.jsonl',
+            'logs': {source: f'logs/{source}.log' for source in ('worker', 'compositor', 'bus')}}
+
+
 def safe_projection(value, generation):
     """No generic error/result dictionary is a safe diagnostic record."""
     out = {}
@@ -96,7 +145,7 @@ class Store:
             fail('identity')
         identifier(generation)
         root = Path(root)
-        if not root.is_absolute():
+        if not root.is_absolute() or os.path.normpath(str(root)) != str(root):
             fail('root')
         canonical = root.resolve()
         for raw in disposable:
@@ -106,33 +155,37 @@ class Store:
         self.root, self.session, self.generation = root, session, generation
         self.path = root / 'generations' / generation
         self.fd = None
+        self.lock_identity = None
+        self.disposable = tuple(Path(raw).resolve() for raw in disposable)
         try:
-            # Reject aliases, including existing ancestor symlinks. We never chmod user roots.
-            for part in (root, *root.parents):
-                if part.is_symlink():
-                    fail('root')
-            if create:
-                root.mkdir(mode=0o700, parents=True, exist_ok=True)
-            root_info = root.stat()
-            if not stat.S_ISDIR(root_info.st_mode) or root_info.st_uid != os.getuid():
-                fail('root')
-            generations = root / 'generations'
-            if create:
-                generations.mkdir(mode=0o700, exist_ok=True)
-            parent = os.open(generations, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-            try:
-                check_fd(parent, True)
+            with root_directory(root, create=create) as root_fd:
+                if actual_path(root_fd) != root:
+                    fail('root_moved')
                 if create:
-                    os.mkdir(generation, mode=0o700, dir_fd=parent)
-                self.fd = os.open(generation, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
-                check_fd(self.fd, True)
-                if create:
-                    os.fsync(parent)
-            finally:
-                os.close(parent)
+                    mkdir_durable(root_fd, 'generations')
+                parent = os.open('generations', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=root_fd)
+                try:
+                    check_fd(parent, True)
+                    # Recheck the opened identity after a possible ancestor swap.
+                    if actual_path(root_fd) != root or actual_path(parent) != root / 'generations':
+                        fail('root_moved')
+                    if create:
+                        mkdir_durable(parent, generation, exclusive=True)
+                    self.fd = os.open(generation, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+                    check_fd(self.fd, True)
+                    self._location()
+                finally:
+                    os.close(parent)
             if create:
                 for name in ('requests', 'applications', 'logs'):
-                    os.mkdir(name, mode=0o700, dir_fd=self.fd)
+                    mkdir_durable(self.fd, name, exclusive=True)
+                self._initialize_file(self.fd, 'record.lock')
+                self._initialize_file(self.fd, 'events.jsonl')
+                self._attach_lock()
+                with self.directory('logs') as logs:
+                    for name in ('worker', 'compositor', 'bus'):
+                        self._initialize_file(logs, name + '.log')
+                # Manifest publication is the final initialization step.
                 with self.lock():
                     self._write(self.fd, 'manifest.json', {
                         'schema_version': 1, 'revision': 0, 'session': session, 'generation': generation,
@@ -144,16 +197,57 @@ class Store:
                         'dependencies': {'state': 'partial', 'observed': {'agent_desktop': __version__,
                             'python': platform.python_version()}, 'native': 'not_collected', 'producer': 'M3/doctor'},
                         'process': {'state': 'not_collected', 'producer': 'supervisor'},
-                        'records': {'requests': 'requests', 'applications': 'applications', 'events': 'events.jsonl',
-                                    'logs': {source: f'logs/{source}.log' for source in ('worker', 'compositor', 'bus')}},
+                        'records': record_layout(),
                     })
-                for name in ('worker', 'compositor', 'bus'):
-                    self.log_path(name)
             else:
+                self._attach_lock()
+                self._validate_layout()
                 self.read()
         except (OSError, ContractError):
             self.close()
             fail('open')
+
+    def _location(self):
+        actual = actual_path(self.fd)
+        if actual != self.path:
+            fail('root_moved')
+        for other in self.disposable:
+            if actual.is_relative_to(other) or other.is_relative_to(self.root):
+                fail('disposable_root')
+
+    def _initialize_file(self, directory, name):
+        fd = os.open(name, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                     0o600, dir_fd=directory)
+        try:
+            check_fd(fd)
+            os.fsync(fd)
+            os.fsync(directory)
+        finally:
+            os.close(fd)
+
+    def _attach_lock(self):
+        fd = os.open('record.lock', os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=self.fd)
+        try:
+            check_fd(fd)
+            info = os.fstat(fd)
+            self.lock_identity = (info.st_dev, info.st_ino)
+        finally:
+            os.close(fd)
+
+    def _validate_layout(self):
+        # Attachment never repairs a partially initialized/damaged generation.
+        with self.lock():
+            for name in ('requests', 'applications', 'logs'):
+                with self.directory(name):
+                    pass
+            for directory_parts, names in (((), ('events.jsonl',)), (('logs',), ('worker.log', 'compositor.log', 'bus.log'))):
+                with self.directory(*directory_parts) as directory:
+                    for name in names:
+                        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+                        try:
+                            check_fd(fd)
+                        finally:
+                            os.close(fd)
 
     def close(self):
         if self.fd is not None:
@@ -179,9 +273,13 @@ class Store:
     def lock(self):
         fd = None
         try:
-            fd = os.open('record.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK,
+            self._location()
+            fd = os.open('record.lock', os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=self.fd)
             check_fd(fd)
+            info = os.fstat(fd)
+            if (info.st_dev, info.st_ino) != self.lock_identity:
+                fail('lock_replaced')
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             yield
         except OSError:
@@ -202,13 +300,80 @@ class Store:
                 value = decode(raw)
             except (ValueError, RecursionError):
                 fail('schema')
-            if (not isinstance(value, dict) or value.get('schema_version') != 1
+            if (not isinstance(value, dict) or type(value.get('schema_version')) is not int or value.get('schema_version') != 1
                     or value.get('generation') != self.generation or value.get('session') != self.session
-                    or type(value.get('revision')) is not int):
+                    or type(value.get('revision')) is not int or value['revision'] < 0):
                 fail('identity')
+            if name == 'manifest.json':
+                self._validate_manifest(value)
             return value
         finally:
             os.close(fd)
+
+    def _validate_manifest(self, value):
+        required = {'schema_version', 'revision', 'session', 'generation', 'created_at', 'updated_at',
+                    'mode', 'state', 'outcome', 'first_failure', 'cleanup', 'output',
+                    'dependencies', 'process', 'records'}
+        if set(value) != required or value['mode'] != 'headless' or value['records'] != record_layout():
+            fail('schema')
+        def member(candidate, allowed):
+            return isinstance(candidate, str) and candidate in allowed
+        def code(candidate):
+            return candidate is None or member(candidate, EXIT_CODES)
+        def date(candidate):
+            try:
+                return isinstance(candidate, str) and datetime.fromisoformat(candidate).utcoffset().total_seconds() == 0
+            except (ValueError, AttributeError):
+                return False
+        if (not all(date(value[key]) for key in ('created_at', 'updated_at'))
+                or not member(value['state'], {'starting', 'running', 'stopped', 'failed'})
+                or not member(value['outcome'], {'pending', 'stopped', 'failed'}) or not code(value['first_failure'])):
+            fail('schema')
+        cleanup = value['cleanup']
+        if (not isinstance(cleanup, dict) or set(cleanup) != {'state', 'failure'}
+                or not member(cleanup['state'], {'not_started', 'in_progress', 'complete', 'uncertain'})
+                or not code(cleanup['failure'])):
+            fail('schema')
+        def geometry(candidate):
+            return (isinstance(candidate, dict) and set(candidate) == {'width', 'height', 'scale'}
+                    and all(type(v) is int and 0 < v <= 65536 for v in candidate.values()))
+        output = value['output']
+        if (not isinstance(output, dict) or set(output) != {'state', 'requested', 'observed', 'producer'}
+                or not member(output['state'], {'not_collected', 'collected'}) or output['producer'] != 'M3 startup'
+                or not geometry(output['requested'])
+                or (output['state'] == 'collected' and not geometry(output['observed']))
+                or (output['state'] == 'not_collected' and output['observed'] is not None)):
+            fail('schema')
+        dependencies = value['dependencies']
+        if (not isinstance(dependencies, dict)
+                or not {'state', 'observed', 'native', 'producer'} <= dependencies.keys()
+                or set(dependencies) - {'state', 'observed', 'native', 'producer', 'inventory'}
+                or dependencies['state'] != 'partial' or dependencies['producer'] != 'M3/doctor'
+                or not member(dependencies['native'], {'not_collected', 'supplied_inventory'})
+                or not isinstance(dependencies['observed'], dict)
+                or set(dependencies['observed']) != {'agent_desktop', 'python'}
+                or any(not isinstance(v, str) or not 0 < len(v) <= 256 for v in dependencies['observed'].values())):
+            fail('schema')
+        inventory = dependencies.get('inventory', [])
+        if not isinstance(inventory, list) or len(inventory) > 128:
+            fail('schema')
+        for entry in inventory:
+            if (not isinstance(entry, dict) or not {'component', 'version'} <= entry.keys()
+                    or set(entry) - {'component', 'version', 'source_revision', 'sha256', 'patches'}
+                    or any(not isinstance(v, str) or not 0 < len(v) <= 256 for v in entry.values())):
+                fail('schema')
+        process = value['process']
+        if not isinstance(process, dict):
+            fail('schema')
+        if process.get('state') == 'not_collected':
+            if process != {'state': 'not_collected', 'producer': 'supervisor'}:
+                fail('schema')
+        elif (set(process) != {'state', 'producer', 'pid', 'start_ticks', 'service'}
+                or process.get('state') != 'collected' or process.get('producer') != 'worker'
+                or type(process.get('pid')) is not int or process['pid'] <= 0
+                or not isinstance(process.get('start_ticks'), str) or not process['start_ticks'].isdigit()
+                or process['service'] != 'not_collected'):
+            fail('schema')
 
     def _write(self, directory, name, value, limit=LIMIT):
         raw = packed(value, limit)
@@ -268,15 +433,12 @@ class Store:
         if request.session != self.session or request.expected_generation != self.generation:
             fail('identity')
         with self.lock(), self.directory('requests') as parent:
-            try:
-                os.mkdir(request.request_id, mode=0o700, dir_fd=parent)
-            except FileExistsError:
-                pass
+            mkdir_durable(parent, request.request_id)
             with self.directory('requests', request.request_id) as group:
                 for _ in range(8):
                     attempt = uuid.uuid4().hex
                     try:
-                        os.mkdir(attempt, mode=0o700, dir_fd=group)
+                        mkdir_durable(group, attempt, exclusive=True)
                         break
                     except FileExistsError:
                         continue
@@ -288,10 +450,15 @@ class Store:
                     'session': self.session, 'generation': self.generation,
                     'request_id': request.request_id, 'attempt': attempt, 'operation': request.operation,
                     'admitted_at': admitted_at, 'deadline': deadline, 'created_at': timestamp(),
-                    'phase': 'admitted', 'outcome': 'pending', 'references': {}, 'error_code': None})
+                    'phase': 'admitted', 'outcome': 'pending', 'references': {}, 'error_code': None,
+                    'started_at': None, 'started_monotonic': None,
+                    'terminal_observed_at': None, 'terminal_observed_monotonic': None})
         return (request.request_id, attempt)
 
-    def transition(self, token, event, *, outcome='pending', error_code=None, references=None):
+    def transition(self, token, event, *, outcome='pending', error_code=None, references=None,
+                   observed_at=None, observed_monotonic=None):
+        observed_at = timestamp() if observed_at is None else observed_at
+        observed_monotonic = time.monotonic() if observed_monotonic is None else observed_monotonic
         if event not in PHASES or outcome not in ('pending', 'success', 'not_started', 'partial', 'unknown'):
             fail('schema')
         if error_code not in (None, *EXIT_CODES):
@@ -305,6 +472,10 @@ class Store:
                 fail('identity')
             if value['phase'] == 'terminal':
                 return
+            if event == 'started' and value['started_at'] is None:
+                value['started_at'], value['started_monotonic'] = observed_at, observed_monotonic
+            if event == 'terminal':
+                value['terminal_observed_at'], value['terminal_observed_monotonic'] = observed_at, observed_monotonic
             value.update(phase=event, outcome=outcome, error_code=error_code,
                          references=value["references"] | self.references(references), updated_at=timestamp())
             value['revision'] += 1
@@ -347,7 +518,7 @@ class Store:
         raw = packed({'generation': self.generation, 'request_id': identifier(token[0]),
                       'attempt': identifier(token[1]), 'phase': phase, 'at': timestamp()}, EVENT_LIMIT) + b'\n'
         with self.lock():
-            fd = os.open('events.jsonl', os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+            fd = os.open('events.jsonl', os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=self.fd)
             try:
                 check_fd(fd)
@@ -360,7 +531,7 @@ class Store:
         if source not in ('worker', 'compositor', 'bus'):
             fail('schema')
         with self.lock(), self.directory('logs') as directory:
-            fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+            fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=directory)
             try:
                 check_fd(fd)
@@ -373,7 +544,7 @@ class Store:
         if source not in ('worker', 'compositor', 'bus'):
             fail('schema')
         with self.lock(), self.directory('logs') as directory:
-            fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+            fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=directory)
             try:
                 check_fd(fd)
@@ -467,7 +638,7 @@ class Store:
                  'process': {'pid': pid, 'birth_identity': birth_identity}, 'executable': executable,
                  'logs': logs, 'windows': validated_windows, 'exit': {'state': 'not_observed'}}
         with self.lock(), self.directory('applications') as parent:
-            os.mkdir(application_id, mode=0o700, dir_fd=parent)
+            mkdir_durable(parent, application_id, exclusive=True)
             with self.directory('applications', application_id) as directory:
                 self._write(directory, 'record.json', value)
             os.fsync(parent)

@@ -2,6 +2,7 @@
 import sys
 import time
 
+from .artifacts import timestamp
 from .contracts import ContractError
 from .scheduler import CONTROL_OPERATIONS
 
@@ -25,13 +26,15 @@ class Records:
         previous = admission.on_terminal
 
         def terminal(payload):
+            observed_at, observed_monotonic = timestamp(), self.clock()
             try:
                 token = self._ensure(context)
                 error = payload['error']
                 self.store.transition(token, 'terminal',
                     outcome='success' if payload['ok'] else error['outcome'],
                     error_code=None if payload['ok'] else error['code'],
-                    references=payload['result'] if payload['ok'] else error['partial_result'])
+                    references=payload['result'] if payload['ok'] else error['partial_result'],
+                    observed_at=observed_at, observed_monotonic=observed_monotonic)
             except Exception:
                 diagnostic()
             finally:
@@ -61,7 +64,9 @@ class Records:
             if request.operation not in CONTROL_OPERATIONS:
                 current = self.live[request.request_id]
                 try:
-                    self.store.transition(self._ensure(current), 'started')
+                    token = self._ensure(current)
+                    self.store.transition(token, 'started')
+                    self.store.event(token, 'started')
                 except Exception:
                     raise ContractError('artifact_failed', 'Request start record could not be preserved.') from None
                 if self.clock() >= current['admission'].deadline:

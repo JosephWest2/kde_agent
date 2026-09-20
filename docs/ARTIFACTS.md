@@ -23,7 +23,8 @@ The environment helper removes protected values from the supplied base, applies
 allowed explicit overrides (last duplicate wins), then installs private values.
 PATH remains overridable. Protected settings are HOME, XDG_RUNTIME_DIR,
 XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME, XDG_STATE_HOME and XDG_CONFIG_DIRS.
-The latter points to private config search; XDG_DATA_DIRS can retain ordinary
+The latter accepts exactly one private directory; colon-separated lists and
+colon-containing config paths are rejected. XDG_DATA_DIRS can retain ordinary
 system resource search. Missing required private settings, session bus or Wayland
 values fail closed. Private settings and bus paths must remain under private
 runtime. M3 provisions those paths and verifies actual environment isolation.
@@ -63,9 +64,13 @@ ROOT/generations/GENERATION/
 A generation is exclusively claimed and never reused; repeated request IDs get
 independent attempt directories. Random allocations use exclusive creation with
 at most eight collision attempts. Directories are 0700 and toolkit files 0600.
+Roots are traversed component by component through anchored directory FDs;
+ancestor substitution cannot redirect allocation through a later pathname open.
 Existing unsafe components, symlinks, wrong owners and artifact roots overlapping
 disposable runtime/settings are rejected. Unrelated user directories are not
-chmodded. Worker/runtime shutdown never removes durable records. An allocator
+chmodded. Reopening validates the required manifest schema, directories, event/log files and
+existing lock inode; attachment never recreates a missing lock or repairs an
+incomplete layout. Worker/runtime shutdown never removes durable records. An allocator
 returns a reserved `.partial` path and metadata; only the producing adapter may
 mark it complete after its full validation. The allocator does not certify PNGs.
 
@@ -95,6 +100,10 @@ promised. JSON CLI stdout never carries subprocess log streams.
 
 ## Atomicity and failures
 
+Each newly created directory link is followed by fsync of its parent before
+descendant allocation is accepted, including root ancestors, generations and
+request-ID directories. Initial manifest publication follows complete layout
+initialization; failed initialization cannot masquerade as an attachable store.
 Each update takes one nonblocking advisory-lock attempt. There are no sleeps,
 spins or retry loops on the event-loop owner. Under the lock it reads the current
 bounded snapshot, writes a private same-directory temporary, flushes/fsyncs,
@@ -118,6 +127,11 @@ reset teardown and mandatory stop/cleanup proceed first, independently of storag
 failure. Durable updates then run best effort; inability to record cleanup never
 cancels the cleanup owner or authorizes new effects. Original session failure is
 sticky: successful cleanup cannot overwrite it with success.
+
+Request records retain original admission/deadline values, distinct immutable
+start timestamps, and accepted-terminal notification timestamps. The latter
+identify observation of the frozen result, not a new deadline acceptance point;
+a started event is also appended. Later updates do not erase these timestamps.
 
 `finalizing` is pending, never success. Transport performs final deadline and
 serialization checks before freezing its accepted payload; only its terminal

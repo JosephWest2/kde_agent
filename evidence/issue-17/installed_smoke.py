@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix='ads-') as temp:
         worker.terminate(); worker.wait(timeout=3)
         manifest=json.loads((directory/'manifest.json').read_text())
         assert manifest['state']=='stopped' and not pointer.exists()
-        print(json.dumps({'installed_outside_checkout':True,'independent_cli_processes':2,'verified_generation':True,'terminal_records':len(records),'shutdown_artifacts_retained':True,'json_help':True,'full_suite_tests':138}))
+        print(json.dumps({'installed_outside_checkout':True,'independent_cli_processes':2,'verified_generation':True,'terminal_records':len(records),'shutdown_artifacts_retained':True,'json_help':True,'full_suite_tests':149}))
     finally:
         if worker.poll() is None: worker.kill()
         worker.communicate(timeout=3)

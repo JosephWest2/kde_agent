@@ -110,6 +110,9 @@ class Application:
         self.uncertain = False
         self.exit_code = None
         self.scanner = None
+        self.pending_pid = None
+        self.pending_processes = []
+        self.completed = False
         self.last_check = self.last_write = 0
         self.dirty = False
 
@@ -124,7 +127,7 @@ class Application:
     def observe_exit(self):
         """Retention seam for future waits; root exit is not complete app exit."""
         self.observe(force=True)
-        return {'root_returncode': self.exit_code, 'all_exited': self.fd is None, 'state': self.state}
+        return {'root_returncode': self.exit_code, 'all_exited': self.completed, 'state': self.state}
 
     def persist(self):
         self.registry.store.application_update(self.id, state=self.state, process=self.process,
@@ -164,6 +167,10 @@ class Application:
             raise uncertain() from None
 
     def observe(self, *, force=False):
+        if self.completed:
+            return
+        if self.fd is None:
+            raise uncertain()
         now = time.monotonic()
         if not force and now - self.last_check < .05:
             return
@@ -178,11 +185,16 @@ class Application:
         empty = not self.populated()
         # Empty before helper enters the group is NOT application completion.
         if empty and self.settled and (self.child is None or self.child.returncode is not None):
+            # A prior scan may have used its entire turn before persistence.
+            # Do not discard those observed identities when retiring ownership.
+            if self.pending_processes:
+                return
             self.state = 'all-exited' if self.authorized and self.state != 'launch-failed' else 'launch-failed'
             self.dirty = True
             self.persist()
             for path in self.logs.values():
                 self.registry.store.artifact_state(path, 'complete')
+            self.completed = True
             self.registry.active = None
             self.close()
             # cgroup rmdir requires empty nested groups, which ordinary apps do
@@ -193,20 +205,44 @@ class Application:
                 pass
 
     def scan_turn(self):
+        deadline = time.monotonic() + .002
+        published = False
+        # A batch remains owned in memory until its write succeeds. Flush it
+        # before collecting more, bounding deferred persistence to 16 identities.
+        if self.pending_processes and time.monotonic() < deadline:
+            self.registry.store.application_processes(self.id, self.pending_processes)
+            self.pending_processes.clear()
+            published = True
+        for _ in range(min(16, len(self.reap_queue))):
+            if time.monotonic() >= deadline:
+                return
+            key = self.reap_queue.popleft()
+            fd = self.handles.get(key)
+            if fd is None:
+                continue
+            if not live(fd):
+                os.close(fd)
+                del self.handles[key]
+            else:
+                self.reap_queue.append(key)
         if self.scanner is None:
             self.scanner = scan(self.path)
-        deadline = time.monotonic() + .002
-        batch, identities, boundaries = [], 0, 0
-        while identities < 16 and boundaries < 4 and time.monotonic() < deadline:
-            try:
-                pid = next(self.scanner)
-            except StopIteration:
-                self.scanner = None
+        identities = 0
+        while identities < 16 and time.monotonic() < deadline:
+            if self.pending_pid is None:
+                try:
+                    self.pending_pid = next(self.scanner)
+                except StopIteration:
+                    self.scanner = None
+                    break
+                if self.pending_pid is None:
+                    # One read/entry boundary per turn bounds input to 4 KiB.
+                    break
+            # Iteration may itself have exhausted the budget. Retain the member
+            # without starting another kernel observation on this turn.
+            if time.monotonic() >= deadline:
                 break
-            if pid is None:
-                boundaries += 1
-                # One read per turn also bounds input to 4 KiB.
-                break
+            pid, self.pending_pid = self.pending_pid, None
             identities += 1
             try:
                 acquired = identity(pid, self.cgroup)
@@ -225,20 +261,12 @@ class Application:
             info['boot_id'] = self.registry.boot_id
             self.handles[key], self.observed[key] = fd, info
             self.reap_queue.append(key)
-            batch.append(info)
-        for _ in range(min(16, len(self.reap_queue))):
-            key = self.reap_queue.popleft()
-            fd = self.handles.get(key)
-            if fd is None:
-                continue
-            if not live(fd):
-                os.close(fd)
-                del self.handles[key]
-            else:
-                self.reap_queue.append(key)
-        if batch:
-            self.registry.store.application_processes(self.id, batch)
-        if self.dirty and time.monotonic() - self.last_write >= .05:
+            self.pending_processes.append(info)
+        if self.pending_processes and not published and time.monotonic() < deadline:
+            self.registry.store.application_processes(self.id, self.pending_processes)
+            self.pending_processes.clear()
+        now = time.monotonic()
+        if self.dirty and now < deadline and now - self.last_write >= .05:
             self.persist()
 
     def close(self):

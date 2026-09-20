@@ -10,7 +10,7 @@ import tempfile
 import time
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from agent_desktop import app_launcher
 from agent_desktop.app_processes import Application, Registry, birth, identity, live, scan
@@ -85,6 +85,153 @@ class ScannerTests(unittest.TestCase):
         finally:
             os.close(fd)
             os.close(high)
+
+
+class ObservationBudgetTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        (self.root / 'cgroup.events').write_text('populated 0\n')
+        self.store = Mock()
+        self.registry = SimpleNamespace(generation=GEN, store=self.store, boot_id='test-boot')
+        self.app = Application(self.registry, 'b' * 32, os.open(self.root, os.O_RDONLY), self.root, '/owned')
+        self.registry.active = self.app
+
+    def tearDown(self):
+        self.app.close()
+        self.temp.cleanup()
+
+    def handle(self):
+        fd = os.pidfd_open(os.getpid())
+        key = (os.getpid(), birth(os.getpid()))
+        self.app.handles[key] = fd
+        self.app.reap_queue.append(key)
+        return key
+
+    def test_completed_observation_survives_registry_retirement_and_repeated_reads(self):
+        self.app.child = SimpleNamespace(returncode=7)
+        self.app.authorized = self.app.settled = True
+        self.app.observe(force=True)  # Registry, before any request consumer.
+        self.assertIsNone(self.registry.active)
+        self.assertIsNone(self.app.fd)
+        with patch.object(self.app, 'populated', side_effect=AssertionError('Retired kernel handle reopened')):
+            first = self.app.observe_exit()
+            self.assertEqual(first, {'root_returncode': 7, 'all_exited': True, 'state': 'all-exited'})
+            self.assertEqual(self.app.observe_exit(), first)
+
+    def test_close_without_empty_observation_preserves_uncertainty(self):
+        self.app.close()
+        self.assertFalse(self.app.completed)
+        with self.assertRaises(ContractError) as caught:
+            self.app.observe_exit()
+        self.assertEqual(caught.exception.outcome, 'unknown')
+
+    def test_budget_exhausted_before_work_schedules_no_poll_or_snapshot(self):
+        self.handle()
+        self.app.dirty = True
+        self.app.scanner = (pid for pid in [123])
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=[1, 1.003]), \
+                patch('agent_desktop.app_processes.live') as polling:
+            self.app.scan_turn()
+        polling.assert_not_called()
+        self.store.application_update.assert_not_called()
+        self.assertTrue(self.app.dirty)
+
+    def test_budget_exhausted_during_reaping_defers_scan_and_snapshot(self):
+        key = self.handle()
+        self.app.dirty = True
+        now = [1.0]
+        def delayed_poll(fd):
+            now[0] += .003
+            return True
+        def scanning():
+            raise AssertionError('Scan began after budget expired')
+            yield
+        self.app.scanner = scanning()
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch('agent_desktop.app_processes.live', side_effect=delayed_poll):
+            self.app.scan_turn()
+        self.assertEqual(list(self.app.reap_queue), [key])
+        self.store.application_update.assert_not_called()
+        self.assertTrue(self.app.dirty)
+
+    def test_slow_iterator_retains_member_without_scheduling_identity_acquisition(self):
+        now = [1.0]
+        def scanning():
+            now[0] += .003
+            yield 123
+        self.app.scanner = scanning()
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch('agent_desktop.app_processes.identity') as acquire:
+            self.app.scan_turn()
+        acquire.assert_not_called()
+        self.assertEqual(self.app.pending_pid, 123)
+        self.store.application_processes.assert_not_called()
+
+    def test_slow_acquisition_preserves_batch_until_later_turn_and_completion(self):
+        now = [1.0]
+        fd = os.pidfd_open(os.getpid())
+        info = {'pid': os.getpid(), 'start_time_ticks': birth(os.getpid()), 'cgroup': '/owned'}
+        def acquire(*args):
+            now[0] += .003
+            return fd, info
+        self.app.scanner = (pid for pid in [os.getpid()])
+        self.app.dirty = True
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch('agent_desktop.app_processes.identity', side_effect=acquire):
+            self.app.scan_turn()
+        self.assertEqual(len(self.app.pending_processes), 1)
+        self.store.application_processes.assert_not_called()
+        self.store.application_update.assert_not_called()
+        self.app.child = SimpleNamespace(returncode=7)
+        self.app.authorized = self.app.settled = True
+        self.app.observe(force=True)
+        self.assertIs(self.registry.active, self.app)
+        self.assertFalse(self.app.completed)
+        batches = []
+        self.store.application_processes.side_effect = lambda app_id, batch: batches.append(list(batch))
+        now[0] = 2
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]):
+            self.app.scan_turn()
+        self.assertEqual(batches, [[info]])
+        self.assertEqual(self.app.pending_processes, [])
+        self.assertFalse(self.app.dirty)
+        self.app.observe(force=True)
+        self.assertTrue(self.app.completed)
+        self.assertIsNone(self.registry.active)
+
+    def test_slow_batch_write_defers_poll_and_dirty_snapshot_without_duplicate_batch(self):
+        self.handle()
+        self.app.dirty = True
+        self.app.pending_processes = [{'pid': 123}]
+        now = [1.0]
+        batches = []
+        def write(app_id, batch):
+            batches.append(list(batch))
+            now[0] += .003
+        self.store.application_processes.side_effect = write
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]), \
+                patch('agent_desktop.app_processes.live') as polling:
+            self.app.scan_turn()
+        polling.assert_not_called()
+        self.assertEqual(batches, [[{'pid': 123}]])
+        self.assertEqual(self.app.pending_processes, [])
+        self.store.application_update.assert_not_called()
+        self.assertTrue(self.app.dirty)
+        self.app.scanner = (pid for pid in [])
+        now[0] = 2
+        with patch('agent_desktop.app_processes.time.monotonic', side_effect=lambda: now[0]):
+            self.app.scan_turn()
+        self.assertEqual(len(batches), 1)
+        self.assertFalse(self.app.dirty)
+
+    def test_failed_batch_publication_retains_bounded_pending_work(self):
+        batch = [{'pid': number} for number in range(16)]
+        self.app.pending_processes = batch.copy()
+        self.store.application_processes.side_effect = OSError('storage unavailable')
+        with self.assertRaises(OSError):
+            self.app.scan_turn()
+        self.assertEqual(self.app.pending_processes, batch)
 
 
 class HelperTests(unittest.TestCase):

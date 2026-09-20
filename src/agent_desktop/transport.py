@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import select
 import socket
 import time
 import uuid
 
 from .contracts import ContractError, response
-from .protocol import Decoder, encode, request_from_wire, validate_response
+from .protocol import CancelRequest, Decoder, cancel_from_wire, encode, request_from_wire, validate_response
 from .runtime import Runtime, peer_owner
 
 CONNECT_SECONDS = 1.0
@@ -22,7 +23,11 @@ def exchange(request):
     phase = "discovery"
     sock = None
     try:
-        generation, path = Runtime().discover(request.session, request.expected_generation)
+        runtime = Runtime()
+        if request.operation in {"input.reset", "session.stop"}:
+            generation, path = runtime.discover(request.session, request.expected_generation, priority=True)
+        else:
+            generation, path = runtime.discover(request.session, request.expected_generation)
         wire_request = replace(request, expected_generation=generation)
         frame = encode(wire_request.payload())
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -58,6 +63,20 @@ def exchange(request):
             if value is not None:
                 return validate_response(value, request, generation)
     except KeyboardInterrupt:
+        if sent:
+            try:
+                # Never resolve again. The original EOF remains a fallback if
+                # priority connect/send fails, with no acknowledgement wait.
+                cancel = CancelRequest(uuid.uuid4().hex, request.session, generation, request.request_id)
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+                    limit = time.monotonic() + .1
+                    control.settimeout(.1)
+                    control.connect(str(path.with_name("priority.sock")))
+                    peer_owner(control)
+                    control.settimeout(max(.001, limit - time.monotonic()))
+                    control.sendall(encode(cancel.payload()))
+            except (OSError, ContractError, KeyboardInterrupt):
+                pass
         raise ContractError("cancelled", "Request interrupted.", outcome="unknown" if sent else "not_started") from None
     except ContractError as error:
         if not sent:
@@ -88,6 +107,8 @@ class Admission:
         self.disconnected = False
         self.on_disconnect = None
         self.terminal = False
+        self.on_terminal = None
+        self.final_payload = None
 
     def complete(self, *, result=None, error=None):
         if self.terminal:
@@ -102,6 +123,15 @@ class Admission:
         payload = response(self.request.request_id, self.request.operation, session=server.name,
                            generation=server.generation, result=result, error=error)
         self.connection.reply(payload, dispatched=True)
+        # Transport freezes the final deadline/serialization outcome first.
+        # This notification cannot veto or change that accepted result. Durable
+        # consumers record finalizing before acceptance and then this exact value.
+        self.final_payload = self.connection.final_payload or payload
+        if self.on_terminal is not None:
+            try:
+                self.on_terminal(self.final_payload)
+            except Exception:
+                pass
 
     def disconnect(self):
         if self.disconnected:
@@ -112,24 +142,23 @@ class Admission:
 
 
 class Connection:
-    def __init__(self, server, sock):
+    def __init__(self, server, sock, *, priority=False):
         self.server, self.sock = server, sock
+        self.priority = priority
         self.decoder = Decoder()
         self.watch = 0
         self.deadline = time.monotonic() + FRAME_SECONDS
         self.admission = None
         self.output = None
+        self.final_payload = None
         self.offset = 0
         self.closed = False
         self.arm()
 
     def arm(self):
-        if self.closed or self.watch:
-            return
-        glib = self.server.glib
-        events = glib.IO_HUP | glib.IO_ERR
-        events |= glib.IO_OUT if self.output is not None else glib.IO_IN
-        self.watch = glib.io_add_watch(self.sock.fileno(), glib.PRIORITY_DEFAULT, events, self.ready)
+        # The server's bounded shared service turn polls readiness. Independent
+        # permanently-ready sources cannot starve deadlines or action steps.
+        pass
 
     def close(self):
         if self.closed:
@@ -144,13 +173,20 @@ class Connection:
             self.admission.disconnect()
 
     def reply(self, payload, *, dispatched=False):
-        if self.closed:
-            return
         try:
             # Validate before encoding and before any header leaves this process.
             if self.admission is not None:
                 validate_response(payload, self.admission.request, self.server.generation)
             self.output = encode(payload)
+            if (self.admission is not None and payload["ok"]
+                    and time.monotonic() >= self.admission.deadline):
+                payload = response(self.admission.request.request_id,
+                                   self.admission.request.operation,
+                                   session=self.server.name, generation=self.server.generation,
+                                   error=ContractError("timeout", "Request deadline expired.",
+                                                       outcome="unknown", partial_result=payload["result"]))
+                self.output = encode(payload)
+            self.final_payload = payload
         except (ContractError, TypeError, ValueError, RecursionError):
             retained = None
             candidate = payload.get("error") if isinstance(payload, dict) else None
@@ -172,10 +208,11 @@ class Connection:
                                   "Response could not be represented safely.",
                                   outcome="unknown" if dispatched else "not_started", partial_result=retained)
             request = self.admission.request if self.admission else None
-            self.output = encode(response(request.request_id if request else uuid.uuid4().hex,
+            self.final_payload = response(request.request_id if request else uuid.uuid4().hex,
                                           request.operation if request else None,
                                           session=self.server.name if request else None,
-                                          generation=self.server.generation if request else None, error=error))
+                                          generation=self.server.generation if request else None, error=error)
+            self.output = encode(self.final_payload)
         self.offset = 0
         self.deadline = time.monotonic() + FRAME_SECONDS
         if self.watch:
@@ -205,7 +242,7 @@ class Connection:
                         trailing = self.sock.recv(1, socket.MSG_PEEK)
                     except BlockingIOError:
                         trailing = None
-                    if trailing == b"":
+                    if trailing == b"" and not self.priority:
                         self.close()
                         return False
                     if trailing:
@@ -230,7 +267,13 @@ class Connection:
     def dispatch(self, value):
         request = None
         try:
-            request = request_from_wire(value)
+            if isinstance(value, dict) and value.get("operation") == "request.cancel":
+                request = cancel_from_wire(value)
+            else:
+                request = request_from_wire(value)
+            control = request.operation in {"request.cancel", "input.reset", "session.stop"}
+            if control != self.priority:
+                raise ContractError("protocol_error", "Request used the wrong endpoint.")
             if request.session != self.server.name or request.expected_generation != self.server.generation:
                 raise ContractError("generation_mismatch", "Request identity differs from this worker.")
             if time.monotonic() >= self.deadline:
@@ -244,7 +287,11 @@ class Connection:
             try:
                 if time.monotonic() >= admission.deadline:
                     raise ContractError("timeout", "Request deadline expired before dispatch.")
-                self.server.handler(request, admission)
+                if request.operation == "request.cancel":
+                    accepted = self.server.cancel(request.target_request_id)
+                    admission.complete(result={"cancel_requested": accepted})
+                else:
+                    self.server.handler(request, admission)
             except ContractError as error:
                 admission.complete(error=error)
             except Exception:
@@ -257,30 +304,67 @@ class Connection:
 
 
 class Server:
-    def __init__(self, endpoint, glib, handler):
+    """One bounded service turn: priority, ordinary, deadlines, scheduler.
+
+    Both socket sets are capped independently. Ready connections rotate after
+    each turn and only eight per class run, so control floods cannot starve work.
+    All callbacks share a single GLib source, not competing source priorities.
+    """
+    def __init__(self, endpoint, glib, handler, *, cancel=None, after_io=None):
         self.endpoint, self.glib, self.handler = endpoint, glib, handler
         self.name, self.generation = endpoint.name, endpoint.generation
         self.connections = set()
         self.active = {}
-        self.watch = glib.io_add_watch(endpoint.listener.fileno(), glib.PRIORITY_DEFAULT,
-                                      glib.IO_IN, self.accept)
-        self.timer = glib.timeout_add(10, self.expire)
+        self.cancel = cancel or (lambda request_id: False)
+        self.after_io = after_io or (lambda: None)
+        self.order = {True: [], False: []}
+        self.timer = glib.timeout_add(5, self.service)
 
-    def accept(self, _fd, _condition):
+    def accept(self, priority):
+        listener = self.endpoint.priority_listener if priority else self.endpoint.listener
+        cap = 8 if priority else MAX_CONNECTIONS
+        count = sum(c.priority == priority for c in self.connections)
         for _ in range(8):
             try:
-                sock, _ = self.endpoint.listener.accept()
+                sock, _ = listener.accept()
             except BlockingIOError:
                 break
             try:
                 sock.setblocking(False)
                 peer_owner(sock)
-                if len(self.connections) >= MAX_CONNECTIONS:
+                if count >= cap:
                     sock.close()
                     continue
-                self.connections.add(Connection(self, sock))
+                connection = Connection(self, sock, priority=priority)
+                self.connections.add(connection)
+                self.order[priority].append(connection)
+                count += 1
             except (OSError, ContractError):
                 sock.close()
+
+    def service(self):
+        for priority in (True, False):
+            self.accept(priority)
+            pending = [c for c in self.order[priority] if not c.closed]
+            self.order[priority] = pending
+            if not pending:
+                continue
+            readers, writers, _ = select.select(
+                [c.sock for c in pending if c.output is None],
+                [c.sock for c in pending if c.output is not None], [], 0)
+            ready_r, ready_w = set(readers), set(writers)
+            served = []
+            for connection in pending:
+                events = (self.glib.IO_IN if connection.sock in ready_r else 0)
+                events |= (self.glib.IO_OUT if connection.sock in ready_w else 0)
+                if events:
+                    connection.ready(connection.sock.fileno(), events)
+                    served.append(connection)
+                    if len(served) >= 8:
+                        break
+            self.order[priority] = [c for c in pending if c not in served] + served
+        self.expire()
+        self.after_io()
         return True
 
     def expire(self):
@@ -291,8 +375,7 @@ class Server:
         return True
 
     def close(self):
-        for source in (self.watch, self.timer):
-            self.glib.source_remove(source)
+        self.glib.source_remove(self.timer)
         for connection in tuple(self.connections):
             connection.close()
         self.endpoint.close()

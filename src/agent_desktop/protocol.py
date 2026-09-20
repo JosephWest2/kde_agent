@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import struct
+from dataclasses import dataclass
 from .contracts import (ARGUMENTS, EXIT_CODES, GENERATION, NAME, Request,
                         ContractError, make_request)
 
@@ -144,3 +145,37 @@ def validate_response(value, request, generation):
                 or (error["partial_result"] is not None and not isinstance(error["partial_result"], dict))):
             malformed()
     return value
+
+
+@dataclass(frozen=True)
+class CancelRequest:
+    request_id: str
+    session: str
+    expected_generation: str
+    target_request_id: str
+    schema_version: int = 1
+    operation: str = "request.cancel"
+    timeout_seconds: float = .1
+
+    def payload(self):
+        return {key: getattr(self, key) for key in (
+            "schema_version", "request_id", "operation", "session",
+            "expected_generation", "target_request_id")}
+
+
+def cancel_from_wire(value):
+    fields = {"schema_version", "request_id", "operation", "session",
+              "expected_generation", "target_request_id"}
+    if not isinstance(value, dict) or set(value) != fields:
+        malformed()
+    if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        malformed()
+    if value["operation"] != "request.cancel":
+        malformed()
+    for key in ("request_id", "expected_generation", "target_request_id"):
+        if not isinstance(value[key], str) or not GENERATION.fullmatch(value[key]):
+            malformed()
+    if not isinstance(value["session"], str) or not NAME.fullmatch(value["session"]):
+        malformed()
+    return CancelRequest(value["request_id"], value["session"],
+                         value["expected_generation"], value["target_request_id"])

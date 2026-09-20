@@ -33,6 +33,7 @@ ancestors. Toolkit directories must also be real owner-only directories:
 $XDG_RUNTIME_DIR/agent-desktop/current/NAME.json
 $XDG_RUNTIME_DIR/agent-desktop/current/NAME.lock
 $XDG_RUNTIME_DIR/agent-desktop/g/GENERATION/control.sock
+$XDG_RUNTIME_DIR/agent-desktop/g/GENERATION/priority.sock
 ```
 
 Directories are 0700; sockets, routing and lock files are 0600. Both socket peers
@@ -47,7 +48,7 @@ even after graceful shutdown. The supervisor must create a fresh generation for
 each lifetime. Runtime cleanup removes only the recorded socket inode and removes
 the name pointer only if it still names that generation. A bounded nonblocking
 per-name lock protects publication and conditional cleanup; lock files remain.
-The pointer is atomically published only after listen succeeds. It is routing
+The pointer is atomically published only after both listeners succeed. It is routing
 metadata, not a durable manifest or proof of desktop health. Crash residue and
 conflicting pointers are rejected; M3 supplies authoritative service/lifecycle
 reconciliation, including claim retirement.
@@ -108,22 +109,25 @@ doubles, separately from the operation work budget:
 | Client connect | 1s |
 | Entire request send / server frame receive | 1s each |
 | Entire server response write | 1s |
-| Simultaneous accepted connections / listen backlog | 32 each |
-| Read/write work per GLib callback | one chunk, at most 64 KiB |
-| Accept work per GLib callback | at most 8 peers |
-| Deadline observation timer | 10ms |
+| Ordinary accepted connections / listen backlog | 32 each |
+| Reserved priority accepted connections / listen backlog | 8 each |
+| Read/write work per connection per service turn | one chunk, at most 64 KiB |
+| Ready connections per class per turn | at most 8, rotating |
+| Accept work per endpoint per turn | at most 8 peers |
+| Shared GLib service/expiry/task turn | 5ms |
 
 Each phase uses an absolute monotonic deadline; trickled bytes do not reset it.
 Client response waiting is bounded by work timeout + 16s cleanup reserve + 1s
 response allowance after sending. The reserve accommodates possible capture abort
 (1s) and owned-service cleanup (15s); it never enlarges the success/work budget.
-#16 refines per-operation cleanup and supplies worker-enforced task cancellation.
+The [scheduler](SCHEDULING.md) supplies worker-enforced deadlines and cancellation.
 Synchronous small routing-file operations assume responsive local runtime storage;
 these are not hard real-time guarantees under a hung filesystem.
 
 Pre-send failures report `not_started`. Once bytes may have reached the worker, a
 lost/truncated/invalid response reports `completion_unknown`, outcome `unknown`.
-SIGINT closes the socket and emits one `cancelled` envelope, with unknown effects
+SIGINT attempts correlated priority cancellation, closes the socket and emits one
+`cancelled` envelope, with unknown effects
 if sending had begun. Launch and input are never retried. A complete valid worker
 error may establish a more precise not-started or partial outcome.
 
@@ -141,10 +145,10 @@ permission for blocking adapter calls. Completion cannot accept late success; a 
 the timeout's partial result so available handles and recovery paths survive.
 Oversized or unencodable late results use the same bounded safe-handle fallback.
 Disconnect leaves the active ID owned until terminal completion and notifies the
-corresponding unfinished admission once. #16 adds the serialized ordinary queue,
-priority control admission, cancellable task stepping and cleanup continuation.
-The connection cap alone is not a guarantee of responsive cancellation under
-saturation. No 100ms production cancellation claim is made by this issue.
+corresponding unfinished admission once. The [scheduler](SCHEDULING.md) implements
+the serialized queue, separately reserved priority endpoint, bounded task stepping
+and cleanup continuation. Its 100ms provisional dispatch target is tested with
+process doubles; actual production adapters still require M5/M7 timing validation.
 
 ## Verification boundary
 

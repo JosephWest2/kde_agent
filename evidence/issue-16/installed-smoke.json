@@ -1,0 +1,22 @@
+{
+  "module": "/tmp/kde-agent-issue16-installed/lib/python3.14/site-packages/agent_desktop/__init__.py",
+  "outside_cwd": true,
+  "results": [
+    {
+      "operation": "session.status",
+      "unsupported": true
+    },
+    {
+      "operation": "session.status",
+      "unsupported": true
+    },
+    {
+      "operation": "session.stop",
+      "unsupported": true
+    },
+    {
+      "installed_fixture_sigint_dispatch_ms": 4.260154004441574,
+      "next_request_succeeded": true
+    }
+  ]
+}

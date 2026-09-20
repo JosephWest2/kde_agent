@@ -63,10 +63,10 @@ class Runtime:
         except OSError:
             failure()
 
-    def socket_path(self, generation):
+    def socket_path(self, generation, *, priority=False):
         if not isinstance(generation, str) or not GENERATION.fullmatch(generation):
             failure("protocol_error")
-        path = self.generations / generation / "control.sock"
+        path = self.generations / generation / ("priority.sock" if priority else "control.sock")
         if len(os.fsencode(path)) >= 108:
             failure()
         return path
@@ -108,12 +108,12 @@ class Runtime:
             failure("protocol_error")
         return value["generation"]
 
-    def discover(self, name, expected):
+    def discover(self, name, expected, *, priority=False):
         generation = self.read(name)
         if expected is not None and generation != expected:
             raise ContractError("generation_mismatch", "Expected generation differs from current routing.",
                                 context={"expected_generation": expected, "resolved_generation": generation})
-        path = self.socket_path(generation)
+        path = self.socket_path(generation, priority=priority)
         try:
             check_directory(path.parent)
             info = path.lstat()
@@ -134,6 +134,9 @@ class Endpoint:
         self.runtime = Runtime(create=True)
         self.name, self.generation = name, generation
         self.path = self.runtime.socket_path(generation)
+        self.priority_path = self.runtime.socket_path(generation, priority=True)
+        self.priority_listener = None
+        self.priority_inode = None
         self.listener = None
         self.inode = None
         self.published = False
@@ -156,6 +159,15 @@ class Endpoint:
                 self.inode = self.path.lstat().st_ino
                 self.listener.listen(32)
                 self.listener.setblocking(False)
+                self.priority_listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                old_mask = os.umask(0o177)
+                try:
+                    self.priority_listener.bind(str(self.priority_path))
+                finally:
+                    os.umask(old_mask)
+                self.priority_inode = self.priority_path.lstat().st_ino
+                self.priority_listener.listen(8)
+                self.priority_listener.setblocking(False)
                 temp = self.runtime.current / ("." + uuid.uuid4().hex)
                 try:
                     fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
@@ -170,6 +182,17 @@ class Endpoint:
             raise
 
     def close(self):
+        if self.priority_listener is not None:
+            self.priority_listener.close()
+            self.priority_listener = None
+        if self.priority_inode is not None:
+            try:
+                info = self.priority_path.lstat()
+                if info.st_ino == self.priority_inode and info.st_uid == os.getuid() and stat.S_ISSOCK(info.st_mode):
+                    self.priority_path.unlink()
+            except FileNotFoundError:
+                pass
+            self.priority_inode = None
         if self.listener is not None:
             self.listener.close()
             self.listener = None

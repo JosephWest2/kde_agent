@@ -1,0 +1,27 @@
+{
+  "source_commit": "7b096e6627e380dc5c507ddda89ad939025c62ba",
+  "qualified": false,
+  "reason": "Blocked-post explicit reconciliation changed receipt destination between initial and complete writes, leaving its own terminal receipt uncertain. Corrected in 52bf8f5; this failed run is retained as historical evidence only.",
+  "copied_files": {
+    "cleanup.json": {
+      "sha256": "7823d115001f96ae2ec8ba7c29eaf2c065a37bf4f92f0cea37415c4d0d1f8848",
+      "size": 188531
+    },
+    "artifacts/generations/50d44d457e2a438cb1670797f241dc4e/terminal.json": {
+      "sha256": "870c70b565c30aaac51e7c79dbd19199bc59ca5db7966313557566327dbd2351",
+      "size": 423
+    },
+    "artifacts/generations/50d44d457e2a438cb1670797f241dc4e/reconciliation.json": {
+      "sha256": "b6fae933db4a08408a05637fa86faa9fb8b8e2800fc819f693042388a74b3b09",
+      "size": 453
+    },
+    "artifacts/generations/50d44d457e2a438cb1670797f241dc4e/manifest.json": {
+      "sha256": "9f22fb25cdf84c66c94b31bf7fa7994b89ade857ac83d581a98610f8d2e60343",
+      "size": 951
+    },
+    "artifacts/generations/50d44d457e2a438cb1670797f241dc4e/fixture-events.jsonl": {
+      "sha256": "a49ca2a0fd8119bd8d267ef79691a2c7d80739e9830984d68f5cbc8bd0051858",
+      "size": 883
+    }
+  }
+}

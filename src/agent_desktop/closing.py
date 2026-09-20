@@ -253,5 +253,6 @@ class CloseHook:
             clean = owner.cleanup(owner.deadline)
             if clean or time.monotonic() >= owner.deadline:
                 self.result = {'state': 'failed', 'error': owner.error.code,
-                               'cleanup_confirmed': clean, 'result': owner.projection()}
+                               'cleanup_confirmed': clean and owner.adapter.active is None,
+                               'result': owner.projection()}
         return self.result

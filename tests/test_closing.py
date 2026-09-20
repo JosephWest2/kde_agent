@@ -228,10 +228,14 @@ class CloseTests(unittest.TestCase):
         self.assertEqual(len(self.adapter.actions), 1)
     def test_hook_does_not_acquire_fresh_budget_or_compete_with_cleanup(self):
         self.adapter = Adapter(self.clock, [])
+        self.adapter.active = foreign = Mock()
         self.adapter.start = Mock(side_effect=ContractError('session_unavailable', 'cleanup'))
         hook = CloseHook('hook', GEN, self.adapter, self.registry, self.health, self.effects, window=HANDLES[0])
         result = hook(0, 1)
         self.assertEqual(result['error'], 'session_unavailable')
+        self.assertFalse(result['cleanup_confirmed'])
+        foreign.cancel.assert_not_called()
+        foreign.cleanup.assert_not_called()
         self.assertEqual(self.adapter.actions, [])
         hook = CloseHook('hook', GEN, self.adapter, self.registry, self.health, self.effects, window=HANDLES[0])
         self.clock[0] = 1

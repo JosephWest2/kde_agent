@@ -177,6 +177,49 @@ class QueryTests(unittest.TestCase):
         self.assertTrue((self.store.path / result['query_artifact']).exists())
         self.assertEqual(result['windows'][0]['app'], None)
         self.assertLess(result['accepted_at'], query.deadline)
+
+    def test_activation_native_exact_braces_and_cleanup_without_observation(self):
+        guard = Mock()
+        action = self.adapter.activate('request', time.monotonic() + .5,
+            {'generation': GEN, 'window_id': '{' + UID.upper() + '}'}, guard)
+        self.assertEqual(action._argv(), ['/test/kdotool', '--name', action.name,
+                                         'windowactivate', '{' + UID + '}'])
+        with patch.object(self.store, 'window_observation', wraps=self.store.window_observation) as publish:
+            result = self.drive(action)
+        guard.assert_called_once()
+        publish.assert_not_called()
+        self.assertIn('activation_completed_at', result)
+        self.assertNotIn('windows', result)
+        self.assertTrue(action.absent)
+        self.assertFalse(action.folder.exists())
+        self.assertIsNone(self.adapter.active)
+
+    def test_activation_guard_runs_after_collision_and_failure_spawns_nothing(self):
+        def guard():
+            self.assertEqual(action.phase, 'collision')
+            self.assertFalse(action.call_pending)
+            raise ContractError('target_lost', 'Lost before spawn.')
+        action = self.adapter.activate('request', time.monotonic() + .5,
+            {'generation': GEN, 'window_id': UID}, guard)
+        with self.assertRaises(ContractError) as caught:
+            self.drive(action)
+        action.cancel(caught.exception)
+        self.clean(action)
+        self.assertFalse(action.spawned)
+        self.assertIsNone(action.child)
+        self.assertFalse(action.streams)
+
+    def test_activation_guard_persistence_expiry_never_starts_child(self):
+        def guard():
+            action.deadline = time.monotonic()
+        action = self.adapter.activate('request', time.monotonic() + .5,
+            {'generation': GEN, 'window_id': UID}, guard)
+        with self.assertRaises(ContractError) as caught:
+            self.drive(action)
+        self.assertEqual(caught.exception.code, 'timeout')
+        action.cancel(caught.exception)
+        self.clean(action)
+        self.assertFalse(action.spawned)
     def test_crash_malformed_hung_and_flood_cleanup(self):
         for mode in ('bad', 'hang', 'flood', 'stderr_flood'):
             with self.subTest(mode=mode):

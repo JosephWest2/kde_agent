@@ -12,9 +12,7 @@ from .environment import DEFAULTS, compose, executable
 
 
 class LaunchTask:
-    cleanup_seconds = .2
-
-    def __init__(self, request, context, registry, desktop, records, *, healthy=None):
+    def __init__(self, request, context, registry, desktop, records, *, healthy=None, adapter=None):
         self.request, self.context = request, context
         self.registry, self.desktop, self.records = registry, desktop, records
         self.healthy = healthy or desktop.tick
@@ -25,6 +23,13 @@ class LaunchTask:
         self.deadline = context.work.admission.deadline
         self.handshake = None
         self.exec_receipt = b''
+        self.exec_confirmed = False
+        self.adapter = adapter
+        self.window_wait = None
+
+    def retain(self):
+        if self.app is not None and self.app.authorized:
+            self.context.effects(self.app.snapshot(), uncertain=not self.exec_confirmed)
 
     def check(self):
         if self.cancelled:
@@ -37,8 +42,6 @@ class LaunchTask:
 
     def prepare(self):
         args = self.request.arguments
-        if args['wait_window']:
-            raise ContractError('unsupported_operation', 'Launch window waits require issue #24.')
         self.check()
         self.registry.available()
         env = compose(DEFAULTS, args['env'], self.desktop.private)
@@ -93,6 +96,13 @@ class LaunchTask:
                     os.close(fd)
 
     def step(self, now):
+        if self.window_wait is not None:
+            result = self.window_wait.step(now)
+            if result is not None:
+                self.retain()
+                self.window_wait.check()
+                return self.app.snapshot() | {'window_wait': result}
+            return None
         self.check()
         if self.phase == 'prepare':
             self.prepare()
@@ -134,11 +144,20 @@ class LaunchTask:
         self.registry.children.poll()
         if self.exec_receipt != b'X' or (self.app.child.returncode is not None and self.app.child.returncode < 0):
             raise ContractError('completion_unknown', 'Application execution could not be confirmed.', outcome='unknown')
+        self.exec_confirmed = True
         self.app.state = 'running' if self.app.child.returncode is None else 'root-exited'
         self.app.persist()
         self.close_endpoints()
-        self.context.effects(self.app.snapshot())
         self.phase = 'done'
+        self.context.effects(self.app.snapshot())
+        if self.request.arguments['wait_window']:
+            from .targeting import TargetTask
+            self.phase = 'window_wait'
+            self.handshake = None
+            self.window_wait = TargetTask(self.request, self.context, self.adapter,
+                self.registry, self.healthy, condition='window', application=self.app.handle,
+                progress=self.retain)
+            return None
         return self.app.snapshot()
 
     def close_endpoints(self):
@@ -150,13 +169,26 @@ class LaunchTask:
 
     def request_cancel(self, reason):
         self.cancelled = True
+        if self.window_wait is not None:
+            self.window_wait.request_cancel(reason)
         self.close_endpoints()
         if self.app is not None:
             self.app.settled = True
             if not self.app.authorized and self.app.child is not None:
                 # Owned Popen is the sole reaper and protects against PID reuse.
                 self.app.child.abort()
+        # Diagnostics cannot replace an already-latched cause or consume the
+        # native operation's cleanup allowance. Context captured current refs
+        # before reporting observer failure.
+        try:
+            self.retain()
+        except Exception:
+            pass
 
     def cleanup(self, now):
         self.close_endpoints()
-        return True
+        return self.window_wait is None or self.window_wait.cleanup(now)
+
+    @property
+    def cleanup_seconds(self):
+        return 1.5 if self.window_wait is not None and self.window_wait.operation is not None else .2

@@ -7,10 +7,10 @@ real control, structured window query, resumed EIS input and a complete screensh
 
 Readiness is supplied by the packaged `m1-provisional` provider. Results explicitly
 report `release_qualified: false`, `replacement_issue: 35` and
-`desktop_operations_supported: false`. Public `launch` and `windows` are supported after readiness; status lists them in
-`supported_operations`. Focus, waits, input and screenshot commands remain unsupported.
+`desktop_operations_supported: false`. Public `launch`, `windows`, `focus` and `wait` are supported after readiness;
+status lists them in `supported_operations`. Input and screenshot commands remain unsupported.
 The provider flag describes provisional desktop adapters, not the separate
-launch and discovery capabilities. See [application ownership](APPLICATIONS.md) and [window discovery](WINDOWS.md). Examples of
+application and window capabilities. See [application ownership](APPLICATIONS.md) and [window discovery](WINDOWS.md). Examples of
 future operation results below are illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
 
 ## Install and inspect
@@ -241,7 +241,7 @@ Individually valid settings do not guarantee completion within that time.
 
 The work limits retain M1 choices; 10/60s wait and 5s close/kill defaults are
 provisional interface choices, not performance measurements. Separate cleanup
-reserves remain finite: query cleanup 1.5s; capture abort 1s plus owned-service
+reserves remain finite: window query/activation cleanup 1.5s; capture abort 1s plus owned-service
 stop up to 15s if compositor cleanup is unconfirmed; failed-startup cleanup up to
 15s. Complete session stop is bounded by 15s. A failed capture can therefore take
 up to 19s including work and cleanup. Strict success acceptance deadlines do not

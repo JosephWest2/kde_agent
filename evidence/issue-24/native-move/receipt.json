@@ -1,0 +1,1873 @@
+{
+  "prepared": {
+    "commit": "7cfa228e99918130cf201b4d62275a159504b5b3",
+    "archive_sha256": "6b59e309866d2a2eb73682b2aa310f1e9743f88199ec551f854e65e54d5f8776",
+    "wheel": "/tmp/kde-issue24-native-move/wheels/agent_desktop-0.1.0-py3-none-any.whl",
+    "wheel_sha256": "264b69881198fe0e95e91cc7833c177042e31bcd85396a6473bb3ae12c2330d2",
+    "source": "/tmp/kde-issue24-native-move/source",
+    "python": "/tmp/kde-issue24-native-move/venv/bin/python",
+    "runner_sha256": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6"
+  },
+  "installed_module": "/tmp/kde-issue24-native-move/venv/lib/python3.14/site-packages/agent_desktop/__init__.py",
+  "installed_hashes": {
+    "worker.py": "79cddb578a7faea23017f0c63fc3e3e34961f4b4c6ee3ef1d39d0d75a378bc91",
+    "windows.py": "fd501db8ffa80408ac874f91ff137ee5e9f242fabb8a4cdf25038ac0fd8229f8",
+    "window_types.py": "a5512712856fdb7bf2af8b4997fa01a0cdd1d32df4c77c7e7c4bcac8834029a3",
+    "window_query.js": "fbca21db8f49d061edd5664056356ec60002504c95e5aa2df07d545a9929cd46",
+    "watchdog.py": "8a70877e25ae2b12c04455d9577444bf770bc9fa0b5787bbfb4810f7b4434506",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "targeting.py": "d980ed3520006e4dee5f83d073295a2c4fefe1f3a50fc44672073a92ea2b92e7",
+    "shutdown.py": "176588fb62a9b9d122e75691433158a6633af916ea8b407e2af237a72a2f30da",
+    "service_cleanup.py": "d160784ff279ee18a96820cb27b12ce96d862eb45d01e6b0b5146975adf4dc8b",
+    "scheduler.py": "4544bd4cd42cec12a69c25dec5ed189b89b13d9f15e0bd4af4a3dd57db1963b1",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "records.py": "66d55588d8c2d37fe7476d4ef3792e7a714a709bc7e47d058934199519ebbd1d",
+    "readiness.py": "a00fbb6b556b0c0715fb6e3e564fa39aaddb4c8ece96a49b7733c1f165744bfa",
+    "provisional_input.py": "8d0a367da7c008cd91fd5086ac043514d308074362876951b89b2aa44b18b480",
+    "provisional_codec.py": "a5e53ca203fe02f25f063f58081c6582abe35f7124dc474e3ce30b7d149dd2fe",
+    "provisional_capture.py": "55067fe8958cc79b94c54d0be6053140c7d76a752ee7574b9ab5eb2b32192d6a",
+    "provisional_binding.py": "71af566a95d3d55e55c0af49bd360252b4220833d5eae8de03c9a3064b9c62b1",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "private_bus.py": "cfd38503f5af750b954ee8f31615335ec2314ed69124b9209f85a9862ff86ecc",
+    "prerequisites.py": "0bbdcf41f16c8aa70f3533f60a025720cd7600dec4893980408f072624ea5a9c",
+    "paths.py": "bbfe30260a16d0598f5283450d08b1847af1d0dc5a91bb02be806b2dbda14e61",
+    "ownership.py": "9ae4c992b6f9039b6f9585cf0f7afa0149435ea932a2dc78016e3d0c0809244f",
+    "lifecycle.py": "5d52cf5481cff8ff9fa876929ac8548dda57f4258af502837620f8f957fcafa4",
+    "health.py": "aacc877da08c10555ef171c6752873a7dfff302ea63b1f1b5ffbb25ea190fe4d",
+    "environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "desktop.py": "9616454eaf194d4ef0a1dfeb78f861cfdb3208557b5f4cb93e5d0cbbb7550748",
+    "contracts.py": "d2f560eda1423ffdbfbb459642cc1eef9aa1564274e17df7499dbb566008069e",
+    "cli.py": "524b6c6b78f9d1a234b15c0feee7fab24c45f0e2ac3e36bd220111d66614c18f",
+    "children.py": "7658e7d0a4eaffb9a7a9d9af60e579d7c4545094be17468c13e7540038b272c6",
+    "artifacts.py": "7c6b37febcb0373ef769c500221babd98951d73f3f1f875855e137094d522813",
+    "applications.py": "91ff674573bfab3f6de576126ba3bad3cd59378db35de18c0e6ec0046127a26b",
+    "app_processes.py": "0d1453a1f053078e2550016125f386eafb487ffe5f8a65c7e838bfa831ce2827",
+    "app_launcher.py": "9b188a9108de6dc3e0b0041430d07cd16f8ddb767208574b69cf0c1f400c3426",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4"
+  },
+  "fixture": {
+    "source_sha256": "a9024c7d7e1e151fa5c8d10fbb8631bc6a9dbfde0ad40823b2b1686e8e0a53bf",
+    "binary_sha256": "55e22dc1682c74e33ef5972989ee359a5b880ef39e0388be382550aa3defb6cf",
+    "compiler": "gcc (GCC) 16.2.1 20260810",
+    "argv": [
+      "/usr/bin/gcc",
+      "-std=c11",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build",
+      "/tmp/kde-issue24-native-move/source/tools/wayland_fixture.c",
+      "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/xdg-shell-protocol.c",
+      "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/presentation-time-protocol.c",
+      "-lwayland-client",
+      "-lm",
+      "-lxkbcommon",
+      "-o",
+      "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture"
+    ],
+    "protocols": {
+      "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "7ba7f9c8473deee674cb1f154a18abd0bb0cc072604fc055b0c15e459fc4c7df",
+      "/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml": "dffac93bcb2bb1d8c385e72b8a8c2c0d4d79a336866322f3ba886dce2b27b1e2"
+    },
+    "elapsed_seconds": 0.331
+  },
+  "dependencies": {
+    "schema_version": 1,
+    "scope": "prerequisites",
+    "dependency_root": "/home/josephwest/development/kde-agent/.local/dependencies",
+    "desktop_ready": false,
+    "desktop_launched": false,
+    "provider": "m1-provisional",
+    "production_readiness": false,
+    "release_qualified": false,
+    "replacement_issue": 35,
+    "capabilities": {
+      "control": "not_tested",
+      "window_query": "not_tested",
+      "input_resumed": "not_tested",
+      "screenshot": "not_tested"
+    },
+    "unsupported_operations": [
+      "launch",
+      "windows",
+      "focus",
+      "wait",
+      "key",
+      "type",
+      "click",
+      "input.reset",
+      "screenshot",
+      "logs",
+      "close",
+      "kill"
+    ],
+    "dependencies": [
+      {
+        "name": "kdotool",
+        "status": "passed",
+        "observed": {
+          "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+          "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+          "revision": "be03ce90c09350898556436bac74ed35fe928617",
+          "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+          "patches": [],
+          "version": "kdotool v0.3.0",
+          "provenance_verified": true,
+          "source_checkout_required": false
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "libei",
+        "status": "passed",
+        "observed": {
+          "path": "/usr/lib/libei.so.1",
+          "sha256": "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501",
+          "architecture": "x86_64",
+          "audit_issue": 12,
+          "compiler_required_at_runtime": false
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "python_bindings",
+        "status": "passed",
+        "observed": {
+          "python": "3.14.7",
+          "versions": {
+            "gi": "3.56.3",
+            "dbus": "1.4.0",
+            "PIL": "12.3.0",
+            "GLib": "2.88.3"
+          },
+          "origins": {
+            "gi": "/usr/lib/python3.14/site-packages/gi/__init__.py",
+            "dbus": "/usr/lib/python3.14/site-packages/dbus/__init__.py",
+            "PIL": "/usr/lib/python3.14/site-packages/PIL/__init__.py"
+          },
+          "gio_unix_fd": true,
+          "png": true,
+          "interpreter": "/tmp/kde-issue24-native-move/venv/bin/python",
+          "isolated": true
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "runtime_executables",
+        "status": "passed",
+        "observed": {
+          "kwin_wayland": "/usr/bin/kwin_wayland",
+          "dbus-daemon": "/usr/bin/dbus-daemon",
+          "dbus-send": "/usr/bin/dbus-send",
+          "systemctl": "/usr/bin/systemctl",
+          "systemd-run": "/usr/bin/systemd-run",
+          "env": "/usr/bin/env",
+          "kwin_version": "kwin 6.7.5",
+          "systemd_version": "systemd 261 (261.3-1-arch)"
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      },
+      {
+        "name": "user_manager",
+        "status": "passed",
+        "observed": {
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice",
+          "observation": "read_only",
+          "service_creation": "not_tested",
+          "events_readable": true
+        },
+        "code": null,
+        "reason": null,
+        "repair": null
+      }
+    ],
+    "elapsed_seconds": 0.148044,
+    "ok": true,
+    "kdotool": {
+      "executable": "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+      "binary_sha256": "b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21",
+      "revision": "be03ce90c09350898556436bac74ed35fe928617",
+      "cargo_lock_sha256": "d6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc",
+      "patches": [],
+      "version": "kdotool v0.3.0",
+      "provenance_verified": true,
+      "source_checkout_required": false
+    }
+  },
+  "cases": {
+    "queued-move": {
+      "controller": {
+        "stdout": "{\"schema_version\": 1, \"request_id\": \"d6f57e27814c47a2912db4ef10e405f2\", \"operation\": \"session.start\", \"ok\": true, \"session\": {\"name\": \"a24-queued-move\", \"generation\": \"1f9365c00c554d02924cc6e2bd5d75eb\"}, \"result\": {\"provider\": \"m1-provisional\", \"release_qualified\": false, \"replacement_issue\": 35, \"desktop_operations_supported\": false, \"state\": \"ready\", \"desktop_ready\": true, \"observed_at\": 162338.36217832, \"health\": {\"window_query\": {\"state\": \"passed\", \"observed_at\": 162338.231104923, \"windows\": 0, \"script_unloaded\": true}, \"input_resumed\": {\"state\": \"passed\", \"observed_at\": 162338.236833248, \"resumed\": true}, \"screenshot\": {\"state\": \"passed\", \"observed_at\": 162338.338724716, \"path\": \"/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/readiness/capture-b9a11ef908fa46b187943356d8ee8db2/image.png\"}, \"bus\": {\"state\": \"passed\", \"observed_at\": 162338.343531053}, \"compositor\": {\"state\": \"passed\", \"observed_at\": 162338.343532105}, \"control\": {\"state\": \"passed\", \"observed_at\": 162338.385680851}}, \"failure\": null, \"worker_pid\": 1195806, \"supported_operations\": [\"launch\", \"windows\", \"focus\", \"wait\"], \"reused\": false}, \"error\": null}\n",
+        "stderr": "",
+        "exit_code": 0
+      },
+      "start": {
+        "schema_version": 1,
+        "request_id": "d6f57e27814c47a2912db4ef10e405f2",
+        "operation": "session.start",
+        "ok": true,
+        "session": {
+          "name": "a24-queued-move",
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+        },
+        "result": {
+          "provider": "m1-provisional",
+          "release_qualified": false,
+          "replacement_issue": 35,
+          "desktop_operations_supported": false,
+          "state": "ready",
+          "desktop_ready": true,
+          "observed_at": 162338.36217832,
+          "health": {
+            "window_query": {
+              "state": "passed",
+              "observed_at": 162338.231104923,
+              "windows": 0,
+              "script_unloaded": true
+            },
+            "input_resumed": {
+              "state": "passed",
+              "observed_at": 162338.236833248,
+              "resumed": true
+            },
+            "screenshot": {
+              "state": "passed",
+              "observed_at": 162338.338724716,
+              "path": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/readiness/capture-b9a11ef908fa46b187943356d8ee8db2/image.png"
+            },
+            "bus": {
+              "state": "passed",
+              "observed_at": 162338.343531053
+            },
+            "compositor": {
+              "state": "passed",
+              "observed_at": 162338.343532105
+            },
+            "control": {
+              "state": "passed",
+              "observed_at": 162338.385680851
+            }
+          },
+          "failure": null,
+          "worker_pid": 1195806,
+          "supported_operations": [
+            "launch",
+            "windows",
+            "focus",
+            "wait"
+          ],
+          "reused": false
+        },
+        "error": null
+      },
+      "metadata": {
+        "schema_version": 1,
+        "session": "a24-queued-move",
+        "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+        "unit": "agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service",
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service",
+        "configuration": {
+          "mode": "headless",
+          "artifacts": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts",
+          "dependency_root": "/home/josephwest/development/kde-agent/.local/dependencies",
+          "output": {
+            "width": 1280,
+            "height": 720,
+            "scale": 1
+          }
+        },
+        "submission": "acknowledged",
+        "state": "ready"
+      },
+      "calls": [
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "launch",
+            "--session",
+            "a24-queued-move",
+            "--wait-window",
+            "--",
+            "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture",
+            "--autonomous",
+            "--sibling",
+            "--exit-after-ms",
+            "7000"
+          ],
+          "started_at": 162338.394620222,
+          "cli_pid": 1195855,
+          "ended_at": 162338.77533497,
+          "exit_code": 0,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"c6792298840e4004bbfba05b3c2ce4a6\",\"operation\":\"launch\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"application\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"cgroup\":\"/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service/applications/d2287e2d0d0d4baaad276ef727e47416\",\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"},\"executable\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture\",\"logs\":{\"stdout\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/d8fefff3a8384b5bb613a925d370c46b.stdout.partial\",\"stderr\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/8611a3b84b5442ca82a03e06fb4cf291.stderr.partial\"},\"state\":\"running\",\"exit_code\":null,\"windows\":[{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"}],\"window_observation\":{\"query_artifact\":\"window-observations/4a439962b251489488f58d23e4d5911b.json\",\"query_id\":\"4a439962b251489488f58d23e4d5911b\",\"observed_at\":162338.673185,\"accepted_at\":162338.713308456,\"windows\":[{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"}]},\"previous_observation\":null,\"pending_observation\":null,\"window_wait\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"request_id\":\"c6792298840e4004bbfba05b3c2ce4a6\",\"query_id\":\"4a439962b251489488f58d23e4d5911b\",\"observation_state\":\"accepted\",\"observed_at\":162338.673185,\"active_window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"windows\":[{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"frame\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"active\":true,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162338.713147102,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}},{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"frame\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"active\":false,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162338.7132858,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}}],\"query_artifact\":\"window-observations/4a439962b251489488f58d23e4d5911b.json\",\"cleanup\":{\"child_reaped\":true,\"script_absent\":true,\"temporary_removed\":true},\"accepted_at\":162338.713308456,\"condition\":\"window\",\"satisfied\":true,\"application\":{\"application\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"cgroup\":\"/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service/applications/d2287e2d0d0d4baaad276ef727e47416\",\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"},\"executable\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture\",\"logs\":{\"stdout\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/d8fefff3a8384b5bb613a925d370c46b.stdout.partial\",\"stderr\":\"/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/8611a3b84b5442ca82a03e06fb4cf291.stderr.partial\"},\"state\":\"running\",\"exit_code\":null,\"windows\":[{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"}],\"window_observation\":{\"query_artifact\":\"window-observations/4a439962b251489488f58d23e4d5911b.json\",\"query_id\":\"4a439962b251489488f58d23e4d5911b\",\"observed_at\":162338.673185,\"accepted_at\":162338.713308456,\"windows\":[{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"}]},\"previous_observation\":null,\"pending_observation\":null},\"polls\":1}},\"error\":null}\n",
+          "stderr": "",
+          "elapsed": 0.38071474799653515,
+          "response": {
+            "schema_version": 1,
+            "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+            "operation": "launch",
+            "ok": true,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": {
+              "application": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+              },
+              "process": {
+                "pid": 1195856,
+                "start_time_ticks": 16233856,
+                "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service/applications/d2287e2d0d0d4baaad276ef727e47416",
+                "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+              },
+              "executable": "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture",
+              "logs": {
+                "stdout": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/d8fefff3a8384b5bb613a925d370c46b.stdout.partial",
+                "stderr": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/8611a3b84b5442ca82a03e06fb4cf291.stderr.partial"
+              },
+              "state": "running",
+              "exit_code": null,
+              "windows": [
+                {
+                  "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                  "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                },
+                {
+                  "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                  "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                }
+              ],
+              "window_observation": {
+                "query_artifact": "window-observations/4a439962b251489488f58d23e4d5911b.json",
+                "query_id": "4a439962b251489488f58d23e4d5911b",
+                "observed_at": 162338.673185,
+                "accepted_at": 162338.713308456,
+                "windows": [
+                  {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                  },
+                  {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                  }
+                ]
+              },
+              "previous_observation": null,
+              "pending_observation": null,
+              "window_wait": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+                "query_id": "4a439962b251489488f58d23e4d5911b",
+                "observation_state": "accepted",
+                "observed_at": 162338.673185,
+                "active_window": {
+                  "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                  "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                },
+                "windows": [
+                  {
+                    "window": {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                    },
+                    "pid": 1195856,
+                    "title": "KDE Agent Native Fixture",
+                    "class": "org.kde_agent.fixture",
+                    "client": {
+                      "x": 400,
+                      "y": 210,
+                      "width": 480,
+                      "height": 300
+                    },
+                    "frame": {
+                      "x": 400,
+                      "y": 210,
+                      "width": 480,
+                      "height": 300
+                    },
+                    "active": true,
+                    "app": {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                    },
+                    "association": {
+                      "reason": "verified_process",
+                      "verified_at": 162338.713147102,
+                      "process": {
+                        "pid": 1195856,
+                        "start_time_ticks": 16233856,
+                        "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                      }
+                    }
+                  },
+                  {
+                    "window": {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                    },
+                    "pid": 1195856,
+                    "title": "KDE Agent Native Fixture",
+                    "class": "org.kde_agent.fixture",
+                    "client": {
+                      "x": 320,
+                      "y": 180,
+                      "width": 640,
+                      "height": 360
+                    },
+                    "frame": {
+                      "x": 320,
+                      "y": 180,
+                      "width": 640,
+                      "height": 360
+                    },
+                    "active": false,
+                    "app": {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                    },
+                    "association": {
+                      "reason": "verified_process",
+                      "verified_at": 162338.7132858,
+                      "process": {
+                        "pid": 1195856,
+                        "start_time_ticks": 16233856,
+                        "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                      }
+                    }
+                  }
+                ],
+                "query_artifact": "window-observations/4a439962b251489488f58d23e4d5911b.json",
+                "cleanup": {
+                  "child_reaped": true,
+                  "script_absent": true,
+                  "temporary_removed": true
+                },
+                "accepted_at": 162338.713308456,
+                "condition": "window",
+                "satisfied": true,
+                "application": {
+                  "application": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                  },
+                  "process": {
+                    "pid": 1195856,
+                    "start_time_ticks": 16233856,
+                    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service/applications/d2287e2d0d0d4baaad276ef727e47416",
+                    "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                  },
+                  "executable": "/home/josephwest/development/kde-agent/.local/issue24-native-move/fixture-build/wayland-fixture",
+                  "logs": {
+                    "stdout": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/d8fefff3a8384b5bb613a925d370c46b.stdout.partial",
+                    "stderr": "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/8611a3b84b5442ca82a03e06fb4cf291.stderr.partial"
+                  },
+                  "state": "running",
+                  "exit_code": null,
+                  "windows": [
+                    {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                    },
+                    {
+                      "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                      "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                    }
+                  ],
+                  "window_observation": {
+                    "query_artifact": "window-observations/4a439962b251489488f58d23e4d5911b.json",
+                    "query_id": "4a439962b251489488f58d23e4d5911b",
+                    "observed_at": 162338.673185,
+                    "accepted_at": 162338.713308456,
+                    "windows": [
+                      {
+                        "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                        "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                      },
+                      {
+                        "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                        "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                      }
+                    ]
+                  },
+                  "previous_observation": null,
+                  "pending_observation": null
+                },
+                "polls": 1
+              }
+            },
+            "error": null
+          }
+        },
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "windows",
+            "--session",
+            "a24-queued-move",
+            "--app",
+            "1f9365c00c554d02924cc6e2bd5d75eb:d2287e2d0d0d4baaad276ef727e47416"
+          ],
+          "started_at": 162338.775808148,
+          "cli_pid": 1195858,
+          "ended_at": 162338.975218133,
+          "exit_code": 0,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"f3376326f7084275bb31279b9b8e2022\",\"operation\":\"windows\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"request_id\":\"f3376326f7084275bb31279b9b8e2022\",\"query_id\":\"4959fcedaf0343559d185ead694ff903\",\"observation_state\":\"accepted\",\"observed_at\":162338.89401697,\"active_window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"windows\":[{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"frame\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"active\":true,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162338.933302646,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}},{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"frame\":{\"x\":320,\"y\":180,\"width\":640,\"height\":360},\"active\":false,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162338.933464216,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}}],\"query_artifact\":\"window-observations/4959fcedaf0343559d185ead694ff903.json\",\"cleanup\":{\"child_reaped\":true,\"script_absent\":true,\"temporary_removed\":true},\"accepted_at\":162338.933480857},\"error\":null}\n",
+          "stderr": "",
+          "elapsed": 0.19940998501260765,
+          "response": {
+            "schema_version": 1,
+            "request_id": "f3376326f7084275bb31279b9b8e2022",
+            "operation": "windows",
+            "ok": true,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": {
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+              "request_id": "f3376326f7084275bb31279b9b8e2022",
+              "query_id": "4959fcedaf0343559d185ead694ff903",
+              "observation_state": "accepted",
+              "observed_at": 162338.89401697,
+              "active_window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+              },
+              "windows": [
+                {
+                  "window": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                  },
+                  "pid": 1195856,
+                  "title": "KDE Agent Native Fixture",
+                  "class": "org.kde_agent.fixture",
+                  "client": {
+                    "x": 400,
+                    "y": 210,
+                    "width": 480,
+                    "height": 300
+                  },
+                  "frame": {
+                    "x": 400,
+                    "y": 210,
+                    "width": 480,
+                    "height": 300
+                  },
+                  "active": true,
+                  "app": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                  },
+                  "association": {
+                    "reason": "verified_process",
+                    "verified_at": 162338.933302646,
+                    "process": {
+                      "pid": 1195856,
+                      "start_time_ticks": 16233856,
+                      "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                    }
+                  }
+                },
+                {
+                  "window": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                  },
+                  "pid": 1195856,
+                  "title": "KDE Agent Native Fixture",
+                  "class": "org.kde_agent.fixture",
+                  "client": {
+                    "x": 320,
+                    "y": 180,
+                    "width": 640,
+                    "height": 360
+                  },
+                  "frame": {
+                    "x": 320,
+                    "y": 180,
+                    "width": 640,
+                    "height": 360
+                  },
+                  "active": false,
+                  "app": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                  },
+                  "association": {
+                    "reason": "verified_process",
+                    "verified_at": 162338.933464216,
+                    "process": {
+                      "pid": 1195856,
+                      "start_time_ticks": 16233856,
+                      "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                    }
+                  }
+                }
+              ],
+              "query_artifact": "window-observations/4959fcedaf0343559d185ead694ff903.json",
+              "cleanup": {
+                "child_reaped": true,
+                "script_absent": true,
+                "temporary_removed": true
+              },
+              "accepted_at": 162338.933480857
+            },
+            "error": null
+          }
+        },
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "focus",
+            "--session",
+            "a24-queued-move",
+            "--window",
+            "1f9365c00c554d02924cc6e2bd5d75eb:5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+          ],
+          "started_at": 162338.975698289,
+          "cli_pid": 1195861,
+          "ended_at": 162339.300451452,
+          "exit_code": 0,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"a7e3fd8133834142914847b0df918a7a\",\"operation\":\"focus\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"query_id\":\"03fb157a477045b4a5ad704b89a61ae1\",\"query_artifact\":\"window-observations/03fb157a477045b4a5ad704b89a61ae1.json\",\"observed_at\":162339.21781826,\"accepted_at\":162339.258676595,\"active_window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162339.258521029,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}},\"focused\":true,\"client\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"frame\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"condition\":\"focus\",\"satisfied\":true,\"polls\":2},\"error\":null}\n",
+          "stderr": "",
+          "elapsed": 0.3247531630040612,
+          "response": {
+            "schema_version": 1,
+            "request_id": "a7e3fd8133834142914847b0df918a7a",
+            "operation": "focus",
+            "ok": true,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": {
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+              "query_id": "03fb157a477045b4a5ad704b89a61ae1",
+              "query_artifact": "window-observations/03fb157a477045b4a5ad704b89a61ae1.json",
+              "observed_at": 162339.21781826,
+              "accepted_at": 162339.258676595,
+              "active_window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+              },
+              "window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+              },
+              "app": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+              },
+              "association": {
+                "reason": "verified_process",
+                "verified_at": 162339.258521029,
+                "process": {
+                  "pid": 1195856,
+                  "start_time_ticks": 16233856,
+                  "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                }
+              },
+              "focused": true,
+              "client": {
+                "x": 400,
+                "y": 210,
+                "width": 480,
+                "height": 300
+              },
+              "frame": {
+                "x": 400,
+                "y": 210,
+                "width": 480,
+                "height": 300
+              },
+              "condition": "focus",
+              "satisfied": true,
+              "polls": 2
+            },
+            "error": null
+          }
+        },
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "wait",
+            "--session",
+            "a24-queued-move",
+            "--for",
+            "exit",
+            "--app",
+            "1f9365c00c554d02924cc6e2bd5d75eb:d2287e2d0d0d4baaad276ef727e47416",
+            "--timeout",
+            "1.2"
+          ],
+          "started_at": 162339.300943411,
+          "cli_pid": 1195865,
+          "ended_at": 162340.588142539,
+          "exit_code": 8,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"8c7be1094fc54f7888e6353ba0d13783\",\"operation\":\"wait\",\"ok\":false,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":null,\"error\":{\"code\":\"timeout\",\"message\":\"Request deadline expired.\",\"context\":{\"phase\":\"exit_wait\"},\"outcome\":\"not_started\",\"partial_result\":null}}\n",
+          "stderr": "",
+          "elapsed": 1.2871991279826034,
+          "response": {
+            "schema_version": 1,
+            "request_id": "8c7be1094fc54f7888e6353ba0d13783",
+            "operation": "wait",
+            "ok": false,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": null,
+            "error": {
+              "code": "timeout",
+              "message": "Request deadline expired.",
+              "context": {
+                "phase": "exit_wait"
+              },
+              "outcome": "not_started",
+              "partial_result": null
+            }
+          }
+        },
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "focus",
+            "--session",
+            "a24-queued-move",
+            "--window",
+            "1f9365c00c554d02924cc6e2bd5d75eb:9b45031b-ee19-48c7-ba04-abf1e84252db"
+          ],
+          "started_at": 162339.374183913,
+          "cli_pid": 1195866,
+          "ended_at": 162340.841380704,
+          "exit_code": 0,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"d9ebe80a16f34e11a7a226d27fd73e7c\",\"operation\":\"focus\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"query_id\":\"6b873242be9c486b9f787567fd4ef6ac\",\"query_artifact\":\"window-observations/6b873242be9c486b9f787567fd4ef6ac.json\",\"observed_at\":162340.758584246,\"accepted_at\":162340.798805363,\"active_window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162340.798794385,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}},\"focused\":true,\"client\":{\"x\":370,\"y\":210,\"width\":640,\"height\":360},\"frame\":{\"x\":370,\"y\":210,\"width\":640,\"height\":360},\"condition\":\"focus\",\"satisfied\":true,\"polls\":2},\"error\":null}\n",
+          "stderr": "",
+          "elapsed": 1.4671967909962405,
+          "response": {
+            "schema_version": 1,
+            "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+            "operation": "focus",
+            "ok": true,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": {
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+              "query_id": "6b873242be9c486b9f787567fd4ef6ac",
+              "query_artifact": "window-observations/6b873242be9c486b9f787567fd4ef6ac.json",
+              "observed_at": 162340.758584246,
+              "accepted_at": 162340.798805363,
+              "active_window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+              },
+              "window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+              },
+              "app": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+              },
+              "association": {
+                "reason": "verified_process",
+                "verified_at": 162340.798794385,
+                "process": {
+                  "pid": 1195856,
+                  "start_time_ticks": 16233856,
+                  "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                }
+              },
+              "focused": true,
+              "client": {
+                "x": 370,
+                "y": 210,
+                "width": 640,
+                "height": 360
+              },
+              "frame": {
+                "x": 370,
+                "y": 210,
+                "width": 640,
+                "height": 360
+              },
+              "condition": "focus",
+              "satisfied": true,
+              "polls": 2
+            },
+            "error": null
+          }
+        },
+        {
+          "argv": [
+            "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+            "--json",
+            "windows",
+            "--session",
+            "a24-queued-move",
+            "--app",
+            "1f9365c00c554d02924cc6e2bd5d75eb:d2287e2d0d0d4baaad276ef727e47416"
+          ],
+          "started_at": 162340.841965418,
+          "cli_pid": 1195871,
+          "ended_at": 162341.029584554,
+          "exit_code": 0,
+          "stdout": "{\"schema_version\":1,\"request_id\":\"8bddb6fcb31548929c6cc0dfa552b3f8\",\"operation\":\"windows\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"request_id\":\"8bddb6fcb31548929c6cc0dfa552b3f8\",\"query_id\":\"b56004941ef24956b87826f56be69f43\",\"observation_state\":\"accepted\",\"observed_at\":162340.939818895,\"active_window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"windows\":[{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"5f8ed12e-1695-44cb-96ae-76b3a2ff499d\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"frame\":{\"x\":400,\"y\":210,\"width\":480,\"height\":300},\"active\":false,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162340.979663957,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}},{\"window\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"window_id\":\"9b45031b-ee19-48c7-ba04-abf1e84252db\"},\"pid\":1195856,\"title\":\"KDE Agent Native Fixture\",\"class\":\"org.kde_agent.fixture\",\"client\":{\"x\":370,\"y\":210,\"width\":640,\"height\":360},\"frame\":{\"x\":370,\"y\":210,\"width\":640,\"height\":360},\"active\":true,\"app\":{\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\",\"application_id\":\"d2287e2d0d0d4baaad276ef727e47416\"},\"association\":{\"reason\":\"verified_process\",\"verified_at\":162340.979798252,\"process\":{\"pid\":1195856,\"start_time_ticks\":16233856,\"boot_id\":\"8d9af2cb-ee34-4666-a8b5-ed10929fc812\"}}}],\"query_artifact\":\"window-observations/b56004941ef24956b87826f56be69f43.json\",\"cleanup\":{\"child_reaped\":true,\"script_absent\":true,\"temporary_removed\":true},\"accepted_at\":162340.979808883},\"error\":null}\n",
+          "stderr": "",
+          "elapsed": 0.1876191360061057,
+          "response": {
+            "schema_version": 1,
+            "request_id": "8bddb6fcb31548929c6cc0dfa552b3f8",
+            "operation": "windows",
+            "ok": true,
+            "session": {
+              "name": "a24-queued-move",
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+            },
+            "result": {
+              "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+              "request_id": "8bddb6fcb31548929c6cc0dfa552b3f8",
+              "query_id": "b56004941ef24956b87826f56be69f43",
+              "observation_state": "accepted",
+              "observed_at": 162340.939818895,
+              "active_window": {
+                "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+              },
+              "windows": [
+                {
+                  "window": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+                  },
+                  "pid": 1195856,
+                  "title": "KDE Agent Native Fixture",
+                  "class": "org.kde_agent.fixture",
+                  "client": {
+                    "x": 400,
+                    "y": 210,
+                    "width": 480,
+                    "height": 300
+                  },
+                  "frame": {
+                    "x": 400,
+                    "y": 210,
+                    "width": 480,
+                    "height": 300
+                  },
+                  "active": false,
+                  "app": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                  },
+                  "association": {
+                    "reason": "verified_process",
+                    "verified_at": 162340.979663957,
+                    "process": {
+                      "pid": 1195856,
+                      "start_time_ticks": 16233856,
+                      "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                    }
+                  }
+                },
+                {
+                  "window": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+                  },
+                  "pid": 1195856,
+                  "title": "KDE Agent Native Fixture",
+                  "class": "org.kde_agent.fixture",
+                  "client": {
+                    "x": 370,
+                    "y": 210,
+                    "width": 640,
+                    "height": 360
+                  },
+                  "frame": {
+                    "x": 370,
+                    "y": 210,
+                    "width": 640,
+                    "height": 360
+                  },
+                  "active": true,
+                  "app": {
+                    "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+                    "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+                  },
+                  "association": {
+                    "reason": "verified_process",
+                    "verified_at": 162340.979798252,
+                    "process": {
+                      "pid": 1195856,
+                      "start_time_ticks": 16233856,
+                      "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+                    }
+                  }
+                }
+              ],
+              "query_artifact": "window-observations/b56004941ef24956b87826f56be69f43.json",
+              "cleanup": {
+                "child_reaped": true,
+                "script_absent": true,
+                "temporary_removed": true
+              },
+              "accepted_at": 162340.979808883
+            },
+            "error": null
+          }
+        }
+      ],
+      "private_move": {
+        "argv": [
+          "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+          "--name",
+          "evidence-move-1f9365c00c554d02924cc6e2bd5d75eb",
+          "kwinscript",
+          "--file",
+          "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/fixed-queued-move.js"
+        ],
+        "started_at": 162339.437261987,
+        "ended_at": 162339.44377533,
+        "source_sha256": "f778b49e81480491c39955c3b4f3d086747a47560d0b03b9c2adad7bf98f24ae",
+        "stdout": "{\"moved\":true}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "private_bus": "unix:path=/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/bus",
+        "before": {
+          "window": {
+            "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+            "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+          },
+          "pid": 1195856,
+          "title": "KDE Agent Native Fixture",
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "x": 320,
+            "y": 180,
+            "width": 640,
+            "height": 360
+          },
+          "frame": {
+            "x": 320,
+            "y": 180,
+            "width": 640,
+            "height": 360
+          },
+          "active": false,
+          "app": {
+            "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+            "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+          },
+          "association": {
+            "reason": "verified_process",
+            "verified_at": 162338.933464216,
+            "process": {
+              "pid": 1195856,
+              "start_time_ticks": 16233856,
+              "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+            }
+          }
+        }
+      },
+      "independent_after": {
+        "window": {
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "window_id": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+        },
+        "pid": 1195856,
+        "title": "KDE Agent Native Fixture",
+        "class": "org.kde_agent.fixture",
+        "client": {
+          "x": 370,
+          "y": 210,
+          "width": 640,
+          "height": 360
+        },
+        "frame": {
+          "x": 370,
+          "y": 210,
+          "width": 640,
+          "height": 360
+        },
+        "active": true,
+        "app": {
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "application_id": "d2287e2d0d0d4baaad276ef727e47416"
+        },
+        "association": {
+          "reason": "verified_process",
+          "verified_at": 162340.979798252,
+          "process": {
+            "pid": 1195856,
+            "start_time_ticks": 16233856,
+            "boot_id": "8d9af2cb-ee34-4666-a8b5-ed10929fc812"
+          }
+        }
+      },
+      "admission": {
+        "schema_version": 1,
+        "revision": 0,
+        "session": "a24-queued-move",
+        "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+        "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+        "attempt": "7fd71625cd154e7489de8b038360bc5c",
+        "operation": "focus",
+        "admitted_at": 162339.423767223,
+        "deadline": 162341.423767223,
+        "created_at": "2026-09-20T21:03:10.551289+00:00",
+        "phase": "admitted",
+        "outcome": "pending",
+        "references": {},
+        "error_code": null,
+        "started_at": null,
+        "started_monotonic": null,
+        "terminal_observed_at": null,
+        "terminal_observed_monotonic": null
+      },
+      "passed": true,
+      "stop": {
+        "argv": [
+          "/tmp/kde-issue24-native-move/venv/bin/agent-desktop",
+          "--json",
+          "session",
+          "stop",
+          "--session",
+          "a24-queued-move"
+        ],
+        "started_at": 162341.031269216,
+        "cli_pid": 1195873,
+        "ended_at": 162341.401897467,
+        "exit_code": 0,
+        "stdout": "{\"schema_version\":1,\"request_id\":\"758acb5b85d047b0933e367d7266ec22\",\"operation\":\"session.stop\",\"ok\":true,\"session\":{\"name\":\"a24-queued-move\",\"generation\":\"1f9365c00c554d02924cc6e2bd5d75eb\"},\"result\":{\"state\":\"stopped\",\"desktop_ready\":false,\"cleanup\":\"complete\",\"records_preserved\":true},\"error\":null}\n",
+        "stderr": "",
+        "elapsed": 0.3706282509956509,
+        "response": {
+          "schema_version": 1,
+          "request_id": "758acb5b85d047b0933e367d7266ec22",
+          "operation": "session.stop",
+          "ok": true,
+          "session": {
+            "name": "a24-queued-move",
+            "generation": "1f9365c00c554d02924cc6e2bd5d75eb"
+          },
+          "result": {
+            "state": "stopped",
+            "desktop_ready": false,
+            "cleanup": "complete",
+            "records_preserved": true
+          },
+          "error": null
+        }
+      },
+      "cgroup_empty_at": 162341.401963245,
+      "trace": [
+        {
+          "at": 162338.133723678,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "readiness-1f9365c00c554d02924cc6e2bd5d75eb",
+          "query_id": "c3b08e896c244147ac71fac086227084",
+          "deadline": 162338.633698298,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162338.148853531,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "readiness-1f9365c00c554d02924cc6e2bd5d75eb",
+          "query_id": "c3b08e896c244147ac71fac086227084",
+          "remove": false,
+          "pid": 1195849,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-c3b08e896c244147ac71fac086227084",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-c3b08e896c244147ac71fac086227084/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-c3b08e896c244147ac71fac086227084"
+        },
+        {
+          "at": 162338.231075151,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "readiness-1f9365c00c554d02924cc6e2bd5d75eb",
+          "query_id": "c3b08e896c244147ac71fac086227084",
+          "deadline": 162338.633698298,
+          "accepted_at": 162338.208170677,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.031473873008508235
+        },
+        {
+          "at": 162338.567893331,
+          "event": "glib_gap",
+          "previous_at": 162338.430986566,
+          "gap": 0.13690180200501345
+        },
+        {
+          "at": 162338.652858692,
+          "event": "target_start",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "condition": "window",
+          "admitted_at": 162338.431158538,
+          "deadline": 162348.431158538
+        },
+        {
+          "at": 162338.652921039,
+          "event": "target_phase",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "phase": "window_wait",
+          "polls": 0
+        },
+        {
+          "at": 162338.653048082,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "query_id": "4a439962b251489488f58d23e4d5911b",
+          "deadline": 162348.431158538,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162338.663297632,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "query_id": "4a439962b251489488f58d23e4d5911b",
+          "remove": false,
+          "pid": 1195857,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4a439962b251489488f58d23e4d5911b",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4a439962b251489488f58d23e4d5911b/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4a439962b251489488f58d23e4d5911b"
+        },
+        {
+          "at": 162338.726615486,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "query_id": "4a439962b251489488f58d23e4d5911b",
+          "deadline": 162339.153059931,
+          "accepted_at": 162338.713308456,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162338.736490006,
+          "event": "target_complete",
+          "request_id": "c6792298840e4004bbfba05b3c2ce4a6",
+          "polls": 1
+        },
+        {
+          "at": 162338.867467229,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "f3376326f7084275bb31279b9b8e2022",
+          "query_id": "4959fcedaf0343559d185ead694ff903",
+          "deadline": 162339.335269115,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162338.879345403,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "f3376326f7084275bb31279b9b8e2022",
+          "query_id": "4959fcedaf0343559d185ead694ff903",
+          "remove": false,
+          "pid": 1195860,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4959fcedaf0343559d185ead694ff903",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4959fcedaf0343559d185ead694ff903/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-4959fcedaf0343559d185ead694ff903"
+        },
+        {
+          "at": 162338.947042146,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "f3376326f7084275bb31279b9b8e2022",
+          "query_id": "4959fcedaf0343559d185ead694ff903",
+          "deadline": 162339.335269115,
+          "accepted_at": 162338.933480857,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162339.041648942,
+          "event": "target_start",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "condition": "activate",
+          "admitted_at": 162339.01023297,
+          "deadline": 162341.01023297
+        },
+        {
+          "at": 162339.041704036,
+          "event": "target_phase",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "phase": "resolve",
+          "polls": 0
+        },
+        {
+          "at": 162339.04193844,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "9e1a5a1c6eb64229a3e090619874a827",
+          "deadline": 162341.01023297,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162339.053497331,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "9e1a5a1c6eb64229a3e090619874a827",
+          "remove": false,
+          "pid": 1195862,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-9e1a5a1c6eb64229a3e090619874a827",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-9e1a5a1c6eb64229a3e090619874a827/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-9e1a5a1c6eb64229a3e090619874a827"
+        },
+        {
+          "at": 162339.121380298,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "9e1a5a1c6eb64229a3e090619874a827",
+          "deadline": 162339.541987663,
+          "accepted_at": 162339.107726029,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162339.121779446,
+          "event": "native_start",
+          "kind": "activation",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "481da6e800404ab39ffc5e4860adf269",
+          "deadline": 162341.01023297,
+          "mode": "normal",
+          "window": "5f8ed12e-1695-44cb-96ae-76b3a2ff499d"
+        },
+        {
+          "at": 162339.131012796,
+          "event": "target_phase",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "phase": "activate",
+          "polls": 1
+        },
+        {
+          "at": 162339.151768999,
+          "event": "native_spawn",
+          "kind": "activation",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "481da6e800404ab39ffc5e4860adf269",
+          "remove": false,
+          "pid": 1195863,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-481da6e800404ab39ffc5e4860adf269",
+            "windowactivate",
+            "{5f8ed12e-1695-44cb-96ae-76b3a2ff499d}"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-481da6e800404ab39ffc5e4860adf269"
+        },
+        {
+          "at": 162339.187808968,
+          "event": "native_complete",
+          "kind": "activation",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "481da6e800404ab39ffc5e4860adf269",
+          "deadline": 162339.631182706,
+          "accepted_at": null,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162339.192464017,
+          "event": "target_phase",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "phase": "focus_wait",
+          "polls": 1
+        },
+        {
+          "at": 162339.19267788,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "03fb157a477045b4a5ad704b89a61ae1",
+          "deadline": 162341.01023297,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162339.203490715,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "03fb157a477045b4a5ad704b89a61ae1",
+          "remove": false,
+          "pid": 1195864,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-03fb157a477045b4a5ad704b89a61ae1",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-03fb157a477045b4a5ad704b89a61ae1/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-03fb157a477045b4a5ad704b89a61ae1"
+        },
+        {
+          "at": 162339.272376198,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "query_id": "03fb157a477045b4a5ad704b89a61ae1",
+          "deadline": 162339.692718486,
+          "accepted_at": 162339.258676595,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162339.272663891,
+          "event": "target_complete",
+          "request_id": "a7e3fd8133834142914847b0df918a7a",
+          "polls": 2
+        },
+        {
+          "at": 162339.372799583,
+          "event": "target_start",
+          "request_id": "8c7be1094fc54f7888e6353ba0d13783",
+          "condition": "exit",
+          "admitted_at": 162339.340548493,
+          "deadline": 162340.540548493
+        },
+        {
+          "at": 162339.372855975,
+          "event": "target_phase",
+          "request_id": "8c7be1094fc54f7888e6353ba0d13783",
+          "phase": "exit_wait",
+          "polls": 0
+        },
+        {
+          "at": 162340.540609538,
+          "event": "target_cancel",
+          "request_id": "8c7be1094fc54f7888e6353ba0d13783",
+          "reason": "timeout"
+        },
+        {
+          "at": 162340.577213593,
+          "event": "target_start",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "condition": "activate",
+          "admitted_at": 162339.423767223,
+          "deadline": 162341.423767223
+        },
+        {
+          "at": 162340.577271219,
+          "event": "target_phase",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "phase": "resolve",
+          "polls": 0
+        },
+        {
+          "at": 162340.577532951,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "b0671c9b8af349a69d3dc6f7b057dcd6",
+          "deadline": 162341.423767223,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162340.588545931,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "b0671c9b8af349a69d3dc6f7b057dcd6",
+          "remove": false,
+          "pid": 1195868,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b0671c9b8af349a69d3dc6f7b057dcd6",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b0671c9b8af349a69d3dc6f7b057dcd6/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b0671c9b8af349a69d3dc6f7b057dcd6"
+        },
+        {
+          "at": 162340.66152089,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "b0671c9b8af349a69d3dc6f7b057dcd6",
+          "deadline": 162341.077574939,
+          "accepted_at": 162340.647752566,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162340.661883001,
+          "event": "native_start",
+          "kind": "activation",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "598d2044b36c4aa9a8e50b307dfe74a4",
+          "deadline": 162341.423767223,
+          "mode": "normal",
+          "window": "9b45031b-ee19-48c7-ba04-abf1e84252db"
+        },
+        {
+          "at": 162340.671093079,
+          "event": "target_phase",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "phase": "activate",
+          "polls": 1
+        },
+        {
+          "at": 162340.692441694,
+          "event": "native_spawn",
+          "kind": "activation",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "598d2044b36c4aa9a8e50b307dfe74a4",
+          "remove": false,
+          "pid": 1195869,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-598d2044b36c4aa9a8e50b307dfe74a4",
+            "windowactivate",
+            "{9b45031b-ee19-48c7-ba04-abf1e84252db}"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-598d2044b36c4aa9a8e50b307dfe74a4"
+        },
+        {
+          "at": 162340.728180835,
+          "event": "native_complete",
+          "kind": "activation",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "598d2044b36c4aa9a8e50b307dfe74a4",
+          "deadline": 162341.171251047,
+          "accepted_at": null,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162340.733185045,
+          "event": "target_phase",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "phase": "focus_wait",
+          "polls": 1
+        },
+        {
+          "at": 162340.733429499,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "6b873242be9c486b9f787567fd4ef6ac",
+          "deadline": 162341.423767223,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162340.744131235,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "6b873242be9c486b9f787567fd4ef6ac",
+          "remove": false,
+          "pid": 1195870,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-6b873242be9c486b9f787567fd4ef6ac",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-6b873242be9c486b9f787567fd4ef6ac/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-6b873242be9c486b9f787567fd4ef6ac"
+        },
+        {
+          "at": 162340.812644452,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "query_id": "6b873242be9c486b9f787567fd4ef6ac",
+          "deadline": 162341.23347366,
+          "accepted_at": 162340.798805363,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162340.812915218,
+          "event": "target_complete",
+          "request_id": "d9ebe80a16f34e11a7a226d27fd73e7c",
+          "polls": 2
+        },
+        {
+          "at": 162340.913687989,
+          "event": "native_start",
+          "kind": "query",
+          "request_id": "8bddb6fcb31548929c6cc0dfa552b3f8",
+          "query_id": "b56004941ef24956b87826f56be69f43",
+          "deadline": 162341.381069048,
+          "mode": "normal",
+          "window": null
+        },
+        {
+          "at": 162340.925396431,
+          "event": "native_spawn",
+          "kind": "query",
+          "request_id": "8bddb6fcb31548929c6cc0dfa552b3f8",
+          "query_id": "b56004941ef24956b87826f56be69f43",
+          "remove": false,
+          "pid": 1195872,
+          "argv": [
+            "/home/josephwest/development/kde-agent/.local/dependencies/bin/kdotool",
+            "--name",
+            "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b56004941ef24956b87826f56be69f43",
+            "kwinscript",
+            "--file",
+            "/tmp/a24-was6za2i/agent-desktop/g/1f9365c00c554d02924cc6e2bd5d75eb/desktop/tmp/agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b56004941ef24956b87826f56be69f43/input.js"
+          ],
+          "script_name": "agent-window-1f9365c00c554d02924cc6e2bd5d75eb-b56004941ef24956b87826f56be69f43"
+        },
+        {
+          "at": 162340.993385067,
+          "event": "native_complete",
+          "kind": "query",
+          "request_id": "8bddb6fcb31548929c6cc0dfa552b3f8",
+          "query_id": "b56004941ef24956b87826f56be69f43",
+          "deadline": 162341.381069048,
+          "accepted_at": 162340.979808883,
+          "clean": true,
+          "spawned": true,
+          "script_absent": true,
+          "reaped": true,
+          "returncode": 0,
+          "temporary_removed": true,
+          "cleanup_deadline": null,
+          "error": null,
+          "max_glib_gap": 0.13690180200501345
+        },
+        {
+          "at": 162341.219285751,
+          "event": "worker_trace_end",
+          "last": 162341.209182473,
+          "max_glib_gap": 0.13690180200501345,
+          "heartbeat_count": 499,
+          "artifact_writes": {
+            "count": 81,
+            "maximum": 0.012146208988269791
+          }
+        }
+      ],
+      "retained_service_records": {
+        "terminal.json": {
+          "schema_version": 1,
+          "session": "a24-queued-move",
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "service_result": "success",
+          "exit_code": "exited",
+          "exit_status": "0",
+          "producer": "ExecStopPost",
+          "excluded_finalizer_pid": 1195882,
+          "entire_cgroup_empty": false,
+          "ordinary_processes_absent": true,
+          "runtime_removed": true,
+          "cleanup": "complete",
+          "stop_intent": {
+            "schema_version": 1,
+            "session": "a24-queued-move",
+            "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+            "origin": "manager_request",
+            "request_id": "758acb5b85d047b0933e367d7266ec22",
+            "admitted_at": 162341.085308564,
+            "prior_state": "ready"
+          },
+          "started_at": 162341.298294289,
+          "state": "stopped",
+          "terminated": [],
+          "finished_at": 162341.307939644
+        },
+        "reconciliation.json": {
+          "schema_version": 1,
+          "session": "a24-queued-move",
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "service_result": "success",
+          "exit_code": "exited",
+          "exit_status": "0",
+          "producer": "manager_reconciliation",
+          "excluded_finalizer_pid": null,
+          "entire_cgroup_empty": true,
+          "ordinary_processes_absent": true,
+          "runtime_removed": true,
+          "cleanup": "complete",
+          "stop_intent": {
+            "schema_version": 1,
+            "session": "a24-queued-move",
+            "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+            "origin": "manager_request",
+            "request_id": "758acb5b85d047b0933e367d7266ec22",
+            "admitted_at": 162341.085308564,
+            "prior_state": "ready"
+          },
+          "started_at": 162341.367793468,
+          "state": "stopped",
+          "finished_at": 162341.376236217
+        },
+        "manifest.json": {
+          "schema_version": 1,
+          "revision": 7,
+          "session": "a24-queued-move",
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "created_at": "2026-09-20T21:03:08.906448+00:00",
+          "updated_at": "2026-09-20T21:03:12.496681+00:00",
+          "mode": "headless",
+          "state": "stopped",
+          "outcome": "stopped",
+          "first_failure": null,
+          "cleanup": {
+            "state": "complete",
+            "failure": null
+          },
+          "output": {
+            "state": "not_collected",
+            "requested": {
+              "width": 1280,
+              "height": 720,
+              "scale": 1
+            },
+            "observed": null,
+            "producer": "M3 startup"
+          },
+          "dependencies": {
+            "state": "partial",
+            "observed": {
+              "agent_desktop": "0.1.0",
+              "python": "3.14.7"
+            },
+            "native": "not_collected",
+            "producer": "M3/doctor"
+          },
+          "process": {
+            "state": "collected",
+            "producer": "worker",
+            "pid": 1195806,
+            "start_ticks": "16233781",
+            "service": "agent-desktop-1f9365c00c554d02924cc6e2bd5d75eb.service"
+          },
+          "records": {
+            "requests": "requests",
+            "applications": "applications",
+            "events": "events.jsonl",
+            "logs": {
+              "worker": "logs/worker.log",
+              "compositor": "logs/compositor.log",
+              "bus": "logs/bus.log"
+            }
+          }
+        },
+        "shutdown.json": {
+          "deadline": 162342.92911273197,
+          "started_at": 162341.133878481,
+          "done": true,
+          "events": [
+            {
+              "stage": "cancel",
+              "state": "started",
+              "at": 162341.133882201
+            },
+            {
+              "stage": "cancel",
+              "state": "finished",
+              "at": 162341.134045031
+            },
+            {
+              "stage": "release",
+              "state": "started",
+              "at": 162341.134178705
+            },
+            {
+              "stage": "release",
+              "state": "finished",
+              "at": 162341.134278904
+            },
+            {
+              "stage": "close",
+              "state": "started",
+              "at": 162341.134373191
+            },
+            {
+              "stage": "close",
+              "state": "finished",
+              "at": 162341.134470256
+            },
+            {
+              "stage": "shutdown",
+              "state": "finished",
+              "at": 162341.134583686
+            }
+          ],
+          "stages": {
+            "cancel": {
+              "state": "attempted"
+            },
+            "release": {
+              "state": "not_connected",
+              "replacement_issue": 35,
+              "confirmed": false
+            },
+            "close": {
+              "state": "not_connected",
+              "replacement_issue": 35,
+              "confirmed": false
+            }
+          },
+          "replacement_issue": 35,
+          "generation": "1f9365c00c554d02924cc6e2bd5d75eb",
+          "session": "a24-queued-move"
+        }
+      },
+      "query_poll_intervals": {
+        "scope": "query starts per request; activation excluded",
+        "count": 2,
+        "minimum": 0.1507394399959594,
+        "samples": [
+          0.1507394399959594,
+          0.15589654800714925
+        ]
+      },
+      "request_records": [
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/deb1b43c21f343039b1d4a07dbd234db/38a441f0556d432086f68989d0d45e61/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/0af303832c174bf89496b450b12d878c/b3ecc00b3bb44679ad34fa11c79477c2/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/0f956b249f184232bb4bc5eb57fd9847/d6a819e65c484eab8472501f3f43fcf3/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/3545261cd0b44f2caa3ecdbc144e5de3/2d885d2d5dd14404bfdee8a2cfc68558/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/98b48dc77714485491bd23b35ecfa81c/01b504c1ca124f8d8cb3a44e572f3acc/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/d81d94a9c7a5496bab83b184007f3475/28d92e8c07554e34a245bd554d9cf23f/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/2f902b63706a498eb2c51f77488fdb8a/f7f0d8d71ea643639b894e051228096a/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/5491305ece0e4d4db5fbb2159a3adf2e/26e4748f63ff4ebca75d14b7d9c4c18b/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/7565d80daf07483fa298b69366851ef3/1294250e76bb4662a9d2b57394e2b1f4/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/c6792298840e4004bbfba05b3c2ce4a6/c207be5fb62c4dcca0d568c3184f437c/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/f3376326f7084275bb31279b9b8e2022/60f44454329243edb7604420e2b94347/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/a7e3fd8133834142914847b0df918a7a/40890bcb89fe47c1b1e73d74bbd96558/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/8c7be1094fc54f7888e6353ba0d13783/a8eeeec6a909492eabc0b83143ecc8cc/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/d9ebe80a16f34e11a7a226d27fd73e7c/7fd71625cd154e7489de8b038360bc5c/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/8bddb6fcb31548929c6cc0dfa552b3f8/f832042a008a4532954b601c2be9b3c7/record.json",
+        "/home/josephwest/development/kde-agent/.local/issue24-native-move/artifacts/generations/1f9365c00c554d02924cc6e2bd5d75eb/requests/93f3b46c6df845ac94df72d1848b76e3/c8f78e8fc3404318a3a7238a803d0b9d/record.json"
+      ]
+    }
+  },
+  "release_qualified": false,
+  "diagnostic_durability": "atomic-replace-or-jsonl-without-fsync",
+  "failed_cases": []
+}

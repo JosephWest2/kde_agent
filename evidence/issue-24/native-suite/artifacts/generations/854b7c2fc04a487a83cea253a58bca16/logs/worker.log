@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/evidence/issue-24/installed_targeting.py", line 784, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-24/installed_targeting.py", line 778, in main
+    elif args.command == 'worker': worker(*args.values)
+                                   ~~~~~~^^^^^^^^^^^^^^
+  File "/home/josephwest/development/kde-agent/evidence/issue-24/installed_targeting.py", line 245, in worker
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True, kdotool=binary)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/kde-issue24-native-suite/venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 276, in run
+    raise foundation_error
+  File "/tmp/kde-issue24-native-suite/venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 125, in tick
+    foundation.tick()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/kde-issue24-native-suite/venv/lib/python3.14/site-packages/agent_desktop/desktop.py", line 95, in tick
+    raise ContractError('session_failed', 'An essential private desktop child exited.',
+                        context={'component': component, 'returncode': child.returncode})
+agent_desktop.contracts.ContractError: An essential private desktop child exited.

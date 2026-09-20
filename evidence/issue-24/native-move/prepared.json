@@ -1,0 +1,9 @@
+{
+  "commit": "7cfa228e99918130cf201b4d62275a159504b5b3",
+  "archive_sha256": "6b59e309866d2a2eb73682b2aa310f1e9743f88199ec551f854e65e54d5f8776",
+  "wheel": "/tmp/kde-issue24-native-move/wheels/agent_desktop-0.1.0-py3-none-any.whl",
+  "wheel_sha256": "264b69881198fe0e95e91cc7833c177042e31bcd85396a6473bb3ae12c2330d2",
+  "source": "/tmp/kde-issue24-native-move/source",
+  "python": "/tmp/kde-issue24-native-move/venv/bin/python",
+  "runner_sha256": "1fb6145d8863aa0640a2c8b6f5315f6cf635a4407027ebf77a531c87c81a2bf6"
+}

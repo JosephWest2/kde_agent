@@ -29,7 +29,9 @@ struct fixture_surface {
     struct wl_surface *wl;
     struct xdg_surface *xdg;
     struct xdg_toplevel *top;
-    bool configured, pending, dirty, closed, mapped;
+    bool configured, pending, dirty, closed, mapped, activated;
+    bool resize_scheduled, destroy_scheduled, resize_done, destroy_done;
+    unsigned resize_after_ms, destroy_after_ms, resize_width, resize_height;
     unsigned long revision, control_id;
     unsigned state;
     int width, height;
@@ -161,13 +163,24 @@ static void configure(void *data, struct xdg_surface *xdg, uint32_t serial) {
     struct fixture_surface *s = data;
     xdg_surface_ack_configure(xdg, serial);
     surface_event("configure", s);
-    printf(",\"serial\":%u,\"width\":%d,\"height\":%d}\n", serial, s->width, s->height);
+    printf(",\"serial\":%u,\"width\":%d,\"height\":%d,\"activated\":%s}\n",
+           serial, s->width, s->height, s->activated ? "true" : "false");
     if (!s->configured) s->dirty = true;
     s->configured = true; render(s);
 }
 static const struct xdg_surface_listener surface_listener = { .configure = configure };
 static void top_configure(void *data, struct xdg_toplevel *top, int32_t w, int32_t h, struct wl_array *states) {
-    struct fixture_surface *s = data; (void)top; (void)states;
+    struct fixture_surface *s = data; (void)top;
+    /* A boolean and count keep receipts bounded even as the protocol grows. */
+    if (states->size % sizeof(uint32_t) || states->size > 64 * sizeof(uint32_t))
+        die("unexpected toplevel state array");
+    s->activated = false;
+    uint32_t *state;
+    wl_array_for_each(state, states)
+        if (*state == XDG_TOPLEVEL_STATE_ACTIVATED) s->activated = true;
+    surface_event("toplevel_configure", s);
+    printf(",\"width\":%d,\"height\":%d,\"activated\":%s,\"state_count\":%zu}\n",
+           w, h, s->activated ? "true" : "false", states->size / sizeof(uint32_t));
     if (w > 0 && h > 0) {
         if (w > 1280 || h > 720) die("unexpected client size");
         if (s->width != w || s->height != h) s->dirty = true;
@@ -284,9 +297,12 @@ static void usage(void) {
     fprintf(stderr, "usage: wayland-fixture [--autonomous] [--window-delay-ms N] "
             "[--exit-after-ms N] [--exit-code N] [--descendant-ms N]\n"
             "  [--sibling] [--dialog] [--child-window-ms N]\n"
+            "  [--resize-after-ms LABEL:MS:WIDTH:HEIGHT] [--destroy-after-ms LABEL:MS]\n"
             "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
-            "--descendant-ms and --child-window-ms must be positive.\n");
+            "--descendant-ms and --child-window-ms must be positive.\n"
+            "One resize and destroy per enabled primary/sibling/dialog; timers start at started.\n"
+            "Resize dimensions: 1..1280 by 1..720; schedule times must follow window delay.\n");
 }
 static unsigned option_number(const char *value, unsigned maximum) {
     char *end;
@@ -295,6 +311,58 @@ static unsigned option_number(const char *value, unsigned maximum) {
     if (!*value || strspn(value, "0123456789") != strlen(value) ||
         errno || *end || number > maximum) { usage(); exit(2); }
     return (unsigned)number;
+}
+static void schedule_option(const char *value, bool resize) {
+    char copy[128], *parts[4];
+    if (strlen(value) >= sizeof(copy)) { usage(); exit(2); }
+    strcpy(copy, value);
+    char *next = copy;
+    unsigned count = resize ? 4 : 2;
+    for (unsigned i = 0; i < count; ++i) {
+        parts[i] = strsep(&next, ":");
+        if (!parts[i] || !*parts[i]) { usage(); exit(2); }
+    }
+    if (next) { usage(); exit(2); }
+    struct fixture_surface *s = NULL;
+    for (unsigned i = 0; i < 3; ++i)
+        if (!strcmp(parts[0], surfaces[i].label)) s = &surfaces[i];
+    if (!s || (resize ? s->resize_scheduled : s->destroy_scheduled)) { usage(); exit(2); }
+    unsigned after_ms = option_number(parts[1], 86400000);
+    if (resize) {
+        s->resize_scheduled = true; s->resize_after_ms = after_ms;
+        s->resize_width = option_number(parts[2], 1280);
+        s->resize_height = option_number(parts[3], 720);
+        if (!s->resize_width || !s->resize_height) { usage(); exit(2); }
+    } else { s->destroy_scheduled = true; s->destroy_after_ms = after_ms; }
+}
+static void scheduled_destroy(struct fixture_surface *s, unsigned long long elapsed_ms) {
+    s->destroy_done = true;
+    surface_event("scheduled_destroy", s);
+    printf(",\"after_ms\":%u,\"elapsed_ms\":%llu,\"applied\":%s}\n",
+           s->destroy_after_ms, elapsed_ms, s->wl && !s->closed ? "true" : "false");
+    close_surface(s, "scheduled");
+}
+static void run_surface_schedule(struct fixture_surface *s, unsigned long long elapsed_ms) {
+    /* Preserve timer order if dispatch is delayed past both deadlines. */
+    if (s->destroy_scheduled && !s->destroy_done && elapsed_ms >= s->destroy_after_ms &&
+        s->resize_scheduled && s->destroy_after_ms < s->resize_after_ms)
+        scheduled_destroy(s, elapsed_ms);
+    if (s->resize_scheduled && !s->resize_done && elapsed_ms >= s->resize_after_ms) {
+        s->resize_done = true;
+        surface_event("scheduled_resize", s);
+        printf(",\"after_ms\":%u,\"elapsed_ms\":%llu,\"width\":%u,\"height\":%u,\"applied\":%s}\n",
+               s->resize_after_ms, elapsed_ms, s->resize_width, s->resize_height,
+               s->wl && !s->closed ? "true" : "false");
+        if (s->wl && !s->closed) {
+            s->width = s->resize_width; s->height = s->resize_height;
+            xdg_toplevel_set_min_size(s->top, s->width, s->height);
+            xdg_toplevel_set_max_size(s->top, s->width, s->height);
+            s->source = "scheduled_resize"; s->control_id = 0; s->dirty = true;
+            render(s);
+        }
+    }
+    if (s->destroy_scheduled && !s->destroy_done && elapsed_ms >= s->destroy_after_ms)
+        scheduled_destroy(s, elapsed_ms);
 }
 static void start_descendant(void) {
     int ready[2];
@@ -382,11 +450,20 @@ int main(int argc, char **argv) {
         else if (!strcmp(option, "--exit-code")) exit_code = (int)option_number(value, 255);
         else if (!strcmp(option, "--descendant-ms")) { descendant_ms = option_number(value, 86400000); if (!descendant_ms) { usage(); return 2; } }
         else if (!strcmp(option, "--child-window-ms")) { child_window_ms = option_number(value, 86400000); if (!child_window_ms) { usage(); return 2; } }
+        else if (!strcmp(option, "--resize-after-ms")) schedule_option(value, true);
+        else if (!strcmp(option, "--destroy-after-ms")) schedule_option(value, false);
         else if (!strcmp(option, "--title-mode") || !strcmp(option, "--app-id-mode")) {
             if (strcmp(value, "normal") && strcmp(value, "empty") && strcmp(value, "omitted")) { usage(); return 2; }
             if (!strcmp(option, "--title-mode")) title_mode = value; else app_id_mode = value;
         }
         else { usage(); return 2; }
+    }
+    for (unsigned i = 0; i < 3; ++i) {
+        struct fixture_surface *s = &surfaces[i];
+        if ((s->resize_scheduled || s->destroy_scheduled) &&
+            (child_surface || (i == 1 && !sibling_window) || (i == 2 && !dialog_window))) { usage(); return 2; }
+        if ((s->resize_scheduled && s->resize_after_ms < window_delay_ms) ||
+            (s->destroy_scheduled && s->destroy_after_ms < window_delay_ms)) { usage(); return 2; }
     }
     if (child_surface) {
         if (!autonomous || !timed_exit || sibling_window || dialog_window || child_window_ms) { usage(); return 2; }
@@ -411,6 +488,17 @@ int main(int argc, char **argv) {
         event("started"); printf(",\"autonomous\":%s,\"window_delay_ms\":%u,\"timed_exit\":%s,\"exit_after_ms\":%u,\"exit_code\":%d}\n",
                                  autonomous ? "true" : "false", window_delay_ms, timed_exit ? "true" : "false", exit_after_ms, exit_code);
     }
+    for (unsigned i = 0; i < 3; ++i) {
+        struct fixture_surface *s = &surfaces[i];
+        if (s->resize_scheduled || s->destroy_scheduled) {
+            surface_event("surface_schedule", s);
+            printf(",\"started_ns\":%llu,\"resize_after_ms\":", started);
+            if (s->resize_scheduled) printf("%u", s->resize_after_ms); else printf("null");
+            printf(",\"destroy_after_ms\":");
+            if (s->destroy_scheduled) printf("%u", s->destroy_after_ms); else printf("null");
+            puts("}");
+        }
+    }
     char input[128]; size_t used = 0;
     while (running) {
         unsigned long long elapsed_ms = (monotonic_ns() - started) / 1000000ULL;
@@ -423,6 +511,8 @@ int main(int argc, char **argv) {
             if (dialog_window) create_window(&surfaces[2], &surfaces[0]);
             windows_created = true;
         }
+        for (unsigned i = 0; i < 3; ++i) run_surface_schedule(&surfaces[i], elapsed_ms);
+        if (!running) break;
         if (window_child > 0) {
             int status; pid_t reaped = waitpid(window_child, &status, WNOHANG);
             if (reaped == window_child) {
@@ -433,6 +523,13 @@ int main(int argc, char **argv) {
         int timeout = 100;
         if (!windows_created && window_delay_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(window_delay_ms - elapsed_ms);
         if (timed_exit && exit_after_ms - elapsed_ms < (unsigned)timeout) timeout = (int)(exit_after_ms - elapsed_ms);
+        for (unsigned i = 0; i < 3; ++i) {
+            struct fixture_surface *s = &surfaces[i];
+            if (s->resize_scheduled && !s->resize_done && s->resize_after_ms - elapsed_ms < (unsigned)timeout)
+                timeout = (int)(s->resize_after_ms - elapsed_ms);
+            if (s->destroy_scheduled && !s->destroy_done && s->destroy_after_ms - elapsed_ms < (unsigned)timeout)
+                timeout = (int)(s->destroy_after_ms - elapsed_ms);
+        }
         if (wl_display_dispatch_pending(display) < 0) die("Wayland dispatch failed");
         if (wl_display_flush(display) < 0 && errno != EAGAIN) die("Wayland flush failed");
         struct pollfd fds[2] = {{wl_display_get_fd(display), POLLIN, 0}, {autonomous ? -1 : STDIN_FILENO, POLLIN, 0}};

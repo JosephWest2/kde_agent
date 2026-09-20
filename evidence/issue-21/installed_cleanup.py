@@ -352,7 +352,8 @@ def main(output, dependencies, selected):
                             assert case['stop']['response']['result']['records_preserved'] is False
                     transitions = []
                     previous = None
-                    while not empty(data):
+                    terminal_path = folder / 'terminal.json'
+                    while True:
                         now = time.monotonic()
                         assert now - started < 15, 'Owned cgroup exceeded the 15s cleanup bound'
                         state = properties(data)
@@ -360,9 +361,22 @@ def main(output, dependencies, selected):
                         if current != previous:
                             transitions.append({'after_seconds': now - started, **current})
                             previous = current
+                        # Main-process exit can briefly empty containment before
+                        # systemd starts ExecStopPost. Require its final record as
+                        # well as emptiness under the original fault deadline.
+                        # The deliberately blocked finalizer cannot write that
+                        # record; wait for the failed service to settle instead.
+                        finalization_observed = (
+                            state['ActiveState'] in ('inactive', 'failed')
+                            and state['SubState'] in ('dead', 'failed')
+                            if key == 'blocked-post' else
+                            terminal_path.exists() and read(terminal_path).get('cleanup') == 'complete')
+                        if finalization_observed and empty(data):
+                            break
                         time.sleep(.025)
                     case['transitions'] = transitions
                     case['empty_after_seconds'] = time.monotonic() - started
+                    case['finalization_observed_after_seconds'] = case['empty_after_seconds']
                     assert case['empty_after_seconds'] < 15
                     for sock in sockets:
                         sock.close()

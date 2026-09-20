@@ -94,3 +94,68 @@ size-checked before publication, so 256 supported rows do not create an oversize
 checkpoint on the next registry turn. Cleanup reuse also requires a fresh clock
 check after its final local filesystem operation, strictly within the latched
 reserve; a late cleanup observation remains a fail-closed result.
+
+## Targeting, focus and waits
+
+`focus --window GENERATION:UUID` resolves that exact current UUID. Braces and
+uppercase are accepted and normalized; native kdotool receives a brace-wrapped
+canonical UUID. Explicit identity can target an unassociated surface. `focus
+--app GENERATION:APPLICATION_ID` requires exactly one currently associated
+window: no candidates gives `target_not_found`, multiple candidates gives
+`target_ambiguous` with every candidate handle. Titles, PID alone, active status,
+window size and dialog parenting never break a tie. Selection occurs when the
+queued task executes, using current geometry and associations.
+
+Focus sends one exact activation and then queries again until the same UUID is
+observed active with a consistent row focus flag. Native exit zero is only
+transport completion; successful no-op activation times out. The selected UUID
+is never replaced or activation retried. App-derived selection revalidates its
+original process identity immediately before dispatch, after asynchronous
+preparation and effect-record persistence. Disappearance is `target_lost` after
+selection, or `target_not_found` on the initial observation. The compositor race
+between query and action remains observable, not atomic.
+
+`wait --for window --app APP` is passive and existential: any nonempty set of
+positively associated windows satisfies it, and all rows are returned. Subsequent
+`focus --app APP` still requires a unique candidate. `wait --for focus --window
+WIN` never activates; it succeeds only on a fresh focused observation, errors on
+absence/loss, and times out while the window remains unfocused. `wait --for exit
+--app APP` requires root reaping and complete application-subtree emptiness;
+root return code alone cannot satisfy it. Known completed records remain readable
+without reopening process authority. A live `launch-failed` app is not complete.
+Window/app-focus waits report `application_exited` on known complete app exit.
+Unknown apps give `target_not_found`; uncertain ownership fails the session.
+
+All composite work shares the admission deadline, including queue time. Each
+query or activation is capped at 500 ms within that deadline. Query poll starts
+are at least 100 ms apart, with one operation in flight and no catch-up bursts;
+activation preparation is a separate native operation. Individual operation
+faults terminate the wait rather than being treated as an unsatisfied condition.
+Success requires fresh post-observation, post-retention and final deadline/health
+checks; acceptance at or after the deadline fails. These observations do not
+establish a total ordering of unseen real-world events or a freshness lease.
+
+Focus returns current `client`/`frame`, exact `window`, `active_window`, `focused`,
+association verification and query observation/acceptance times. `client` may be
+null. The read-only `current_target`/`TargetTask(condition='observe')` seam permits
+future input to demand focus and client geometry; missing geometry explicitly
+fails with `client_geometry_unavailable` and never substitutes frame geometry.
+No input is emitted and input/click qualification is unchanged.
+
+Cancellation and disconnect keep the current native operation owned through its
+single cleanup reserve; no following action starts until cleanup is confirmed.
+Unknown cleanup triggers failed-session teardown. Effects record that activation
+may have changed focus; cleanup does not restore focus. Explicit stop cancels
+unfinished work. Detected essential session failure gives `session_failed` (or
+`session_unavailable` before execution), preserving an already-latched cause.
+A killed worker cannot send a terminal reply: the existing transport may report
+`completion_unknown`, with authenticated retained generation/service failure
+records supplying diagnosis. The toolkit does not fabricate a reply or retry.
+
+The native fixture adds `--resize-after-ms LABEL:MS:WIDTH:HEIGHT` and
+`--destroy-after-ms LABEL:MS`, for `primary`, `sibling` or `dialog`, relative to
+fixture start. Scheduled receipts include actual elapsed time and whether the
+surface existed. Configure receipts include labeled activated state. Client
+resize does not claim control over global placement. Installed evidence and
+its measured bounds are recorded under `evidence/issue-24`; they do not qualify
+representative applications, held input, capture or release readiness.

@@ -75,7 +75,11 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         from .windows import WindowsTask
                         return WindowsTask(request, context, readiness.adapter, launch_health)
                     if request.operation == 'launch':
-                        return LaunchTask(request, context, applications, foundation, records, healthy=launch_health)
+                        return LaunchTask(request, context, applications, foundation, records,
+                                          healthy=launch_health, adapter=readiness.adapter)
+                    if request.operation in ('focus', 'wait'):
+                        from .targeting import TargetTask
+                        return TargetTask(request, context, readiness.adapter, applications, launch_health)
                     return UnsupportedTask(request, context)
                 scheduler.factory = records.factory(production_factory)
 
@@ -84,12 +88,12 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 from .lifecycle import atomic
                 atomic(store.path / 'shutdown.json', value | {'generation': generation, 'session': name})
 
-        def begin_stop(deadline=None):
+        def begin_stop(deadline=None, *, failure=False):
             nonlocal shutdown
             if shutdown is None:
                 from .shutdown import Shutdown
                 shutdown = Shutdown(scheduler, min(time.monotonic() + 1.8, deadline or float('inf')),
-                                    observe=shutdown_record, **(shutdown_hooks or {}))
+                                    observe=shutdown_record, failure=failure, **(shutdown_hooks or {}))
             return shutdown
 
         def tick():
@@ -169,7 +173,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         store.generation_update(state='failed', failure=code, cleanup='uncertain')
                     except Exception:
                         pass
-                begin_stop()
+                begin_stop(failure=True)
         def escalate_query_cleanup(reason):
             nonlocal foundation_error
             foundation_error = ContractError('session_failed', 'Owned operation cleanup could not be confirmed.')
@@ -178,7 +182,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     readiness.fail(foundation_error)
                 except Exception:
                     pass
-            begin_stop()
+            begin_stop(failure=True)
         scheduler.escalate = escalate_query_cleanup
 
         def dispatch_request(request, admission):
@@ -229,7 +233,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if managed and request.operation == "session.status":
                 admission.complete(result=({"state": "starting", "desktop_ready": False}
                                            if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
-                    "supported_operations": ["launch", "windows"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
+                    "supported_operations": ["launch", "windows", "focus", "wait"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')

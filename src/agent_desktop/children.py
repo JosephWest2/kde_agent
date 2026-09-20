@@ -14,11 +14,13 @@ class Children:
     def __init__(self):
         self.owned = set()
 
-    def start(self, argv, *, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=None, cwd=None):
+    def start(self, argv, *, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=None, cwd=None,
+              executable=None):
         if stdout == subprocess.PIPE or stderr == subprocess.PIPE:
             raise ValueError("Undrained child pipes are not supported")
         child = Child(subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=stdout,
-                                       stderr=stderr, env=env, cwd=cwd, close_fds=True))
+                                       stderr=stderr, env=env, cwd=cwd, executable=executable,
+                                       close_fds=True))
         self.owned.add(child)
         return child
 

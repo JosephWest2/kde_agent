@@ -1,0 +1,1986 @@
+{
+  "cases": {
+    "packaged_default_worker": {
+      "generation": "3edfecbd3aca4fc5a2cfc647ccf47086",
+      "manifest": {
+        "cleanup": {
+          "failure": null,
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T07:04:52.964893+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": null,
+        "generation": "3edfecbd3aca4fc5a2cfc647ccf47086",
+        "mode": "headless",
+        "outcome": "stopped",
+        "output": {
+          "observed": null,
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "not_collected"
+        },
+        "process": {
+          "pid": 771797,
+          "producer": "worker",
+          "service": "agent-desktop-3edfecbd3aca4fc5a2cfc647ccf47086.service",
+          "start_ticks": "11204185",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 3,
+        "schema_version": 1,
+        "session": "packaged",
+        "state": "stopped",
+        "updated_at": "2026-09-20T07:04:53.309224+00:00"
+      },
+      "settings_removed": true,
+      "status": {
+        "error": null,
+        "ok": true,
+        "operation": "session.status",
+        "request_id": "622fd3872a1343d3a499dc68ff212b70",
+        "result": {
+          "desktop_ready": false,
+          "state": "starting"
+        },
+        "schema_version": 1,
+        "session": {
+          "generation": "3edfecbd3aca4fc5a2cfc647ccf47086",
+          "name": "packaged"
+        }
+      },
+      "stop": {
+        "error": null,
+        "ok": true,
+        "operation": "session.stop",
+        "request_id": "f858c874e2d84e308fad09d659a4e948",
+        "result": {
+          "cleanup": "complete",
+          "desktop_ready": false,
+          "records_preserved": true,
+          "state": "stopped"
+        },
+        "schema_version": 1,
+        "session": {
+          "generation": "3edfecbd3aca4fc5a2cfc647ccf47086",
+          "name": "packaged"
+        }
+      }
+    },
+    "probe-bus": {
+      "adapter": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-b39012c998fc412eb8b952ba67dd8173.service\n",
+        "cwd": "/home/josephwest/development/kde-agent",
+        "environment": {
+          "APP_FLAG": "adapter",
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/tmp/issue19-venv/bin:/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "project_file": "/home/josephwest/development/kde-agent/README.md",
+        "project_sha256": "5420c1911a3a0cb9be581d3374193fb2fbf231b5d6d29f55995cd5fdfbd37bc2"
+      },
+      "all_owned_lifetimes_exited": true,
+      "application": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-b39012c998fc412eb8b952ba67dd8173.service\n",
+        "cwd": "/home/josephwest/development/kde-agent",
+        "environment": {
+          "APP_FLAG": "application",
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/tmp/issue19-venv/bin:/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "project_file": "/home/josephwest/development/kde-agent/README.md",
+        "project_sha256": "5420c1911a3a0cb9be581d3374193fb2fbf231b5d6d29f55995cd5fdfbd37bc2"
+      },
+      "generation": "b39012c998fc412eb8b952ba67dd8173",
+      "manifest": {
+        "cleanup": {
+          "failure": "session_failed",
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T07:04:53.871544+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": "session_failed",
+        "generation": "b39012c998fc412eb8b952ba67dd8173",
+        "mode": "headless",
+        "outcome": "failed",
+        "output": {
+          "observed": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "collected"
+        },
+        "process": {
+          "pid": 771890,
+          "producer": "worker",
+          "service": "agent-desktop-b39012c998fc412eb8b952ba67dd8173.service",
+          "start_ticks": "11204276",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 4,
+        "schema_version": 1,
+        "session": "probe-bus",
+        "state": "failed",
+        "updated_at": "2026-09-20T07:04:54.301908+00:00"
+      },
+      "native_events": [
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_compositor",
+          "monotonic_ns": 112043052087407,
+          "seq": 1,
+          "version": 6
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_tablet_manager_v2",
+          "monotonic_ns": 112043052105123,
+          "seq": 2,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_keyboard_shortcuts_inhibit_manager_v1",
+          "monotonic_ns": 112043052110413,
+          "seq": 3,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_session_manager_v1",
+          "monotonic_ns": 112043052111851,
+          "seq": 4,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zxdg_decoration_manager_v1",
+          "monotonic_ns": 112043052113009,
+          "seq": 5,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_viewporter",
+          "monotonic_ns": 112043052114159,
+          "seq": 6,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_security_context_manager_v1",
+          "monotonic_ns": 112043052119915,
+          "seq": 7,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_fractional_scale_manager_v1",
+          "monotonic_ns": 112043052121818,
+          "seq": 8,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_shm",
+          "monotonic_ns": 112043052123940,
+          "seq": 9,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_seat",
+          "monotonic_ns": 112043052125491,
+          "seq": 10,
+          "version": 10
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_pointer_gestures_v1",
+          "monotonic_ns": 112043052126944,
+          "seq": 11,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_pointer_constraints_v1",
+          "monotonic_ns": 112043052128125,
+          "seq": 12,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_relative_pointer_manager_v1",
+          "monotonic_ns": 112043052129278,
+          "seq": 13,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_data_device_manager",
+          "monotonic_ns": 112043052130492,
+          "seq": 14,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "ext_data_control_manager_v1",
+          "monotonic_ns": 112043052131689,
+          "seq": 15,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_cursor_shape_manager_v1",
+          "monotonic_ns": 112043052132845,
+          "seq": 16,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_primary_selection_device_manager_v1",
+          "monotonic_ns": 112043052133948,
+          "seq": 17,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_idle",
+          "monotonic_ns": 112043052135101,
+          "seq": 18,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_idle_inhibit_manager_v1",
+          "monotonic_ns": 112043052136185,
+          "seq": 19,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "ext_idle_notifier_v1",
+          "monotonic_ns": 112043052137300,
+          "seq": 20,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_plasma_shell",
+          "monotonic_ns": 112043052138385,
+          "seq": 21,
+          "version": 8
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_appmenu_manager",
+          "monotonic_ns": 112043052139495,
+          "seq": 22,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_server_decoration_palette_manager",
+          "monotonic_ns": 112043052140608,
+          "seq": 23,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_plasma_virtual_desktop_management",
+          "monotonic_ns": 112043052143928,
+          "seq": 24,
+          "version": 4
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_shadow_manager",
+          "monotonic_ns": 112043052146287,
+          "seq": 25,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_dpms_manager",
+          "monotonic_ns": 112043052147461,
+          "seq": 26,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_server_decoration_manager",
+          "monotonic_ns": 112043052148663,
+          "seq": 27,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "kde_output_management_v2",
+          "monotonic_ns": 112043052149848,
+          "seq": 28,
+          "version": 21
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "kde_output_device_registry_v2",
+          "monotonic_ns": 112043052151088,
+          "seq": 29,
+          "version": 23
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zxdg_output_manager_v1",
+          "monotonic_ns": 112043052152345,
+          "seq": 30,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_subcompositor",
+          "monotonic_ns": 112043052153567,
+          "seq": 31,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zxdg_exporter_v2",
+          "monotonic_ns": 112043052154697,
+          "seq": 32,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zxdg_importer_v2",
+          "monotonic_ns": 112043052155810,
+          "seq": 33,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_input_method_v1",
+          "monotonic_ns": 112043052156895,
+          "seq": 34,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_activation_v1",
+          "monotonic_ns": 112043052157989,
+          "seq": 35,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_content_type_manager_v1",
+          "monotonic_ns": 112043052159094,
+          "seq": 36,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_tearing_control_manager_v1",
+          "monotonic_ns": 112043052160272,
+          "seq": 37,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_toplevel_drag_manager_v1",
+          "monotonic_ns": 112043052161453,
+          "seq": 38,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_toplevel_icon_manager_v1",
+          "monotonic_ns": 112043052162620,
+          "seq": 39,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "kde_screen_edge_manager_v1",
+          "monotonic_ns": 112043052163804,
+          "seq": 40,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "frog_color_management_factory_v1",
+          "monotonic_ns": 112043052164970,
+          "seq": 41,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_presentation",
+          "monotonic_ns": 112043052166137,
+          "seq": 42,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_color_manager_v1",
+          "monotonic_ns": 112043052167589,
+          "seq": 43,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_wm_dialog_v1",
+          "monotonic_ns": 112043052168785,
+          "seq": 44,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "kde_external_brightness_v1",
+          "monotonic_ns": 112043052169934,
+          "seq": 45,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_alpha_modifier_v1",
+          "monotonic_ns": 112043052171098,
+          "seq": 46,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_fixes",
+          "monotonic_ns": 112043052173324,
+          "seq": 47,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_fifo_manager_v1",
+          "monotonic_ns": 112043052174886,
+          "seq": 48,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_single_pixel_buffer_manager_v1",
+          "monotonic_ns": 112043052176042,
+          "seq": 49,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_toplevel_tag_manager_v1",
+          "monotonic_ns": 112043052177192,
+          "seq": 50,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_color_representation_manager_v1",
+          "monotonic_ns": 112043052178360,
+          "seq": 51,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_pointer_warp_v1",
+          "monotonic_ns": 112043052179522,
+          "seq": 52,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "ext_background_effect_manager_v1",
+          "monotonic_ns": 112043052180655,
+          "seq": 53,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_linux_dmabuf_v1",
+          "monotonic_ns": 112043052181829,
+          "seq": 54,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wp_linux_drm_syncobj_manager_v1",
+          "monotonic_ns": 112043052182959,
+          "seq": 55,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_input_panel_v1",
+          "monotonic_ns": 112043052184114,
+          "seq": 56,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_wm_base",
+          "monotonic_ns": 112043052185247,
+          "seq": 57,
+          "version": 6
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwlr_layer_shell_v1",
+          "monotonic_ns": 112043052186947,
+          "seq": 58,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_keystate",
+          "monotonic_ns": 112043052188122,
+          "seq": 59,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "wl_output",
+          "monotonic_ns": 112043052189312,
+          "seq": 60,
+          "version": 4
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "kde_output_order_v1",
+          "monotonic_ns": 112043052190722,
+          "seq": 61,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_text_input_manager_v2",
+          "monotonic_ns": 112043052191857,
+          "seq": 62,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "zwp_text_input_manager_v3",
+          "monotonic_ns": 112043052192990,
+          "seq": 63,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "org_kde_kwin_slide_manager",
+          "monotonic_ns": 112043052194140,
+          "seq": 64,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "interface": "xdg_system_bell_v1",
+          "monotonic_ns": 112043052195279,
+          "seq": 65,
+          "version": 1
+        },
+        {
+          "capabilities": 2,
+          "event": "seat_capabilities",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "monotonic_ns": 112043052236036,
+          "seq": 66
+        },
+        {
+          "event": "output_name",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "monotonic_ns": 112043052239076,
+          "name": "Virtual-0",
+          "seq": 67
+        },
+        {
+          "count": 1,
+          "event": "output",
+          "fixture_pid": 771924,
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "height": 720,
+          "monotonic_ns": 112043052243845,
+          "scale": 1,
+          "seq": 68,
+          "transform": 0,
+          "width": 1280
+        }
+      ],
+      "owner": {
+        "bus": {
+          "pid": 771894,
+          "start_ticks": "11204283"
+        },
+        "bus_observed_environment": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "children": [
+          {
+            "pid": 771922,
+            "start_ticks": "11204294"
+          },
+          {
+            "pid": 771923,
+            "start_ticks": "11204294"
+          },
+          {
+            "pid": 771924,
+            "start_ticks": "11204294"
+          }
+        ],
+        "compositor": {
+          "pid": 771897,
+          "start_ticks": "11204287"
+        },
+        "compositor_launch_environment": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS": "1",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "compositor_observed_environment": "proc_environ_permission_denied",
+        "desktop_ready": false,
+        "phase": "constructed",
+        "private": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/config",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/b39012c998fc412eb8b952ba67dd8173/desktop/home/state"
+        }
+      },
+      "private_modes": {
+        "observed_by_child": "bus/Wayland 0600"
+      },
+      "rejected_overrides": [
+        "AT_SPI_BUS_ADDRESS",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "DBUS_SESSION_BUS_PID",
+        "DBUS_SESSION_BUS_WINDOWID",
+        "DBUS_STARTER_ADDRESS",
+        "DBUS_STARTER_BUS_TYPE",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "DISPLAY",
+        "HOME",
+        "KDE_APPLICATIONS_AS_SCOPE",
+        "KDE_FULL_SESSION",
+        "KDE_SESSION_VERSION",
+        "KWIN_EIS_NO_PERMISSION_CHECKS",
+        "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS",
+        "NO_AT_BRIDGE",
+        "QT_ACCESSIBILITY",
+        "QT_LINUX_ACCESSIBILITY_ALWAYS_ON",
+        "QT_QPA_PLATFORM",
+        "SESSION_MANAGER",
+        "TMPDIR",
+        "WAYLAND_DISPLAY",
+        "WAYLAND_SOCKET",
+        "XAUTHORITY",
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_DIRS",
+        "XDG_CONFIG_HOME",
+        "XDG_DATA_DIRS",
+        "XDG_DATA_HOME",
+        "XDG_RUNTIME_DIR",
+        "XDG_SESSION_TYPE",
+        "XDG_STATE_HOME",
+        "XKB_DEFAULT_LAYOUT"
+      ],
+      "settings_removed": true,
+      "stop": {
+        "error": null,
+        "ok": true,
+        "operation": "session.stop",
+        "request_id": "886f39e8d99343d1ba83d5f5d0b92769",
+        "result": {
+          "cleanup": "complete",
+          "desktop_ready": false,
+          "records_preserved": true,
+          "state": "failed"
+        },
+        "schema_version": 1,
+        "session": {
+          "generation": "b39012c998fc412eb8b952ba67dd8173",
+          "name": "probe-bus"
+        }
+      },
+      "stop_seconds": 0.06760881700029131
+    },
+    "probe-none": {
+      "adapter": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-cc3642e5d12c437381cf12fb44133849.service\n",
+        "cwd": "/home/josephwest/development/kde-agent",
+        "environment": {
+          "APP_FLAG": "adapter",
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/tmp/issue19-venv/bin:/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "project_file": "/home/josephwest/development/kde-agent/README.md",
+        "project_sha256": "5420c1911a3a0cb9be581d3374193fb2fbf231b5d6d29f55995cd5fdfbd37bc2"
+      },
+      "all_owned_lifetimes_exited": true,
+      "application": {
+        "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-cc3642e5d12c437381cf12fb44133849.service\n",
+        "cwd": "/home/josephwest/development/kde-agent",
+        "environment": {
+          "APP_FLAG": "application",
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/tmp/issue19-venv/bin:/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "project_file": "/home/josephwest/development/kde-agent/README.md",
+        "project_sha256": "5420c1911a3a0cb9be581d3374193fb2fbf231b5d6d29f55995cd5fdfbd37bc2"
+      },
+      "generation": "cc3642e5d12c437381cf12fb44133849",
+      "manifest": {
+        "cleanup": {
+          "failure": null,
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T07:04:53.380432+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": null,
+        "generation": "cc3642e5d12c437381cf12fb44133849",
+        "mode": "headless",
+        "outcome": "stopped",
+        "output": {
+          "observed": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "collected"
+        },
+        "process": {
+          "pid": 771844,
+          "producer": "worker",
+          "service": "agent-desktop-cc3642e5d12c437381cf12fb44133849.service",
+          "start_ticks": "11204227",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 4,
+        "schema_version": 1,
+        "session": "probe-none",
+        "state": "stopped",
+        "updated_at": "2026-09-20T07:04:53.801794+00:00"
+      },
+      "native_events": [
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_compositor",
+          "monotonic_ns": 112042554152858,
+          "seq": 1,
+          "version": 6
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_tablet_manager_v2",
+          "monotonic_ns": 112042554172713,
+          "seq": 2,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_keyboard_shortcuts_inhibit_manager_v1",
+          "monotonic_ns": 112042554178387,
+          "seq": 3,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_session_manager_v1",
+          "monotonic_ns": 112042554179899,
+          "seq": 4,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zxdg_decoration_manager_v1",
+          "monotonic_ns": 112042554181186,
+          "seq": 5,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_viewporter",
+          "monotonic_ns": 112042554182422,
+          "seq": 6,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_security_context_manager_v1",
+          "monotonic_ns": 112042554183617,
+          "seq": 7,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_fractional_scale_manager_v1",
+          "monotonic_ns": 112042554184832,
+          "seq": 8,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_shm",
+          "monotonic_ns": 112042554186104,
+          "seq": 9,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_seat",
+          "monotonic_ns": 112042554187690,
+          "seq": 10,
+          "version": 10
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_pointer_gestures_v1",
+          "monotonic_ns": 112042554189198,
+          "seq": 11,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_pointer_constraints_v1",
+          "monotonic_ns": 112042554190462,
+          "seq": 12,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_relative_pointer_manager_v1",
+          "monotonic_ns": 112042554191712,
+          "seq": 13,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_data_device_manager",
+          "monotonic_ns": 112042554193094,
+          "seq": 14,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "ext_data_control_manager_v1",
+          "monotonic_ns": 112042554194400,
+          "seq": 15,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_cursor_shape_manager_v1",
+          "monotonic_ns": 112042554195668,
+          "seq": 16,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_primary_selection_device_manager_v1",
+          "monotonic_ns": 112042554196937,
+          "seq": 17,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_idle",
+          "monotonic_ns": 112042554198179,
+          "seq": 18,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_idle_inhibit_manager_v1",
+          "monotonic_ns": 112042554199383,
+          "seq": 19,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "ext_idle_notifier_v1",
+          "monotonic_ns": 112042554200625,
+          "seq": 20,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_plasma_shell",
+          "monotonic_ns": 112042554201851,
+          "seq": 21,
+          "version": 8
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_appmenu_manager",
+          "monotonic_ns": 112042554203065,
+          "seq": 22,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_server_decoration_palette_manager",
+          "monotonic_ns": 112042554204331,
+          "seq": 23,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_plasma_virtual_desktop_management",
+          "monotonic_ns": 112042554207909,
+          "seq": 24,
+          "version": 4
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_shadow_manager",
+          "monotonic_ns": 112042554210333,
+          "seq": 25,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_dpms_manager",
+          "monotonic_ns": 112042554211727,
+          "seq": 26,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_server_decoration_manager",
+          "monotonic_ns": 112042554213023,
+          "seq": 27,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "kde_output_management_v2",
+          "monotonic_ns": 112042554214317,
+          "seq": 28,
+          "version": 21
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "kde_output_device_registry_v2",
+          "monotonic_ns": 112042554215597,
+          "seq": 29,
+          "version": 23
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zxdg_output_manager_v1",
+          "monotonic_ns": 112042554216913,
+          "seq": 30,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_subcompositor",
+          "monotonic_ns": 112042554218327,
+          "seq": 31,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zxdg_exporter_v2",
+          "monotonic_ns": 112042554219569,
+          "seq": 32,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zxdg_importer_v2",
+          "monotonic_ns": 112042554220827,
+          "seq": 33,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_input_method_v1",
+          "monotonic_ns": 112042554222053,
+          "seq": 34,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_activation_v1",
+          "monotonic_ns": 112042554223287,
+          "seq": 35,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_content_type_manager_v1",
+          "monotonic_ns": 112042554224595,
+          "seq": 36,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_tearing_control_manager_v1",
+          "monotonic_ns": 112042554225874,
+          "seq": 37,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_toplevel_drag_manager_v1",
+          "monotonic_ns": 112042554227145,
+          "seq": 38,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_toplevel_icon_manager_v1",
+          "monotonic_ns": 112042554228395,
+          "seq": 39,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "kde_screen_edge_manager_v1",
+          "monotonic_ns": 112042554229650,
+          "seq": 40,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "frog_color_management_factory_v1",
+          "monotonic_ns": 112042554230912,
+          "seq": 41,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_presentation",
+          "monotonic_ns": 112042554232166,
+          "seq": 42,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_color_manager_v1",
+          "monotonic_ns": 112042554233712,
+          "seq": 43,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_wm_dialog_v1",
+          "monotonic_ns": 112042554234969,
+          "seq": 44,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "kde_external_brightness_v1",
+          "monotonic_ns": 112042554236203,
+          "seq": 45,
+          "version": 3
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_alpha_modifier_v1",
+          "monotonic_ns": 112042554237469,
+          "seq": 46,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_fixes",
+          "monotonic_ns": 112042554239783,
+          "seq": 47,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_fifo_manager_v1",
+          "monotonic_ns": 112042554241658,
+          "seq": 48,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_single_pixel_buffer_manager_v1",
+          "monotonic_ns": 112042554242883,
+          "seq": 49,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_toplevel_tag_manager_v1",
+          "monotonic_ns": 112042554244158,
+          "seq": 50,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_color_representation_manager_v1",
+          "monotonic_ns": 112042554245414,
+          "seq": 51,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_pointer_warp_v1",
+          "monotonic_ns": 112042554246676,
+          "seq": 52,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "ext_background_effect_manager_v1",
+          "monotonic_ns": 112042554247897,
+          "seq": 53,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_linux_dmabuf_v1",
+          "monotonic_ns": 112042554249157,
+          "seq": 54,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wp_linux_drm_syncobj_manager_v1",
+          "monotonic_ns": 112042554250384,
+          "seq": 55,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_input_panel_v1",
+          "monotonic_ns": 112042554251633,
+          "seq": 56,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_wm_base",
+          "monotonic_ns": 112042554252862,
+          "seq": 57,
+          "version": 6
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwlr_layer_shell_v1",
+          "monotonic_ns": 112042554254474,
+          "seq": 58,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_keystate",
+          "monotonic_ns": 112042554255730,
+          "seq": 59,
+          "version": 5
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "wl_output",
+          "monotonic_ns": 112042554257063,
+          "seq": 60,
+          "version": 4
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "kde_output_order_v1",
+          "monotonic_ns": 112042554258601,
+          "seq": 61,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_text_input_manager_v2",
+          "monotonic_ns": 112042554259879,
+          "seq": 62,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "zwp_text_input_manager_v3",
+          "monotonic_ns": 112042554261220,
+          "seq": 63,
+          "version": 2
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "org_kde_kwin_slide_manager",
+          "monotonic_ns": 112042554262514,
+          "seq": 64,
+          "version": 1
+        },
+        {
+          "event": "global",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "interface": "xdg_system_bell_v1",
+          "monotonic_ns": 112042554263765,
+          "seq": 65,
+          "version": 1
+        },
+        {
+          "capabilities": 2,
+          "event": "seat_capabilities",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "monotonic_ns": 112042554314620,
+          "seq": 66
+        },
+        {
+          "event": "output_name",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "monotonic_ns": 112042554323865,
+          "name": "Virtual-0",
+          "seq": 67
+        },
+        {
+          "count": 1,
+          "event": "output",
+          "fixture_pid": 771874,
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "height": 720,
+          "monotonic_ns": 112042554328138,
+          "scale": 1,
+          "seq": 68,
+          "transform": 0,
+          "width": 1280
+        }
+      ],
+      "owner": {
+        "bus": {
+          "pid": 771847,
+          "start_ticks": "11204234"
+        },
+        "bus_observed_environment": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "children": [
+          {
+            "pid": 771872,
+            "start_ticks": "11204245"
+          },
+          {
+            "pid": 771873,
+            "start_ticks": "11204245"
+          },
+          {
+            "pid": 771874,
+            "start_ticks": "11204245"
+          }
+        ],
+        "compositor": {
+          "pid": 771851,
+          "start_ticks": "11204238"
+        },
+        "compositor_launch_environment": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home",
+          "KDE_SESSION_VERSION": "6",
+          "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS": "1",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "NO_AT_BRIDGE": "1",
+          "PATH": "/usr/bin:/bin",
+          "QT_ACCESSIBILITY": "0",
+          "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
+          "QT_QPA_PLATFORM": "wayland",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/config",
+          "XDG_DATA_DIRS": "/usr/local/share:/usr/share",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop",
+          "XDG_SESSION_TYPE": "wayland",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/state",
+          "XKB_DEFAULT_LAYOUT": "us"
+        },
+        "compositor_observed_environment": "proc_environ_permission_denied",
+        "desktop_ready": false,
+        "phase": "constructed",
+        "private": {
+          "DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/bus",
+          "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/no-system-bus",
+          "HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home",
+          "TMPDIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/tmp",
+          "WAYLAND_DISPLAY": "wayland-private",
+          "XDG_CACHE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/cache",
+          "XDG_CONFIG_DIRS": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/empty",
+          "XDG_CONFIG_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/config",
+          "XDG_DATA_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/data",
+          "XDG_RUNTIME_DIR": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop",
+          "XDG_STATE_HOME": "/tmp/a19-1ly08jxx/r/agent-desktop/g/cc3642e5d12c437381cf12fb44133849/desktop/home/state"
+        }
+      },
+      "private_modes": {
+        "bus": "0o600",
+        "bus.conf": "0o600",
+        "empty": "0o700",
+        "home": "0o700",
+        "home/.cache": "0o700",
+        "home/.cache/mesa_shader_cache": "0o700",
+        "home/.cache/mesa_shader_cache/05": "0o700",
+        "home/.cache/mesa_shader_cache/05/d9f585574e34bb2e10a919717e39d1738bdccd2139ea62a77c302463b88c87": "0o600",
+        "home/.cache/mesa_shader_cache/0b": "0o700",
+        "home/.cache/mesa_shader_cache/0b/99b870d7ff407a4b6ba8657ed33b52c81208b851519f823d438fa7ee83d7b5": "0o600",
+        "home/.cache/mesa_shader_cache/12": "0o700",
+        "home/.cache/mesa_shader_cache/12/34d39410cf119ab87e0789498b8745d3804cf41191d96cea86781e1c927066": "0o600",
+        "home/.cache/mesa_shader_cache/23": "0o700",
+        "home/.cache/mesa_shader_cache/23/bab2c945ae50a8bf62a90d72a531bbf91a16b5c7dfaa281be73e5bd3349301": "0o600",
+        "home/.cache/mesa_shader_cache/27": "0o700",
+        "home/.cache/mesa_shader_cache/27/7161f6f8ff74db592d9adfb5306addeea5ca85eb2370a05d0baf74c1d0234d": "0o600",
+        "home/.cache/mesa_shader_cache/2b": "0o700",
+        "home/.cache/mesa_shader_cache/2b/6525efebb246b275e31a02613461ed53ccadf5317f4ffd40d094bce2b1b26c": "0o600",
+        "home/.cache/mesa_shader_cache/62": "0o700",
+        "home/.cache/mesa_shader_cache/62/998b0efa79ad65d6702729511908bbb6dfc779f997446c625253f6c0b6db89": "0o600",
+        "home/.cache/mesa_shader_cache/64": "0o700",
+        "home/.cache/mesa_shader_cache/64/872c4467c5cb81bd5b619c2608cecb880dc75e32dc7f9fb8edc00178435f93": "0o600",
+        "home/.cache/mesa_shader_cache/80": "0o700",
+        "home/.cache/mesa_shader_cache/80/ae8e351188d0def9aa78ffd0c4989fb89f1323eedebfb871fd01782be600d0": "0o600",
+        "home/.cache/mesa_shader_cache/85": "0o700",
+        "home/.cache/mesa_shader_cache/85/f4e93732e6eacecf514712dba62738d0541bd34b380ecd2326bd9f79679640": "0o600",
+        "home/.cache/mesa_shader_cache/8e": "0o700",
+        "home/.cache/mesa_shader_cache/8e/c98309dd06974650058c00e3a1ee2d7c3a5e2ac79ac4232a2f5c9cc344b1e7": "0o600",
+        "home/.cache/mesa_shader_cache/96": "0o700",
+        "home/.cache/mesa_shader_cache/96/d3ddcf7517d300a10aee94548e7edfb3ea5e15a7e096ace2d53a2bb44da8ef": "0o600",
+        "home/.cache/mesa_shader_cache/9f": "0o700",
+        "home/.cache/mesa_shader_cache/9f/295329622b901d0c583faa0c08ad0ea20243040c743b709732edc2a7eaf852": "0o600",
+        "home/.cache/mesa_shader_cache/ad": "0o700",
+        "home/.cache/mesa_shader_cache/ad/16933b2c48a7a6e957bef8479675559f6d153111b5331592284513ce2474ef": "0o600",
+        "home/.cache/mesa_shader_cache/ad/9d6c3e97728ca95e12341d4064e196dfe98ceaf2fb3c508865df9b0d5d0011": "0o600",
+        "home/.cache/mesa_shader_cache/bc": "0o700",
+        "home/.cache/mesa_shader_cache/bc/4a569c82070bca4b64ba71818789ffeedd3f5fd86e9532fccfe1cefd52404d": "0o600",
+        "home/.cache/mesa_shader_cache/c0": "0o700",
+        "home/.cache/mesa_shader_cache/c0/6abdf5175eaf5460829fa1a1ebb7b6e0aa612ce4118c2bcad7c4424b30df74": "0o600",
+        "home/.cache/mesa_shader_cache/c5": "0o700",
+        "home/.cache/mesa_shader_cache/c5/497abcff44103d8d89ca1a31088985fca34c6a4b6225f67dd3d8c2a8924f24": "0o600",
+        "home/.cache/mesa_shader_cache/cc": "0o700",
+        "home/.cache/mesa_shader_cache/cc/6a9bc495d039bce5bd058f4efb3b9866644d07fe0109ddbc36242561861dd2": "0o600",
+        "home/.cache/mesa_shader_cache/db": "0o700",
+        "home/.cache/mesa_shader_cache/db/96d610fcf77870c457001ef18e7826d7846ce6154c2da77ab148fe2e1c45e0": "0o600",
+        "home/.cache/mesa_shader_cache/de": "0o700",
+        "home/.cache/mesa_shader_cache/de/307ea01be2642a6c383846414957f1c4046d584edf7032031768c93d3145c7": "0o600",
+        "home/.cache/mesa_shader_cache/e9": "0o700",
+        "home/.cache/mesa_shader_cache/e9/9591a4ae755eaedea723290ee297c629ce95dc3642657a3ae455788ded7ef9": "0o600",
+        "home/.cache/mesa_shader_cache/f7": "0o700",
+        "home/.cache/mesa_shader_cache/f7/d548d7abce07c0d021a9eeb06e5b0836dca5b0d08a45163999a675c5eeba37": "0o600",
+        "home/.cache/mesa_shader_cache/index": "0o600",
+        "home/.cache/mesa_shader_cache/marker": "0o600",
+        "home/.cache/radv_builtin_shaders": "0o700",
+        "home/.cache/radv_builtin_shaders/index": "0o600",
+        "home/.cache/radv_builtin_shaders/marker": "0o600",
+        "home/cache": "0o700",
+        "home/cache/kcrash-metadata": "0o700",
+        "home/cache/ksycoca6_en-POSIX_wlCQWwpZIL7wROVk5_DTMuUJvag=": "0o600",
+        "home/cache/kwin": "0o700",
+        "home/cache/kwin/qmlcache": "0o700",
+        "home/cache/kwinsession.kcache": "0o600",
+        "home/config": "0o700",
+        "home/config/kwinoutputconfig.json": "0o600",
+        "home/config/kwinrc": "0o600",
+        "home/data": "0o700",
+        "home/state": "0o700",
+        "kwin-xwayland-eis-socket.771851.lock": "0o600",
+        "tmp": "0o700",
+        "wayland-private": "0o600",
+        "wayland-private.lock": "0o600"
+      },
+      "rejected_overrides": [
+        "AT_SPI_BUS_ADDRESS",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "DBUS_SESSION_BUS_PID",
+        "DBUS_SESSION_BUS_WINDOWID",
+        "DBUS_STARTER_ADDRESS",
+        "DBUS_STARTER_BUS_TYPE",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "DISPLAY",
+        "HOME",
+        "KDE_APPLICATIONS_AS_SCOPE",
+        "KDE_FULL_SESSION",
+        "KDE_SESSION_VERSION",
+        "KWIN_EIS_NO_PERMISSION_CHECKS",
+        "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS",
+        "NO_AT_BRIDGE",
+        "QT_ACCESSIBILITY",
+        "QT_LINUX_ACCESSIBILITY_ALWAYS_ON",
+        "QT_QPA_PLATFORM",
+        "SESSION_MANAGER",
+        "TMPDIR",
+        "WAYLAND_DISPLAY",
+        "WAYLAND_SOCKET",
+        "XAUTHORITY",
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_DIRS",
+        "XDG_CONFIG_HOME",
+        "XDG_DATA_DIRS",
+        "XDG_DATA_HOME",
+        "XDG_RUNTIME_DIR",
+        "XDG_SESSION_TYPE",
+        "XDG_STATE_HOME",
+        "XKB_DEFAULT_LAYOUT"
+      ],
+      "settings_removed": true,
+      "stop": {
+        "error": null,
+        "ok": true,
+        "operation": "session.stop",
+        "request_id": "4d902977f93749d29d1ba0e3457ea0af",
+        "result": {
+          "cleanup": "complete",
+          "desktop_ready": false,
+          "records_preserved": true,
+          "state": "stopped"
+        },
+        "schema_version": 1,
+        "session": {
+          "generation": "cc3642e5d12c437381cf12fb44133849",
+          "name": "probe-none"
+        }
+      },
+      "stop_seconds": 0.08964719600044191
+    }
+  },
+  "desktop_ready": false,
+  "fixture_build": {
+    "argv": [
+      "/usr/bin/gcc",
+      "-std=c11",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/home/josephwest/development/kde-agent/.local/issue19-run2/build",
+      "/home/josephwest/development/kde-agent/tools/wayland_fixture.c",
+      "/home/josephwest/development/kde-agent/.local/issue19-run2/build/xdg-shell-protocol.c",
+      "/home/josephwest/development/kde-agent/.local/issue19-run2/build/presentation-time-protocol.c",
+      "-lwayland-client",
+      "-lm",
+      "-lxkbcommon",
+      "-o",
+      "/home/josephwest/development/kde-agent/.local/issue19-run2/build/wayland-fixture"
+    ],
+    "binary_sha256": "a422676bf22c247781b5d54a5bb3211e606b0f9862d84d8f68aee705d3b8d244",
+    "compiler": "gcc (GCC) 16.2.1 20260810",
+    "elapsed_seconds": 0.231,
+    "protocols": {
+      "/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml": "dffac93bcb2bb1d8c385e72b8a8c2c0d4d79a336866322f3ba886dce2b27b1e2",
+      "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "7ba7f9c8473deee674cb1f154a18abd0bb0cc072604fc055b0c15e459fc4c7df"
+    },
+    "source_sha256": "0ccb9da6e6053b95445850ad3711217cd4e1015941b639b940b157f793f62869"
+  },
+  "installed_module": "/tmp/issue19-venv/lib/python3.14/site-packages/agent_desktop/__init__.py",
+  "installed_source_sha256": {
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "artifacts.py": "5efd9fd9d4fe8f1d89ab4bc82d1b6c4dfe7a33f86dfb607000a751c8feacfedf",
+    "children.py": "345152d83b98443c4326dfa59f77340f03da4ee513312a86252dc0def4c68039",
+    "cli.py": "babc665c96eaf0abfd313b584fb5753280f2065bc80c24dd0bf789c8d5af6b03",
+    "contracts.py": "99c60803f90846d20c0b8875b320ef0e30c3b923eeba8e68b6479931db58cb7f",
+    "desktop.py": "af1d4f0085dc4ccd8b5137e18aaad638b7c62f5b63247e3fe1ddc259129a23d5",
+    "environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "lifecycle.py": "b14bdec2ecaecfa4680be15630f2c6872f3bce5bd4d1e1d87217869cce7735ed",
+    "paths.py": "329640a381c2cfe8fc0cdae0ca832413ccff07e2b7b4caa1ab40bc1e6b45a767",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "scheduler.py": "e3fb49c9b805478f70c46dab898e859164d8766a7efe632c5df871b9810292e4",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "worker.py": "ad134a3de69867822ea65d05d49a7e7cd31bd8edb8d71e24c45abbc0f974f62a"
+  },
+  "native_versions": [
+    "kwin 6.7.5-1",
+    "dbus 1.16.2-1",
+    "systemd 261.3-1",
+    "wayland 1.26.0-1"
+  ],
+  "personal_kde_config_unchanged": {
+    "/home/josephwest/.config/kdeglobals": "bc130037b4b8e1a171d9cec7bc70722abcbe9cececf419a3aedb5bd126e1bcd1",
+    "/home/josephwest/.config/kglobalshortcutsrc": "9513ffdf7741b2a823dcabda44fd29b759af68731e87981f68862a4423a17e56",
+    "/home/josephwest/.config/kwinoutputconfig.json": "72cc60782a923f22cf049cf7466ebfc2d8febe9ce5d08f4217c2cab9b3fe317f",
+    "/home/josephwest/.config/kwinrc": "898d272cd02439af3f4632b6a65ddc55cb7e0d7e1a95c3dee2cbf4c06cf3ac0b"
+  }
+}

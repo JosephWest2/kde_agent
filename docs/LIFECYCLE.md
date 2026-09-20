@@ -59,7 +59,8 @@ Lifecycle subprocesses use direct argv and a clean environment addressing the
 current user's manager at `/run/user/<uid>`; this manager endpoint is confined to
 lifecycle control. The worker receives an explicit private runtime and minimal
 environment through `env -i`, independent of the manager's desktop variables and
-credentials. #19 adds its complete private desktop/settings environment.
+credentials. The desktop owner constructs complete private settings/endpoints for
+its bus, compositor, adapters and applications; see [environment policy](ARTIFACTS.md).
 
 The installed Python runs the packaged worker with isolated Python imports from
 `/`, without source cwd or PYTHONPATH dependence. The transient unit uses
@@ -93,7 +94,7 @@ A timeout/signal caused by an earlier requested stop does not turn its stopped
 tombstone into a prior crash. Worker exit only records uncertain cleanup; the manager asserts completion after
 its cgroup observation. Unexpected worker death is reconciled on a later lifecycle
 call. Autonomous terminal hooks and ordered release/window-close attempts remain
-#21; private desktop health and capability readiness remain #19–#20.
+#21; full capability readiness remains #20.
 
 ## Verification
 
@@ -110,3 +111,36 @@ wheel worker, independent installed CLI processes, ordinary child/grandchild
 cgroup membership, duplicate-start identity, stale requests and bounded fallback
 termination. It is service evidence with `desktop_ready: false`, not release
 qualification or completion of parent #3.
+
+## Private desktop construction (#19)
+
+The default packaged managed worker starts a private D-Bus daemon and KWin as
+observed direct children. Its GLib owner polls startup without blocking control:
+private bus socket, successful explicit bus Hello, then private KWin socket.
+Construction shares a 30s monotonic deadline and continuously monitors bus/KWin
+exit afterwards. Any essential exit or startup error makes the worker exit
+nonzero; systemd terminates the generation's remaining cgroup. Public start is
+still gated and status still says `starting`, `desktop_ready: false`: sockets
+alone do not establish the #20 query/input/capture readiness contract.
+
+`g/TOKEN/desktop/` contains exclusive 0700 runtime and HOME/XDG/TMP directories,
+0600 bus configuration and owner-only bus/Wayland sockets. The bus has no service
+activation directories or systemd activation. KWin uses the approved virtual
+1280x720 scale-1 single output, no Plasma shell or XWayland, and no lockscreen,
+global shortcuts or KActivities. ScreenShot2 permission is enabled only in that
+created compositor's environment; no EIS permission override or global KDE edit
+is used. Adapter/application environments never receive compositor controls.
+
+Worker, bus and compositor output goes directly to preopened durable generation
+logs. Internal application/adapter launches require output handles and preserve
+selected executable, argv and cwd. This Python seam supports integration evidence
+and future owners; it is not a public plugin or application-launch protocol.
+
+Only after observed service quiescence does lifecycle reconciliation remove the
+exact generation's disposable `desktop/` subtree. It retains routing claims,
+lifecycle metadata and all durable artifacts. Root symlinks/unsafe ownership are
+rejected and nested links are not followed. Disposal failure returns uncertain
+cleanup and later lifecycle calls retry. Crash settings cleanup currently requires
+that later stop/status/start reconciliation; automatic post-stop cleanup remains
+#21. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
+bus/KWin output, project access and environment isolation with readiness false.

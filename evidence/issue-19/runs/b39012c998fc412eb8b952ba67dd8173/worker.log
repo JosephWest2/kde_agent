@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/home/josephwest/development/kde-agent/tests/desktop_worker_fixture.py", line 77, in <module>
+    run(name, generation, artifacts=artifacts, managed=True, desktop=True, desktop_observer=observe)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/issue19-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 116, in run
+    raise foundation_error
+  File "/tmp/issue19-venv/lib/python3.14/site-packages/agent_desktop/worker.py", line 58, in tick
+    foundation.tick()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/issue19-venv/lib/python3.14/site-packages/agent_desktop/desktop.py", line 95, in tick
+    raise ContractError('session_failed', 'An essential private desktop child exited.')
+agent_desktop.contracts.ContractError: An essential private desktop child exited.

@@ -125,6 +125,23 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(self.services.active[unit_name(generation)])
         self.assertTrue(self.manager.handle(self.request('session.stop'))['result']['records_preserved'])
 
+    def test_settings_disposal_failure_never_records_complete_and_retries(self):
+        generation = self.start()
+        root = Runtime().generations / generation / 'desktop'
+        root.mkdir(mode=0o700)
+        with patch('agent_desktop.desktop.dispose', side_effect=OSError('injected')):
+            for operation in ('session.stop', 'session.status'):
+                with self.assertRaises(ContractError) as caught:
+                    self.manager.handle(self.request(operation))
+                self.assertEqual(caught.exception.context['cleanup'], 'uncertain')
+                manifest = json.loads((self.root / 'artifacts' / 'generations' / generation / 'manifest.json').read_text())
+                self.assertEqual(manifest['cleanup']['state'], 'uncertain')
+                self.assertTrue(root.exists())
+        stopped = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(stopped['result']['cleanup'], 'complete')
+        self.assertFalse(root.exists())
+        self.assertTrue((Runtime().generations / generation / 'lifecycle.json').exists())
+
     def test_live_descendants_and_pending_job_prevent_replacement(self):
         generation = self.start()
         self.services.active[unit_name(generation)] = False

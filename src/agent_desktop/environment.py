@@ -4,16 +4,26 @@ from pathlib import Path
 from .contracts import ContractError
 
 SETTINGS = frozenset({'HOME', 'XDG_RUNTIME_DIR', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME',
-                      'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CONFIG_DIRS'})
+                      'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CONFIG_DIRS', 'TMPDIR'})
 ENDPOINTS = frozenset({'DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'WAYLAND_SOCKET',
                        'DBUS_SESSION_BUS_ADDRESS', 'DBUS_SESSION_BUS_PID',
-                       'DBUS_SESSION_BUS_WINDOWID', 'DBUS_SYSTEM_BUS_ADDRESS', 'AT_SPI_BUS_ADDRESS'})
+                       'DBUS_SESSION_BUS_WINDOWID', 'DBUS_SYSTEM_BUS_ADDRESS', 'AT_SPI_BUS_ADDRESS',
+                       'DBUS_STARTER_ADDRESS', 'DBUS_STARTER_BUS_TYPE', 'SESSION_MANAGER',
+                       'KDE_FULL_SESSION', 'KDE_APPLICATIONS_AS_SCOPE'})
 DISABLED = {'QT_ACCESSIBILITY': '0', 'QT_LINUX_ACCESSIBILITY_ALWAYS_ON': '0', 'NO_AT_BRIDGE': '1'}
-PROTECTED = SETTINGS | ENDPOINTS | DISABLED.keys()
+FIXED = {'XDG_DATA_DIRS': '/usr/local/share:/usr/share', 'QT_QPA_PLATFORM': 'wayland',
+         'XDG_SESSION_TYPE': 'wayland', 'KDE_SESSION_VERSION': '6', 'XKB_DEFAULT_LAYOUT': 'us'}
+PROTECTED = SETTINGS | ENDPOINTS | DISABLED.keys() | FIXED.keys()
+DEFAULTS = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
+
+
+def protected(key):
+    # Compositor startup/permission controls never belong to adapter/app policy.
+    return key in PROTECTED or key.startswith('KWIN_')
 
 
 def check_overrides(overrides):
-    if PROTECTED.intersection(overrides):
+    if any(protected(key) for key in overrides):
         raise ContractError('invalid_arguments', 'Private session environment cannot be overridden.',
                             context={'field': 'env'})
 
@@ -21,7 +31,7 @@ def check_overrides(overrides):
 def compose(base, overrides, private):
     """Return launch-ready values only when every required private root is present.
 
-    M3 supplies and provisions these roots. This helper does not create a desktop.
+    Desktop provisions these roots. This helper does not create a desktop.
     The private system-bus address deliberately names an absent socket.
     """
     check_overrides(overrides)
@@ -58,11 +68,12 @@ def compose(base, overrides, private):
         raise ContractError('session_unavailable', 'Private Wayland endpoint is invalid.')
     if any(private.get(k, v) != v for k, v in DISABLED.items()):
         raise ContractError('session_unavailable', 'Private accessibility policy is invalid.')
-    result = {k: v for k, v in base.items() if k not in PROTECTED}
+    result = {k: v for k, v in base.items() if not protected(k)}
     result.setdefault('PATH', os.defpath)
     result.update(overrides)
     result.update(private)
     result.update(DISABLED)
+    result.update(FIXED)
     return result
 
 

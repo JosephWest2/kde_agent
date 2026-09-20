@@ -160,3 +160,10 @@ transactional guarantee that the terminal record was committed. Replaying an
 uncertain launch/input is not automatic. Small synchronous storage operations
 are measured under normal storage; hung filesystems are not covered by a hard
 cancellation-latency guarantee.
+
+Application launch reserves `applications/<id>/record.json` before helper spawn.
+It records prepared, execution-authorized, running, root-exited, all-exited or
+launch-failed state, cgroup ownership, original birth identity and log references.
+Bounded per-process records live below `applications/<id>/processes/`. Lifetime
+updates continue after request termination. Environment values never enter these
+records; exact argv/cwd remain in the dedicated request launch record.

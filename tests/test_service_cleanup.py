@@ -282,7 +282,7 @@ class SurvivorTests(unittest.TestCase):
     def test_owned_pidfds_only_and_rescan_new_descendant(self):
         cgroup = '/test/unit.service'
         stat = '1 (child) ' + ' '.join(['S'] + ['0'] * 18 + ['123'])
-        with patch('agent_desktop.service_cleanup.membership', side_effect=lambda pid: cgroup if pid == os.getpid() else cgroup + '/child'), \
+        with patch('agent_desktop.service_cleanup.membership', side_effect=lambda pid: cgroup + '/.control' if pid == os.getpid() else cgroup + '/child'), \
                 patch('agent_desktop.service_cleanup.members', side_effect=[{os.getpid(), 101}, {os.getpid(), 102}, {os.getpid()}]), \
                 patch('os.pidfd_open', side_effect=[901, 902]) as opened, \
                 patch('signal.pidfd_send_signal') as sent, patch('os.close') as closed, \
@@ -293,7 +293,7 @@ class SurvivorTests(unittest.TestCase):
         self.assertEqual(closed.call_count, 2)
 
     def test_wrong_self_cgroup_or_recycled_outside_member_never_signals(self):
-        for own in ('/wrong', '/expected'):
+        for own in ('/wrong', '/expected/.control'):
             with self.subTest(own=own), \
                     patch('agent_desktop.service_cleanup.membership', side_effect=lambda pid: own if pid == os.getpid() else '/expected-OTHER'), \
                     patch('agent_desktop.service_cleanup.members', return_value={os.getpid(), 101}), \

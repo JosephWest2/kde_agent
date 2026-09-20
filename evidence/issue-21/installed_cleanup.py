@@ -63,7 +63,7 @@ def properties(data):
     fields = ('MainPID', 'ControlGroup', 'ActiveState', 'SubState', 'Result', 'WatchdogUSec',
               'WatchdogSignal', 'TimeoutAbortUSec', 'TimeoutStopUSec', 'KillMode', 'Restart',
               'NotifyAccess', 'SendSIGKILL', 'FinalKillSignal', 'TimeoutStopFailureMode',
-              'ExecStop', 'ExecStopPost')
+              'ExecStop', 'ExecStopPost', 'Delegate', 'DelegateControllers', 'DelegateSubgroup')
     result = subprocess.run(['/usr/bin/systemctl', '--user', '--no-ask-password', 'show', data['unit'],
                              *[arg for field in fields for arg in ('-p', field)]],
                             env=MANAGER_ENV, cwd='/', capture_output=True, text=True, timeout=4)
@@ -151,6 +151,8 @@ def main(output, dependencies, selected):
     artifacts = output / 'artifacts'
     receipt = {'schema_version': 1, 'production_readiness': False, 'release_qualified': False,
                'replacement_issue': 35, 'installed_module': agent_desktop.__file__,
+               'ownership_layout': {'main': 'supervisor', 'hooks': '.control',
+                                    'applications': 'applications/<application_id>'},
                'interpreter': sys.executable, 'caller_cwd': '/', 'cases': {},
                'source_commit': subprocess.check_output(['/usr/bin/git', '-C', str(PROJECT), 'rev-parse', 'HEAD'], text=True).strip(),
                'source_worktree': subprocess.check_output(['/usr/bin/git', '-C', str(PROJECT), 'status', '--porcelain'], text=True).splitlines(),
@@ -160,6 +162,7 @@ def main(output, dependencies, selected):
                                      for p in sorted(Path(agent_desktop.__file__).parent.glob('*.py'))},
                'fixture_hashes': {str(path.relative_to(PROJECT)): hashlib.sha256(path.read_bytes()).hexdigest()
                                   for path in (SCRIPT, FIXTURE)}}
+    assert receipt['source_hashes'] == receipt['installed_hashes'], 'Installed modules differ from source'
     names = selected or ['normalstop', 'managerstop', 'failedstart', 'failedexec', 'bus-kill', 'bus-freeze',
                          'kwin-kill', 'kwin-freeze', 'worker-kill', 'worker-freeze',
                          'worker-freeze-lock', 'worker-freeze-generation-lock', 'disconnect', 'socketsmissing', 'frozenstarting',
@@ -198,7 +201,7 @@ def main(output, dependencies, selected):
             try:
                 current = identity(item['pid'])
                 assert current['start_ticks'] == item['start_ticks']
-                assert current['cgroup'].split('::', 1)[1] == data['cgroup']
+                assert current['cgroup'].split('::', 1)[1] == data['cgroup'] + '/supervisor'
                 signal.pidfd_send_signal(fd, signum)
             finally:
                 os.close(fd)
@@ -246,6 +249,8 @@ def main(output, dependencies, selected):
                     assert props['WatchdogUSec'] == '5s' and props['TimeoutAbortUSec'] == '3s'
                     assert props['TimeoutStopUSec'] == '3s' and props['TimeoutStopFailureMode'] == 'kill'
                     assert props['KillMode'] == 'control-group' and props['Restart'] == 'no'
+                    assert props['Delegate'] == 'yes' and props['DelegateControllers'] == ''
+                    assert props['DelegateSubgroup'] == 'supervisor'
                     case['identities'] = {'worker': identity(int(props['MainPID'])),
                                           'child': read(folder / 'fixture-child.json'),
                                           'grandchild': read(folder / 'fixture-grandchild.json')}
@@ -259,6 +264,8 @@ def main(output, dependencies, selected):
                                 continue
                             if item['comm'] in ('dbus-daemon', 'kwin_wayland'):
                                 case['identities']['bus' if item['comm'] == 'dbus-daemon' else 'kwin'] = item
+                    assert all(item['cgroup'].split('::', 1)[1] == data['cgroup'] + '/supervisor'
+                               for item in case['identities'].values())
                     if key == 'worker-freeze-generation-lock':
                         # Model a lost service-submission acknowledgment through
                         # the same installed generation serialization as writers.
@@ -361,6 +368,9 @@ def main(output, dependencies, selected):
                     assert all(not alive(item) for item in case['identities'].values())
                 observation = case['autonomous']
                 assert observation['cgroup_empty'] and observation['all_descendants_absent'], observation
+                for event in observation.get('events', []):
+                    if event['event'] == 'helper_entry':
+                        assert event['identity']['cgroup'].split('::', 1)[1] == data['cgroup'] + '/.control'
                 assert len(observation['descendants']) == (0 if key == 'failedexec' else 2)
                 if key == 'blocked-post':
                     assert not observation.get('terminal.json', {}).get('cleanup') == 'complete', observation

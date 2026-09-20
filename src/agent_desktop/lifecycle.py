@@ -132,7 +132,8 @@ class Systemd:
             helpers.append('--property=' + property_name + '=' + encoded)
         argv = ['/usr/bin/systemd-run', '--user', '--no-ask-password', '--no-block', '--quiet',
                 '--service-type=exec', '--unit=' + data['unit'], '--property=Slice=app.slice',
-                '--property=Restart=no', '--property=KillMode=control-group', '--property=SendSIGKILL=yes',
+                '--property=Restart=no', '--property=Delegate=', '--property=DelegateSubgroup=supervisor',
+                '--property=KillMode=control-group', '--property=SendSIGKILL=yes',
                 '--property=TimeoutStopSec=' + str(SYSTEMD_STOP_SECONDS) + 's', '--property=UMask=0077',
                 '--property=WatchdogSec=5s', '--property=TimeoutAbortSec=3s',
                 '--property=WatchdogSignal=SIGTERM', '--property=FinalKillSignal=SIGKILL',

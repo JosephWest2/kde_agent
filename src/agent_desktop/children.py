@@ -15,12 +15,12 @@ class Children:
         self.owned = set()
 
     def start(self, argv, *, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=None, cwd=None,
-              executable=None):
+              executable=None, pass_fds=()):
         if stdout == subprocess.PIPE or stderr == subprocess.PIPE:
             raise ValueError("Undrained child pipes are not supported")
         child = Child(subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=stdout,
                                        stderr=stderr, env=env, cwd=cwd, executable=executable,
-                                       close_fds=True))
+                                       close_fds=True, pass_fds=pass_fds))
         self.owned.add(child)
         return child
 

@@ -50,6 +50,10 @@ class Records:
             context['token'] = self.store.request(admission.request, admission.admitted_at, admission.deadline)
         return context['token']
 
+    def token(self, request_id):
+        """Request attempt for task-owned durable allocations."""
+        return self._ensure(self.live[request_id])
+
     def observe(self, record):
         context = self.live[record['request_id']]
         token = self._ensure(context)

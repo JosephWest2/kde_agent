@@ -644,6 +644,54 @@ class Store:
                 self._write(directory, 'record.json', value)
             os.fsync(parent)
 
+    def application_prepare(self, token, application_id, *, executable, logs, cgroup):
+        request_id, attempt = map(identifier, token)
+        identifier(application_id)
+        if (not isinstance(executable, str) or not os.path.isabs(executable)
+                or self.references({'logs': logs}).get('logs') != logs
+                or not isinstance(cgroup, str) or not cgroup.endswith('/applications/' + application_id)):
+            fail('schema')
+        value = {'schema_version': 1, 'revision': 0, 'session': self.session, 'generation': self.generation,
+                 'application_id': application_id, 'request_id': request_id, 'attempt': attempt,
+                 'launch_record': f'requests/{request_id}/{attempt}/launch.json', 'process': None,
+                 'executable': executable, 'logs': logs, 'windows': [], 'owner': 'cgroup-v2',
+                 'cgroup': cgroup, 'state': 'prepared', 'authorized': False, 'uncertain': False,
+                 'exit_code': None}
+        with self.lock(), self.directory('applications') as parent:
+            mkdir_durable(parent, application_id, exclusive=True)
+            with self.directory('applications', application_id) as directory:
+                mkdir_durable(directory, 'processes', exclusive=True)
+                self._write(directory, 'record.json', value)
+
+    def application_update(self, application_id, *, state, process, exit_code, authorized, uncertain):
+        identifier(application_id)
+        if (state not in ('prepared', 'execution-authorized', 'running', 'root-exited', 'all-exited', 'launch-failed')
+                or type(authorized) is not bool or type(uncertain) is not bool
+                or (exit_code is not None and type(exit_code) is not int)):
+            fail('schema')
+        if process is not None and (safe_projection({'process': process}, self.generation).get('process') !=
+                {k: process.get(k) for k in ('pid', 'start_time_ticks')}):
+            fail('identity')
+        with self.lock(), self.directory('applications', application_id) as directory:
+            value = self._read(directory, 'record.json')
+            value.update(state=state, process=process, exit_code=exit_code, authorized=authorized,
+                         uncertain=uncertain, revision=value['revision'] + 1, updated_at=timestamp())
+            self._write(directory, 'record.json', value)
+
+    def application_processes(self, application_id, batch):
+        identifier(application_id)
+        if len(batch) > 16:
+            fail('size')
+        with self.lock(), self.directory('applications', application_id, 'processes') as directory:
+            for process in batch:
+                projected = safe_projection({'process': process}, self.generation).get('process')
+                if projected is None or not isinstance(process.get('boot_id'), str):
+                    fail('identity')
+                name = str(projected['pid']) + '-' + str(projected['start_time_ticks']) + '.json'
+                self._write(directory, name, {'schema_version': 1, 'revision': 0,
+                    'generation': self.generation, 'session': self.session,
+                    'process': process, 'exit_status': 'not_observed'})
+
     def provenance(self, *, output=None, dependencies=()):
         """Trusted real collectors provide observations, never copied baseline claims."""
         if not isinstance(dependencies, (list, tuple)) or len(dependencies) > 128:

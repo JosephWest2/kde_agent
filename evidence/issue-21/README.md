@@ -1,21 +1,31 @@
 # Issue 21 installed cleanup qualification
 
-Selected qualification is in [`final/cleanup.json`](final/cleanup.json), with
+Selected qualification is in [`review-fix-final/cleanup.json`](review-fix-final/cleanup.json), with
 untouched artifact copies and SHA-256 inventory in
-[`final/selection.json`](final/selection.json). All **18 cases passed** against
-commit `52bf8f543600baa29e224bb7484d3782e16507e9`; all 29 installed Python module
+[`review-fix-final/selection.json`](review-fix-final/selection.json). All **21 cases passed** against
+commit `01edfe40ddd05f19d7e784a058f55449b627cce8`; all 29 installed Python module
 hashes exactly match that source. The recorded source worktree contained only
 untracked planning notes. Host: systemd `261.3-1-arch`, Linux `7.2.4-arch1-2`.
+The matching [unit/process suite report](review-tests.txt) records all 280 tests
+passing in 20.372 seconds and the resolved test-fixture setup race.
 
-The longest measured fault-to-empty interval was **7.718 seconds**, for a
+The longest measured fault-to-empty interval was **7.801 seconds**, for a
 permanently blocked release callback reaching watchdog termination. Manager stop
-completed in 0.334 seconds, bus/KWin freeze in at most 5.253 seconds, and a worker
-frozen with the record lock held in 4.868 seconds. Actual post hooks observed and
+completed in 0.684 seconds, bus/KWin freeze in at most 5.125 seconds, and a worker
+frozen with the record lock held in 4.882 seconds. Actual post hooks observed and
 killed surviving ordinary descendants in several cases, including Manager stop.
 Every tested path stayed below the approved 15-second bound; no fallback cleanup
 was needed by the evidence runner.
 
-Blocked ExecStopPost terminated the service and descendants in 3.195 seconds.
+Both earlier-failure regression cases retained failed terminal state and the
+original first failure despite a later requested service timeout: 5.290 seconds
+with normal records, and 5.318 seconds when the worker's early manifest update
+failed. The uncertain-submission case froze the worker holding its generation
+lock; Manager stop still reached cgroup emptiness in 0.367 seconds, reported
+`records_preserved: false`, and the autonomous post hook repaired the submission
+acknowledgment. These cases address the independent PR review findings.
+
+Blocked ExecStopPost terminated the service and descendants in 3.222 seconds.
 It left no autonomous complete receipt; separately recorded explicit
 reconciliation then removed settings/sockets and wrote a complete terminal
 receipt. This intentionally unavailable-recorder case does not demonstrate
@@ -23,6 +33,10 @@ autonomous artifact finalization. All other ordinary fault and stop cases do.
 The measurements cover ordinarily killable processes and normal local storage;
 they do not establish realtime bounds for uninterruptible kernel or filesystem
 waits. Production input-release and application-window adapters remain issue 35.
+
+The original 18-case qualification against `52bf8f5` remains unchanged in
+[`final/`](final/cleanup.json) as earlier evidence. It is superseded by the
+21-case selection above and did not cover the combined review regressions.
 
 `installed_cleanup.py` runs isolated service generations using a non-editable
 wheel and separate controller processes whose working directory is `/`:
@@ -34,10 +48,8 @@ wheel and separate controller processes whose working directory is `/`:
 
 Append case names to select a focused rerun. The full matrix covers normal raw
 stop, Manager stop, startup failure after ordinary descendants exist, failed
-ExecStart, bus/KWin/worker kill and freeze, a worker frozen while holding the
-artifact record lock, raw stop client disconnect after durable admission,
-and a worker frozen with the generation cleanup lock held while Manager stop
-must still submit independent service termination,
+ExecStart, bus/KWin/worker kill and freeze, workers frozen while holding artifact
+or generation locks, raw stop client disconnect after durable admission,
 missing control sockets, frozen starting worker, blocked ExecStop and blocked
 ExecStopPost, permanently blocked release callback, and stale finalizer replay
 after a replacement generation is ready. The `prior-failure-stop` regression

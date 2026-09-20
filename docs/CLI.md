@@ -1,9 +1,12 @@
 # agent-desktop command contract
 
-The CLI currently installs, parses commands, validates requests and returns
-explicit `unsupported_operation` failures for all desktop commands, including
-`doctor`. Help and version work. Production transport, scheduling and durable
-records follow in #15–17; real desktop operations follow in later milestones.
+The CLI installs, validates requests and contacts a persistent worker over a
+private generation-bound socket. Help and version work. Desktop operations are
+unwired: absent sessions report `session_not_found`, while the transport-only
+worker returns `unsupported_operation` with its verified generation. `doctor` and
+`session start` remain locally unsupported. Scheduling and durable records follow
+in #16–17; real desktop operations follow in later milestones. See the
+[transport contract](TRANSPORT.md) for the internal worker and verified limits.
 Examples of those future results below are illustrative, not support claims.
 
 ## Install and inspect
@@ -103,10 +106,10 @@ JSON handles use `{generation, application_id}` or `{generation, window_id}`.
 A handle supplies its expected generation. A conflicting explicit generation or
 another conflicting handle fails `generation_mismatch` before dispatch.
 Name-only lookup deliberately resolves the *current* generation; it does not
-protect against restart. #15 will resolve current identity and check it against
-all expectations before effects. Until then operations fail explicitly and actual
-`session.generation` is null; an unverified expectation is never reported as an
-actual session identity.
+protect against restart. The client pins the resolved generation once; the worker
+checks name, generation and handles before dispatch. A correlated worker response
+carries its verified identity. Before such a response, actual `session.generation`
+is null; an unverified expectation is never reported as an actual identity.
 
 The client captures its absolute caller cwd in each Request and currently retains
 raw path arguments. #17 implements normalization: omitted application cwd means
@@ -126,8 +129,8 @@ filesystem or network isolation. Applications remain trusted local programs.
 The shared Request contains `schema_version: 1`, a fresh `request_id`, operation
 (`session.start`, `input.reset`, etc.), session name, `expected_generation`,
 `arguments`, finite `timeout_seconds`, and `caller_cwd`. Pure validators consume
-ordinary data so #15 can revalidate untrusted wire requests independently of the
-CLI. Wire framing/version enforcement and live identity checks belong to #15.
+ordinary data; the worker additionally enforces strict wire types, framing/version
+and immutable live worker identity independently of the CLI.
 
 An actual current scaffold failure from `agent-desktop --json session start`
 has this shape (request IDs vary):
@@ -205,10 +208,10 @@ No generic success claim is made when an application remains alive.
 
 ## Deadlines and cleanup
 
-The command table defines finite *work* budgets for the eventual worker. #14
-performs no blocking desktop work and fails unwired operations immediately. #16
-will start a monotonic deadline at admission, including queue delay; a client
-socket timeout is not enforcement. Composite operations share one budget: target
+The command table defines finite *work* budgets. The transport worker admits a
+monotonic deadline and checks success acceptance; its production dispatcher fails
+unwired operations immediately. #16 supplies cancellable task execution and queue
+deadlines, including queue delay; a client socket timeout is not enforcement. Composite operations share one budget: target
 checks, focus verification and key holds must all fit the remaining input time.
 Individually valid settings do not guarantee completion within that time.
 
@@ -218,8 +221,8 @@ reserves remain finite: query cleanup 1.5s; capture abort 1s plus owned-service
 stop up to 15s if compositor cleanup is unconfirmed; failed-startup cleanup up to
 15s. Complete session stop is bounded by 15s. A failed capture can therefore take
 up to 19s including work and cleanup. Strict success acceptance deadlines do not
-expand because cleanup takes longer. #15 will document bounded transport
-connect/read allowances separately.
+expand because cleanup takes longer. The [transport contract](TRANSPORT.md)
+documents separate bounded connect/frame/response allowances.
 
 M1 provisional targets include input cancellation dispatch within 100ms,
 fixture-observed release within 500ms under recorded conditions, focus checks no

@@ -137,8 +137,12 @@ def main(argv=None):
     try:
         request, local_result, operation, json_mode = parse_request(argv, request_id, os.getcwd())
         if request is not None and operation not in {"doctor", "session.start"}:
-            from .transport import exchange
-            payload = exchange(request)
+            if operation in {"session.status", "session.stop"}:
+                from .lifecycle import Manager
+                payload = Manager().handle(request)
+            else:
+                from .transport import exchange
+                payload = exchange(request)
             status = 0 if payload["ok"] else EXIT_CODES[payload["error"]["code"]]
         else:
             result = dispatch(request) if request is not None else local_result

@@ -22,7 +22,7 @@ EXIT_CODES = {
 }
 # operation: (default work seconds, maximum work seconds, implementation issue)
 OPERATIONS = {
-    "doctor": (120, 120, 35), "session.start": (30, 30, 18),
+    "doctor": (120, 120, 35), "session.start": (30, 30, 20),
     "session.status": (3, 3, 20), "session.stop": (15, 15, 21),
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),

@@ -51,9 +51,13 @@ class CLITests(unittest.TestCase):
         self.assertEqual(payload["schema_version"], 1)
         return payload
 
-    def test_every_operation_explicitly_unwired(self):
+    def test_operations_without_a_session(self):
         for operation, options in VALID.items():
             with self.subTest(operation=operation):
+                if operation == "session.stop":
+                    result = self.json_cli("session", "stop", status=0)
+                    self.assertEqual(result["result"]["state"], "stopped")
+                    continue
                 local = operation in {"doctor", "session.start"}
                 result = self.json_cli(*operation.split("."), *options, status=5 if local else 4)
                 self.assertFalse(result["ok"])
@@ -90,6 +94,10 @@ class CLITests(unittest.TestCase):
             if operation == "doctor":
                 continue
             with self.subTest(operation=operation):
+                if operation == "session.stop":
+                    result = self.json_cli("session", "stop", "--session", "work", "--generation", GEN, status=0)
+                    self.assertIsNone(result["session"]["generation"])
+                    continue
                 result = self.json_cli(*operation.split("."), "--session", "work", "--generation", GEN, *options, status=5 if operation == "session.start" else 4)
                 self.assertEqual(result["session"], {"name": "work", "generation": None})
                 self.assertEqual(result["error"]["context"]["expected_generation"], GEN)

@@ -372,7 +372,8 @@ class Store:
                 or process.get('state') != 'collected' or process.get('producer') != 'worker'
                 or type(process.get('pid')) is not int or process['pid'] <= 0
                 or not isinstance(process.get('start_ticks'), str) or not process['start_ticks'].isdigit()
-                or process['service'] != 'not_collected'):
+                or not (process['service'] == 'not_collected' or process['service'] ==
+                        'agent-desktop-' + self.generation + '.service')):
             fail('schema')
 
     def _write(self, directory, name, value, limit=LIMIT):
@@ -670,7 +671,7 @@ class Store:
             value['updated_at'] = timestamp()
             self._write(self.fd, 'manifest.json', value)
 
-    def worker_identity(self):
+    def worker_identity(self, *, managed=False):
         # Linux proc start ticks identify this PID lifetime; not process control authority.
         try:
             birth = Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()[19]
@@ -680,7 +681,7 @@ class Store:
         with self.lock():
             value = self._read(self.fd, 'manifest.json')
             value['process'] = {'state': 'collected', 'producer': 'worker', 'pid': os.getpid(),
-                                'start_ticks': birth, 'service': 'not_collected'}
+                                'start_ticks': birth, 'service': ('agent-desktop-' + self.generation + '.service') if managed else 'not_collected'}
             value['revision'] += 1
             value['updated_at'] = timestamp()
             self._write(self.fd, 'manifest.json', value)

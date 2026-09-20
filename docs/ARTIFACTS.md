@@ -78,7 +78,7 @@ mark it complete after its full validation. The allocator does not certify PNGs.
 | --- | --- |
 | Identity, headless mode, requested 1280x720 scale-1 output, package/Python versions | Store creation |
 | Actual output and native dependency version/source/hash/patch inventory | Explicit provenance API; M3/doctor real collectors |
-| Worker PID and Linux start ticks | Actual worker; service identity remains uncollected for M3 |
+| Worker PID and Linux start ticks | Actual worker; managed workers include their generation-derived service unit |
 | Admission, start, effects, cancellation, finalizing and accepted terminal result | Scheduler bridge and transport acceptance callback |
 | Exact argv/cwd, application handle/process birth identity, selected executable, log paths and window refs | Dedicated Store APIs; M4 launcher/window producers |
 | Allocated/partial/complete/failed artifact state and dimensions | Allocation API; M6 capture producer |
@@ -87,7 +87,10 @@ mark it complete after its full validation. The allocator does not certify PNGs.
 Absent real observations are explicitly `not_collected`; copied M1 dependency
 versions are never presented as observations. Infrastructure loop exit records
 cleanup `uncertain`, not proof of production descendant/service cleanup. A stored
-PID is diagnostic identity, not authority to signal a future process.
+PID is diagnostic identity, not authority to signal a future process. The M3.1
+manager marks cleanup complete only after observing generation service/cgroup
+quiescence; artifact-write failures cannot block its fallback stop. See
+[service lifecycle](LIFECYCLE.md).
 
 Exact launch argv lives only in the private dedicated launch record. Callers must
 keep credentials out of argv and supply them via environment variables or files.

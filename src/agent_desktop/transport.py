@@ -17,8 +17,14 @@ CLEANUP_RESERVE = 16.0
 MAX_CONNECTIONS = 32
 
 
-def exchange(request):
+def exchange(request, *, deadline=None):
     """Pin once, connect once, send once. Never replay even a partial send."""
+    overall_deadline = deadline
+    def budget(limit):
+        remaining = limit if overall_deadline is None else min(limit, overall_deadline - time.monotonic())
+        if remaining <= 0:
+            raise TimeoutError
+        return remaining
     sent = False
     phase = "discovery"
     sock = None
@@ -32,11 +38,11 @@ def exchange(request):
         frame = encode(wire_request.payload())
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         phase = "connect"
-        sock.settimeout(CONNECT_SECONDS)
+        sock.settimeout(budget(CONNECT_SECONDS))
         sock.connect(str(path))
         peer_owner(sock)
         phase = "send"
-        deadline = time.monotonic() + FRAME_SECONDS
+        deadline = time.monotonic() + budget(FRAME_SECONDS)
         offset = 0
         while offset < len(frame):
             remaining = deadline - time.monotonic()
@@ -49,7 +55,7 @@ def exchange(request):
                 raise ConnectionError
             offset += count
         phase = "response"
-        deadline = time.monotonic() + request.timeout_seconds + CLEANUP_RESERVE + FRAME_SECONDS
+        deadline = time.monotonic() + budget(request.timeout_seconds + CLEANUP_RESERVE + FRAME_SECONDS)
         decoder = Decoder()
         while True:
             remaining = deadline - time.monotonic()
@@ -69,11 +75,11 @@ def exchange(request):
                 # priority connect/send fails, with no acknowledgement wait.
                 cancel = CancelRequest(uuid.uuid4().hex, request.session, generation, request.request_id)
                 with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
-                    limit = time.monotonic() + .1
-                    control.settimeout(.1)
+                    limit = time.monotonic() + budget(.1)
+                    control.settimeout(budget(.1))
                     control.connect(str(path.with_name("priority.sock")))
                     peer_owner(control)
-                    control.settimeout(max(.001, limit - time.monotonic()))
+                    control.settimeout(budget(limit - time.monotonic()))
                     control.sendall(encode(cancel.payload()))
             except (OSError, ContractError, KeyboardInterrupt):
                 pass

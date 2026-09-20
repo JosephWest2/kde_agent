@@ -51,7 +51,11 @@ class DependencyTests(unittest.TestCase):
         child = int(pidfile.read_text())
         for _ in range(50):
             state = Path(f"/proc/{child}/stat")
-            if not state.exists() or state.read_text().split(") ", 1)[1][0] == "Z":
+            try:
+                process_state = state.read_text().split(") ", 1)[1][0]
+            except (FileNotFoundError, ProcessLookupError):
+                break  # The kernel can reap it between opening and reading stat.
+            if process_state == "Z":
                 break
             time.sleep(0.01)
         else:

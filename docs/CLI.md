@@ -4,8 +4,11 @@ The CLI installs, validates requests and contacts a persistent worker over a
 private generation-bound socket. Help and version work. Desktop operations are
 unwired: absent sessions report `session_not_found`, while the transport-only
 worker returns `unsupported_operation` with its verified generation. `doctor` and
-`session start` remain locally unsupported. Ordinary scheduling and priority cancellation are implemented; durable records
-follow in #17; real desktop operations follow in later milestones. See the
+`session start` remain locally unsupported; start is gated on #20's full readiness probes.
+Managed service status/stop, ordinary scheduling, priority cancellation and durable
+records are implemented. Stop on an absent/already stopped session succeeds.
+See [service lifecycle](LIFECYCLE.md) for internal start, generation ownership and
+manager fallback; real desktop operations follow in later milestones. See the
 [transport contract](TRANSPORT.md) for the internal worker and verified limits.
 Examples of those future results below are illustrative, not support claims.
 

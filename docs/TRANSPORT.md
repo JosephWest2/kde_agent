@@ -4,8 +4,9 @@ The packaged foreground worker establishes private routing and protocol validati
 It does **not** establish a desktop, a ready session, production health, successful
 input, capture or lifecycle cleanup. `session start` and `doctor` remain locally
 unsupported. Established-session commands can contact this worker and receive
-`unsupported_operation` with verified session identity. If there is no routing
-record they return `session_not_found`; an unreachable recorded worker returns
+`unsupported_operation` with verified session identity. Managed lifecycle status/stop
+use the [generation-owned service manager](LIFECYCLE.md); an absent stop succeeds.
+If there is no routing record other commands return `session_not_found`; an unreachable recorded worker returns
 `session_unavailable`. Real lifecycle/adapters follow in M3 onward.
 
 ## Worker and ownership
@@ -19,7 +20,9 @@ python -m agent_desktop.worker --session NAME --generation GENERATION --artifact
 Run with the distribution Python/PyGObject selected in the M1 decision, or an
 installation that exposes those system bindings. CLI parsing, help, version and
 the client do not import gi. The entrypoint stays in the foreground and never
-launches an adapter or service. SIGTERM/SIGINT stops this transport process and
+launches an adapter or service. The manager's internal managed invocation attaches
+an already reserved generation and durable store; it provides only live control
+status with `desktop_ready: false`. SIGTERM/SIGINT stops this transport process and
 removes its owned endpoint; it does not pretend to implement session stop.
 Worker stdout/stderr are separate from the socket; only framed replies cross it.
 The explicit absolute artifact root must be outside disposable runtime. The worker
@@ -52,8 +55,9 @@ the name pointer only if it still names that generation. A bounded nonblocking
 per-name lock protects publication and conditional cleanup; lock files remain.
 The pointer is atomically published only after both listeners succeed. It is routing
 metadata, not a durable manifest or proof of desktop health. Crash residue and
-conflicting pointers are rejected; M3 supplies authoritative service/lifecycle
-reconciliation, including claim retirement.
+conflicting pointers are rejected by standalone workers. The M3.1 manager supplies
+live service reconciliation for its own metadata and retains generation claims and
+terminal name pointers, as described in [service lifecycle](LIFECYCLE.md).
 
 The client resolves a name once, checks any expected or handle-derived generation,
 and pins the immutable endpoint. Name-only lookup means the current generation at

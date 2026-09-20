@@ -188,11 +188,12 @@ class Manager:
             try:
                 store.generation_update(state='failed' if failed else 'stopped',
                                         failure='session_failed' if failed else None, cleanup='complete')
+                terminal_state = store.read()['state']
             finally:
                 store.close()
-            return True
+            return terminal_state
         except (ContractError, OSError):
-            return False
+            return None
 
     def _retire(self, runtime, data, *, failed=False):
         # Caller owns the name lock. Never remove a replacement pointer or claim.
@@ -210,19 +211,36 @@ class Manager:
                     path.unlink()
             except FileNotFoundError:
                 pass
-        return self._records(data, failed=data['state'] == 'failed')
+        terminal_state = self._records(data, failed=data['state'] == 'failed')
+        if terminal_state == 'failed' and data['state'] != 'failed':
+            # Artifact access happens only after fallback cleanup. Preserve any
+            # earlier sticky failure in the routing outcome as well.
+            data['state'] = 'failed'
+            self._write(runtime, data)
+        return terminal_state is not None
 
     def _stop(self, runtime, data, deadline, *, failed=False):
-        info = self._observe(runtime, data, deadline)
-        if not self._quiescent(data, info):
-            # Even a missing socket/blocked record lock cannot prevent this call.
-            if info['LoadState'] != 'not-found':
+        stop_submitted = False
+        while True:
+            info = self._observe(runtime, data, deadline)
+            # Preserve failure already observed before our requested termination.
+            # A later timeout/signal caused by that termination is not evidence
+            # of an earlier unexpected death.
+            prior_exit = self._quiescent(data, info) and data['state'] == 'starting'
+            if (not stop_submitted and data['state'] == 'starting'
+                    and (prior_exit or info['ActiveState'] == 'failed' or info['Result'] != 'success')):
+                failed = True
+            if self._quiescent(data, info):
+                break
+            if not stop_submitted and info['LoadState'] != 'not-found':
+                if runtime.read(data['session']) != data['generation']:
+                    raise ContractError('generation_mismatch', 'Stop generation is no longer current.')
+                # An ambiguous submission can become visible during this loop.
+                # Submit stop at its first observation, including pending jobs.
+                # Artifact attachment never precedes this fallback call.
                 self.systemd.stop(data, deadline)
-            while True:
-                info = self._observe(runtime, data, deadline)
-                if self._quiescent(data, info):
-                    break
-                time.sleep(min(.02, remaining(deadline)))
+                stop_submitted = True
+            time.sleep(min(.02, remaining(deadline)))
         return self._retire(runtime, data, failed=failed)
 
     def _ping(self, request, generation, deadline):

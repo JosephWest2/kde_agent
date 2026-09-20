@@ -232,6 +232,102 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(error.context['cleanup'], 'uncertain')
         self.assertEqual(error.context['resolved_generation'], Runtime().read('default'))
 
+    def test_late_ambiguous_submission_is_stopped_when_it_appears(self):
+        generation = self.start()
+        runtime = Runtime()
+        data = read_metadata(runtime, 'default', generation)
+        data['submission'] = 'uncertain'
+        self.manager._write(runtime, data)
+        self.services.active[unit_name(generation)] = False
+        inspect = self.services.inspect
+        observations = 0
+        def delayed(*args):
+            nonlocal observations
+            observations += 1
+            if observations == 2:
+                self.services.active[unit_name(generation)] = True
+            return inspect(*args)
+        with patch.object(self.services, 'inspect', side_effect=delayed):
+            result = self.manager.handle(self.request('session.stop', generation=generation, timeout=.2))
+        self.assertTrue(result['ok'])
+        self.assertGreaterEqual(observations, 3)
+        self.assertEqual(self.services.calls.count(('stop', unit_name(generation))), 1)
+        self.assertFalse(self.services.active[unit_name(generation)])
+        self.assertEqual(read_metadata(runtime, 'default', generation)['state'], 'stopped')
+
+    def test_late_stop_does_not_touch_a_replacement_pointer(self):
+        generation = self.start()
+        runtime = Runtime()
+        data = read_metadata(runtime, 'default', generation)
+        data['submission'] = 'uncertain'
+        self.manager._write(runtime, data)
+        self.services.active[unit_name(generation)] = False
+        inspect = self.services.inspect
+        observations = 0
+        replacement = 'f' * 32
+        def delayed(*args):
+            nonlocal observations
+            observations += 1
+            if observations == 2:
+                self.services.active[unit_name(generation)] = True
+                atomic(runtime.current / 'default.json', dict(schema_version=1, session='default', generation=replacement))
+            return inspect(*args)
+        with patch.object(self.services, 'inspect', side_effect=delayed):
+            with self.assertRaises(ContractError) as caught:
+                self.manager.handle(self.request('session.stop', timeout=.2))
+        self.assertEqual(caught.exception.code, 'generation_mismatch')
+        self.assertNotIn(('stop', unit_name(generation)), self.services.calls)
+        self.assertEqual(runtime.read('default'), replacement)
+
+    def test_stop_preserves_observed_unexpected_failure_without_status(self):
+        generation = self.start()
+        self.services.active[unit_name(generation)] = False
+        inspect = self.services.inspect
+        def failed(*args):
+            return inspect(*args) | {'LoadState': 'loaded', 'ActiveState': 'failed', 'Result': 'signal'}
+        with patch.object(self.services, 'inspect', side_effect=failed):
+            result = self.manager.handle(self.request('session.stop'))
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['result']['state'], 'failed')
+        manifest = json.loads((self.root / 'artifacts' / 'generations' / generation / 'manifest.json').read_text())
+        self.assertEqual(manifest['state'], 'failed')
+        self.assertEqual(manifest['first_failure'], 'session_failed')
+        self.assertEqual(manifest['cleanup']['state'], 'complete')
+
+    def test_sticky_artifact_failure_reconciles_routing_after_stop(self):
+        from agent_desktop.artifacts import Store
+        generation = self.start()
+        store = Store(str(self.root / 'artifacts'), 'default', generation)
+        try:
+            store.generation_update(state='failed', failure='input_failed')
+        finally:
+            store.close()
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'failed')
+        self.assertEqual(read_metadata(Runtime(), 'default', generation)['state'], 'failed')
+        for operation in ('session.stop', 'session.status'):
+            self.assertEqual(self.manager.handle(self.request(operation))['result']['state'], 'failed')
+        manifest = json.loads((self.root / 'artifacts' / 'generations' / generation / 'manifest.json').read_text())
+        self.assertEqual(manifest['first_failure'], 'input_failed')
+
+    def test_unexpected_clean_worker_exit_is_failed_on_stop(self):
+        generation = self.start()
+        self.services.active[unit_name(generation)] = False
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'failed')
+        self.assertEqual(read_metadata(Runtime(), 'default', generation)['state'], 'failed')
+
+    def test_requested_fallback_signal_does_not_become_a_prior_crash_on_repeat(self):
+        generation = self.start()
+        result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'stopped')
+        inspect = self.services.inspect
+        def failed_unit(*args):
+            return inspect(*args) | {'LoadState': 'loaded', 'ActiveState': 'failed', 'Result': 'timeout'}
+        with patch.object(self.services, 'inspect', side_effect=failed_unit):
+            result = self.manager.handle(self.request('session.stop'))
+        self.assertEqual(result['result']['state'], 'stopped')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,7 +6,7 @@
   "cli.py": "babc665c96eaf0abfd313b584fb5753280f2065bc80c24dd0bf789c8d5af6b03",
   "contracts.py": "99c60803f90846d20c0b8875b320ef0e30c3b923eeba8e68b6479931db58cb7f",
   "environment.py": "b56d042fa430f4e9dd430ab5105553bcd364e141704115f11f60e8c55e453b3c",
-  "lifecycle.py": "0fec4052cc596fe0bd881405a73914d0712c67ae0bbb1fe7556bc06410b46b13",
+  "lifecycle.py": "8dd30a11af72f1bd615c8eec866b18f99cb99c11e0ff94822141cc5b5ea337a3",
   "paths.py": "329640a381c2cfe8fc0cdae0ca832413ccff07e2b7b4caa1ab40bc1e6b45a767",
   "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
   "records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",

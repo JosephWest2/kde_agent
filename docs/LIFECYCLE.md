@@ -49,7 +49,9 @@ until the exact unit is observed. An absent unit cannot prove that a delayed
 submission will never materialize; the manager therefore refuses replacement or
 successful retirement of an unresolved submission. A failed manager query also
 never counts as proof of absence. A later observation of that exact unit permits
-normal reconciliation. There is no automatic unsafe reservation reset.
+normal reconciliation. A stop already waiting for that submission issues exact-unit
+termination when it first becomes visible, within its original deadline. There is
+no automatic unsafe reservation reset.
 
 ## Manager and shutdown bounds
 
@@ -84,8 +86,11 @@ Artifact attachment/update happens after termination, so a blocked or damaged
 artifact record cannot prevent fallback stop. Successful stop reports
 `records_preserved: false` if its terminal record could not be updated; it does
 not claim that write succeeded. Repeating stop can repair that bookkeeping when
-storage becomes available. Earlier manifest failure outcomes are preserved.
-Worker exit only records uncertain cleanup; the manager asserts completion after
+storage becomes available. Earlier manifest failure outcomes are preserved and reconciled into the lifecycle
+result. If stop is the first call after unexpected worker death (including a clean
+exit before a stop request), it retains a failed outcome while completing cleanup.
+A timeout/signal caused by an earlier requested stop does not turn its stopped
+tombstone into a prior crash. Worker exit only records uncertain cleanup; the manager asserts completion after
 its cgroup observation. Unexpected worker death is reconciled on a later lifecycle
 call. Autonomous terminal hooks and ordered release/window-close attempts remain
 #21; private desktop health and capability readiness remain #19–#20.

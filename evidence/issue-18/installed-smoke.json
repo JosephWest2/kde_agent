@@ -2,22 +2,22 @@
   "cases": {
     "concurrent_duplicate_and_ordinary_descendants": {
       "all_owned_lifetimes_exited": true,
-      "generation": "a25a67f274544bc695964b5a79d6dbef",
+      "generation": "776160c9a16b43b182360acfc4d2e25e",
       "identities": [
         {
-          "pid": 751560,
+          "pid": 766749,
           "producer": "worker",
-          "service": "agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
-          "start_ticks": "11085515",
+          "service": "agent-desktop-776160c9a16b43b182360acfc4d2e25e.service",
+          "start_ticks": "11127496",
           "state": "collected"
         },
         {
-          "pid": 751564,
-          "start_ticks": "11085519"
+          "pid": 766752,
+          "start_ticks": "11127500"
         },
         {
-          "pid": 751566,
-          "start_ticks": "11085521"
+          "pid": 766754,
+          "start_ticks": "11127502"
         }
       ],
       "manifest": {
@@ -25,7 +25,7 @@
           "failure": null,
           "state": "complete"
         },
-        "created_at": "2026-09-20T06:45:06.269735+00:00",
+        "created_at": "2026-09-20T06:52:06.084209+00:00",
         "dependencies": {
           "native": "not_collected",
           "observed": {
@@ -36,7 +36,7 @@
           "state": "partial"
         },
         "first_failure": null,
-        "generation": "a25a67f274544bc695964b5a79d6dbef",
+        "generation": "776160c9a16b43b182360acfc4d2e25e",
         "mode": "headless",
         "outcome": "stopped",
         "output": {
@@ -50,10 +50,10 @@
           "state": "not_collected"
         },
         "process": {
-          "pid": 751560,
+          "pid": 766749,
           "producer": "worker",
-          "service": "agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
-          "start_ticks": "11085515",
+          "service": "agent-desktop-776160c9a16b43b182360acfc4d2e25e.service",
+          "start_ticks": "11127496",
           "state": "collected"
         },
         "records": {
@@ -70,25 +70,25 @@
         "schema_version": 1,
         "session": "default",
         "state": "stopped",
-        "updated_at": "2026-09-20T06:45:06.604757+00:00"
+        "updated_at": "2026-09-20T06:52:06.391153+00:00"
       },
       "properties": [
         "Restart=no",
         "TimeoutStopUSec=3s",
-        "ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-a25a67f274544bc695964b5a79d6dbef.service",
+        "ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/agent-desktop-776160c9a16b43b182360acfc4d2e25e.service",
         "KillMode=control-group"
       ],
-      "stop_seconds": 0.07471454500046093
+      "stop_seconds": 0.0685789900016971
     },
     "packaged_worker_separate_installed_cli": {
       "controller_exited": true,
-      "generation": "1a8aab0bc96f4cd7a2f6361c83ed47aa",
+      "generation": "e1ded4261c964f9ea545e83f2a4b40b9",
       "manifest": {
         "cleanup": {
           "failure": null,
           "state": "complete"
         },
-        "created_at": "2026-09-20T06:45:06.010523+00:00",
+        "created_at": "2026-09-20T06:52:05.840335+00:00",
         "dependencies": {
           "native": "not_collected",
           "observed": {
@@ -99,7 +99,7 @@
           "state": "partial"
         },
         "first_failure": null,
-        "generation": "1a8aab0bc96f4cd7a2f6361c83ed47aa",
+        "generation": "e1ded4261c964f9ea545e83f2a4b40b9",
         "mode": "headless",
         "outcome": "stopped",
         "output": {
@@ -113,10 +113,10 @@
           "state": "not_collected"
         },
         "process": {
-          "pid": 751537,
+          "pid": 766726,
           "producer": "worker",
-          "service": "agent-desktop-1a8aab0bc96f4cd7a2f6361c83ed47aa.service",
-          "start_ticks": "11085489",
+          "service": "agent-desktop-e1ded4261c964f9ea545e83f2a4b40b9.service",
+          "start_ticks": "11127472",
           "state": "collected"
         },
         "records": {
@@ -133,18 +133,18 @@
         "schema_version": 1,
         "session": "packaged",
         "state": "stopped",
-        "updated_at": "2026-09-20T06:45:06.235960+00:00"
+        "updated_at": "2026-09-20T06:52:06.052463+00:00"
       }
     },
     "replacement_stale_requests_frozen_lock_missing_socket": {
       "all_owned_lifetimes_exited": true,
-      "generation": "e1058dab56274e7cb7a2aeafffcbee0e",
+      "generation": "d95b3136c6ae4df1b779b8be5da58b5b",
       "manifest": {
         "cleanup": {
           "failure": null,
           "state": "complete"
         },
-        "created_at": "2026-09-20T06:45:06.645531+00:00",
+        "created_at": "2026-09-20T06:52:06.429012+00:00",
         "dependencies": {
           "native": "not_collected",
           "observed": {
@@ -155,7 +155,7 @@
           "state": "partial"
         },
         "first_failure": null,
-        "generation": "e1058dab56274e7cb7a2aeafffcbee0e",
+        "generation": "d95b3136c6ae4df1b779b8be5da58b5b",
         "mode": "headless",
         "outcome": "stopped",
         "output": {
@@ -169,10 +169,10 @@
           "state": "not_collected"
         },
         "process": {
-          "pid": 751588,
+          "pid": 766775,
           "producer": "worker",
-          "service": "agent-desktop-e1058dab56274e7cb7a2aeafffcbee0e.service",
-          "start_ticks": "11085553",
+          "service": "agent-desktop-d95b3136c6ae4df1b779b8be5da58b5b.service",
+          "start_ticks": "11127531",
           "state": "collected"
         },
         "records": {
@@ -189,11 +189,67 @@
         "schema_version": 1,
         "session": "default",
         "state": "stopped",
-        "updated_at": "2026-09-20T06:45:10.213375+00:00"
+        "updated_at": "2026-09-20T06:52:09.912502+00:00"
       },
       "status_error": "session_unavailable",
-      "status_seconds": 0.1494187329954002,
-      "stop_seconds": 3.1111080260016024
+      "status_seconds": 0.13784547499381006,
+      "stop_seconds": 3.0691449840087444
+    },
+    "sigkill_then_stop_without_status_preserves_failure": {
+      "generation": "e00656be2bf4471c8aa817a719a6f45b",
+      "manifest": {
+        "cleanup": {
+          "failure": "session_failed",
+          "state": "complete"
+        },
+        "created_at": "2026-09-20T06:52:09.951068+00:00",
+        "dependencies": {
+          "native": "not_collected",
+          "observed": {
+            "agent_desktop": "0.1.0",
+            "python": "3.14.7"
+          },
+          "producer": "M3/doctor",
+          "state": "partial"
+        },
+        "first_failure": "session_failed",
+        "generation": "e00656be2bf4471c8aa817a719a6f45b",
+        "mode": "headless",
+        "outcome": "failed",
+        "output": {
+          "observed": null,
+          "producer": "M3 startup",
+          "requested": {
+            "height": 720,
+            "scale": 1,
+            "width": 1280
+          },
+          "state": "not_collected"
+        },
+        "process": {
+          "pid": 767062,
+          "producer": "worker",
+          "service": "agent-desktop-e00656be2bf4471c8aa817a719a6f45b.service",
+          "start_ticks": "11127883",
+          "state": "collected"
+        },
+        "records": {
+          "applications": "applications",
+          "events": "events.jsonl",
+          "logs": {
+            "bus": "logs/bus.log",
+            "compositor": "logs/compositor.log",
+            "worker": "logs/worker.log"
+          },
+          "requests": "requests"
+        },
+        "revision": 4,
+        "schema_version": 1,
+        "session": "default",
+        "state": "failed",
+        "updated_at": "2026-09-20T06:52:10.182151+00:00"
+      },
+      "repeated_stop_status_stay_failed": true
     }
   },
   "desktop_ready": false,
@@ -206,7 +262,7 @@
     "cli.py": "babc665c96eaf0abfd313b584fb5753280f2065bc80c24dd0bf789c8d5af6b03",
     "contracts.py": "99c60803f90846d20c0b8875b320ef0e30c3b923eeba8e68b6479931db58cb7f",
     "environment.py": "b56d042fa430f4e9dd430ab5105553bcd364e141704115f11f60e8c55e453b3c",
-    "lifecycle.py": "0fec4052cc596fe0bd881405a73914d0712c67ae0bbb1fe7556bc06410b46b13",
+    "lifecycle.py": "8dd30a11af72f1bd615c8eec866b18f99cb99c11e0ff94822141cc5b5ea337a3",
     "paths.py": "329640a381c2cfe8fc0cdae0ca832413ccff07e2b7b4caa1ab40bc1e6b45a767",
     "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
     "records.py": "0cf4b13175fdbe8d29071cfe4c6576309c1d7d24000401ea7f4e4dffc5da8e34",

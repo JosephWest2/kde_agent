@@ -130,6 +130,23 @@ print(json.dumps(Manager().start(r)))
         receipt['cases']['replacement_stale_requests_frozen_lock_missing_socket'] = {
             'generation': replacement, 'status_seconds': status_seconds, 'status_error': unavailable['error']['code'],
             'stop_seconds': elapsed, 'all_owned_lifetimes_exited': True, 'manifest': manifest(replacement)}
+        crashed = controller()['session']['generation']
+        identity = manifest(crashed)['process']
+        os.kill(identity['pid'], signal.SIGKILL)
+        unit = 'agent-desktop-' + crashed + '.service'
+        deadline = time.monotonic() + 5
+        while subprocess.check_output(['/usr/bin/systemctl', '--user', 'show', unit, '-p', 'Result', '--value'],
+                env=manager_env, text=True).strip() != 'signal':
+            assert time.monotonic() < deadline
+            time.sleep(.01)
+        crash_stop = call('stop')
+        assert crash_stop['ok'] and crash_stop['result']['state'] == 'failed'
+        for operation in ('stop', 'status'):
+            assert call(operation)['result']['state'] == 'failed'
+        crash_manifest = manifest(crashed)
+        assert crash_manifest['first_failure'] == 'session_failed' and crash_manifest['cleanup']['state'] == 'complete'
+        receipt['cases']['sigkill_then_stop_without_status_preserves_failure'] = {
+            'generation': crashed, 'manifest': crash_manifest, 'repeated_stop_status_stay_failed': True}
         assert not call('start')['ok'], 'Public readiness gate must remain closed until #20.'
         receipt['public_start_gated_on_readiness'] = True
     finally:

@@ -161,6 +161,33 @@ class LifecycleProcessTests(unittest.TestCase):
         self.assertEqual(status['result']['state'], 'failed', status)
         self.assertEqual(self.manifest(live)['first_failure'], 'session_failed')
 
+    def test_direct_stop_after_sigkill_retains_failure(self):
+        generation = self.controller()['session']['generation']
+        manifest = self.manifest(generation)
+        identities = [manifest['process'], *self.children(generation)]
+        os.kill(manifest['process']['pid'], signal.SIGKILL)
+        # Observe the actual service failure, without a toolkit status call that
+        # could mask whether stop itself performs the reconciliation.
+        deadline = time.monotonic() + 5
+        while True:
+            state = subprocess.check_output(['/usr/bin/systemctl', '--user', 'show',
+                    'agent-desktop-' + generation + '.service', '-p', 'Result', '--value'],
+                    env=self.manager_env, text=True).strip()
+            if state == 'signal':
+                break
+            self.assertLess(time.monotonic(), deadline)
+            time.sleep(.01)
+        result = self.cli('stop')
+        self.assertTrue(result['ok'], result)
+        self.assertEqual(result['result']['state'], 'failed')
+        manifest = self.manifest(generation)
+        self.assertEqual(manifest['state'], 'failed')
+        self.assertEqual(manifest['first_failure'], 'session_failed')
+        self.assertEqual(manifest['cleanup']['state'], 'complete')
+        for operation in ('stop', 'status'):
+            self.assertEqual(self.cli(operation)['result']['state'], 'failed')
+        self.assertTrue(all(self.gone(identity) for identity in identities))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,10 +1,12 @@
 # Issue #18 service lifecycle evidence
 
-The complete suite passed **165 tests in 14.721s** on the recorded systemd
+The complete suite passed **172 tests in 15.249s** on the recorded systemd
 261.3-1 target. It includes real user services, parallel duplicate starts,
-start/stop ordering, worker death, child/grandchild cgroup cleanup, frozen-worker
+start/stop ordering, worker death followed directly by stop, child/grandchild cgroup cleanup, frozen-worker
 fallback, generation replacement rejection and deterministic ownership/deadline
-failure cases. An existing dependency-test `/proc` read was narrowly corrected to
+failure cases. Fresh-review regressions also cover late ambiguous service appearance,
+unexpected clean worker exit, sticky artifact failures and repeated stop/status
+after failure. An existing dependency-test `/proc` read was narrowly corrected to
 accept kernel reaping between open/read; its initial failing run is not presented
 as successful validation.
 

@@ -4,8 +4,8 @@ The CLI installs, validates requests and contacts a persistent worker over a
 private generation-bound socket. Help and version work. Desktop operations are
 unwired: absent sessions report `session_not_found`, while the transport-only
 worker returns `unsupported_operation` with its verified generation. `doctor` and
-`session start` remain locally unsupported. Scheduling and durable records follow
-in #16–17; real desktop operations follow in later milestones. See the
+`session start` remain locally unsupported. Ordinary scheduling and priority cancellation are implemented; durable records
+follow in #17; real desktop operations follow in later milestones. See the
 [transport contract](TRANSPORT.md) for the internal worker and verified limits.
 Examples of those future results below are illustrative, not support claims.
 
@@ -210,7 +210,7 @@ No generic success claim is made when an application remains alive.
 
 The command table defines finite *work* budgets. The transport worker admits a
 monotonic deadline and checks success acceptance; its production dispatcher fails
-unwired operations immediately. #16 supplies cancellable task execution and queue
+unwired operations immediately. The worker supplies cancellable task execution and queue
 deadlines, including queue delay; a client socket timeout is not enforcement. Composite operations share one budget: target
 checks, focus verification and key holds must all fit the remaining input time.
 Individually valid settings do not guarantee completion within that time.
@@ -230,7 +230,7 @@ more frequently than 100ms between starts, query work at most 500ms, and holds a
 most 2s. They require renewed production validation; they are not real-time
 promises. Required cleanup continues after caller departure. Cancellation, reset
 and stop bypass ordinary queued work and signal its owning execution context.
-See [M1 evidence and limitations](M1_DECISION.md).
+See [scheduler semantics](SCHEDULING.md) and [M1 evidence and limitations](M1_DECISION.md).
 
 ## Verification
 

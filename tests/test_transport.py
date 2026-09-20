@@ -19,7 +19,7 @@ from agent_desktop.contracts import ContractError, make_request, response
 from agent_desktop.protocol import (Decoder, MAX_FRAME, decode, encode,
                                     request_from_wire, validate_response)
 from agent_desktop.runtime import Endpoint, Runtime, peer_owner
-from agent_desktop.transport import exchange
+from agent_desktop.transport import Admission, Connection, exchange
 
 GEN = "a" * 32
 OTHER = "b" * 32
@@ -100,6 +100,7 @@ class RuntimeTests(unittest.TestCase):
             for path in (endpoint.runtime.root, endpoint.runtime.current, endpoint.runtime.generations, endpoint.path.parent):
                 self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o700)
             self.assertEqual(stat.S_IMODE(endpoint.path.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(endpoint.priority_path.stat().st_mode), 0o600)
             pointer = endpoint.runtime.current / "default.json"
             self.assertEqual(stat.S_IMODE(pointer.stat().st_mode), 0o600)
             inode = endpoint.path.stat().st_ino
@@ -166,6 +167,7 @@ class RuntimeTests(unittest.TestCase):
         runtime = Runtime()
         self.assertTrue(runtime.socket_path(GEN).parent.is_dir())
         self.assertFalse(runtime.socket_path(GEN).exists())
+        self.assertFalse(runtime.socket_path(GEN, priority=True).exists())
         self.assertFalse((runtime.current / "default.json").exists())
         endpoint = Endpoint("default", OTHER)
         try:
@@ -174,6 +176,19 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.read("default"), OTHER)
         finally:
             endpoint.close()
+
+    def test_second_socket_bind_failure_never_publishes_or_removes_unowned_file(self):
+        original = socket.socket.bind
+        def bind(sock, path):
+            if path.endswith("priority.sock"):
+                Path(path).write_text("collision")
+            return original(sock, path)
+        with patch.object(socket.socket, "bind", bind), self.assertRaises(OSError):
+            Endpoint("default", GEN)
+        runtime = Runtime()
+        self.assertFalse(runtime.socket_path(GEN).exists())
+        self.assertEqual(runtime.socket_path(GEN, priority=True).read_text(), "collision")
+        self.assertFalse((runtime.current / "default.json").exists())
 
     def test_bad_pointer_peer_and_path_length(self):
         runtime = Runtime(create=True)
@@ -398,6 +413,39 @@ class ProcessTests(unittest.TestCase):
         while not (self.root / "disconnected").exists() and time.monotonic() < deadline:
             time.sleep(.01)
         self.assertEqual((self.root / "disconnected").read_text(), json.loads(out)["request_id"])
+
+
+class FinalAcceptanceTests(unittest.TestCase):
+    def test_encoding_time_counts_before_success_acceptance(self):
+        server = unittest.mock.Mock()
+        server.name, server.generation, server.active = "default", GEN, {}
+        with socket.socket(socket.AF_UNIX) as sock:
+            connection = Connection(server, sock)
+            admission = Admission(connection, request())
+            connection.admission = admission
+            admission.deadline = .05
+            with patch("agent_desktop.transport.time.monotonic", side_effect=[0, .1, .1]):
+                admission.complete(result={"application": {"generation": GEN, "application_id": "kept"}})
+            self.assertEqual(admission.final_payload["error"]["code"], "timeout")
+            self.assertEqual(admission.final_payload["error"]["partial_result"]["application"]["application_id"], "kept")
+
+    def test_final_notification_retains_actual_late_error_even_after_disconnect(self):
+        connection = unittest.mock.Mock()
+        connection.server.name, connection.server.generation = "default", GEN
+        connection.server.active = {}
+        connection.final_payload = None
+        req = request()
+        admission = Admission(connection, req)
+        admission.deadline = 0
+        admission.disconnected = True
+        observed = []
+        admission.on_terminal = observed.append
+        admission.complete(result={"application": {"generation": GEN, "application_id": "kept"}})
+        self.assertEqual(observed[0]["error"]["code"], "timeout")
+        self.assertEqual(observed[0]["error"]["partial_result"]["application"]["application_id"], "kept")
+        self.assertEqual(admission.final_payload, observed[0])
+        admission.complete(result={})
+        self.assertEqual(len(observed), 1)
 
 
 class ClientTests(unittest.TestCase):

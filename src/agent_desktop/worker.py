@@ -7,18 +7,23 @@ import sys
 from .contracts import ContractError, dispatch
 from .runtime import Endpoint
 from .transport import Server
+from .scheduler import Scheduler, UnsupportedTask
+from .children import Children
 
 
 def unsupported(request, admission):
     dispatch(request)
 
 
-def run(name, generation, *, handler=unsupported):
+def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None):
     # Internal Python injection is for tests and future owners, never a CLI plugin.
     from gi.repository import GLib
     endpoint = Endpoint(name, generation)
     try:
-        server = Server(endpoint, GLib, handler)
+        children = Children()
+        scheduler = Scheduler(factory=factory, capabilities=capabilities, observer=observer, children=children)
+        server = Server(endpoint, GLib, handler or scheduler.submit,
+                        cancel=scheduler.cancel, after_io=scheduler.tick)
     except BaseException:
         endpoint.close()
         raise
@@ -34,6 +39,7 @@ def run(name, generation, *, handler=unsupported):
             if context.find_source_by_id(source) is not None:
                 GLib.source_remove(source)
         server.close()
+        children.close()
 
 
 def main(argv=None):

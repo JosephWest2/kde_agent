@@ -63,6 +63,32 @@ class FinalizerTests(unittest.TestCase):
         self.assertFalse(result['result']['records_preserved'])
         self.assertEqual(result['result']['state'], 'stopped')
 
+    def test_uncertain_submission_acknowledgment_write_failure_cannot_gate_stop(self):
+        runtime, data, root = self.setup_generation()
+        data['submission'] = 'uncertain'
+        self.manager._write(runtime, data)
+        with patch.object(self.manager, '_write', side_effect=PermissionError('acknowledgment read-only')):
+            result = self.manager.handle(self.request('session.stop'))
+        self.assertIn(('stop', data['unit']), self.services.calls)
+        self.assertFalse(self.services.active[data['unit']])
+        self.assertFalse(result['result']['records_preserved'])
+        self.assertEqual(result['result']['cleanup'], 'complete')
+        self.assertEqual(read_metadata(runtime, 'default', data['generation'])['submission'], 'acknowledged')
+        self.assertEqual(self.manager.handle(self.request('session.status'))['result']['state'], 'stopped')
+
+    def test_uncertain_submission_and_busy_generation_lock_still_stop(self):
+        runtime, data, root = self.setup_generation()
+        data['submission'] = 'uncertain'
+        self.manager._write(runtime, data)
+        with generation_lock(runtime, data['generation']):
+            with self.assertRaises(ContractError):
+                self.manager.handle(self.request('session.stop'))
+            self.assertIn(('stop', data['unit']), self.services.calls)
+            self.assertFalse(self.services.active[data['unit']])
+        # Without a functioning post recorder, an unloaded uncertain generation
+        # stays reserved; disappearance alone cannot disprove a late submission.
+        self.assertEqual(read_metadata(runtime, 'default', data['generation'])['submission'], 'uncertain')
+
     def test_busy_generation_lock_cannot_prevent_verified_unit_fallback(self):
         runtime, data, root = self.setup_generation()
         with generation_lock(runtime, data['generation']):

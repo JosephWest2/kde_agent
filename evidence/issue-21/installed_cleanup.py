@@ -259,6 +259,21 @@ def main(output, dependencies, selected):
                                 continue
                             if item['comm'] in ('dbus-daemon', 'kwin_wayland'):
                                 case['identities']['bus' if item['comm'] == 'dbus-daemon' else 'kwin'] = item
+                    if key == 'worker-freeze-generation-lock':
+                        # Model a lost service-submission acknowledgment through
+                        # the same installed generation serialization as writers.
+                        from agent_desktop.lifecycle import atomic, read_metadata
+                        from agent_desktop.ownership import generation_lock
+                        from agent_desktop.runtime import Runtime
+                        owner = Runtime()
+                        with generation_lock(owner, data['generation']) as generation_root:
+                            uncertain = read_metadata(owner, name, data['generation'])
+                            assert uncertain['unit'] == data['unit'] and owner.read(name) == data['generation']
+                            assert uncertain['submission'] == 'acknowledged'
+                            uncertain['submission'] = 'uncertain'
+                            atomic(generation_root / 'lifecycle.json', uncertain)
+                            case['pre_freeze_metadata'] = uncertain
+                            data = uncertain
                     sockets = []
                     if key in ('normalstop', 'disconnect', 'managerstop', 'stale-replay', 'blocked-release'):
                         action, _ = raw(data, 'windows')
@@ -368,6 +383,8 @@ def main(output, dependencies, selected):
                     case['post_duration_seconds'] = terminal['finished_at'] - terminal['started_at']
                     if key == 'worker-freeze-generation-lock':
                         assert terminal['stop_intent'] is None
+                        case['post_cleanup_metadata'] = metadata(name)
+                        assert case['post_cleanup_metadata']['submission'] == 'acknowledged'
                     if key in ('prior-failure-stop', 'prior-failure-stop-recordfail'):
                         assert observation['manifest.json']['first_failure'] == 'session_failed'
                         assert terminal['stop_intent']['origin'] == 'manager_request'

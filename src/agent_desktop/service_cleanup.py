@@ -86,7 +86,12 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
     from .desktop import dispose
     current(runtime, data)
     root = runtime.socket_path(data['generation']).parent
+    known_submission = data['submission']
     data = read_metadata(runtime, data['session'], data['generation'])
+    if inside or known_submission == 'acknowledged':
+        # Actual authenticated hook execution or the caller's unit observation
+        # proves submission even if earlier acknowledgment persistence failed.
+        data['submission'] = 'acknowledged'
     if failed:
         data['state'] = 'failed'
     try:

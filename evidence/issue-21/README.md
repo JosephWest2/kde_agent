@@ -49,6 +49,10 @@ The `prior-failure-stop-recordfail` variant additionally makes the worker's
 failed-state manifest write raise an error, while preserving its real failure
 receipt. The fresh finalizer must retain the earlier failure even though the
 pre-stop manifest still says ready with no first failure.
+The held-generation-lock case first marks service submission uncertain under the
+installed generation lock. Stop must submit its service job without waiting to
+write the acknowledgment, and the autonomous post hook must repair that missing
+acknowledgment after terminating the frozen owner.
 
 The fixture imports installed product modules without altering `sys.path`.
 It supplies provisional native readiness and Python-only shutdown observers.

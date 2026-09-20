@@ -218,14 +218,17 @@ class Manager:
         from .ownership import write_metadata
         write_metadata(runtime, data)
 
-    def _observe(self, runtime, data, deadline):
+    def _observe(self, runtime, data, deadline, *, persist=True):
+        known_submission = data['submission']
         info = self.systemd.inspect(data, deadline)
         remaining(deadline)
         # The autonomous post hook may have finalized while inspection ran.
         data.update(read_metadata(runtime, data['session'], data['generation']))
-        if data['submission'] == 'uncertain' and info['LoadState'] != 'not-found':
+        if (data['submission'] == 'uncertain'
+                and (known_submission == 'acknowledged' or info['LoadState'] != 'not-found')):
             data['submission'] = 'acknowledged'
-            self._write(runtime, data)
+            if persist:
+                self._write(runtime, data)
         return info
 
     def _quiescent(self, data, info):
@@ -246,7 +249,7 @@ class Manager:
         stop_submitted = False
         bookkeeping_uncertain = False
         while True:
-            info = self._observe(runtime, data, deadline)
+            info = self._observe(runtime, data, deadline, persist=False)
             # Preserve failure already observed before our requested termination.
             # A later timeout/signal caused by that termination is not evidence
             # of an earlier unexpected death.

@@ -130,6 +130,12 @@ class ObservationBudgetTests(unittest.TestCase):
         self.assertFalse(state['all_exited'])
         self.assertIsNone(state['remaining_processes'])
 
+    def test_missing_root_metadata_remains_unavailable(self):
+        self.app.observe(force=True)
+        state = self.registry.application_process_state(self.app.handle)
+        self.assertIsNone(state['root_reaped'])
+        self.assertIsNone(state['root_returncode'])
+
     def test_cached_process_state_is_constant_size_and_uncertainty_is_explicit(self):
         (self.root / 'cgroup.events').write_text('populated 1\n')
         self.app.observe(force=True)

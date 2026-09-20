@@ -193,7 +193,7 @@ class Application:
                 self.state = 'root-exited' if self.authorized else 'launch-failed'
                 self.dirty = True
         populated = self.populated()
-        self.process_state = {'root_reaped': self.child is not None and self.child.returncode is not None,
+        self.process_state = {'root_reaped': None if self.child is None else self.child.returncode is not None,
                               'root_returncode': self.exit_code, 'subtree_populated': populated,
                               'all_exited': False, 'observed_at': time.monotonic(),
                               'remaining_processes': None, 'enumeration': 'unavailable'}

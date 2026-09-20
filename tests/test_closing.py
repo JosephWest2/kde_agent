@@ -317,3 +317,22 @@ class CloseTests(unittest.TestCase):
             self.assertEqual(record['references']['close_state']['dispatch'], 'transport_completed')
             self.assertTrue(record['references']['process_state']['subtree_populated'])
             self.assertFalse(self.exited)
+
+    def test_real_query_reserve_survives_work_timeout_and_frees_adapter(self):
+        owner = self.owner([snapshot(), None])
+        self.dispatch(owner)
+        self.step(owner, .1)
+        adapter = NS(desktop=NS(), registry=None, generation=GEN)
+        query = Query(adapter, 'request', 2, None)
+        adapter.active = query
+        query._local_cleanup = lambda: self.clock[0] >= 2.1
+        owner.operation = query
+        self.exited = True
+        self.step(owner, 1.9)
+        self.assertEqual(query.cleanup_deadline, 3.4)
+        self.error(owner, 'timeout', 2)
+        self.clock[0] = 2.1
+        self.assertTrue(owner.cleanup(3.5))
+        self.assertEqual(query.cleanup_deadline, 3.4)
+        self.assertTrue(query.done)
+        self.assertIsNone(adapter.active)

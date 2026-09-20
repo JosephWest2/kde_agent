@@ -525,6 +525,19 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(self.effects[-1]['logs'], self.task.app.logs)
         self.assertIs(self.registry.active, self.task.app)
 
+    def test_record_failure_after_exec_ack_retains_known_partial_launch(self):
+        self.advance(lambda: self.task.phase == 'exec')
+        self.context.effects = Mock()
+        with patch.object(self.task.app, 'persist', side_effect=ContractError('artifact_failed', 'record')):
+            with self.assertRaises(ContractError) as caught:
+                self.advance(lambda: self.task.phase == 'done')
+        self.assertEqual(caught.exception.code, 'artifact_failed')
+        self.assertTrue(self.task.exec_confirmed)
+        self.task.request_cancel('artifact_failed')
+        self.assertFalse(self.context.effects.call_args.kwargs['uncertain'])
+        self.assertEqual(self.context.effects.call_args.args[0]['application'], self.task.app.handle)
+        self.assertIsNone(self.task.app.child.process.poll())
+
     def test_prelaunch_artifact_failure_prevents_spawn(self):
         with patch.object(self.store, 'allocate', side_effect=ContractError('artifact_failed', 'test')):
             with self.assertRaises(ContractError):

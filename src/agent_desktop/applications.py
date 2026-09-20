@@ -23,12 +23,13 @@ class LaunchTask:
         self.deadline = context.work.admission.deadline
         self.handshake = None
         self.exec_receipt = b''
+        self.exec_confirmed = False
         self.adapter = adapter
         self.window_wait = None
 
     def retain(self):
         if self.app is not None and self.app.authorized:
-            self.context.effects(self.app.snapshot(), uncertain=self.phase in ('ready', 'exec'))
+            self.context.effects(self.app.snapshot(), uncertain=not self.exec_confirmed)
 
     def check(self):
         if self.cancelled:
@@ -143,6 +144,7 @@ class LaunchTask:
         self.registry.children.poll()
         if self.exec_receipt != b'X' or (self.app.child.returncode is not None and self.app.child.returncode < 0):
             raise ContractError('completion_unknown', 'Application execution could not be confirmed.', outcome='unknown')
+        self.exec_confirmed = True
         self.app.state = 'running' if self.app.child.returncode is None else 'root-exited'
         self.app.persist()
         self.close_endpoints()

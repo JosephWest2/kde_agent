@@ -226,6 +226,7 @@ class TargetTests(unittest.TestCase):
         task = LaunchTask(request, context, self.registry, NS(tick=lambda: None), None)
         work.task = task
         task.phase = 'window_wait'
+        task.exec_confirmed = True
         retained = {'application': APP, 'process': {'pid': 42}, 'logs': {'stdout': '/owned/log'}}
         task.app = NS(authorized=True, settled=True, snapshot=lambda: retained)
         operation = Operation(None)

@@ -1,0 +1,37 @@
+{
+  "abandoned_temp_files": [
+    "kdotool-qw4YJS"
+  ],
+  "cleanup_ok": true,
+  "cleanup_seconds": 0.2684277439984726,
+  "error": {
+    "code": "timeout",
+    "message": "Shared operation deadline expired"
+  },
+  "finished": 100234.350560443,
+  "loaded_after_cleanup": false,
+  "loaded_before": false,
+  "loaded_before_cleanup": true,
+  "name": "kde-agent-7287b9200cbe44298a097665292e1896-5",
+  "native": null,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-7287b9200cbe44298a097665292e1896.service",
+    "pid": 1139347,
+    "start_ticks": "10023358"
+  },
+  "process_reaped": true,
+  "process_reaped_at": 100234.083212212,
+  "remove_process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-7287b9200cbe44298a097665292e1896.service",
+    "pid": 1139365,
+    "start_ticks": "10023434"
+  },
+  "remove_returncode": 0,
+  "request_finished": 100234.082132699,
+  "returncode": -9,
+  "seconds": 0.7684965840016957,
+  "started": 100233.582063859,
+  "stopped_after_registration": false,
+  "temporary_removed": true,
+  "work_limit": 0.5
+}

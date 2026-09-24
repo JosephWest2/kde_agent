@@ -1,0 +1,351 @@
+{
+  "source_commit": "8f1760ce9abf84c8900a3c444a1ac60c0ad87a5c",
+  "native": {
+    "input": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008106659006443806,
+      "cleanup_seconds": 0.151,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "kind": "prevalidation",
+          "no_partial_emission": true
+        },
+        {
+          "kind": "key_chord",
+          "press_release_and_presentation": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 3,
+          "old_epoch": 1,
+          "prior_uncertain": false,
+          "seconds": 0.0010550330043770373
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 5,
+          "old_epoch": 3,
+          "prior_uncertain": false,
+          "seconds": 0.002838540996890515
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 7,
+          "old_epoch": 5,
+          "prior_uncertain": false,
+          "seconds": 0.0024347220023628324
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 9,
+          "old_epoch": 7,
+          "prior_uncertain": false,
+          "seconds": 0.001894961009384133
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 11,
+          "old_epoch": 9,
+          "prior_uncertain": false,
+          "seconds": 0.0031440960010513663
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 13,
+          "old_epoch": 11,
+          "prior_uncertain": false,
+          "seconds": 0.003401170004508458
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 15,
+          "old_epoch": 13,
+          "prior_uncertain": false,
+          "seconds": 0.0029994070064276457
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 17,
+          "old_epoch": 15,
+          "prior_uncertain": false,
+          "seconds": 0.0029888669960200787
+        },
+        {
+          "after_fds": 17,
+          "before_fds": 17,
+          "count": 8,
+          "kind": "repeated_replacement"
+        }
+      ],
+      "cancel_samples": []
+    },
+    "cancel": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008192480992875062,
+      "cleanup_seconds": 0.128,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "acknowledged": true,
+          "action": 1,
+          "kind": "cancellation",
+          "mode": "send"
+        },
+        {
+          "acknowledged": true,
+          "action": 2,
+          "kind": "cancellation",
+          "mode": "send"
+        },
+        {
+          "acknowledged": true,
+          "action": 3,
+          "kind": "cancellation",
+          "mode": "eof"
+        },
+        {
+          "acknowledged": true,
+          "kind": "worker_timeout"
+        }
+      ],
+      "cancel_samples": [
+        {
+          "dispatch": 0.000610434,
+          "fixture_release": 0.000663952
+        },
+        {
+          "dispatch": 0.000760948,
+          "fixture_release": 0.003219037
+        },
+        {
+          "dispatch": 0.000556861,
+          "fixture_release": 0.000621286
+        }
+      ]
+    },
+    "pause": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008242185998824425,
+      "cleanup_seconds": 0.195,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "acknowledged_after_resume": true,
+          "kind": "idle_pause_resume",
+          "wrong_generation_rejected": true
+        },
+        {
+          "cancelled": true,
+          "fixture_held_before_reset": [
+            17,
+            42
+          ],
+          "kind": "pause",
+          "no_further_emission": true,
+          "real_event": "DEVICE_PAUSED",
+          "uncertain": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 3,
+          "old_epoch": 1,
+          "prior_uncertain": true,
+          "seconds": 0.008955475001130253
+        }
+      ],
+      "cancel_samples": []
+    },
+    "removal": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008124435000354424,
+      "cleanup_seconds": 0.161,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "cancelled": true,
+          "fixture_held_before_reset": [],
+          "kind": "removal",
+          "no_further_emission": true,
+          "real_event": "DEVICE_REMOVED",
+          "uncertain": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 3,
+          "old_epoch": 1,
+          "prior_uncertain": true,
+          "seconds": 0.006798618007451296
+        },
+        {
+          "acknowledged": true,
+          "kind": "rebind"
+        }
+      ],
+      "cancel_samples": []
+    },
+    "disconnect": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008302392001496628,
+      "cleanup_seconds": 0.139,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "cancelled": true,
+          "fixture_held_before_reset": [],
+          "kind": "disconnect",
+          "no_further_emission": true,
+          "real_event": "DISCONNECT",
+          "uncertain": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 3,
+          "old_epoch": 1,
+          "prior_uncertain": true,
+          "seconds": 0.0024671690043760464
+        }
+      ],
+      "cancel_samples": []
+    },
+    "reset-failure": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008247739999205805,
+      "cleanup_seconds": 0.161,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "code": "input_unavailable",
+          "input_unavailable": true,
+          "kind": "reset_failure",
+          "production_async_reply": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 5,
+          "old_epoch": 3,
+          "prior_uncertain": true,
+          "seconds": 0.001065021991962567
+        }
+      ],
+      "cancel_samples": []
+    },
+    "focus-loss": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008215333000407554,
+      "cleanup_seconds": 0.114,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "kind": "focus_loss",
+          "loss_detection_seconds": 0.121317991,
+          "original_target_neutral_on_reentry": true,
+          "release_received_by_new_focus": true
+        }
+      ],
+      "cancel_samples": []
+    },
+    "slow-query": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.008182158999261446,
+      "cleanup_seconds": 0.195,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "cancelled_while_child_busy": true,
+          "detection_seconds": 0.5049392079963582,
+          "kind": "slow_query",
+          "query_error": "timeout"
+        }
+      ],
+      "cancel_samples": []
+    },
+    "slow-external": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.01564926200080663,
+      "cleanup_seconds": 0.219,
+      "cleanup_verified": true,
+      "uncertain_at_end": false,
+      "fixture_held_at_end": [],
+      "checks": [
+        {
+          "cancel_seconds": 0.0006480739975813776,
+          "independent_child_seconds": 1,
+          "kind": "slow_external",
+          "pause_consumed_while_child_running": true
+        },
+        {
+          "fixture_neutral": true,
+          "kind": "reset",
+          "new_epoch": 3,
+          "old_epoch": 1,
+          "prior_uncertain": true,
+          "seconds": 0.004614863995811902
+        }
+      ],
+      "cancel_samples": []
+    }
+  },
+  "public_worker": {
+    "focus": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.09017404999758583,
+      "cgroup_empty_at": 100246.093867986
+    },
+    "delayed": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.08397953100211453,
+      "cgroup_empty_at": 100249.299303887
+    },
+    "slow-query": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.09304546299972571,
+      "cgroup_empty_at": 100252.604373357
+    },
+    "bus-death": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.10842030800995417,
+      "cgroup_empty_at": 100254.410753679
+    },
+    "kwin-death": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.08763799899315927,
+      "cgroup_empty_at": 100256.115520887
+    },
+    "stop-wait": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.09410165900771972,
+      "cgroup_empty_at": 100257.985206882
+    }
+  },
+  "all_unit_tests": 435,
+  "release_qualified": false
+}

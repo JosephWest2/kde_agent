@@ -21,8 +21,10 @@ events, and emission stays blocked until the queue is observed empty. Temporary
 backlog does not itself fail the session. Pause/removal/disconnection invalidates
 state before notifying the action owner. Callbacks may release or dispose the
 connection; stale callbacks cannot operate on replacement context state.
-Device identity is monotonically allocated within the owner, independent of
-native pointer reuse. The numeric primitive validates a complete batch of at
+Connection epochs are process-unique, including fresh owner instances. Device
+identity is monotonically allocated within the owner, independent of native
+pointer reuse. Disposal cancels its pending private-bus request token; stale
+FD replies cannot attach to a replacement. The numeric primitive validates a complete batch of at
 most 32 distinct evdev codes before emission and records attempted presses
 before native calls. It is internal: later action scheduling must enforce finite
 holds and focus checks. Release uses explicit release events and a frame.
@@ -44,3 +46,8 @@ The [issue #27 evidence](../evidence/issue-27/README.md) records installed produ
 async negotiation and real compositor lifecycle faults. The test harness uses
 the existing strictly private pause plugin and its `issue12` name selector;
 production uses the `agent-desktop` prefix. Fault control is not a product API.
+
+Canceling pending negotiation guarantees local callback/FD cleanup, not confirmed
+server context destruction while the originating bus stays open. Startup failure
+and worker stop close that bus. Recovery from unknown negotiation completion on
+a reused bus is deliberately left to the public reset policy in issue #31.

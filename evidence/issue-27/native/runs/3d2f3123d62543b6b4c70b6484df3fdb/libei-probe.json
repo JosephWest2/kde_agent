@@ -1,0 +1,192 @@
+{
+  "actions": [
+    {
+      "cancel_handled_ns": 100232249317941,
+      "cancel_reason": "focus_lost",
+      "cancel_requested_ns": 100232249317439,
+      "deadline": 100234.128009571,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 1,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "3d2f3123d62543b6b4c70b6484df3fdb",
+          "monotonic_ns": 100232128122323,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 1,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "3d2f3123d62543b6b4c70b6484df3fdb",
+          "monotonic_ns": 100232249403610,
+          "press": false
+        }
+      ],
+      "finished_ns": 100232249438856,
+      "fixture_from": 79,
+      "id": 1,
+      "names": [
+        "W"
+      ],
+      "started_ns": 100232127999950
+    },
+    {
+      "deadline": 100234.365641673,
+      "emissions": [
+        {
+          "code": 17,
+          "device": 1,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "3d2f3123d62543b6b4c70b6484df3fdb",
+          "monotonic_ns": 100232365675739,
+          "press": true
+        },
+        {
+          "code": 17,
+          "device": 1,
+          "epoch": 1,
+          "event": "emission",
+          "generation": "3d2f3123d62543b6b4c70b6484df3fdb",
+          "monotonic_ns": 100232370737926,
+          "press": false
+        }
+      ],
+      "finished_ns": 100232370758742,
+      "fixture_from": 90,
+      "fixture_to": 93,
+      "id": 2,
+      "names": [
+        "W"
+      ],
+      "started_ns": 100232365641543
+    }
+  ],
+  "async_negotiation": true,
+  "binding_sha256": "79aa149a691f25e16e51f864eb91db1b3105907551853560425b2e5f866bb46e",
+  "bounds_seconds": {
+    "cancel_dispatch": 0.1,
+    "connection_lifecycle_reset": 3,
+    "fixture_release": 0.5,
+    "focus_poll": 0.1,
+    "hold": 2,
+    "query": 0.5
+  },
+  "checks": [
+    {
+      "kind": "focus_loss",
+      "loss_detection_seconds": 0.121317991,
+      "original_target_neutral_on_reentry": true,
+      "release_received_by_new_focus": true
+    }
+  ],
+  "emission_count": 4,
+  "final_fixture_held": [],
+  "final_input_uncertain": false,
+  "gating_checks": [],
+  "generation": "3d2f3123d62543b6b4c70b6484df3fdb",
+  "heartbeat_max_seconds": 0.008215333000407554,
+  "initial_focus": {
+    "observed": {
+      "active_uuid": "{d08d8cdb-0101-42bc-8518-0cdbefb6400e}",
+      "request_id": "kde-agent-3d2f3123d62543b6b4c70b6484df3fdb-3",
+      "schema_version": 1,
+      "windows": [
+        {
+          "active": true,
+          "class": "org.kde_agent.fixture",
+          "client": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "frame": {
+            "height": 360,
+            "width": 640,
+            "x": 320,
+            "y": 180
+          },
+          "pid": 1139183,
+          "title": "KDE Agent Native Fixture",
+          "uuid": "{d08d8cdb-0101-42bc-8518-0cdbefb6400e}"
+        }
+      ]
+    },
+    "seconds": 0.01930260899825953,
+    "uuid": "{d08d8cdb-0101-42bc-8518-0cdbefb6400e}"
+  },
+  "installed_hashes": {
+    "__init__.py": "56fb3ef6acb4072efcfc874d6a4b648105ab1ddf2a038b38bf951cae74713eb4",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "app_launcher.py": "9b188a9108de6dc3e0b0041430d07cd16f8ddb767208574b69cf0c1f400c3426",
+    "app_processes.py": "68430c9efe72bcdb8b3c5f8196996ae61a75ad4b753a82c3a34246638488bc8a",
+    "applications.py": "91ff674573bfab3f6de576126ba3bad3cd59378db35de18c0e6ec0046127a26b",
+    "artifacts.py": "cdc03069cde690dc4a263369144863610fb14dd17359778257bfd8967f7d64f6",
+    "children.py": "7658e7d0a4eaffb9a7a9d9af60e579d7c4545094be17468c13e7540038b272c6",
+    "cli.py": "524b6c6b78f9d1a234b15c0feee7fab24c45f0e2ac3e36bd220111d66614c18f",
+    "closing.py": "7aad5a8a1edf7a95b8eaa0ff2632bca708c3d82969fb639518a20099214a2c21",
+    "contracts.py": "d2f560eda1423ffdbfbb459642cc1eef9aa1564274e17df7499dbb566008069e",
+    "desktop.py": "9616454eaf194d4ef0a1dfeb78f861cfdb3208557b5f4cb93e5d0cbbb7550748",
+    "environment.py": "00d9fb0464e95df81024ff6a75777c582d92984083829e36fed48b545cf53522",
+    "health.py": "aacc877da08c10555ef171c6752873a7dfff302ea63b1f1b5ffbb25ea190fe4d",
+    "input_connection.py": "a40db15a1f65250a733e424334d36a2c1b14e5c0477e7c50be1bea4310c3c4c8",
+    "libei_binding.py": "79aa149a691f25e16e51f864eb91db1b3105907551853560425b2e5f866bb46e",
+    "lifecycle.py": "5d52cf5481cff8ff9fa876929ac8548dda57f4258af502837620f8f957fcafa4",
+    "ownership.py": "9ae4c992b6f9039b6f9585cf0f7afa0149435ea932a2dc78016e3d0c0809244f",
+    "paths.py": "bbfe30260a16d0598f5283450d08b1847af1d0dc5a91bb02be806b2dbda14e61",
+    "prerequisites.py": "0bbdcf41f16c8aa70f3533f60a025720cd7600dec4893980408f072624ea5a9c",
+    "private_bus.py": "57fbd544b031b0faf38f4b80c52439e6efbfa1cd076c42efbd8cf3b6cc18cf19",
+    "protocol.py": "d8a90868ace7551fcd9a4be78cd901047072cf6fb30b07ecb25b18b530dd59d3",
+    "provisional_capture.py": "55067fe8958cc79b94c54d0be6053140c7d76a752ee7574b9ab5eb2b32192d6a",
+    "provisional_codec.py": "a5e53ca203fe02f25f063f58081c6582abe35f7124dc474e3ce30b7d149dd2fe",
+    "readiness.py": "4ff1e5a7614a8486a771d0d57eac047f67a2ace65b65a21b4f05159da8100460",
+    "records.py": "66d55588d8c2d37fe7476d4ef3792e7a714a709bc7e47d058934199519ebbd1d",
+    "runtime.py": "5902abd8f781157395871ae2755678d4a4bdd9061abc2664e85c1e28344b5f44",
+    "scheduler.py": "4544bd4cd42cec12a69c25dec5ed189b89b13d9f15e0bd4af4a3dd57db1963b1",
+    "service_cleanup.py": "d160784ff279ee18a96820cb27b12ce96d862eb45d01e6b0b5146975adf4dc8b",
+    "shutdown.py": "176588fb62a9b9d122e75691433158a6633af916ea8b407e2af237a72a2f30da",
+    "targeting.py": "d980ed3520006e4dee5f83d073295a2c4fefe1f3a50fc44672073a92ea2b92e7",
+    "terminating.py": "65e42877b7b3c5429a63356d0773f3a4f76f3f153eda35a9ac4be0f1250edf70",
+    "transport.py": "665caa0c37cdfa9ae25a9222205080ca94c0e377dada314ab13db47512e31590",
+    "watchdog.py": "8a70877e25ae2b12c04455d9577444bf770bc9fa0b5787bbfb4810f7b4434506",
+    "window_query.js": "fbca21db8f49d061edd5664056356ec60002504c95e5aa2df07d545a9929cd46",
+    "window_types.py": "a5512712856fdb7bf2af8b4997fa01a0cdd1d32df4c77c7e7c4bcac8834029a3",
+    "windows.py": "09573c33b065b8c07d6f38f7ab23e44638d974113fd1287cdecb6cb49ffbc000",
+    "worker.py": "c9fe1080bae53582dc62ac8882650df3c998bc33719a00bae7d0498556fa5c6b"
+  },
+  "outcome": "passed",
+  "probe_sha256": "af4183a1a6f65e54fea282a920f8ca6c7f787000773fe0123a7d210bc88b6fb0",
+  "production_module": "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-release-source/venv/lib/python3.14/site-packages/agent_desktop/input_connection.py",
+  "production_sha256": "a40db15a1f65250a733e424334d36a2c1b14e5c0477e7c50be1bea4310c3c4c8",
+  "runner_sha256": "dde3b34505fcdf849404aee5958f7a9adb385692bdac9d12f1e3c20769783557",
+  "scenario": "focus-loss",
+  "scope": "installed production connection / fixture-observed lifecycle",
+  "secondary_process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-3d2f3123d62543b6b4c70b6484df3fdb.service",
+    "pid": 1139207,
+    "start_ticks": "10023213"
+  },
+  "target": {
+    "active": true,
+    "class": "org.kde_agent.fixture",
+    "client": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "frame": {
+      "height": 360,
+      "width": 640,
+      "x": 320,
+      "y": 180
+    },
+    "pid": 1139183,
+    "title": "KDE Agent Native Fixture",
+    "uuid": "{d08d8cdb-0101-42bc-8518-0cdbefb6400e}"
+  }
+}

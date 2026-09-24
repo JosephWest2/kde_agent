@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/evidence/issue-27/installed_input.py", line 138, in <module>
+    value.run(sys.argv[2])
+    ~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/evidence/issue-27/installed_input.py", line 117, in run
+    super().run(scenario)
+    ~~~~~~~~~~~^^^^^^^^^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/tools/libei_probe.py", line 691, in run
+    self.initial()
+    ~~~~~~~~~~~~^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/tools/libei_probe.py", line 515, in initial
+    self.wait(lambda: self.bridge_ready, label="query bridge ready")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/tools/libei_probe.py", line 300, in wait
+    raise self.fatal
+  File "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-prepared/source/tools/libei_probe.py", line 394, in tick
+    raise Failure("query_failed", "Query bridge exited unexpectedly")
+private_harness.Failure: Query bridge exited unexpectedly

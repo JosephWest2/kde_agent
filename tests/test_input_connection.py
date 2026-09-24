@@ -128,6 +128,44 @@ class InputTests(unittest.TestCase):
         with self.assertRaises(RuntimeError): value.press([17])
         self.assertEqual(value.devices[9].held, [17]); self.assertTrue(value.uncertain)
 
+    def test_reentrant_emission_observer_cannot_poison_replacement(self):
+        value = self.make()
+        def replace(*args):
+            value.dispose()
+            value.context = 2
+            value.uncertain = False
+            raise RuntimeError('old diagnostic failed after replacement')
+        value.emit = replace
+        with self.assertRaises(RuntimeError): value.press([17])
+        self.assertFalse(value.uncertain)
+        self.assertEqual(value.context, 2)
+        self.assertEqual(value.retired_held[0]['keys'], [17])
+
+    def test_setup_preparation_failure_closes_fd_and_context(self):
+        value = self.make(); value.dispose(); value.name = 'test'
+        descriptor = os.open('/dev/null', os.O_RDONLY)
+        self.lib.ei_new_sender.return_value = 7
+        with patch('agent_desktop.input_connection.os.set_blocking', side_effect=OSError('prep')):
+            with self.assertRaises(OSError): value._setup(descriptor)
+        with self.assertRaises(OSError): os.fstat(descriptor)
+        self.assertIsNone(value.context)
+        self.lib.ei_unref.assert_called_with(7)
+
+    def test_duplicate_device_event_references_are_balanced(self):
+        value = self.make(); self.events([5])
+        value.on_fd(7, GLib.IO_IN)
+        self.assertEqual(value.error.code, 'input_failed')
+        self.lib.ei_device_ref.assert_not_called()
+        self.lib.ei_event_unref.assert_called_once()
+
+    def test_late_async_reply_is_rejected_before_fd_duplication(self):
+        value = self.make(); value.dispose(); bus = Mock()
+        value.connect(bus, time.monotonic()+3)
+        callback = bus.call.call_args.args[8]
+        fds = Mock(); value.deadline = time.monotonic()-1
+        callback(SimpleNamespace(unpack=lambda: (0, 123)), fds, None)
+        self.assertEqual(value.error.code, 'timeout'); fds.get.assert_not_called()
+
     def test_normal_release_frames_all_keys_and_clears_ledger(self):
         value = self.make(); value.press([42, 17]); value.release()
         self.assertEqual(value.devices[9].held, [])

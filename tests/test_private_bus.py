@@ -217,6 +217,29 @@ class PrivateBusTests(unittest.TestCase):
     def test_cancelled_eis_reply_releases_native_fd_list_without_installing(self):
         self.assert_stale_fd_reaped(cancel=True)
 
+    def test_owner_cancel_reaps_stale_fd_without_poisoning_replacement_call(self):
+        bus = self.mock_bus()
+        accepted = Mock()
+        bus.call('eis', 'x.y', '/x', 'x.y', 'Connect', None, '(h)', 11., accepted, fd=True)
+        connection = bus.connection
+        finished = connection.call_with_unix_fd_list.call_args.args[-2]
+        read_fd, reference = self.fd_result(connection)
+        old = bus.pending['eis']
+        bus.cancel('eis')
+        self.assertTrue(old[1].is_cancelled())
+        bus.call('eis', 'x.y', '/x', 'x.y', 'Connect', None, '(h)', 13., accepted, fd=True)
+        replacement = bus.pending['eis']
+        bus.now.return_value = 12.
+        finished(connection, object(), None)
+        gc.collect()
+        self.assertIsNone(reference())
+        self.assertEqual(os.read(read_fd, 1), b'')
+        self.assertIs(bus.pending['eis'], replacement)
+        self.assertIsNone(bus.error)
+        accepted.assert_not_called()
+        bus.tick()
+        bus.close()
+
     def test_rejected_native_reply_signature_does_not_return_fd(self):
         bus = self.real_bus()
         result = []

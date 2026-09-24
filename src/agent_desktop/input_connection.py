@@ -318,9 +318,12 @@ class Input:
                 self.lib.ei_device_keyboard_key(device.pointer, code, True)
             self.lib.ei_device_frame(device.pointer, self.lib.ei_now(context))
             for code in codes:
+                if not self._current(epoch, context):
+                    raise Failure('input_unavailable', 'Connection replaced during emission observation.')
                 self.emit(code, True, device.identity)
         except Exception:
-            self.uncertain = True
+            if self._current(epoch, context):
+                self.uncertain = True
             raise
 
     def release(self):
@@ -344,9 +347,12 @@ class Input:
                 device.emulating = False
                 device.held.clear()
                 for code in codes:
+                    if not self._current(epoch, context):
+                        return
                     self.emit(code, False, device.identity)
             except Exception:
-                self.uncertain = True
+                if self._current(epoch, context):
+                    self.uncertain = True
                 raise
 
     def _dispose_resources(self):

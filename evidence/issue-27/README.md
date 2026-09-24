@@ -12,7 +12,7 @@ backlog never publishes readiness and fails after draining.
 A newly archived, noneditable installation passed focus, delayed startup/launch
 and slow-query scenarios with cleanup verified ([receipt](review-startup-fix/worker/receipt.json),
 [provenance](review-startup-fix/prepared.json)). These three runs also retain
-**326.965 ms**, **286.620 ms**, and **140.993 ms** lifetime GLib gaps respectively,
+**326.964 ms**, **286.619 ms**, and **140.993 ms** lifetime GLib gaps respectively,
 all above the unchanged 100 ms target. The largest focus gap overlaps three
 synchronous artifact writes of 53.474, 58.431 and 114.138 ms during request
 admission after startup. The other maxima have insufficient in-gap tracing for

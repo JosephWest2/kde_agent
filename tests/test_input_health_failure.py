@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from gi.repository import GLib
 from agent_desktop.artifacts import Store
 from agent_desktop.contracts import ContractError
-from agent_desktop.provisional_input import Input, Failure
+from agent_desktop.input_connection import Input, Failure, Device
 from agent_desktop.readiness import Readiness
 from agent_desktop.runtime import Endpoint
 from agent_desktop.worker import run
@@ -33,7 +33,7 @@ class InputHealthFailure(unittest.TestCase):
         provider.folder.mkdir(mode=0o700)
         provider.query = provider.capture = provider.round = None
         provider.adapter = SimpleNamespace(active=None, close=lambda: None)
-        provider.input = SimpleNamespace(ready=lambda: True, dispose=Mock())
+        provider.input = SimpleNamespace(ready=lambda: True, dispose=Mock(), tick=Mock(), backlog=False)
         provider.next_health = time.monotonic() + 1
         provider.deadline = time.monotonic() + 30
         return provider
@@ -82,12 +82,13 @@ class InputHealthFailure(unittest.TestCase):
             provider.log = Mock()
             provider.emissions = 0
             lib = Mock()
-            with patch('agent_desktop.provisional_input.binding.load', return_value=lib):
-                source = Input(provider)
+            with patch('agent_desktop.input_connection.binding.load', return_value=lib):
+                source = Input('e' * 32, GLib, invalidated=provider.cancel,
+                               failed=lambda error: setattr(provider, 'fatal', error), log=provider.log)
             provider.input = source
             source.context = object()
             source.connected = True
-            source.devices = {9: {'resumed': True}}
+            source.devices = {9: Device(9, 1, 42, resumed=True)}
             source.seats = {42}
             lib.ei_get_event.side_effect = range(1, 259)
             lib.ei_event_get_type.side_effect = [4] * 256 + [3]
@@ -98,7 +99,8 @@ class InputHealthFailure(unittest.TestCase):
             fd_source_id = source.watch
             source.drain()
             self.assertEqual(lib.ei_get_event.call_count, 256)
-            self.assertTrue(source.ready())
+            self.assertFalse(source.ready())
+            self.assertTrue(source.backlog)
             continuation = source.idle_watch
             self.assertIsNotNone(continuation)
             context = GLib.MainContext.default()
@@ -106,7 +108,7 @@ class InputHealthFailure(unittest.TestCase):
             while source.idle_watch is not None and time.monotonic() < end:
                 context.iteration(False)
             self.assertIsInstance(provider.fatal, Failure)
-            self.assertEqual(provider.fatal.code, 'input_protocol')
+            self.assertEqual(provider.fatal.code, 'input_failed')
             self.assertFalse(source.ready())
             provider.cancel.assert_called_once_with('dispatch_failure')
             self.assertIsNone(context.find_source_by_id(continuation))

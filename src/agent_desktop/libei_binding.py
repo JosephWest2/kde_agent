@@ -1,4 +1,4 @@
-"""Issue #12's deliberately small, header-audited libei sender surface."""
+"""Limited production libei sender ABI, audited against the pinned native build."""
 from __future__ import annotations
 
 import ctypes as C
@@ -29,6 +29,7 @@ DECLARATIONS = {
     "ei_seat_has_capability": ("bool", ["seat", "cap"]),
     "ei_seat_bind_capabilities": ("void", ["seat", "..."]),
     "ei_seat_unbind_capabilities": ("void", ["seat", "..."]),
+    "ei_device_get_seat": ("seat", ["device"]),
     "ei_device_ref": ("device", ["device"]), "ei_device_unref": ("device", ["device"]),
     "ei_device_has_capability": ("bool", ["device", "cap"]),
     "ei_device_start_emulating": ("void", ["device", "u32"]),

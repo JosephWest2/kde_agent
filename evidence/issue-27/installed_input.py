@@ -8,6 +8,7 @@ import importlib.util
 import json
 from pathlib import Path
 import os
+import subprocess
 import sys
 import time
 from agent_desktop import input_connection, libei_binding
@@ -137,6 +138,24 @@ class Probe(probe.Probe):
         self.begin(['W']); self.release()
 
     def run(self, scenario):
+        if scenario == 'slow-external':
+            self.initial()
+            action = self.begin(['SHIFT', 'W'])
+            child = subprocess.Popen(['/usr/bin/sleep', '1'], env=self.env)
+            self.children.append(child)
+            started = time.monotonic()
+            (raw,) = self.call(self.fault.Pause, self.generation, self.input.name, self.dbus.UInt32(250))
+            assert json.loads(str(raw))['ok']
+            self.wait(lambda: bool(action.get('cancel_reason')), .5, 'pause during child work')
+            elapsed = time.monotonic()-started
+            assert child.poll() is None and elapsed < .1
+            self.input.reject_probe('pause_during_slow_external')
+            self.checks.append(dict(kind='slow_external', pause_consumed_while_child_running=True,
+                                   cancel_seconds=elapsed, independent_child_seconds=1))
+            self.action = None
+            self.reset(); self.begin(['W']); self.release()
+            self.result['outcome'] = 'passed'
+            return
         super().run(scenario)
         if scenario == 'input':
             before = len(os.listdir('/proc/self/fd'))

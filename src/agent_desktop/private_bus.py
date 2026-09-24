@@ -77,6 +77,12 @@ class PrivateBus:
         else:
             self.connection.call(*args, op[1], finished, None)
 
+    def cancel(self, token):
+        """Revoke an owner's pending call without poisoning unrelated bus work."""
+        op = self.pending.pop(token, None)
+        if op is not None:
+            op[1].cancel()
+
     def tick(self):
         if self.error:
             raise self.error

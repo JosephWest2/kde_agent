@@ -1,0 +1,27 @@
+{
+  "abandoned_temp_files": [],
+  "cleanup_ok": true,
+  "cleanup_seconds": 0.00014743799692951143,
+  "error": null,
+  "finished": 100230.830560334,
+  "loaded_after_cleanup": false,
+  "loaded_after_native": false,
+  "loaded_before": false,
+  "loaded_before_cleanup": false,
+  "name": "kde-agent-20b9ff64f5fd4230a058a88b71fd0923-0",
+  "native": null,
+  "process": {
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/kde-agent-m1-20b9ff64f5fd4230a058a88b71fd0923.service",
+    "pid": 1139095,
+    "start_ticks": "10023082"
+  },
+  "process_reaped": true,
+  "process_reaped_at": 100230.830415027,
+  "request_finished": 100230.830412896,
+  "returncode": 0,
+  "seconds": 0.005021161996410228,
+  "started": 100230.825539172,
+  "stopped_after_registration": false,
+  "temporary_removed": true,
+  "work_limit": 0.5
+}

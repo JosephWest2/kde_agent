@@ -1,0 +1,28 @@
+{
+  "source_commit": "7dd3ceedac12f7f3e03c6932c783ae82d85e0470",
+  "cases": {
+    "focus": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.3269644039974082,
+      "cgroup_empty_at": 100682.65269848
+    },
+    "delayed": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.28661908699723426,
+      "cgroup_empty_at": 100687.138288638
+    },
+    "slow-query": {
+      "passed": true,
+      "max_glib_gap_seconds": 0.1409928490029415,
+      "cgroup_empty_at": 100690.954477396
+    }
+  },
+  "unchanged_adapter_hashes": {
+    "input_connection.py": "a40db15a1f65250a733e424334d36a2c1b14e5c0477e7c50be1bea4310c3c4c8",
+    "libei_binding.py": "79aa149a691f25e16e51f864eb91db1b3105907551853560425b2e5f866bb46e",
+    "private_bus.py": "57fbd544b031b0faf38f4b80c52439e6efbfa1cd076c42efbd8cf3b6cc18cf19"
+  },
+  "prior_adapter_native_source": "8f1760ce9abf84c8900a3c444a1ac60c0ad87a5c",
+  "unit_tests": 436,
+  "all_timing_targets_passed": false
+}

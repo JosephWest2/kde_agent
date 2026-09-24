@@ -1,0 +1,1175 @@
+test_gate_and_eof_expiry_do_not_execute_and_environment_is_final_only (test_applications.HelperTests.test_gate_and_eof_expiry_do_not_execute_and_environment_is_final_only) ... ok
+test_effect_record_failure_before_gate_aborts_without_target_effect (test_applications.LaunchTests.test_effect_record_failure_before_gate_aborts_without_target_effect) ... ok
+test_effects_precede_release_and_cancel_retains_launched_child (test_applications.LaunchTests.test_effects_precede_release_and_cancel_retains_launched_child) ... ok
+test_gate_timeout_aborts_without_authorization (test_applications.LaunchTests.test_gate_timeout_aborts_without_authorization) ... ok
+test_missing_events_never_releases_slot (test_applications.LaunchTests.test_missing_events_never_releases_slot) ... ok
+test_postlaunch_failure_retains_records_and_logs (test_applications.LaunchTests.test_postlaunch_failure_retains_records_and_logs) ... ok
+test_prelaunch_artifact_failure_prevents_spawn (test_applications.LaunchTests.test_prelaunch_artifact_failure_prevents_spawn) ... ok
+test_protocol_loss_after_authorization_is_unknown_and_retained (test_applications.LaunchTests.test_protocol_loss_after_authorization_is_unknown_and_retained) ... ok
+test_record_failure_after_exec_ack_retains_known_partial_launch (test_applications.LaunchTests.test_record_failure_after_exec_ack_retains_known_partial_launch) ... ok
+test_scheduler_exception_calls_cleanup_and_retains_real_effects (test_applications.LaunchTests.test_scheduler_exception_calls_cleanup_and_retains_real_effects) ... ok
+test_second_launch_conflicts_even_after_root_exit_with_descendants (test_applications.LaunchTests.test_second_launch_conflicts_even_after_root_exit_with_descendants) ... ok
+test_target_inherits_only_standard_descriptors (test_applications.LaunchTests.test_target_inherits_only_standard_descriptors) ... ok
+test_wait_window_shares_launch_deadline_and_retains_application_on_cancel (test_applications.LaunchTests.test_wait_window_shares_launch_deadline_and_retains_application_on_cancel) ... ok
+test_budget_exhausted_before_work_schedules_no_poll_or_snapshot (test_applications.ObservationBudgetTests.test_budget_exhausted_before_work_schedules_no_poll_or_snapshot) ... ok
+test_budget_exhausted_during_reaping_defers_scan_and_snapshot (test_applications.ObservationBudgetTests.test_budget_exhausted_during_reaping_defers_scan_and_snapshot) ... ok
+test_cached_process_state_is_constant_size_and_uncertainty_is_explicit (test_applications.ObservationBudgetTests.test_cached_process_state_is_constant_size_and_uncertainty_is_explicit) ... ok
+test_close_without_empty_observation_preserves_uncertainty (test_applications.ObservationBudgetTests.test_close_without_empty_observation_preserves_uncertainty) ... ok
+test_completed_observation_survives_registry_retirement_and_repeated_reads (test_applications.ObservationBudgetTests.test_completed_observation_survives_registry_retirement_and_repeated_reads) ... ok
+test_failed_batch_publication_retains_bounded_pending_work (test_applications.ObservationBudgetTests.test_failed_batch_publication_retains_bounded_pending_work) ... ok
+test_historical_process_completion_does_not_invent_observation_time (test_applications.ObservationBudgetTests.test_historical_process_completion_does_not_invent_observation_time) ... ok
+test_live_launch_failed_is_not_retired_exit (test_applications.ObservationBudgetTests.test_live_launch_failed_is_not_retired_exit) ... ok
+test_missing_root_metadata_remains_unavailable (test_applications.ObservationBudgetTests.test_missing_root_metadata_remains_unavailable) ... ok
+test_pending_publication_blocks_completion_but_does_not_invent_populated (test_applications.ObservationBudgetTests.test_pending_publication_blocks_completion_but_does_not_invent_populated) ... ok
+test_process_state_reports_actual_empty_bit_before_root_reaping (test_applications.ObservationBudgetTests.test_process_state_reports_actual_empty_bit_before_root_reaping) ... ok
+test_registry_scan_uses_only_budget_remaining_after_lifetime_observation (test_applications.ObservationBudgetTests.test_registry_scan_uses_only_budget_remaining_after_lifetime_observation) ... ok
+test_registry_tick_skips_scan_after_lifetime_observation_exhausts_budget (test_applications.ObservationBudgetTests.test_registry_tick_skips_scan_after_lifetime_observation_exhausts_budget) ... ok
+test_retained_terminal_records_are_readonly_but_nonterminal_fails_closed (test_applications.ObservationBudgetTests.test_retained_terminal_records_are_readonly_but_nonterminal_fails_closed) ... ok
+test_slow_acquisition_preserves_batch_until_later_turn_and_completion (test_applications.ObservationBudgetTests.test_slow_acquisition_preserves_batch_until_later_turn_and_completion) ... ok
+test_slow_batch_write_defers_poll_and_dirty_snapshot_without_duplicate_batch (test_applications.ObservationBudgetTests.test_slow_batch_write_defers_poll_and_dirty_snapshot_without_duplicate_batch) ... ok
+test_slow_iterator_retains_member_without_scheduling_identity_acquisition (test_applications.ObservationBudgetTests.test_slow_iterator_retains_member_without_scheduling_identity_acquisition) ... ok
+test_depth_and_directory_limits_are_fail_closed (test_applications.ScannerTests.test_depth_and_directory_limits_are_fail_closed) ... ok
+test_identity_rejects_pid_reuse_and_foreign_membership (test_applications.ScannerTests.test_identity_rejects_pid_reuse_and_foreign_membership) ... ok
+test_pidfd_above_select_limit (test_applications.ScannerTests.test_pidfd_above_select_limit) ... ok
+test_streaming_limits_and_malformed_or_missing_input (test_applications.ScannerTests.test_streaming_limits_and_malformed_or_missing_input) ... ok
+test_contended_store_cannot_prevent_stop_release_cleanup (test_artifact_process.ArtifactProcessTests.test_contended_store_cannot_prevent_stop_release_cleanup) ... ok
+test_paths_diagnostics_and_durable_shutdown (test_artifact_process.ArtifactProcessTests.test_paths_diagnostics_and_durable_shutdown) ... ok
+test_sigint_retains_partial_handle_after_caller_exit (test_artifact_process.ArtifactProcessTests.test_sigint_retains_partial_handle_after_caller_exit) ... ok
+test_admission_storage_failure_blocks_effects_but_stop_cleans (test_artifacts.BridgeTests.test_admission_storage_failure_blocks_effects_but_stop_cleans) ... ok
+test_ancestor_swap_cannot_redirect_store (test_artifacts.BridgeTests.test_ancestor_swap_cannot_redirect_store) ... ok
+test_atomic_failure_and_sticky_cleanup_survive_runtime_removal (test_artifacts.BridgeTests.test_atomic_failure_and_sticky_cleanup_survive_runtime_removal) ... ok
+test_bounded_history_projection_and_application_records (test_artifacts.BridgeTests.test_bounded_history_projection_and_application_records) ... ok
+test_cancellation_calls_release_before_failed_persistence (test_artifacts.BridgeTests.test_cancellation_calls_release_before_failed_persistence) ... ok
+test_directory_links_fsynced_before_descendant_allocation (test_artifacts.BridgeTests.test_directory_links_fsynced_before_descendant_allocation) ... ok
+test_failed_startup_and_collision_exhaustion (test_artifacts.BridgeTests.test_failed_startup_and_collision_exhaustion) ... ok
+test_final_serialization_deadline_and_terminal_fault (test_artifacts.BridgeTests.test_final_serialization_deadline_and_terminal_fault) ... ok
+test_interrupted_initialization_has_no_attachable_manifest (test_artifacts.BridgeTests.test_interrupted_initialization_has_no_attachable_manifest) ... ok
+test_private_collision_free_attempts_and_exact_launch (test_artifacts.BridgeTests.test_private_collision_free_attempts_and_exact_launch) ... ok
+test_reopen_refuses_missing_layout_lock_and_incomplete_manifest (test_artifacts.BridgeTests.test_reopen_refuses_missing_layout_lock_and_incomplete_manifest) ... ok
+test_request_parent_fsync_failure_prevents_factory_effects (test_artifacts.BridgeTests.test_request_parent_fsync_failure_prevents_factory_effects) ... ok
+test_stable_start_and_terminal_observation_times (test_artifacts.BridgeTests.test_stable_start_and_terminal_observation_times) ... ok
+test_symlinks_and_nonblocking_lock (test_artifacts.BridgeTests.test_symlinks_and_nonblocking_lock) ... ok
+test_caller_paths_and_raw_wire_rejection (test_artifacts.PathEnvironmentTests.test_caller_paths_and_raw_wire_rejection) ... ok
+test_environment_fail_closed_and_precedence (test_artifacts.PathEnvironmentTests.test_environment_fail_closed_and_precedence) ... ok
+test_executable_final_path_and_cwd_without_chdir (test_artifacts.PathEnvironmentTests.test_executable_final_path_and_cwd_without_chdir) ... ok
+test_ancestor_swap_cannot_redirect_store (test_artifacts.StoreTests.test_ancestor_swap_cannot_redirect_store) ... ok
+test_atomic_failure_and_sticky_cleanup_survive_runtime_removal (test_artifacts.StoreTests.test_atomic_failure_and_sticky_cleanup_survive_runtime_removal) ... ok
+test_bounded_history_projection_and_application_records (test_artifacts.StoreTests.test_bounded_history_projection_and_application_records) ... ok
+test_directory_links_fsynced_before_descendant_allocation (test_artifacts.StoreTests.test_directory_links_fsynced_before_descendant_allocation) ... ok
+test_failed_startup_and_collision_exhaustion (test_artifacts.StoreTests.test_failed_startup_and_collision_exhaustion) ... ok
+test_interrupted_initialization_has_no_attachable_manifest (test_artifacts.StoreTests.test_interrupted_initialization_has_no_attachable_manifest) ... ok
+test_private_collision_free_attempts_and_exact_launch (test_artifacts.StoreTests.test_private_collision_free_attempts_and_exact_launch) ... ok
+test_reopen_refuses_missing_layout_lock_and_incomplete_manifest (test_artifacts.StoreTests.test_reopen_refuses_missing_layout_lock_and_incomplete_manifest) ... ok
+test_stable_start_and_terminal_observation_times (test_artifacts.StoreTests.test_stable_start_and_terminal_observation_times) ... ok
+test_symlinks_and_nonblocking_lock (test_artifacts.StoreTests.test_symlinks_and_nonblocking_lock) ... ok
+test_both_endians_preserve_channels_and_top_down_rows (test_capture_codec.DecodeTests.test_both_endians_preserve_channels_and_top_down_rows) ... ok
+test_full_output_uses_native_byte_order (test_capture_codec.DecodeTests.test_full_output_uses_native_byte_order) ... ok
+test_premultiplication_and_zero_alpha_for_both_endians (test_capture_codec.DecodeTests.test_premultiplication_and_zero_alpha_for_both_endians) ... ok
+test_unknown_endian_is_rejected (test_capture_codec.DecodeTests.test_unknown_endian_is_rejected) ... ok
+test_each_required_field_is_required (test_capture_codec.MetadataTests.test_each_required_field_is_required) ... ok
+test_exact_supported_contract (test_capture_codec.MetadataTests.test_exact_supported_contract) ... ok
+test_rejects_format_dimensions_stride_scale_and_types (test_capture_codec.MetadataTests.test_rejects_format_dimensions_stride_scale_and_types) ... ok
+test_rejects_short_extra_and_oversized_payload_before_decode (test_capture_codec.MetadataTests.test_rejects_short_extra_and_oversized_payload_before_decode) ... ok
+test_all_markers_and_quadrants_use_current_geometry (test_capture_codec.PixelChecksTests.test_all_markers_and_quadrants_use_current_geometry) ... ok
+test_channels_orientation_and_alpha_mismatches_fail (test_capture_codec.PixelChecksTests.test_channels_orientation_and_alpha_mismatches_fail) ... ok
+test_high_state_bit_mismatch_fails_even_with_matching_quadrants (test_capture_codec.PixelChecksTests.test_high_state_bit_mismatch_fails_even_with_matching_quadrants) ... ok
+test_invalid_geometry_state_or_image_cannot_certify_pixels (test_capture_codec.PixelChecksTests.test_invalid_geometry_state_or_image_cannot_certify_pixels) ... ok
+test_abort_kills_and_reaps_running_child (test_capture_transport.CaptureSupervisor.test_abort_kills_and_reaps_running_child) ... ok
+test_acceptance_timestamp_follows_process_and_publication_checks (test_capture_transport.CaptureSupervisor.test_acceptance_timestamp_follows_process_and_publication_checks) ... ok
+test_exact_invalid_screen_is_the_safe_rejection (test_capture_transport.CaptureSupervisor.test_exact_invalid_screen_is_the_safe_rejection) ... ok
+test_late_success_is_rejected_and_both_publication_paths_removed (test_capture_transport.CaptureSupervisor.test_late_success_is_rejected_and_both_publication_paths_removed) ... ok
+test_publication_check_crossing_deadline_cannot_accept_stale_time (test_capture_transport.CaptureSupervisor.test_publication_check_crossing_deadline_cannot_accept_stale_time) ... ok
+test_status_cap_terminates_writer_without_unbounded_buffer (test_capture_transport.CaptureSupervisor.test_status_cap_terminates_writer_without_unbounded_buffer) ... ok
+test_wrong_generation_or_request_rejects_child_status (test_capture_transport.CaptureSupervisor.test_wrong_generation_or_request_rejects_child_status) ... ok
+test_call_setup_failure_closes_original_wrapper_reader_and_bus (test_capture_transport.NativeFdOwnership.test_call_setup_failure_closes_original_wrapper_reader_and_bus) ... /usr/lib/python3.14/site-packages/gi/overrides/GLib.py:766: PyGIDeprecationWarning: Calling io_add_watch without priority as second argument is deprecated
+  warnings.warn(
+ok
+test_complete_payload_without_eof_times_out_and_closes_all_local_fds (test_capture_transport.NativeFdOwnership.test_complete_payload_without_eof_times_out_and_closes_all_local_fds) ... /usr/lib/python3.14/site-packages/gi/events.py:803: DeprecationWarning: 'asyncio.AbstractEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+  AbstractEventLoopPolicy = getattr(asyncio, "AbstractEventLoopPolicy", object)
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_message_append_duplicates_fd_and_message_destruction_releases_last_writer (test_capture_transport.NativeFdOwnership.test_message_append_duplicates_fd_and_message_destruction_releases_last_writer) ... ok
+test_every_session_operation_accepts_generation (test_cli.CLITests.test_every_session_operation_accepts_generation) ... ok
+test_generation_disagreement_fails_before_dispatch (test_cli.CLITests.test_generation_disagreement_fails_before_dispatch) ... ok
+test_internal_failure_and_interrupt_are_structured_and_safe (test_cli.CLITests.test_internal_failure_and_interrupt_are_structured_and_safe) ... ok
+test_invalid_arguments_and_no_abbreviation (test_cli.CLITests.test_invalid_arguments_and_no_abbreviation) ... ok
+test_json_flag_does_not_repair_missing_option_values (test_cli.CLITests.test_json_flag_does_not_repair_missing_option_values) ... ok
+test_json_help_version_and_nested_mode_placement (test_cli.CLITests.test_json_help_version_and_nested_mode_placement) ... ok
+test_launch_literal_boundary_and_exact_argv (test_cli.CLITests.test_launch_literal_boundary_and_exact_argv) ... ok
+test_operations_without_a_session (test_cli.CLITests.test_operations_without_a_session) ... ok
+test_parser_errors_never_echo_secrets_in_either_mode (test_cli.CLITests.test_parser_errors_never_echo_secrets_in_either_mode) ... ok
+test_readable_default_help_version_and_error (test_cli.CLITests.test_readable_default_help_version_and_error) ... ok
+test_unknown_mode_is_explicitly_unsupported (test_cli.CLITests.test_unknown_mode_is_explicitly_unsupported) ... ok
+test_context_partial_handles_and_unknown_outcomes_survive (test_cli.ContractTests.test_context_partial_handles_and_unknown_outcomes_survive) ... ok
+test_finite_budgets_are_pure_shared_validation (test_cli.ContractTests.test_finite_budgets_are_pure_shared_validation) ... ok
+test_request_validation_rejects_wrong_wire_shapes (test_cli.ContractTests.test_request_validation_rejects_wrong_wire_shapes) ... ok
+test_wrapped_and_unwrapped_kwin_identity_roundtrips (test_cli.ContractTests.test_wrapped_and_unwrapped_kwin_identity_roundtrips) ... ok
+test_caller_cancel_during_supersession_preserves_first_cause (test_closing.CloseTests.test_caller_cancel_during_supersession_preserves_first_cause) ... ok
+test_completed_app_before_dispatch_does_not_close (test_closing.CloseTests.test_completed_app_before_dispatch_does_not_close) ... ok
+test_disconnect_terminal_record_retains_close_identity_and_live_lifetime (test_closing.CloseTests.test_disconnect_terminal_record_retains_close_identity_and_live_lifetime) ... ok
+test_durable_projection_keeps_typed_identity_and_drops_arbitrary_values (test_closing.CloseTests.test_durable_projection_keeps_typed_identity_and_drops_arbitrary_values) ... ok
+test_effect_failure_or_identity_change_blocks_native_guard (test_closing.CloseTests.test_effect_failure_or_identity_change_blocks_native_guard) ... ok
+test_empty_subtree_pending_reap_reports_unknown_not_live (test_closing.CloseTests.test_empty_subtree_pending_reap_reports_unknown_not_live) ... ok
+test_exact_native_argv_and_adapter_teardown_are_distinct (test_closing.CloseTests.test_exact_native_argv_and_adapter_teardown_are_distinct) ... ok
+test_hook_does_not_acquire_fresh_budget_or_compete_with_cleanup (test_closing.CloseTests.test_hook_does_not_acquire_fresh_budget_or_compete_with_cleanup) ... ok
+test_hook_effect_free_bounded_and_terminal_idempotent (test_closing.CloseTests.test_hook_effect_free_bounded_and_terminal_idempotent) ... ok
+test_missing_ambiguous_unassociated_stale_and_expired_send_no_close (test_closing.CloseTests.test_missing_ambiguous_unassociated_stale_and_expired_send_no_close) ... ok
+test_native_error_cannot_turn_into_success_when_app_exits (test_closing.CloseTests.test_native_error_cannot_turn_into_success_when_app_exits) ... ok
+test_noop_window_loss_and_dialog_do_not_satisfy_exit_or_retarget (test_closing.CloseTests.test_noop_window_loss_and_dialog_do_not_satisfy_exit_or_retarget) ... ok
+test_oversized_and_nonfinite_times_are_dropped_without_conversion_errors (test_closing.CloseTests.test_oversized_and_nonfinite_times_are_dropped_without_conversion_errors) ... ok
+test_real_query_reserve_survives_work_timeout_and_frees_adapter (test_closing.CloseTests.test_real_query_reserve_survives_work_timeout_and_frees_adapter) ... ok
+test_short_shutdown_bound_permanently_clips_same_reserve (test_closing.CloseTests.test_short_shutdown_bound_permanently_clips_same_reserve) ... ok
+test_slow_supersession_cleanup_cannot_accept_late_success (test_closing.CloseTests.test_slow_supersession_cleanup_cannot_accept_late_success) ... ok
+test_supersession_after_work_deadline_uses_remainder_same_reserve (test_closing.CloseTests.test_supersession_after_work_deadline_uses_remainder_same_reserve) ... ok
+test_supersession_cleanup_before_deadline_accepts_success (test_closing.CloseTests.test_supersession_cleanup_before_deadline_accepts_success) ... ok
+test_supersession_does_not_hide_an_existing_query_error (test_closing.CloseTests.test_supersession_does_not_hide_an_existing_query_error) ... ok
+test_supersession_exhausted_reserve_is_unconfirmed (test_closing.CloseTests.test_supersession_exhausted_reserve_is_unconfirmed) ... ok
+test_whole_application_exit_and_nonzero_root_are_required (test_closing.CloseTests.test_whole_application_exit_and_nonzero_root_are_required) ... ok
+test_ancestor_cargo_configuration_rejected_before_build (test_dependencies.DependencyTests.test_ancestor_cargo_configuration_rejected_before_build) ... ok
+test_cli_json_failure_from_another_directory (test_dependencies.DependencyTests.test_cli_json_failure_from_another_directory) ... ok
+test_cli_malformed_nested_receipts_return_actionable_json (test_dependencies.DependencyTests.test_cli_malformed_nested_receipts_return_actionable_json) ... ok
+test_commit_and_lock_mismatches (test_dependencies.DependencyTests.test_commit_and_lock_mismatches) ... ok
+test_failed_build_does_not_write_success_receipt (test_dependencies.DependencyTests.test_failed_build_does_not_write_success_receipt) ... ok
+test_inherited_environment_and_python_startup_excluded (test_dependencies.DependencyTests.test_inherited_environment_and_python_startup_excluded) ... ok
+test_missing_tool_and_binding_actionable (test_dependencies.DependencyTests.test_missing_tool_and_binding_actionable) ... ok
+test_private_bus_reaped_on_success_and_failure (test_dependencies.DependencyTests.test_private_bus_reaped_on_success_and_failure) ... ok
+test_project_cargo_configuration_rejected_before_build (test_dependencies.DependencyTests.test_project_cargo_configuration_rejected_before_build) ... ok
+test_receipt_rejects_missing_fields_and_binary_tampering (test_dependencies.DependencyTests.test_receipt_rejects_missing_fields_and_binary_tampering) ... ok
+test_timeout_kills_descendant_retaining_output (test_dependencies.DependencyTests.test_timeout_kills_descendant_retaining_output) ... ok
+test_user_git_configuration_is_not_read (test_dependencies.DependencyTests.test_user_git_configuration_is_not_read) ... ok
+test_contamination_and_protected_override_fail_before_launch (test_desktop.DesktopTests.test_contamination_and_protected_override_fail_before_launch) ... ok
+test_disposal_does_not_follow_inner_links_or_remove_durable_records (test_desktop.DesktopTests.test_disposal_does_not_follow_inner_links_or_remove_durable_records) ... ok
+test_order_modes_no_activation_and_compositor_only_permission (test_desktop.DesktopTests.test_order_modes_no_activation_and_compositor_only_permission) ... ok
+test_path_length_and_symlink_ancestor_rejected_before_spawn (test_desktop.DesktopTests.test_path_length_and_symlink_ancestor_rejected_before_spawn) ... ok
+test_probe_and_essential_failures_are_reaped_before_observation (test_desktop.DesktopTests.test_probe_and_essential_failures_are_reaped_before_observation) ... ok
+test_selected_executable_argv_cwd_and_clean_defaults (test_desktop.DesktopTests.test_selected_executable_argv_cwd_and_clean_defaults) ... ok
+test_shared_deadline_and_success_acceptance_recheck (test_desktop.DesktopTests.test_shared_deadline_and_success_acceptance_recheck) ... ok
+test_unsafe_socket_and_existing_or_linked_roots_fail_closed (test_desktop.DesktopTests.test_unsafe_socket_and_existing_or_linked_roots_fail_closed) ... ok
+test_dispose_cancels_pending_bus_token_and_new_owner_has_unique_epoch (test_input_connection.InputTests.test_dispose_cancels_pending_bus_token_and_new_owner_has_unique_epoch) ... ok
+test_dispose_from_event_callback_does_not_touch_freed_context (test_input_connection.InputTests.test_dispose_from_event_callback_does_not_touch_freed_context) ... ok
+test_duplicate_device_event_references_are_balanced (test_input_connection.InputTests.test_duplicate_device_event_references_are_balanced) ... ok
+test_emit_exception_cannot_lose_pressed_ledger (test_input_connection.InputTests.test_emit_exception_cannot_lose_pressed_ledger) ... ok
+test_entire_numeric_batch_prevalidated_and_bounded (test_input_connection.InputTests.test_entire_numeric_batch_prevalidated_and_bounded) ... ok
+test_failed_native_setup_closes_owned_fd_before_reuse (test_input_connection.InputTests.test_failed_native_setup_closes_owned_fd_before_reuse) ... ok
+test_hup_without_disconnect_gates_and_cancels (test_input_connection.InputTests.test_hup_without_disconnect_gates_and_cancels) ... ok
+test_idle_added_other_device_does_not_falsely_fail (test_input_connection.InputTests.test_idle_added_other_device_does_not_falsely_fail) ... ok
+test_late_async_reply_is_rejected_before_fd_duplication (test_input_connection.InputTests.test_late_async_reply_is_rejected_before_fd_duplication) ... ok
+test_malformed_reply_fail_closed_without_fd_duplication (test_input_connection.InputTests.test_malformed_reply_fail_closed_without_fd_duplication) ... ok
+test_native_exception_preserves_attempted_press (test_input_connection.InputTests.test_native_exception_preserves_attempted_press) ... ok
+test_normal_release_frames_all_keys_and_clears_ledger (test_input_connection.InputTests.test_normal_release_frames_all_keys_and_clears_ledger) ... ok
+test_pause_257_cannot_be_overtaken_between_batches (test_input_connection.InputTests.test_pause_257_cannot_be_overtaken_between_batches) ... ok
+test_pause_resume_retains_uncertainty (test_input_connection.InputTests.test_pause_resume_retains_uncertainty) ... ok
+test_reentrant_emission_observer_cannot_poison_replacement (test_input_connection.InputTests.test_reentrant_emission_observer_cannot_poison_replacement) ... ok
+test_removal_pointer_reuse_preserves_unique_identity_and_ledger (test_input_connection.InputTests.test_removal_pointer_reuse_preserves_unique_identity_and_ledger) ... ok
+test_replace_from_callback_stale_continuation_leaves_new_sources (test_input_connection.InputTests.test_replace_from_callback_stale_continuation_leaves_new_sources) ... ok
+test_seat_removal_before_device_is_protocol_failure (test_input_connection.InputTests.test_seat_removal_before_device_is_protocol_failure) ... ok
+test_setup_preparation_failure_closes_fd_and_context (test_input_connection.InputTests.test_setup_preparation_failure_closes_fd_and_context) ... ok
+test_stale_reply_never_duplicates_descriptor (test_input_connection.InputTests.test_stale_reply_never_duplicates_descriptor) ... ok
+test_successful_native_setup_transfers_fd_once (test_input_connection.InputTests.test_successful_native_setup_transfers_fd_once) ... /usr/lib/python3.14/site-packages/gi/overrides/GLib.py:766: PyGIDeprecationWarning: Calling io_add_watch without priority as second argument is deprecated
+  warnings.warn(
+ok
+test_successful_reply_transfers_duplicate_and_keeps_private_bus (test_input_connection.InputTests.test_successful_reply_transfers_duplicate_and_keeps_private_bus) ... ok
+test_protocol_failure_in_second_drain_batch_is_sticky_and_closes_worker (test_input_health_failure.InputHealthFailure.test_protocol_failure_in_second_drain_batch_is_sticky_and_closes_worker) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/src/agent_desktop/worker.py:269: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+ok
+test_startup_health_waits_for_drained_ready_input_before_publication (test_input_health_failure.InputHealthFailure.test_startup_health_waits_for_drained_ready_input_before_publication) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_three_second_owner_delay_rejects_work_and_heartbeat_on_next_real_glib_turn (test_input_health_failure.InputHealthFailure.test_three_second_owner_delay_rejects_work_and_heartbeat_on_next_real_glib_turn) ... /home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/src/agent_desktop/worker.py:269: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+ok
+test_encodes_dynamic_text_as_ascii_json_data (test_kdotool_probe.WindowContractTests.test_encodes_dynamic_text_as_ascii_json_data) ... ok
+test_late_matching_focus_snapshot_cannot_succeed (test_kdotool_probe.WindowContractTests.test_late_matching_focus_snapshot_cannot_succeed) ... ok
+test_preserves_real_content_origin_and_null_metadata (test_kdotool_probe.WindowContractTests.test_preserves_real_content_origin_and_null_metadata) ... ok
+test_private_context_rejects_missing_identity_before_desktop_connection (test_kdotool_probe.WindowContractTests.test_private_context_rejects_missing_identity_before_desktop_connection) ... ok
+test_private_context_rejects_redirected_bus_before_connecting (test_kdotool_probe.WindowContractTests.test_private_context_rejects_redirected_bus_before_connecting) ... ok
+test_rejects_duplicate_ids_missing_metadata_and_invalid_bounds (test_kdotool_probe.WindowContractTests.test_rejects_duplicate_ids_missing_metadata_and_invalid_bounds) ... ok
+test_successful_activation_exit_does_not_establish_focus (test_kdotool_probe.WindowContractTests.test_successful_activation_exit_does_not_establish_focus) ... ok
+test_vanished_target_rejects_before_activation (test_kdotool_probe.WindowContractTests.test_vanished_target_rejects_before_activation) ... ok
+test_announced_paused_uncertain_and_resetting_devices_are_gated (test_libei_probe.InputSafetyTests.test_announced_paused_uncertain_and_resetting_devices_are_gated) ... ok
+test_disconnected_device_cannot_send (test_libei_probe.InputSafetyTests.test_disconnected_device_cannot_send) ... ok
+test_entire_invalid_chord_rejected_before_native_calls (test_libei_probe.InputSafetyTests.test_entire_invalid_chord_rejected_before_native_calls) ... ok
+test_failed_setup_closes_immediately_without_reused_or_unrelated_fd_damage (test_libei_probe.InputSafetyTests.test_failed_setup_closes_immediately_without_reused_or_unrelated_fd_damage) ... ok
+test_installed_negative_setup_keeps_fd_until_caller_closes (test_libei_probe.InputSafetyTests.test_installed_negative_setup_keeps_fd_until_caller_closes) ... ok
+test_real_installed_header_audit (test_libei_probe.InputSafetyTests.test_real_installed_header_audit) ... ok
+test_release_on_paused_device_preserves_uncertainty_and_ledger (test_libei_probe.InputSafetyTests.test_release_on_paused_device_preserves_uncertainty_and_ledger) ... ok
+test_successful_setup_transfers_fd_once_to_installed_library (test_libei_probe.InputSafetyTests.test_successful_setup_transfers_fd_once_to_installed_library) ... ok
+test_unknown_native_build_rejected_before_loading (test_libei_probe.InputSafetyTests.test_unknown_native_build_rejected_before_loading) ... ok
+test_ambiguous_submission_absence_never_authorizes_retirement (test_lifecycle.LifecycleTests.test_ambiguous_submission_absence_never_authorizes_retirement) ... ok
+test_dependency_root_is_normalized_immutable_configuration (test_lifecycle.LifecycleTests.test_dependency_root_is_normalized_immutable_configuration) ... ok
+test_duplicate_conflict_stop_restart_and_managed_endpoint_no_lock_deadlock (test_lifecycle.LifecycleTests.test_duplicate_conflict_stop_restart_and_managed_endpoint_no_lock_deadlock) ... ok
+test_expected_stopped_start_does_not_allocate_new_generation (test_lifecycle.LifecycleTests.test_expected_stopped_start_does_not_allocate_new_generation) ... ok
+test_expired_client_deadline_prevents_connect_and_expired_manager_prevents_ping (test_lifecycle.LifecycleTests.test_expired_client_deadline_prevents_connect_and_expired_manager_prevents_ping) ... ok
+test_held_artifact_lock_does_not_block_stop (test_lifecycle.LifecycleTests.test_held_artifact_lock_does_not_block_stop) ... ok
+test_late_ambiguous_submission_is_stopped_when_it_appears (test_lifecycle.LifecycleTests.test_late_ambiguous_submission_is_stopped_when_it_appears) ... ok
+test_late_stop_does_not_touch_a_replacement_pointer (test_lifecycle.LifecycleTests.test_late_stop_does_not_touch_a_replacement_pointer) ... ok
+test_live_descendants_and_pending_job_prevent_replacement (test_lifecycle.LifecycleTests.test_live_descendants_and_pending_job_prevent_replacement) ... ok
+test_manager_inspection_failure_preserves_owner (test_lifecycle.LifecycleTests.test_manager_inspection_failure_preserves_owner) ... ok
+test_metadata_unit_mismatch_fails_before_service_call (test_lifecycle.LifecycleTests.test_metadata_unit_mismatch_fails_before_service_call) ... ok
+test_name_lock_wait_is_bounded (test_lifecycle.LifecycleTests.test_name_lock_wait_is_bounded) ... ok
+test_old_configuration_remains_stoppable_but_not_compatible (test_lifecycle.LifecycleTests.test_old_configuration_remains_stoppable_but_not_compatible) ... ok
+test_ready_generation_unexpected_exit_remains_failed (test_lifecycle.LifecycleTests.test_ready_generation_unexpected_exit_remains_failed) ... ok
+test_ready_status_requires_fresh_complete_correlated_health (test_lifecycle.LifecycleTests.test_ready_status_requires_fresh_complete_correlated_health) ... ok
+test_requested_fallback_signal_does_not_become_a_prior_crash_on_repeat (test_lifecycle.LifecycleTests.test_requested_fallback_signal_does_not_become_a_prior_crash_on_repeat) ... ok
+test_settings_disposal_failure_never_records_complete_and_retries (test_lifecycle.LifecycleTests.test_settings_disposal_failure_never_records_complete_and_retries) ... ok
+test_stale_requests_and_cleanup_cannot_touch_replacement_without_socket (test_lifecycle.LifecycleTests.test_stale_requests_and_cleanup_cannot_touch_replacement_without_socket) ... ok
+test_start_failure_cleanup_reserve_and_managed_manifest_not_ready (test_lifecycle.LifecycleTests.test_start_failure_cleanup_reserve_and_managed_manifest_not_ready) ... ok
+test_start_failure_reports_uncertain_retained_generation (test_lifecycle.LifecycleTests.test_start_failure_reports_uncertain_retained_generation) ... ok
+test_sticky_artifact_failure_reconciles_routing_after_stop (test_lifecycle.LifecycleTests.test_sticky_artifact_failure_reconciles_routing_after_stop) ... ok
+test_stop_preserves_observed_unexpected_failure_without_status (test_lifecycle.LifecycleTests.test_stop_preserves_observed_unexpected_failure_without_status) ... ok
+test_symlink_metadata_is_not_followed_or_removed (test_lifecycle.LifecycleTests.test_symlink_metadata_is_not_followed_or_removed) ... ok
+test_unexpected_clean_worker_exit_is_failed_on_stop (test_lifecycle.LifecycleTests.test_unexpected_clean_worker_exit_is_failed_on_stop) ... ok
+test_concurrent_duplicate_start_replacement_stale_requests_and_cgroup_children (test_lifecycle_process.LifecycleProcessTests.test_concurrent_duplicate_start_replacement_stale_requests_and_cgroup_children) ... ok
+test_direct_stop_after_sigkill_retains_failure (test_lifecycle_process.LifecycleProcessTests.test_direct_stop_after_sigkill_retains_failure) ... ok
+test_frozen_worker_holding_record_lock_status_bound_and_fallback_stop (test_lifecycle_process.LifecycleProcessTests.test_frozen_worker_holding_record_lock_status_bound_and_fallback_stop) ... ok
+test_start_stop_race_and_unexpected_worker_death (test_lifecycle_process.LifecycleProcessTests.test_start_stop_race_and_unexpected_worker_death) ... ok
+test_changed_binary_rejected_before_execution_even_with_valid_receipt (test_prerequisites.PrerequisiteTests.test_changed_binary_rejected_before_execution_even_with_valid_receipt) ... ok
+test_doctor_error_retains_all_component_diagnostics_and_repairs (test_prerequisites.PrerequisiteTests.test_doctor_error_retains_all_component_diagnostics_and_repairs) ... ok
+test_doctor_is_read_only_and_never_reports_capability_readiness (test_prerequisites.PrerequisiteTests.test_doctor_is_read_only_and_never_reports_capability_readiness) ... ok
+test_doctor_resolves_root_against_caller_not_worker_cwd (test_prerequisites.PrerequisiteTests.test_doctor_resolves_root_against_caller_not_worker_cwd) ... ok
+test_expired_deadline_launches_no_helper (test_prerequisites.PrerequisiteTests.test_expired_deadline_launches_no_helper) ... ok
+test_helper_output_is_bounded_during_execution (test_prerequisites.PrerequisiteTests.test_helper_output_is_bounded_during_execution) ... ok
+test_helpers_exclude_ambient_desktop_credentials_and_python_paths (test_prerequisites.PrerequisiteTests.test_helpers_exclude_ambient_desktop_credentials_and_python_paths) ... ok
+test_late_observation_cannot_pass (test_prerequisites.PrerequisiteTests.test_late_observation_cannot_pass) ... ok
+test_libei_rejects_unaudited_library_and_architecture (test_prerequisites.PrerequisiteTests.test_libei_rejects_unaudited_library_and_architecture) ... ok
+test_manager_helper_uses_only_explicit_user_manager_bus (test_prerequisites.PrerequisiteTests.test_manager_helper_uses_only_explicit_user_manager_bus) ... ok
+test_matching_self_asserted_receipt_does_not_allow_unknown_build (test_prerequisites.PrerequisiteTests.test_matching_self_asserted_receipt_does_not_allow_unknown_build) ... ok
+test_pinned_receipt_works_without_checkout_or_build_toolchain (test_prerequisites.PrerequisiteTests.test_pinned_receipt_works_without_checkout_or_build_toolchain) ... ok
+test_read_rejects_fifo_and_oversized_state_without_blocking (test_prerequisites.PrerequisiteTests.test_read_rejects_fifo_and_oversized_state_without_blocking) ... ok
+test_receipt_policy_and_resolved_graph_fail_closed (test_prerequisites.PrerequisiteTests.test_receipt_policy_and_resolved_graph_fail_closed) ... ok
+test_shadowed_binding_or_absent_fd_or_png_support_rejected (test_prerequisites.PrerequisiteTests.test_shadowed_binding_or_absent_fd_or_png_support_rejected) ... ok
+test_timeout_kills_helper_and_pipe_holding_descendant (test_prerequisites.PrerequisiteTests.test_timeout_kills_helper_and_pipe_holding_descendant) ... ok
+test_accepting_socket_with_stalled_authentication_is_finite (test_private_bus.PrivateBusTests.test_accepting_socket_with_stalled_authentication_is_finite) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_async_private_connect_and_get_id (test_private_bus.PrivateBusTests.test_async_private_connect_and_get_id) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_authenticated_socket_with_stalled_hello_is_finite (test_private_bus.PrivateBusTests.test_authenticated_socket_with_stalled_hello_is_finite) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_cancelled_eis_reply_releases_native_fd_list_without_installing (test_private_bus.PrivateBusTests.test_cancelled_eis_reply_releases_native_fd_list_without_installing) ... ok
+test_late_completion_before_owner_tick_becomes_sticky_timeout (test_private_bus.PrivateBusTests.test_late_completion_before_owner_tick_becomes_sticky_timeout) ... ok
+test_late_connect_completion_is_closed_and_never_installed (test_private_bus.PrivateBusTests.test_late_connect_completion_is_closed_and_never_installed) ... ok
+test_late_eis_reply_releases_native_fd_list_without_installing (test_private_bus.PrivateBusTests.test_late_eis_reply_releases_native_fd_list_without_installing) ... ok
+test_owner_cancel_reaps_stale_fd_without_poisoning_replacement_call (test_private_bus.PrivateBusTests.test_owner_cancel_reaps_stale_fd_without_poisoning_replacement_call) ... ok
+test_rejected_native_reply_signature_does_not_return_fd (test_private_bus.PrivateBusTests.test_rejected_native_reply_signature_does_not_return_fd) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_discarded_exact_revision_is_failure (test_private_harness.HarnessBoundaries.test_discarded_exact_revision_is_failure) ... ok
+test_environment_does_not_inherit_caller_endpoints (test_private_harness.HarnessBoundaries.test_environment_does_not_inherit_caller_endpoints) ... ok
+test_finalizer_refuses_wrong_generation (test_private_harness.HarnessBoundaries.test_finalizer_refuses_wrong_generation) ... ok
+test_intervening_input_and_abandoned_control_cannot_ack_current_request (test_private_harness.HarnessBoundaries.test_intervening_input_and_abandoned_control_cannot_ack_current_request) ... ok
+test_screenshot_cli_requires_explicit_opt_in (test_private_harness.HarnessBoundaries.test_screenshot_cli_requires_explicit_opt_in) ... ok
+test_screenshot_environment_is_private_kwin_only_with_or_without_plugin (test_private_harness.HarnessBoundaries.test_screenshot_environment_is_private_kwin_only_with_or_without_plugin) ... ok
+test_screenshot_opt_in_is_recorded_before_launch (test_private_harness.HarnessBoundaries.test_screenshot_opt_in_is_recorded_before_launch) ... ok
+test_subprocess_deadline_reaps_group (test_private_harness.HarnessBoundaries.test_subprocess_deadline_reaps_group) ... ok
+test_symlinked_artifact_ancestor_rejected (test_private_harness.HarnessBoundaries.test_symlinked_artifact_ancestor_rejected) ... ok
+test_packaged_codec_matches_m1_for_premultiplied_channels_and_endianness (test_provisional_capture.CodecTests.test_packaged_codec_matches_m1_for_premultiplied_channels_and_endianness) ... ok
+test_strict_metadata_does_not_coerce_types_or_dimensions (test_provisional_capture.CodecTests.test_strict_metadata_does_not_coerce_types_or_dimensions) ... ok
+test_private_endpoint_cannot_come_from_ambient_host_environment (test_provisional_capture.ConfigTests.test_private_endpoint_cannot_come_from_ambient_host_environment) ... ok
+test_refuses_existing_publication_and_duplicate_json_fields (test_provisional_capture.ConfigTests.test_refuses_existing_publication_and_duplicate_json_fields) ... ok
+test_rejects_symlink_config_world_readable_file_and_symlink_ancestor (test_provisional_capture.ConfigTests.test_rejects_symlink_config_world_readable_file_and_symlink_ancestor) ... ok
+test_unsafe_or_ambiguous_inputs_rejected_before_bus_connect (test_provisional_capture.ConfigTests.test_unsafe_or_ambiguous_inputs_rejected_before_bus_connect) ... ok
+test_valid_configuration_is_anchored_and_private (test_provisional_capture.ConfigTests.test_valid_configuration_is_anchored_and_private) ... ok
+test_call_setup_failure_closes_original_wrapper_reader_and_bus (test_provisional_capture.TransportTests.test_call_setup_failure_closes_original_wrapper_reader_and_bus) ... ok
+test_disposal_failure_attempts_other_releases_and_cannot_publish_success (test_provisional_capture.TransportTests.test_disposal_failure_attempts_other_releases_and_cannot_publish_success) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_eof_with_short_image_is_rejected (test_provisional_capture.TransportTests.test_eof_with_short_image_is_rejected) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_full_raw_bytes_without_eof_cannot_satisfy_readiness (test_provisional_capture.TransportTests.test_full_raw_bytes_without_eof_cannot_satisfy_readiness) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_late_receipt_publication_retracts_success_and_png (test_provisional_capture.TransportTests.test_late_receipt_publication_retracts_success_and_png) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_png_encode_output_must_fully_decode_before_publication (test_provisional_capture.TransportTests.test_png_encode_output_must_fully_decode_before_publication) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_valid_complete_png_receipt_has_identity_hash_and_private_permissions (test_provisional_capture.TransportTests.test_valid_complete_png_receipt_has_identity_hash_and_private_permissions) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_wrong_metadata_rejects_capture (test_provisional_capture.TransportTests.test_wrong_metadata_rejects_capture) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_adapter_failure_is_attributed_and_retains_cleanup_owner (test_readiness.ReadinessTests.test_adapter_failure_is_attributed_and_retains_cleanup_owner) ... ok
+test_bus_failure_makes_compositor_unknown_and_is_separate_from_compositor_failure (test_readiness.ReadinessTests.test_bus_failure_makes_compositor_unknown_and_is_separate_from_compositor_failure) ... ok
+test_bus_round_timeout_invalidates_previous_compositor_observation (test_readiness.ReadinessTests.test_bus_round_timeout_invalidates_previous_compositor_observation) ... ok
+test_compositor_round_timeout_after_bus_reply_is_attributed_to_compositor (test_readiness.ReadinessTests.test_compositor_round_timeout_after_bus_reply_is_attributed_to_compositor) ... ok
+test_delayed_owner_cannot_renew_stale_success_with_a_fresh_control_timestamp (test_readiness.ReadinessTests.test_delayed_owner_cannot_renew_stale_success_with_a_fresh_control_timestamp) ... ok
+test_empty_valid_window_snapshot_is_accepted_after_cleanup (test_readiness.ReadinessTests.test_empty_valid_window_snapshot_is_accepted_after_cleanup) ... ok
+test_failure_is_sticky_even_if_late_successful_observations_arrive (test_readiness.ReadinessTests.test_failure_is_sticky_even_if_late_successful_observations_arrive) ... ok
+test_failure_of_each_gate_is_attributed_and_persisted (test_readiness.ReadinessTests.test_failure_of_each_gate_is_attributed_and_persisted) ... ok
+test_health_round_shares_one_second_deadline_and_never_overlaps (test_readiness.ReadinessTests.test_health_round_shares_one_second_deadline_and_never_overlaps) ... ok
+test_late_screenshot_stat_cannot_refresh_acceptance_time (test_readiness.ReadinessTests.test_late_screenshot_stat_cannot_refresh_acceptance_time) ... ok
+test_paused_or_disconnected_input_invalidates_ready_generation (test_readiness.ReadinessTests.test_paused_or_disconnected_input_invalidates_ready_generation) ... ok
+test_query_cleanup_does_not_extend_success_deadline (test_readiness.ReadinessTests.test_query_cleanup_does_not_extend_success_deadline) ... ok
+test_query_deadline_is_capped_by_original_startup (test_readiness.ReadinessTests.test_query_deadline_is_capped_by_original_startup) ... ok
+test_ready_manifest_retains_provisional_scope_and_replacement_owner (test_readiness.ReadinessTests.test_ready_manifest_retains_provisional_scope_and_replacement_owner) ... ok
+test_screenshot_child_must_exit_before_receipt_can_be_accepted (test_readiness.ReadinessTests.test_screenshot_child_must_exit_before_receipt_can_be_accepted) ... ok
+test_screenshot_receipt_strict_shape_and_correlated_identity (test_readiness.ReadinessTests.test_screenshot_receipt_strict_shape_and_correlated_identity) ... ok
+test_screenshot_receipt_symlink_or_shared_permissions_are_rejected (test_readiness.ReadinessTests.test_screenshot_receipt_symlink_or_shared_permissions_are_rejected) ... ok
+test_screenshot_symlink_publication_is_rejected (test_readiness.ReadinessTests.test_screenshot_symlink_publication_is_rejected) ... ok
+test_sockets_alone_and_helper_exit_alone_never_satisfy_capabilities (test_readiness.ReadinessTests.test_sockets_alone_and_helper_exit_alone_never_satisfy_capabilities) ... ok
+test_automatic_abort_escalation_joins_one_shutdown_owner (test_scheduler.SchedulerTests.test_automatic_abort_escalation_joins_one_shutdown_owner) ... ok
+test_child_reaper_survives_request_terminalization (test_scheduler.SchedulerTests.test_child_reaper_survives_request_terminalization) ... ok
+test_deadline_acceptance_after_step_and_observer (test_scheduler.SchedulerTests.test_deadline_acceptance_after_step_and_observer) ... ok
+test_disconnect_targets_only_matching_queued_or_active (test_scheduler.SchedulerTests.test_disconnect_targets_only_matching_queued_or_active) ... ok
+test_factory_crossing_deadline_never_emits_and_retains_cleanup_owner (test_scheduler.SchedulerTests.test_factory_crossing_deadline_never_emits_and_retains_cleanup_owner) ... ok
+test_factory_error_preserves_error_context_and_partial (test_scheduler.SchedulerTests.test_factory_error_preserves_error_context_and_partial) ... ok
+test_failed_session_cancels_work_distinctly_and_preserves_prior_cause (test_scheduler.SchedulerTests.test_failed_session_cancels_work_distinctly_and_preserves_prior_cause) ... ok
+test_failed_shutdown_does_not_replace_existing_cancel_or_timeout (test_scheduler.SchedulerTests.test_failed_shutdown_does_not_replace_existing_cancel_or_timeout) ... ok
+test_joined_waiter_cannot_extend_or_cancel_owner (test_scheduler.SchedulerTests.test_joined_waiter_cannot_extend_or_cancel_owner) ... ok
+test_lifecycle_storage_failure_does_not_skip_required_cleanup (test_scheduler.SchedulerTests.test_lifecycle_storage_failure_does_not_skip_required_cleanup) ... ok
+test_observer_failure_at_each_phase_cannot_skip_safety (test_scheduler.SchedulerTests.test_observer_failure_at_each_phase_cannot_skip_safety) ... ok
+test_observer_reentrancy_is_rejected (test_scheduler.SchedulerTests.test_observer_reentrancy_is_rejected) ... ok
+test_queue_deadline_and_single_owner (test_scheduler.SchedulerTests.test_queue_deadline_and_single_owner) ... ok
+test_queued_expiry_observer_crossing_active_deadline_prevents_emission (test_scheduler.SchedulerTests.test_queued_expiry_observer_crossing_active_deadline_prevents_emission) ... ok
+test_reset_and_stop_bypass_and_survive_callers (test_scheduler.SchedulerTests.test_reset_and_stop_bypass_and_survive_callers) ... ok
+test_stop_deadline_includes_superseded_reset_cleanup_and_joiners (test_scheduler.SchedulerTests.test_stop_deadline_includes_superseded_reset_cleanup_and_joiners) ... ok
+test_stop_during_abort_uses_one_admission_budget (test_scheduler.SchedulerTests.test_stop_during_abort_uses_one_admission_budget) ... ok
+test_unsupported_controls_do_not_cancel_active (test_scheduler.SchedulerTests.test_unsupported_controls_do_not_cancel_active) ... ok
+test_worker_timeout_and_cleanup_failure_fail_closed (test_scheduler.SchedulerTests.test_worker_timeout_and_cleanup_failure_fail_closed) ... ok
+test_reserved_control_under_ordinary_saturation_and_wrong_generation (test_scheduler_process.SchedulerProcessTests.test_reserved_control_under_ordinary_saturation_and_wrong_generation) ... ok
+test_reset_and_stop_cleanup_survive_cli_exit (test_scheduler_process.SchedulerProcessTests.test_reset_and_stop_cleanup_survive_cli_exit) ... ok
+test_serialization_queued_expiry_worker_timeout_and_retained_handle (test_scheduler_process.SchedulerProcessTests.test_serialization_queued_expiry_worker_timeout_and_retained_handle) ... ok
+test_sigint_and_disconnect_cancel_only_corresponding_request (test_scheduler_process.SchedulerProcessTests.test_sigint_and_disconnect_cancel_only_corresponding_request) ... ok
+test_strict_cancel_and_endpoint_routing (test_scheduler_process.SchedulerProcessTests.test_strict_cancel_and_endpoint_routing) ... ok
+test_sustained_controls_do_not_starve_work_expiry_or_child_reaping (test_scheduler_process.SchedulerProcessTests.test_sustained_controls_do_not_starve_work_expiry_or_child_reaping) ... ok
+test_artifact_lock_cannot_gate_survivor_kill_or_settings_disposal (test_service_cleanup.FinalizerTests.test_artifact_lock_cannot_gate_survivor_kill_or_settings_disposal) ... ok
+test_bookkeeping_failure_never_bypasses_current_generation_recheck (test_service_cleanup.FinalizerTests.test_bookkeeping_failure_never_bypasses_current_generation_recheck) ... ok
+test_busy_generation_lock_cannot_prevent_verified_unit_fallback (test_service_cleanup.FinalizerTests.test_busy_generation_lock_cannot_prevent_verified_unit_fallback) ... ok
+test_early_specific_failure_precedes_requested_timeout_without_manifest_failure (test_service_cleanup.FinalizerTests.test_early_specific_failure_precedes_requested_timeout_without_manifest_failure) ... ok
+test_first_outside_reconciliation_completes_its_own_terminal_receipt (test_service_cleanup.FinalizerTests.test_first_outside_reconciliation_completes_its_own_terminal_receipt) ... ok
+test_generation_lock_serializes_pointer_publication_interleaving (test_service_cleanup.FinalizerTests.test_generation_lock_serializes_pointer_publication_interleaving) ... ok
+test_intent_write_failure_still_submits_fallback_with_uncertain_provenance (test_service_cleanup.FinalizerTests.test_intent_write_failure_still_submits_fallback_with_uncertain_provenance) ... ok
+test_metadata_write_failure_still_submits_fallback (test_service_cleanup.FinalizerTests.test_metadata_write_failure_still_submits_fallback) ... ok
+test_observe_refreshes_terminal_post_state_before_prior_exit_classification (test_service_cleanup.FinalizerTests.test_observe_refreshes_terminal_post_state_before_prior_exit_classification) ... ok
+test_post_cleans_autonomously_without_name_lock_and_preserves_claim (test_service_cleanup.FinalizerTests.test_post_cleans_autonomously_without_name_lock_and_preserves_claim) ... ok
+test_reconciliation_keeps_original_post_receipt (test_service_cleanup.FinalizerTests.test_reconciliation_keeps_original_post_receipt) ... ok
+test_service_commands_have_clean_installed_helpers_and_literal_paths (test_service_cleanup.FinalizerTests.test_service_commands_have_clean_installed_helpers_and_literal_paths) ... ok
+test_stale_finalizer_cannot_touch_replacement_or_signal (test_service_cleanup.FinalizerTests.test_stale_finalizer_cannot_touch_replacement_or_signal) ... ok
+test_stale_ready_metadata_cannot_resurrect_finalizer_failure (test_service_cleanup.FinalizerTests.test_stale_ready_metadata_cannot_resurrect_finalizer_failure) ... ok
+test_stop_intent_and_relay_deadline_never_renew (test_service_cleanup.FinalizerTests.test_stop_intent_and_relay_deadline_never_renew) ... ok
+test_survivor_uncertainty_withholds_disposal_and_complete (test_service_cleanup.FinalizerTests.test_survivor_uncertainty_withholds_disposal_and_complete) ... ok
+test_terminal_precedence_preserves_requested_fallback_not_watchdog (test_service_cleanup.FinalizerTests.test_terminal_precedence_preserves_requested_fallback_not_watchdog) ... ok
+test_uncertain_submission_acknowledgment_write_failure_cannot_gate_stop (test_service_cleanup.FinalizerTests.test_uncertain_submission_acknowledgment_write_failure_cannot_gate_stop) ... ok
+test_uncertain_submission_and_busy_generation_lock_still_stop (test_service_cleanup.FinalizerTests.test_uncertain_submission_and_busy_generation_lock_still_stop) ... ok
+test_wrong_generation_early_failure_does_not_override_requested_stop (test_service_cleanup.FinalizerTests.test_wrong_generation_early_failure_does_not_override_requested_stop) ... ok
+test_owned_pidfds_only_and_rescan_new_descendant (test_service_cleanup.SurvivorTests.test_owned_pidfds_only_and_rescan_new_descendant) ... ok
+test_wrong_self_cgroup_or_recycled_outside_member_never_signals (test_service_cleanup.SurvivorTests.test_wrong_self_cgroup_or_recycled_outside_member_never_signals) ... ok
+test_cancel_release_close_order_and_ordinary_rejection (test_shutdown.ShutdownTests.test_cancel_release_close_order_and_ordinary_rejection) ... ok
+test_expired_callback_cannot_claim_later_close_was_attempted (test_shutdown.ShutdownTests.test_expired_callback_cannot_claim_later_close_was_attempted) ... ok
+test_raising_and_late_release_still_attempt_close_within_original_end (test_shutdown.ShutdownTests.test_raising_and_late_release_still_attempt_close_within_original_end) ... ok
+test_sixteen_second_active_cleanup_cannot_consume_later_stages (test_shutdown.ShutdownTests.test_sixteen_second_active_cleanup_cannot_consume_later_stages) ... ok
+test_superseded_reset_cancellation_is_bounded_by_shutdown (test_shutdown.ShutdownTests.test_superseded_reset_cancellation_is_bounded_by_shutdown) ... ok
+test_app_ambiguity_reports_every_uuid_before_activation (test_targeting.TargetTests.test_app_ambiguity_reports_every_uuid_before_activation) ... ok
+test_effect_persistence_expiry_prevents_activation_dispatch (test_targeting.TargetTests.test_effect_persistence_expiry_prevents_activation_dispatch) ... ok
+test_exit_requires_complete_subtree_not_root_status (test_targeting.TargetTests.test_exit_requires_complete_subtree_not_root_status) ... ok
+test_exit_wait_forces_only_initial_observation_until_completion (test_targeting.TargetTests.test_exit_wait_forces_only_initial_observation_until_completion) ... ok
+test_explicit_unassociated_braced_uppercase_and_fresh_geometry (test_targeting.TargetTests.test_explicit_unassociated_braced_uppercase_and_fresh_geometry) ... ok
+test_failure_retention_cannot_replace_latched_timeout (test_targeting.TargetTests.test_failure_retention_cannot_replace_latched_timeout) ... ok
+test_final_selected_identity_recheck_after_effect_persistence (test_targeting.TargetTests.test_final_selected_identity_recheck_after_effect_persistence) ... ok
+test_focus_wait_passive_success_timeout_and_vanish (test_targeting.TargetTests.test_focus_wait_passive_success_timeout_and_vanish) ... ok
+test_initial_absence_and_later_loss_do_not_retarget_same_app (test_targeting.TargetTests.test_initial_absence_and_later_loss_do_not_retarget_same_app) ... ok
+test_known_exit_precedes_inflight_query_but_original_error_stays_latched (test_targeting.TargetTests.test_known_exit_precedes_inflight_query_but_original_error_stays_latched) ... ok
+test_launch_cancel_record_failure_keeps_native_cleanup_reserve_and_refs (test_targeting.TargetTests.test_launch_cancel_record_failure_keeps_native_cleanup_reserve_and_refs) ... ok
+test_query_failure_is_not_false_condition_and_cleanup_owns_slot (test_targeting.TargetTests.test_query_failure_is_not_false_condition_and_cleanup_owns_slot) ... ok
+test_queued_deadline_or_generation_mismatch_spawns_nothing (test_targeting.TargetTests.test_queued_deadline_or_generation_mismatch_spawns_nothing) ... ok
+test_readonly_guard_requires_focus_and_client_without_frame_fallback (test_targeting.TargetTests.test_readonly_guard_requires_focus_and_client_without_frame_fallback) ... ok
+test_selected_recheck_uses_original_uuid_pair_and_final_association (test_targeting.TargetTests.test_selected_recheck_uses_original_uuid_pair_and_final_association) ... ok
+test_successful_noop_activation_keeps_polling_then_times_out (test_targeting.TargetTests.test_successful_noop_activation_keeps_polling_then_times_out) ... ok
+test_window_wait_is_passive_existential_and_late_acceptance_fails (test_targeting.TargetTests.test_window_wait_is_passive_existential_and_late_acceptance_fails) ... ok
+test_dead_original_with_simulated_reused_pid_never_signals_live_sentinel (test_terminating.RealPidfdTests.test_dead_original_with_simulated_reused_pid_never_signals_live_sentinel) ... ok
+test_real_retained_pidfd_delivers_term_and_root_is_reaped_only_by_child_owner (test_terminating.RealPidfdTests.test_real_retained_pidfd_delivers_term_and_root_is_reaped_only_by_child_owner) ... ok
+test_4096_dead_handles_and_stale_queue_settle_incrementally (test_terminating.TerminationTests.test_4096_dead_handles_and_stale_queue_settle_incrementally) ... ok
+test_birth_change_missing_proc_and_dead_lifetime_never_signal (test_terminating.TerminationTests.test_birth_change_missing_proc_and_dead_lifetime_never_signal) ... ok
+test_cancel_during_settlement_keeps_registry_owner_for_later_wait (test_terminating.TerminationTests.test_cancel_during_settlement_keeps_registry_owner_for_later_wait) ... ok
+test_cancel_revokes_before_diagnostics_and_preserves_original_cause (test_terminating.TerminationTests.test_cancel_revokes_before_diagnostics_and_preserves_original_cause) ... ok
+test_completed_old_handle_is_noop_while_new_app_lives (test_terminating.TerminationTests.test_completed_old_handle_is_noop_while_new_app_lives) ... ok
+test_construction_cancel_before_start_and_cleanup_have_no_authority (test_terminating.TerminationTests.test_construction_cancel_before_start_and_cleanup_have_no_authority) ... ok
+test_context_cancel_stop_and_artifact_flags_block_registry_before_scheduler (test_terminating.TerminationTests.test_context_cancel_stop_and_artifact_flags_block_registry_before_scheduler) ... ok
+test_current_reaper_code_survives_stale_or_uncertain_cgroup_cache (test_terminating.TerminationTests.test_current_reaper_code_survives_stale_or_uncertain_cgroup_cache) ... ok
+test_descriptor_replacement_or_index_revision_during_check_is_rejected (test_terminating.TerminationTests.test_descriptor_replacement_or_index_revision_during_check_is_rejected) ... ok
+test_durable_intent_and_phase_before_signal_at_most_once_each (test_terminating.TerminationTests.test_durable_intent_and_phase_before_signal_at_most_once_each) ... ok
+test_esrch_is_one_attempt_while_permission_error_revokes (test_terminating.TerminationTests.test_esrch_is_one_attempt_while_permission_error_revokes) ... ok
+test_exact_subtree_and_foreign_prefix_supervisor_control_membership (test_terminating.TerminationTests.test_exact_subtree_and_foreign_prefix_supervisor_control_membership) ... ok
+test_external_guard_runs_before_final_membership_verification (test_terminating.TerminationTests.test_external_guard_runs_before_final_membership_verification) ... ok
+test_forced_observation_cannot_discard_live_migrated_member (test_terminating.TerminationTests.test_forced_observation_cannot_discard_live_migrated_member) ... ok
+test_generation_and_expiry_precede_lookup_or_effect (test_terminating.TerminationTests.test_generation_and_expiry_precede_lookup_or_effect) ... ok
+test_global_cutoffs_include_resolution_and_phase_persistence_time (test_terminating.TerminationTests.test_global_cutoffs_include_resolution_and_phase_persistence_time) ... ok
+test_intent_and_phase_artifact_failures_prevent_dispatch (test_terminating.TerminationTests.test_intent_and_phase_artifact_failures_prevent_dispatch) ... ok
+test_late_persistence_cannot_turn_completion_into_success (test_terminating.TerminationTests.test_late_persistence_cannot_turn_completion_into_success) ... ok
+test_malformed_unknown_and_unowned_historical_never_attach (test_terminating.TerminationTests.test_malformed_unknown_and_unowned_historical_never_attach) ... ok
+test_missing_pidfd_signal_prerequisite_has_no_intent (test_terminating.TerminationTests.test_missing_pidfd_signal_prerequisite_has_no_intent) ... ok
+test_new_lifetime_at_kill_phase_gets_no_term_grace (test_terminating.TerminationTests.test_new_lifetime_at_kill_phase_gets_no_term_grace) ... ok
+test_positive_exit_detaches_before_success_and_preserves_observed_time (test_terminating.TerminationTests.test_positive_exit_detaches_before_success_and_preserves_observed_time) ... ok
+test_same_fd_reacquisition_revision_during_external_guard_cannot_be_blessed (test_terminating.TerminationTests.test_same_fd_reacquisition_revision_during_external_guard_cannot_be_blessed) ... ok
+test_signal_attempt_cap_and_discovery_fairness_under_one_deadline (test_terminating.TerminationTests.test_signal_attempt_cap_and_discovery_fairness_under_one_deadline) ... ok
+test_slow_identity_and_phase_persistence_cannot_cross_cutoff (test_terminating.TerminationTests.test_slow_identity_and_phase_persistence_cannot_cross_cutoff) ... ok
+test_typed_projection_rejects_boolean_numbers_and_arbitrary_state (test_terminating.TerminationTests.test_typed_projection_rejects_boolean_numbers_and_arbitrary_state) ... ok
+test_unknown_empty_sample_is_not_zero_remaining_and_samples_are_bounded (test_terminating.TerminationTests.test_unknown_empty_sample_is_not_zero_remaining_and_samples_are_bounded) ... ok
+test_interrupt_before_send_is_not_started (test_transport.ClientTests.test_interrupt_before_send_is_not_started) ... ok
+test_pinned_resolution_and_mismatched_reply_are_unknown (test_transport.ClientTests.test_pinned_resolution_and_mismatched_reply_are_unknown) ... ok
+test_fragmented_single_frame (test_transport.CodecTests.test_fragmented_single_frame) ... ok
+test_raw_wire_types_do_not_use_cli_coercion (test_transport.CodecTests.test_raw_wire_types_do_not_use_cli_coercion) ... ok
+test_response_correlation_and_shapes (test_transport.CodecTests.test_response_correlation_and_shapes) ... ok
+test_strict_framing_and_json (test_transport.CodecTests.test_strict_framing_and_json) ... ok
+test_encoding_time_counts_before_success_acceptance (test_transport.FinalAcceptanceTests.test_encoding_time_counts_before_success_acceptance) ... ok
+test_final_notification_retains_actual_late_error_even_after_disconnect (test_transport.FinalAcceptanceTests.test_final_notification_retains_actual_late_error_even_after_disconnect) ... ok
+test_cli_sigint_closes_matching_socket (test_transport.ProcessTests.test_cli_sigint_closes_matching_socket) ... ok
+test_duplicate_active_id_and_disconnect_preserve_original (test_transport.ProcessTests.test_duplicate_active_id_and_disconnect_preserve_original) ... ok
+test_effects_partial_lost_and_unrepresentable_results_never_retry (test_transport.ProcessTests.test_effects_partial_lost_and_unrepresentable_results_never_retry) ... ok
+test_generation_mismatch_and_raw_validation_without_effects (test_transport.ProcessTests.test_generation_mismatch_and_raw_validation_without_effects) ... ok
+test_independent_processes_identity_output_and_production_boundary (test_transport.ProcessTests.test_independent_processes_identity_output_and_production_boundary) ... ok
+test_queued_trailing_bytes_at_receive_boundary_never_dispatch (test_transport.ProcessTests.test_queued_trailing_bytes_at_receive_boundary_never_dispatch) ... ok
+test_slow_peer_deadline_and_responsive_other_client (test_transport.ProcessTests.test_slow_peer_deadline_and_responsive_other_client) ... ok
+test_bad_pointer_peer_and_path_length (test_transport.RuntimeTests.test_bad_pointer_peer_and_path_length) ... ok
+test_partial_publication_failure_and_conflict (test_transport.RuntimeTests.test_partial_publication_failure_and_conflict) ... ok
+test_permissions_claims_and_graceful_reuse (test_transport.RuntimeTests.test_permissions_claims_and_graceful_reuse) ... ok
+test_replacement_pointer_and_socket_survive_old_cleanup (test_transport.RuntimeTests.test_replacement_pointer_and_socket_survive_old_cleanup) ... ok
+test_second_socket_bind_failure_never_publishes_or_removes_unowned_file (test_transport.RuntimeTests.test_second_socket_bind_failure_never_publishes_or_removes_unowned_file) ... ok
+test_unsafe_roots_and_components (test_transport.RuntimeTests.test_unsafe_roots_and_components) ... ok
+test_backpressured_notification_socket_cannot_block_owner (test_watchdog.WatchdogTests.test_backpressured_notification_socket_cannot_block_owner) ... ok
+test_first_healthy_owner_tick_sends_without_waiting_for_ready (test_watchdog.WatchdogTests.test_first_healthy_owner_tick_sends_without_waiting_for_ready) ... ok
+test_heartbeat_cadence_has_no_catchup_burst_or_background_sender (test_watchdog.WatchdogTests.test_heartbeat_cadence_has_no_catchup_burst_or_background_sender) ... ok
+test_standalone_fixture_has_no_notification_side_effect (test_watchdog.WatchdogTests.test_standalone_fixture_has_no_notification_side_effect) ... ok
+test_systemd_abstract_notification_address (test_watchdog.WatchdogTests.test_systemd_abstract_notification_address) ... ok
+test_unavailable_endpoint_fails_instead_of_refreshing_heartbeat (test_watchdog.WatchdogTests.test_unavailable_endpoint_fails_instead_of_refreshing_heartbeat) ... ok
+test_wrong_pid_timeout_and_non_socket_address_rejected (test_watchdog.WatchdogTests.test_wrong_pid_timeout_and_non_socket_address_rejected) ... ok
+test_app_change_before_final_commit_discards_all_staged_pins (test_windows.AssociationTests.test_app_change_before_final_commit_discards_all_staged_pins) ... ok
+test_capacity_and_reappearance_never_evict_or_rebind (test_windows.AssociationTests.test_capacity_and_reappearance_never_evict_or_rebind) ... ok
+test_cutoff_reuse_membership_exit_and_app_change (test_windows.AssociationTests.test_cutoff_reuse_membership_exit_and_app_change) ... ok
+test_late_publication_retains_previous_and_pending (test_windows.AssociationTests.test_late_publication_retains_previous_and_pending) ... ok
+test_lookup_generation_and_non_generated_id_before_filesystem (test_windows.AssociationTests.test_lookup_generation_and_non_generated_id_before_filesystem) ... ok
+test_256_refs_survive_repeated_pending_and_confirmed_checkpoints (test_windows.QueryTests.test_256_refs_survive_repeated_pending_and_confirmed_checkpoints) ... ok
+test_activation_guard_persistence_expiry_never_starts_child (test_windows.QueryTests.test_activation_guard_persistence_expiry_never_starts_child) ... ok
+test_activation_guard_runs_after_collision_and_failure_spawns_nothing (test_windows.QueryTests.test_activation_guard_runs_after_collision_and_failure_spawns_nothing) ... ok
+test_activation_native_exact_braces_and_cleanup_without_observation (test_windows.QueryTests.test_activation_native_exact_braces_and_cleanup_without_observation) ... ok
+test_artifact_failure_after_native_cleanup_does_not_accept_pins (test_windows.QueryTests.test_artifact_failure_after_native_cleanup_does_not_accept_pins) ... ok
+test_cancel_stopped_owned_child_and_remove_exact_script (test_windows.QueryTests.test_cancel_stopped_owned_child_and_remove_exact_script) ... ok
+test_cleanup_last_filesystem_call_cannot_cross_shared_reserve (test_windows.QueryTests.test_cleanup_last_filesystem_call_cannot_cross_shared_reserve) ... ok
+test_close_hook_with_real_adapter_child_requires_host_progress (test_windows.QueryTests.test_close_hook_with_real_adapter_child_requires_host_progress) ... ok
+test_collision_never_removes_foreign_script (test_windows.QueryTests.test_collision_never_removes_foreign_script) ... ok
+test_crash_malformed_hung_and_flood_cleanup (test_windows.QueryTests.test_crash_malformed_hung_and_flood_cleanup) ... ok
+test_deadline_crossed_during_artifact_publication_keeps_observed_data_unaccepted (test_windows.QueryTests.test_deadline_crossed_during_artifact_publication_keeps_observed_data_unaccepted) ... ok
+test_expired_before_preparation_has_no_effect (test_windows.QueryTests.test_expired_before_preparation_has_no_effect) ... ok
+test_normal_close_native_process_cleanup_and_no_fabricated_observation (test_windows.QueryTests.test_normal_close_native_process_cleanup_and_no_fabricated_observation) ... ok
+test_open_failure_after_exclusive_mkdir_retains_cleanup_ownership (test_windows.QueryTests.test_open_failure_after_exclusive_mkdir_retains_cleanup_ownership) ... ok
+test_retained_record_pending_previous_survives_post_replace_error (test_windows.QueryTests.test_retained_record_pending_previous_survives_post_replace_error) ... ok
+test_second_pipe_allocation_failure_closes_first_read_and_write (test_windows.QueryTests.test_second_pipe_allocation_failure_closes_first_read_and_write) ... ok
+test_success_cleanup_rejects_subdirectory_and_never_follows_symlink (test_windows.QueryTests.test_success_cleanup_rejects_subdirectory_and_never_follows_symlink) ... ok
+test_success_removes_temporary_pipes_script_and_publishes_immutable_observation (test_windows.QueryTests.test_success_removes_temporary_pipes_script_and_publishes_immutable_observation) ... ok
+test_fixed_source_has_no_caller_code_or_test_operations (test_windows.TypesTests.test_fixed_source_has_no_caller_code_or_test_operations) ... ok
+test_invalid_fields_and_active_consistency (test_windows.TypesTests.test_invalid_fields_and_active_consistency) ... ok
+test_max_rows_and_bounded_decode_turns (test_windows.TypesTests.test_max_rows_and_bounded_decode_turns) ... ok
+test_nullable_distinct_titles_canonical_identity_fractional_geometry (test_windows.TypesTests.test_nullable_distinct_titles_canonical_identity_fractional_geometry) ... ok
+test_output_scale_unavailable_is_explicit_null (test_windows.TypesTests.test_output_scale_unavailable_is_explicit_null) ... ok
+test_strict_json_and_size (test_windows.TypesTests.test_strict_json_and_size) ... ok
+test_essential_observation_precedes_queued_scheduler_effect (test_worker_health_order.WorkerHealthOrder.test_essential_observation_precedes_queued_scheduler_effect) ... /home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/src/agent_desktop/worker.py:269: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+ok
+
+----------------------------------------------------------------------
+Ran 436 tests in 22.182s
+
+OK

@@ -63,11 +63,19 @@ class Bus:
 
 
 class Input:
-    def __init__(self, owner):
-        self.owner = owner
+    def __init__(self, *args, **kwargs):
         self.usable = False
         self.disposed = False
         self.cookie = None
+        self.backlog = False
+
+    def tick(self):
+        pass
+
+    def connect(self, bus, deadline):
+        bus.call("input_resumed", "org.kde.KWin", "/org/kde/KWin/EIS/RemoteDesktop",
+                 "org.kde.KWin.EIS.RemoteDesktop", "connectToEIS", None, "(hi)", deadline,
+                 lambda *args: None, fd=True)
 
     def ready(self):
         return self.usable

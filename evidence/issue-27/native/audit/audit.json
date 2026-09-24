@@ -1,0 +1,198 @@
+{
+  "passed": true,
+  "command": [
+    "/usr/bin/cc",
+    "-std=c11",
+    "-Wall",
+    "-Werror",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-native-release/audit/libei-audit.c",
+    "-o",
+    "/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/.local/issue27-native-release/audit/libei-audit",
+    "-I/usr/include/libei-1.0",
+    "-lei"
+  ],
+  "observed": "header signatures, enum constants and ABI sizes passed",
+  "compiler": "cc (GCC) 16.2.1 20260810",
+  "machine": "x86_64",
+  "native_release": "1.6.0",
+  "header_sha256": "8aabc649cbf009bec552e45d855ec8be28ef416e8f62450ab453c64a2fd9c847",
+  "binding_sha256": "79aa149a691f25e16e51f864eb91db1b3105907551853560425b2e5f866bb46e",
+  "audit_source_sha256": "1240e48c6c6e7535e1c0dada8ff9f6d10b4f04157345eeeb1e16b1f96899a4ff",
+  "library_files": {
+    "/usr/lib/libei.so.1.6.0": "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501"
+  },
+  "declarations": {
+    "ei_new_sender": [
+      "context",
+      [
+        "opaque"
+      ]
+    ],
+    "ei_unref": [
+      "context",
+      [
+        "context"
+      ]
+    ],
+    "ei_configure_name": [
+      "void",
+      [
+        "context",
+        "string"
+      ]
+    ],
+    "ei_setup_backend_fd": [
+      "int",
+      [
+        "context",
+        "int"
+      ]
+    ],
+    "ei_get_fd": [
+      "int",
+      [
+        "context"
+      ]
+    ],
+    "ei_dispatch": [
+      "void",
+      [
+        "context"
+      ]
+    ],
+    "ei_get_event": [
+      "event",
+      [
+        "context"
+      ]
+    ],
+    "ei_now": [
+      "u64",
+      [
+        "context"
+      ]
+    ],
+    "ei_event_get_type": [
+      "event_type",
+      [
+        "event"
+      ]
+    ],
+    "ei_event_get_seat": [
+      "seat",
+      [
+        "event"
+      ]
+    ],
+    "ei_event_get_device": [
+      "device",
+      [
+        "event"
+      ]
+    ],
+    "ei_event_unref": [
+      "event",
+      [
+        "event"
+      ]
+    ],
+    "ei_seat_ref": [
+      "seat",
+      [
+        "seat"
+      ]
+    ],
+    "ei_seat_unref": [
+      "seat",
+      [
+        "seat"
+      ]
+    ],
+    "ei_seat_has_capability": [
+      "bool",
+      [
+        "seat",
+        "cap"
+      ]
+    ],
+    "ei_seat_bind_capabilities": [
+      "void",
+      [
+        "seat",
+        "..."
+      ]
+    ],
+    "ei_seat_unbind_capabilities": [
+      "void",
+      [
+        "seat",
+        "..."
+      ]
+    ],
+    "ei_device_get_seat": [
+      "seat",
+      [
+        "device"
+      ]
+    ],
+    "ei_device_ref": [
+      "device",
+      [
+        "device"
+      ]
+    ],
+    "ei_device_unref": [
+      "device",
+      [
+        "device"
+      ]
+    ],
+    "ei_device_has_capability": [
+      "bool",
+      [
+        "device",
+        "cap"
+      ]
+    ],
+    "ei_device_start_emulating": [
+      "void",
+      [
+        "device",
+        "u32"
+      ]
+    ],
+    "ei_device_stop_emulating": [
+      "void",
+      [
+        "device"
+      ]
+    ],
+    "ei_device_keyboard_key": [
+      "void",
+      [
+        "device",
+        "u32",
+        "bool"
+      ]
+    ],
+    "ei_device_frame": [
+      "void",
+      [
+        "device",
+        "u64"
+      ]
+    ]
+  },
+  "constants": {
+    "EI_EVENT_CONNECT": 1,
+    "EI_EVENT_DISCONNECT": 2,
+    "EI_EVENT_SEAT_ADDED": 3,
+    "EI_EVENT_SEAT_REMOVED": 4,
+    "EI_EVENT_DEVICE_ADDED": 5,
+    "EI_EVENT_DEVICE_REMOVED": 6,
+    "EI_EVENT_DEVICE_PAUSED": 7,
+    "EI_EVENT_DEVICE_RESUMED": 8,
+    "EI_DEVICE_CAP_KEYBOARD": 4
+  },
+  "dispatch_restype_is_void": true
+}

@@ -14,7 +14,7 @@ from importlib.resources import files
 from .contracts import ContractError
 from .health import fresh
 from .private_bus import PrivateBus
-from .provisional_input import Input
+from .input_connection import Input
 from .windows import Adapter
 
 PROVIDER = {'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
@@ -114,19 +114,12 @@ class Readiness:
     def _input_start(self):
         self.phase = 'input_resumed'
         self.input_deadline = min(self.deadline, time.monotonic() + 3)
-        self.input = Input(self)
-        def connected(value, fds, error):
-            if error or value is None or fds is None:
-                self.fail(ContractError('session_failed', 'Private EIS connection failed.'), 'input_resumed')
-            reply = value.unpack()
-            if (not isinstance(reply, tuple) or len(reply) != 2 or type(reply[0]) is not int
-                    or reply[0] < 0 or reply[0] >= fds.get_length() or fds.get_length() != 1):
-                self.fail(ContractError('session_failed', 'Invalid EIS FD reply.'), 'input_resumed')
-            descriptor = fds.get(reply[0])  # Duplicate; Input.setup owns/cleans this from entry.
-            self.input.setup(descriptor)
-            self.input.cookie = reply[1]
-        self._call('input_resumed', '/org/kde/KWin/EIS/RemoteDesktop', 'org.kde.KWin.EIS.RemoteDesktop',
-                   'connectToEIS', self.GLib.Variant('(i)', (1,)), '(hi)', self.input_deadline, connected, fd=True)
+        self.input = Input(self.generation, self.GLib, invalidated=self.cancel,
+                           failed=self._input_failed, log=self.log)
+        self.input.connect(self.bus, self.input_deadline)
+
+    def _input_failed(self, error):
+        self.fatal = self.fatal or error
 
     def _capture_start(self):
         from .lifecycle import atomic
@@ -206,6 +199,8 @@ class Readiness:
             if self.fatal:
                 self.fail(self.fatal, 'input_resumed')
             self.bus.tick()
+            if self.input is not None:
+                self.input.tick()
             now = time.monotonic()
             if self.state == 'ready':
                 for component in ('bus', 'compositor'):
@@ -236,7 +231,7 @@ class Readiness:
             elif self.phase == 'screenshot':
                 self._capture_finish()
             elif self.phase == 'health':
-                if self.input is None or not self.input.ready():
+                if self.input is None or (not self.input.ready() and not self.input.backlog):
                     self.fail(ContractError('session_failed', 'Input device is no longer resumed.'), 'input_resumed')
                 if self.round is not None:
                     if self.round['bus'] is False:
@@ -249,7 +244,12 @@ class Readiness:
                         if component == 'bus':
                             self.health['compositor'] = {'state': 'unknown'}
                         self.fail(ContractError('timeout', 'Essential health observation timed out.'), component)
-                    if self.round['bus'] is True and self.round['compositor'] is True:
+                    if (self.round['bus'] is True and self.round['compositor'] is True
+                            and (self.state == 'ready' or self.input.ready())):
+                        # Backlog tolerates a transient unavailable input owner
+                        # during health observation, but cannot qualify startup.
+                        # Retain this completed round and its original deadline
+                        # until input has actually drained into a usable state.
                         self._passed('bus')
                         self._passed('compositor')
                         self.round = None
@@ -265,9 +265,9 @@ class Readiness:
             self.fail(error)
 
     def close(self):
-        self.bus.close()
         if self.input is not None:
             self.input.dispose()
+        self.bus.close()
         self.adapter.close()
         for child in (self.capture,):
             if child is not None and child.returncode is None:

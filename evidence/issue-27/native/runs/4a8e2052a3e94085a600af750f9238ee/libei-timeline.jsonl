@@ -1,0 +1,35 @@
+{"event": "focus_observation", "monotonic_ns": 100226348231547, "generation": "4a8e2052a3e94085a600af750f9238ee", "ok": true, "active_uuid": "{8536d648-596f-4313-ab04-d309f3edb464}", "target_present": false, "seconds": 0.01006610800686758, "operation": "query", "poll": false}
+{"event": "focus_observation", "monotonic_ns": 100226378616892, "generation": "4a8e2052a3e94085a600af750f9238ee", "ok": true, "active_uuid": "{8536d648-596f-4313-ab04-d309f3edb464}", "target_present": true, "seconds": 0.030239144994993694, "operation": "focus", "poll": false}
+{"event": "setup", "monotonic_ns": 100226381650840, "generation": "4a8e2052a3e94085a600af750f9238ee", "epoch": 1, "result": 0, "fd_ownership": "libei", "nonblocking": true}
+{"event": "libei", "monotonic_ns": 100226381940344, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "91", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 100226382106543, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "CONNECT", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 100226382142980, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "SEAT_ADDED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 100226382272680, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_ADDED", "epoch": 1, "device": 1}
+{"event": "libei", "monotonic_ns": 100226382290238, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 1}
+{"event": "ready", "monotonic_ns": 100226382313219, "generation": "4a8e2052a3e94085a600af750f9238ee", "epoch": 1, "cookie": 1}
+{"event": "libei", "monotonic_ns": 100226383150905, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_PAUSED", "epoch": 1, "device": 1}
+{"event": "libei", "monotonic_ns": 100226634140356, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 1}
+{"event": "focus_observation", "monotonic_ns": 100226651751747, "generation": "4a8e2052a3e94085a600af750f9238ee", "ok": true, "active_uuid": "{8536d648-596f-4313-ab04-d309f3edb464}", "target_present": true, "seconds": 0.017354330004309304, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 100226652032871, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 17, "press": true, "device": 1, "epoch": 1}
+{"event": "emission", "monotonic_ns": 100226657033127, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 17, "press": false, "device": 1, "epoch": 1}
+{"event": "focus_observation", "monotonic_ns": 100226687380987, "generation": "4a8e2052a3e94085a600af750f9238ee", "ok": true, "active_uuid": "{8536d648-596f-4313-ab04-d309f3edb464}", "target_present": true, "seconds": 0.02534344999003224, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 100226687684227, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 42, "press": true, "device": 1, "epoch": 1}
+{"event": "emission", "monotonic_ns": 100226687729335, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 17, "press": true, "device": 1, "epoch": 1}
+{"event": "libei", "monotonic_ns": 100226687936080, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "9", "epoch": 1, "device": 1}
+{"event": "release_uncertain", "monotonic_ns": 100226693726099, "generation": "4a8e2052a3e94085a600af750f9238ee", "epoch": 1, "identity": 1, "keys": [42, 17]}
+{"event": "cancel", "monotonic_ns": 100226693791775, "generation": "4a8e2052a3e94085a600af750f9238ee", "reason": "device_paused", "uncertain": true}
+{"event": "libei", "monotonic_ns": 100226693818130, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_PAUSED", "epoch": 1, "device": 1}
+{"event": "libei", "monotonic_ns": 100226944125890, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_RESUMED", "epoch": 1, "device": 1}
+{"event": "libei", "monotonic_ns": 100226997094133, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_REMOVED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 100226997184830, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "SEAT_REMOVED", "epoch": 1, "device": null}
+{"event": "libei", "monotonic_ns": 100226997238516, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DISCONNECT", "epoch": 1, "device": null}
+{"event": "setup", "monotonic_ns": 100227002994279, "generation": "4a8e2052a3e94085a600af750f9238ee", "epoch": 3, "result": 0, "fd_ownership": "libei", "nonblocking": true}
+{"event": "libei", "monotonic_ns": 100227003245662, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "91", "epoch": 3, "device": null}
+{"event": "libei", "monotonic_ns": 100227003398297, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "CONNECT", "epoch": 3, "device": null}
+{"event": "libei", "monotonic_ns": 100227003457232, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "SEAT_ADDED", "epoch": 3, "device": null}
+{"event": "libei", "monotonic_ns": 100227004425994, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_ADDED", "epoch": 3, "device": 2}
+{"event": "libei", "monotonic_ns": 100227004468221, "generation": "4a8e2052a3e94085a600af750f9238ee", "kind": "DEVICE_RESUMED", "epoch": 3, "device": 2}
+{"event": "ready", "monotonic_ns": 100227004515161, "generation": "4a8e2052a3e94085a600af750f9238ee", "epoch": 3, "cookie": 2}
+{"event": "focus_observation", "monotonic_ns": 100227026889179, "generation": "4a8e2052a3e94085a600af750f9238ee", "ok": true, "active_uuid": "{8536d648-596f-4313-ab04-d309f3edb464}", "target_present": true, "seconds": 0.022220351005671546, "operation": "query", "poll": false}
+{"event": "emission", "monotonic_ns": 100227027088004, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 17, "press": true, "device": 2, "epoch": 3}
+{"event": "emission", "monotonic_ns": 100227032062678, "generation": "4a8e2052a3e94085a600af750f9238ee", "code": 17, "press": false, "device": 2, "epoch": 3}

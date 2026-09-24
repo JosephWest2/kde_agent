@@ -143,6 +143,16 @@ class InputTests(unittest.TestCase):
         fds.get.assert_not_called()
         self.assertIsNone(value.context)
 
+    def test_dispose_cancels_pending_bus_token_and_new_owner_has_unique_epoch(self):
+        first = self.make(); first.dispose(); bus = Mock()
+        first.connect(bus, time.monotonic()+3)
+        old_token, old_epoch = first.token, first.epoch
+        first.dispose()
+        bus.cancel.assert_called_with(old_token)
+        second = self.make(); second.dispose(); second.connect(bus, time.monotonic()+3)
+        self.assertNotEqual(old_epoch, second.epoch)
+        self.assertNotEqual(old_token, second.token)
+
     def test_malformed_reply_fail_closed_without_fd_duplication(self):
         for reply in ((1, 4), (0, True), (0, -1), (0, 'cookie')):
             value = self.make(); value.dispose(); bus = Mock()

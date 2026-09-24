@@ -7,6 +7,7 @@ belong to the action layer. No method spins a nested GLib loop or waits for I/O.
 from __future__ import annotations
 
 import os
+import itertools
 import threading
 import time
 from dataclasses import dataclass, field
@@ -16,6 +17,7 @@ from .contracts import ContractError
 EVENTS = {v: k.removeprefix('EI_EVENT_') for k, v in binding.CONSTANTS.items() if k.startswith('EI_EVENT_')}
 BATCH = 256
 MAX_KEYS = 32
+EPOCHS = itertools.count(1)
 
 
 class Failure(ContractError):
@@ -52,6 +54,7 @@ class Input:
         self.epoch = self.sequence = self.serial = 0
         self.cookie = None
         self.pending = False
+        self.bus = self.token = None
         self.deadline = None
         self.retired_held = []
 
@@ -85,7 +88,7 @@ class Input:
         self._owner()
         if self.context is not None or self.pending or self.error:
             raise Failure('input_unavailable', 'Dispose the previous connection before negotiation.')
-        self.epoch += 1
+        self.epoch = next(EPOCHS)
         epoch = self.epoch
         self.pending = True
         self.disconnected = False
@@ -112,7 +115,8 @@ class Input:
                 if epoch == self.epoch:
                     self._fatal(exc)
         try:
-            bus.call('input_resumed-' + str(epoch), 'org.kde.KWin', '/org/kde/KWin/EIS/RemoteDesktop',
+            self.token = 'input_resumed-' + str(epoch)
+            bus.call(self.token, 'org.kde.KWin', '/org/kde/KWin/EIS/RemoteDesktop',
                      'org.kde.KWin.EIS.RemoteDesktop', 'connectToEIS', self.GLib.Variant('(i)', (1,)),
                      '(hi)', self.deadline, connected, fd=True)
         except Exception as exc:
@@ -362,8 +366,11 @@ class Input:
 
     def dispose(self):
         self._owner()
+        if self.bus is not None and self.token is not None:
+            self.bus.cancel(self.token)
+        self.token = None
         self._dispose_resources()
-        self.epoch += 1  # Invalidate pending asynchronous replies and captured callbacks.
+        self.epoch = next(EPOCHS)  # Invalidate pending replies and captured callbacks.
         self.cookie = self.deadline = None
         # Uncertainty and held evidence survive disposal. A reset policy decides
         # when an explicitly replaced connection can safely supersede the owner.

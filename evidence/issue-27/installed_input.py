@@ -113,6 +113,29 @@ class Probe(probe.Probe):
         self.checks.append(dict(kind='reset', old_epoch=old_epoch, new_epoch=self.input.epoch,
             prior_uncertain=old['uncertain'], fixture_neutral=True, seconds=time.monotonic()-started))
 
+    def failed_reset_scenario(self):
+        self.call(self.eis.disconnect, self.dbus.Int32(self.input.cookie))
+        self.input.dispose()
+        self.input.uncertain = True
+        class MissingEndpoint:
+            def call(_self, token, destination, path, *args, **kwargs):
+                return self.private.call(token, destination, '/org/kde/KWin/EIS/Missing', *args, **kwargs)
+            def cancel(_self, token):
+                self.private.cancel(token)
+        self.input.connect(MissingEndpoint(), time.monotonic()+.5)
+        try:
+            self.wait(lambda: self.input.error is not None, .6, 'expected failed negotiation')
+        except input_connection.Failure as error:
+            assert error.code == 'input_unavailable'
+        assert self.input.error is not None and not self.input.ready()
+        self.input.reject_probe('failed_reset')
+        self.checks.append(dict(kind='reset_failure', production_async_reply=True,
+                               code=self.input.error.code, input_unavailable=True))
+        self.fatal = None
+        self.input.error = None
+        self.reset()
+        self.begin(['W']); self.release()
+
     def run(self, scenario):
         super().run(scenario)
         if scenario == 'input':

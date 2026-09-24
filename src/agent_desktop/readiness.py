@@ -244,7 +244,12 @@ class Readiness:
                         if component == 'bus':
                             self.health['compositor'] = {'state': 'unknown'}
                         self.fail(ContractError('timeout', 'Essential health observation timed out.'), component)
-                    if self.round['bus'] is True and self.round['compositor'] is True:
+                    if (self.round['bus'] is True and self.round['compositor'] is True
+                            and (self.state == 'ready' or self.input.ready())):
+                        # Backlog tolerates a transient unavailable input owner
+                        # during health observation, but cannot qualify startup.
+                        # Retain this completed round and its original deadline
+                        # until input has actually drained into a usable state.
                         self._passed('bus')
                         self._passed('compositor')
                         self.round = None

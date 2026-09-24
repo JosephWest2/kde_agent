@@ -1,0 +1,20 @@
+test_protocol_failure_in_second_drain_batch_is_sticky_and_closes_worker (test_input_health_failure.InputHealthFailure.test_protocol_failure_in_second_drain_batch_is_sticky_and_closes_worker) ... /usr/lib/python3.14/site-packages/gi/events.py:803: DeprecationWarning: 'asyncio.AbstractEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+  AbstractEventLoopPolicy = getattr(asyncio, "AbstractEventLoopPolicy", object)
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/src/agent_desktop/worker.py:269: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+ok
+test_startup_health_waits_for_drained_ready_input_before_publication (test_input_health_failure.InputHealthFailure.test_startup_health_waits_for_drained_ready_input_before_publication) ... /usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+/usr/lib/python3.14/site-packages/gi/events.py:890: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+  if not isinstance(_get_event_loop_policy(), GLibEventLoopPolicy):
+ok
+test_three_second_owner_delay_rejects_work_and_heartbeat_on_next_real_glib_turn (test_input_health_failure.InputHealthFailure.test_three_second_owner_delay_rejects_work_and_heartbeat_on_next_real_glib_turn) ... /home/josephwest/.t3/worktrees/kde-agent/t3code-c8a7966b/src/agent_desktop/worker.py:269: PyGIDeprecationWarning: GLib.unix_signal_add is deprecated; use GLibUnix.signal_add instead
+  sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.177s
+
+OK

@@ -1,5 +1,33 @@
 # Persistent production libei connection qualification
 
+The final readiness correction is qualified from **7dd3ceed**. Fresh PR review
+found that completed health replies could publish startup readiness while an
+undrained event backlog had already paused the keyboard. Startup now retains
+the completed health round and its original deadline until input actually
+becomes ready. The regression uses the production Input class and 257 queued
+events: healthy backlog eventually publishes readiness after draining; PAUSED
+backlog never publishes readiness and fails after draining.
+
+**436 tests passed** on the correction ([output](review-startup-fix/unit-tests.txt)).
+A newly archived, noneditable installation passed focus, delayed startup/launch
+and slow-query scenarios with cleanup verified ([receipt](review-startup-fix/worker/receipt.json),
+[provenance](review-startup-fix/prepared.json)). These three runs also retain
+**326.965 ms**, **286.620 ms**, and **140.993 ms** lifetime GLib gaps respectively,
+all above the unchanged 100 ms target. The largest focus gap overlaps three
+synchronous artifact writes of 53.474, 58.431 and 114.138 ms during request
+admission after startup. The other maxima have insufficient in-gap tracing for
+precise attribution. Functional passes do not certify the responsiveness target.
+No concurrent native/heavy test suite ran during these samples.
+
+The connection, binding and private-bus module bytes are unchanged from the
+nine native lifecycle scenarios below; their [matching hashes](review-startup-fix/summary.json)
+are preserved. Those earlier traces remain attributed to their original source,
+and their smaller timings do not replace the corrected-source worker samples.
+The final correction has not been claimed as full-release qualification.
+
+The original qualification below records **8f1760ce**:
+
+
 Product and evidence-runner source **8f1760ce** was archived, built as a wheel,
 and installed noneditably into an isolated system-site-packages venv. Every
 installed package file is hash-checked against that immutable archive. The

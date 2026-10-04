@@ -45,8 +45,9 @@ exists; the rest of that test always runs.
 `python3-gi`, `python3-dbus` and `python3-pil`. It uses the command above with `-v`,
 then prints how many tests ran and were skipped, and lists each skip. Any skip
 outside the three modules above fails the job, so a new skip has to be added there
-on purpose. The runner has no libei 1.x at `/usr/lib` and no user systemd manager,
-so it runs 505 of the 517 tests. It never runs the smoke or failure-path tests below.
+on purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It
+does have a user systemd manager, so `test_lifecycle_process` runs there: 509 of the
+517 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
 

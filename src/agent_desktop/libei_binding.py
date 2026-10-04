@@ -1,4 +1,4 @@
-"""Limited production libei sender ABI (keyboard only), checked by soname, version and symbols."""
+"""Limited production libei sender ABI (keyboard, absolute pointer, buttons), checked by soname, version and symbols."""
 from __future__ import annotations
 
 import ctypes as C
@@ -15,6 +15,8 @@ TYPES = {
     "int": ("int", C.c_int), "cap": ("enum ei_device_capability", C.c_int),
     "event_type": ("enum ei_event_type", C.c_int), "bool": ("bool", C.c_bool),
     "u32": ("uint32_t", C.c_uint32), "u64": ("uint64_t", C.c_uint64),
+    "double": ("double", C.c_double), "size": ("size_t", C.c_size_t),
+    "region": ("struct ei_region *", C.c_void_p),
     "void": ("void", None),
 }
 DECLARATIONS = {
@@ -36,12 +38,19 @@ DECLARATIONS = {
     "ei_device_stop_emulating": ("void", ["device"]),
     "ei_device_keyboard_key": ("void", ["device", "u32", "bool"]),
     "ei_device_frame": ("void", ["device", "u64"]),
+    "ei_device_pointer_motion_absolute": ("void", ["device", "double", "double"]),
+    "ei_device_button_button": ("void", ["device", "u32", "bool"]),
+    # Borrowed region pointers; valid while the device is referenced.
+    "ei_device_get_region": ("region", ["device", "size"]),
+    "ei_region_get_x": ("u32", ["region"]), "ei_region_get_y": ("u32", ["region"]),
+    "ei_region_get_width": ("u32", ["region"]), "ei_region_get_height": ("u32", ["region"]),
 }
 CONSTANTS = {"EI_EVENT_CONNECT": 1, "EI_EVENT_DISCONNECT": 2,
              "EI_EVENT_SEAT_ADDED": 3, "EI_EVENT_SEAT_REMOVED": 4,
              "EI_EVENT_DEVICE_ADDED": 5, "EI_EVENT_DEVICE_REMOVED": 6,
              "EI_EVENT_DEVICE_PAUSED": 7, "EI_EVENT_DEVICE_RESUMED": 8,
-             "EI_DEVICE_CAP_KEYBOARD": 4}
+             "EI_DEVICE_CAP_POINTER_ABSOLUTE": 2, "EI_DEVICE_CAP_KEYBOARD": 4,
+             "EI_DEVICE_CAP_BUTTON": 32}
 
 # The soname major version is libei's ABI promise. Any 1.x build that exports
 # every declared symbol is accepted; the input code never depends on
@@ -88,8 +97,8 @@ def load():
     return library
 
 
-def capabilities(function, seat):
+def capabilities(function, seat, caps=("EI_DEVICE_CAP_KEYBOARD",)):
     # Supported x86_64 SysV ABI: each enum is promoted to int. Upstream 1.6's
     # va_arg consumes enum values until integer zero (headers call it NULL).
     # Explicit int zero avoids an implicit Python vararg conversion.
-    function(seat, C.c_int(CONSTANTS["EI_DEVICE_CAP_KEYBOARD"]), C.c_int(0))
+    function(seat, *(C.c_int(CONSTANTS[name]) for name in caps), C.c_int(0))

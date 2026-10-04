@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop import cli
 from agent_desktop.contracts import ContractError, make_request, response
-from agent_desktop.input_actions import InputTask
+from agent_desktop.input_actions import CLICK_GAP, CLICK_HOLD, ClickTask, InputTask
 from agent_desktop.keymap import KEYS, SHIFT, parse_chord, text_strokes
 from agent_desktop.screenshots import crop_rect
 from agent_desktop.shutdown import release_input
@@ -81,14 +81,18 @@ class Owner:
         self.fail_release = False
         self.fail_press_at = None
 
-    def press(self, codes):
+    def press(self, codes, kind='keyboard'):
         assert not self.device.held
+        self.kinds = getattr(self, 'kinds', []) + [kind]
         for index, code in enumerate(codes):
             self.device.held.append(code)  # Like Input.press: recorded before the native call.
             if self.fail_press_at == index:
                 self.uncertain = True
                 raise ContractError('input_failed', 'Native press failed.')
         self.events.append(('press', list(codes), time.monotonic()))
+
+    def move(self, x, y):
+        self.events.append(('move', (x, y), time.monotonic()))
 
     def release(self):
         if self.fail_release:
@@ -242,6 +246,95 @@ class InputTaskTests(unittest.TestCase):
             make_request('type', arguments={'window': WINDOW, 'text': 'x'}, caller_cwd='/', timeout_seconds=31)
 
 
+class ClickTaskTests(unittest.TestCase):
+    CLIENT = {'x': 290, 'y': 100, 'width': 700, 'height': 520}
+    run_task = InputTaskTests.run_task
+
+    def click(self, window=True, timeout=None, **arguments):
+        if window:
+            arguments['window'] = WINDOW
+        request = make_request('click', arguments=arguments, caller_cwd='/', timeout_seconds=timeout)
+        self.effects = []
+        work = SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + request.timeout_seconds),
+                               error=None)
+        context = SimpleNamespace(work=work, effects=lambda partial, uncertain=False: self.effects.append((partial, uncertain)))
+        self.owner = Owner()
+        with patch('agent_desktop.input_actions.TargetTask', Target):
+            task = ClickTask(request, context, None, lambda: self.owner, None, lambda: None)
+        if task.target is not None:
+            task.target.result = dict(task.target.result, client=dict(self.CLIENT))
+        return task
+
+    def test_window_click_maps_client_coordinates_and_requires_focus_and_client(self):
+        task = self.click(x=107, y=23)
+        self.assertEqual(task.target.kwargs, {'condition': 'observe', 'require_focus': True, 'require_client': True})
+        result = self.run_task(task)
+        self.assertEqual([event[:2] for event in self.owner.events],
+                         [('move', (397, 123)), ('press', [0x110]), ('release', [0x110])])
+        self.assertEqual(self.owner.kinds, ['pointer'])
+        self.assertGreaterEqual(self.owner.events[2][2] - self.owner.events[1][2], CLICK_HOLD)
+        self.assertEqual((result['screen_x'], result['screen_y'], result['button'], result['count']),
+                         (397, 123, 'left', 1))
+        self.assertEqual(result['client'], self.CLIENT)
+
+    def test_double_click_moves_once_and_spaces_the_clicks(self):
+        result = self.run_task(self.click(x=5, y=5, button='right', count=2))
+        kinds = [event[0] for event in self.owner.events]
+        self.assertEqual(kinds, ['move', 'press', 'release', 'press', 'release'])
+        self.assertEqual(self.owner.events[1][1], [0x111])
+        self.assertGreaterEqual(self.owner.events[3][2] - self.owner.events[2][2], CLICK_GAP)
+        self.assertEqual(result['count'], 2)
+
+    def test_point_outside_the_client_area_sends_nothing(self):
+        for x, y in ((700, 0), (0, 520), (5000, 5)):
+            with self.subTest(x=x, y=y):
+                task = self.click(x=x, y=y)
+                with self.assertRaises(ContractError) as caught:
+                    task.step(time.monotonic())
+                self.assertEqual((caught.exception.code, caught.exception.context['reason']),
+                                 ('invalid_arguments', 'outside_window'))
+                self.assertEqual(self.owner.events, [])
+                self.assertEqual(self.effects, [])
+
+    def test_client_point_that_is_offscreen_sends_nothing(self):
+        self.CLIENT = {'x': 1000, 'y': 600, 'width': 700, 'height': 520}
+        task = self.click(x=400, y=10)
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual(caught.exception.context['reason'], 'outside_screen')
+        self.assertEqual(self.owner.events, [])
+
+    def test_screen_click_skips_targeting_and_checks_screen_bounds(self):
+        task = self.click(window=False, x=1279, y=719, button='middle')
+        self.assertIsNone(task.target)
+        result = self.run_task(task)
+        self.assertEqual(self.owner.events[0][:2], ('move', (1279, 719)))
+        self.assertEqual(self.owner.events[1][1], [0x112])
+        self.assertIsNone(result['window'])
+        self.assertTrue(task.cleanup(time.monotonic()))
+        for x, y in ((1280, 0), (0, 720)):
+            with self.subTest(x=x, y=y), self.assertRaises(ContractError) as caught:
+                self.click(window=False, x=x, y=y).step(time.monotonic())
+            self.assertEqual(caught.exception.context['reason'], 'outside_screen')
+
+    def test_cancel_during_click_hold_releases_the_button(self):
+        task = self.click(x=1, y=1)
+        task.step(time.monotonic())
+        self.assertEqual(self.owner.device.held, [0x110])
+        task.request_cancel('client_disconnected')
+        self.assertEqual(self.owner.device.held, [])
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_click_arguments_are_validated(self):
+        request = make_request('click', arguments={'x': '3', 'y': 4, 'count': '2'}, caller_cwd='/')
+        self.assertEqual((request.arguments['x'], request.arguments['count'], request.arguments['button']),
+                         (3, 2, 'left'))
+        for bad in ({'count': 0}, {'count': 4}, {'count': '2.0'}, {'count': True}, {'button': 'back'},
+                    {'x': -1}, {'x': '1.5'}):
+            with self.subTest(bad=bad), self.assertRaises(ContractError):
+                make_request('click', arguments={'x': 1, 'y': 1, **bad}, caller_cwd='/')
+
+
 class ShutdownReleaseTests(unittest.TestCase):
     def test_backstop_releases_held_keys_and_reports_uncertainty(self):
         self.assertEqual(release_input(None)['state'], 'not_connected')
@@ -262,16 +355,18 @@ class ScreenshotTests(unittest.TestCase):
         self.assertIsNone(crop_rect({'x': 1280, 'y': 0, 'width': 100, 'height': 100}))
         self.assertIsNone(crop_rect({'x': -200, 'y': -200, 'width': 100, 'height': 100}))
 
-    def test_window_without_frame_geometry_fails_cleanly(self):
+    def test_window_without_client_geometry_fails_cleanly(self):
         from agent_desktop.screenshots import ScreenshotTask
         request = make_request('screenshot', arguments={'window': WINDOW}, caller_cwd='/')
         context = SimpleNamespace(work=SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + 3)))
         with patch('agent_desktop.screenshots.TargetTask', Target):
             task = ScreenshotTask(request, context, None, None, None, lambda: None, lambda: 'Virtual-1', Path('/nonexistent'))
-        task.target.result = {'window': WINDOW, 'frame': None, 'focused': False, 'query_artifact': 'q'}
+        task.target.result = {'window': WINDOW, 'client': None, 'frame': {'x': 0, 'y': 0, 'width': 9, 'height': 9},
+                              'focused': False, 'query_artifact': 'q'}
         with self.assertRaises(ContractError) as caught:
             task.step(time.monotonic())
-        self.assertEqual((caught.exception.code, caught.exception.context['reason']), ('capture_failed', 'frame_unavailable'))
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']),
+                         ('capture_failed', 'client_geometry_unavailable'))
 
     def test_interrupted_copy_leaves_no_partial_file_and_keeps_the_capture(self):
         with tempfile.TemporaryDirectory() as root:

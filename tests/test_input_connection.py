@@ -117,6 +117,91 @@ class InputTests(unittest.TestCase):
             with self.subTest(codes=codes), self.assertRaises(Failure): value.press(codes)
         self.lib.ei_device_start_emulating.assert_not_called()
 
+    def pointer(self, value, regions=((0, 0, 1280, 720),)):
+        value.devices[11] = Device(11, 2, 42, resumed=True, kind='pointer')
+        rows = [SimpleNamespace(rect=r) for r in regions]
+        self.lib.ei_device_get_region.side_effect = lambda device, index: rows[index] if index < len(rows) else None
+        for position, name in enumerate(('x', 'y', 'width', 'height')):
+            getattr(self.lib, f'ei_region_get_{name}').side_effect = lambda region, p=position: region.rect[p]
+        return value.devices[11]
+
+    def test_seat_binds_pointer_capabilities_only_when_offered(self):
+        for offered, expected in (({4, 2, 32}, ['EI_DEVICE_CAP_KEYBOARD', 'EI_DEVICE_CAP_POINTER_ABSOLUTE',
+                                                  'EI_DEVICE_CAP_BUTTON']),
+                                  ({4, 2}, ['EI_DEVICE_CAP_KEYBOARD'])):
+            with self.subTest(offered=offered):
+                value = self.make()
+                value.seats = set()
+                self.lib.ei_seat_has_capability.side_effect = lambda seat, cap: cap in offered
+                self.events([3])
+                with patch('agent_desktop.input_connection.binding.capabilities') as bind:
+                    value.drain()
+                self.assertEqual(bind.call_args.args[2], expected)
+
+    def test_device_kinds_keyboard_pointer_and_ignored(self):
+        for caps, kind in (({4}, 'keyboard'), ({2, 16, 32}, 'pointer'), ({1, 16, 32}, None), ({2}, None)):
+            with self.subTest(caps=caps):
+                value = self.make()
+                self.lib.ei_device_has_capability.side_effect = lambda device, cap: cap in caps
+                self.lib.ei_event_get_device.return_value = 10
+                self.events([5]); value.drain()
+                self.assertEqual(value.devices[10].kind if 10 in value.devices else None, kind)
+
+    def test_keyboard_and_pointer_are_ready_independently(self):
+        value = self.make()
+        self.assertFalse(value.ready('pointer'))
+        self.pointer(value)
+        self.assertTrue(value.ready())
+        self.assertTrue(value.ready('pointer'))
+        value.devices[11].resumed = False
+        self.assertTrue(value.ready())
+        with self.assertRaises(Failure): value.move(1, 1)
+
+    def test_move_checks_regions_then_emulates_once_and_click_uses_buttons(self):
+        value = self.make(); self.pointer(value)
+        with self.assertRaises(Failure) as caught: value.move(1280, 10)
+        self.assertEqual(caught.exception.code, 'unsupported_input')
+        for bad in ((float('nan'), 1), (True, 1), ('1', 1)):
+            with self.subTest(bad=bad), self.assertRaises(Failure): value.move(*bad)
+        self.lib.ei_device_start_emulating.assert_not_called()
+        value.move(397.0, 123)
+        self.lib.ei_device_pointer_motion_absolute.assert_called_once_with(11, 397.0, 123.0)
+        value.press([0x110], 'pointer')
+        self.assertEqual(self.lib.ei_device_start_emulating.call_count, 1)
+        self.lib.ei_device_button_button.assert_called_once_with(11, 0x110, True)
+        self.lib.ei_device_keyboard_key.assert_not_called()
+        self.assertEqual(value.devices[11].held, [0x110])
+        value.release()
+        self.lib.ei_device_button_button.assert_called_with(11, 0x110, False)
+        self.lib.ei_device_stop_emulating.assert_called_once_with(11)
+        self.assertEqual(value.devices[11].held, [])
+
+    def test_pointer_press_accepts_only_buttons_and_never_while_keys_are_held(self):
+        value = self.make(); self.pointer(value)
+        for codes in ([30], [0x113], [0x110, 0x110]):
+            with self.subTest(codes=codes), self.assertRaises(Failure): value.press(codes, 'pointer')
+        value.press([42])
+        with self.assertRaises(Failure): value.press([0x110], 'pointer')
+        with self.assertRaises(Failure): value.move(5, 5)
+        self.lib.ei_device_button_button.assert_not_called()
+
+    def test_motion_without_button_still_stops_emulation_on_release(self):
+        value = self.make(); self.pointer(value)
+        value.move(5, 5)
+        self.assertTrue(value.devices[11].emulating)
+        value.release()
+        self.lib.ei_device_stop_emulating.assert_called_once_with(11)
+        self.assertFalse(value.devices[11].emulating)
+
+    def test_removed_pointer_with_held_button_is_retired_and_blocks_input(self):
+        value = self.make(); self.pointer(value)
+        value.move(5, 5); value.press([0x110], 'pointer')
+        self.lib.ei_event_get_device.return_value = 11
+        self.events([6]); value.drain()
+        self.assertTrue(value.uncertain)
+        self.assertEqual(value.retired_held[0]['keys'], [0x110])
+        with self.assertRaises(Failure): value.press([17])
+
     def test_native_exception_preserves_attempted_press(self):
         value = self.make()
         self.lib.ei_device_keyboard_key.side_effect = RuntimeError('native seam')

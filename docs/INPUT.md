@@ -1,4 +1,4 @@
-# Keyboard input
+# Keyboard and pointer input
 
 ## Public `key` and `type`
 
@@ -49,15 +49,52 @@ focused window, not that the application handled them. Check with a screenshot o
 window query. Results also include the window, the query artifact used for the
 focus check, timing and either `codes` and `hold` (key) or `characters` (type).
 
+## Public `click`
+
+```sh
+agent-desktop --json click --window REF --x 107 --y 23 [--button left|right|middle] [--count 1-3]
+agent-desktop --json click --x 640 --y 360    # screen coordinates, no window checks
+```
+
+**Coordinates.** With `--window`, `x`/`y` are integer pixels from the top-left
+of the window's **client area**, the same space as `screenshot --window`, so a
+pixel read from a window screenshot can be clicked directly. A GTK header bar is
+client content (gnome-text-editor's "New Tab" button is at about 107,23). A KWin
+title bar, which Qt/KDE apps get, is not. The point must be inside the client area
+(`invalid_arguments`, reason `outside_window`) and on screen (`outside_screen`). It
+is mapped to the screen from the geometry of the same window query that checks
+focus. Without `--window`, `x`/`y` are screen coordinates (0–1279, 0–719) and
+nothing about windows or focus is checked: whatever is at that point gets the click.
+
+**Focus first.** With `--window`, the window must be active, as for `key`. Use
+`focus` first. A click there can't land on a window that is covering the target,
+except for windows KWin keeps above the active one.
+
+**Clicks.** The pointer moves to the point once, then each click is a 20ms press
+and release, with 60ms between the clicks of a double or triple click (well
+inside toolkit double-click times). The pointer stays there afterwards, so a
+later screenshot may show hover effects or a tooltip.
+
+**Release and results.** Buttons are in the same release ledger as keys, with the
+same guarantees and `input_uncertain` behavior. Results give `x`, `y`,
+`screen_x`, `screen_y`, `button`, `count` and, with `--window`, `window`, `client`
+and the query artifact. `dispatched: true` means the events reached the
+compositor, not that the application acted on them.
+
 # Private input connection
 
 The worker owns one persistent `input_connection.Input` on its GLib thread. Its
 asynchronous EIS negotiation uses the explicitly created private D-Bus connection;
 that bus remains retained for the connection lifetime. Host endpoint discovery
-and fallback are absent. The startup gate requires CONNECT and one resumed
-keyboard, within the existing shared startup deadline and a three-second input
-limit. Public `key` and `type` use this same connection (above); click and reset
-are #66 and #67.
+and fallback are absent. It asks KWin for keyboard and pointer devices (EIS
+request flags 3) and binds the keyboard, absolute-pointer and button
+capabilities. KWin then offers a keyboard device and a separate absolute device
+(absolute motion, button, scroll) with one region per output; relative-pointer
+and touch devices are never bound or referenced. The startup gate requires CONNECT
+and one resumed keyboard, within the existing shared startup deadline and a
+three-second input limit. The pointer device is checked when `click` uses it
+(`input_unavailable` if it is missing). Public `key`, `type` and `click` use this
+same connection (above); reset is #67.
 
 The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
 1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
@@ -82,8 +119,10 @@ Connection epochs are process-unique, including fresh owner instances. Device
 identity is monotonically allocated within the owner, independent of native
 pointer reuse. Disposal cancels its pending private-bus request token; stale
 FD replies cannot attach to a replacement. The numeric primitive validates a complete batch of at
-most 32 distinct evdev codes before emission and records attempted presses
-before native calls. It is internal: later action scheduling must enforce finite
+most 32 distinct evdev codes (BTN_LEFT/RIGHT/MIDDLE for the pointer device)
+before emission and records attempted presses before native calls. Absolute
+motion must fall inside one of the pointer device's regions, and nothing may be
+held on any device when a press or motion starts. It is internal: later action scheduling must enforce finite
 holds and focus checks. Release uses explicit release events and a frame.
 
 Held state becomes uncertain after lifecycle loss or an emission failure.

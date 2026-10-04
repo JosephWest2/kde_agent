@@ -33,7 +33,7 @@ OPERATIONS = {
 # Operations that are implemented end to end. Everything else returns
 # unsupported_operation. --help, doctor and session status all read this.
 SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
-                        "launch", "windows", "focus", "wait", "key", "type", "screenshot",
+                        "launch", "windows", "focus", "wait", "key", "type", "click", "screenshot",
                         "close", "kill")
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
@@ -156,7 +156,7 @@ ARGUMENTS = {
     "launch": {"cwd", "env", "wait_window", "argv"},
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window"}, "key": {"window", "chord", "hold"},
-    "type": {"window", "text"}, "click": {"window", "x", "y", "button"},
+    "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
     "input.reset": set(), "screenshot": {"output", "window"}, "logs": {"app", "source"},
     "close": {"app", "window"}, "kill": {"app"},
 }
@@ -194,7 +194,7 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
             args.pop(kind, None)
     if operation in {"focus", "close"} and sum(k in args for k in ("app", "window")) != 1:
         invalid("target")
-    if operation in {"key", "type", "click"} and "window" not in args:
+    if operation in {"key", "type"} and "window" not in args:
         invalid("window")
     if operation == "kill" and "app" not in args:
         invalid("app")
@@ -248,6 +248,12 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         args.setdefault("button", "left")
         if args["button"] not in ("left", "middle", "right"):
             invalid("button")
+        count = args.get("count", 1)
+        if isinstance(count, str) and re.fullmatch(r"[1-3]", count):
+            count = int(count)
+        if type(count) is not int or not 1 <= count <= 3:
+            invalid("count")
+        args["count"] = count
     if operation == "screenshot" and args.get("output") is not None:
         args["output"] = text(args["output"], "output")
     if operation == "logs":

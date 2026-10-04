@@ -24,13 +24,17 @@ invocations, the way an agent would:
    plus any untested-version warnings.
 2. `session start`.
 3. **Native fixture** (built once into `.local/smoke/`, rebuilt when its source changes):
-   launch, windows, focus, `key ctrl+shift+t`, `key --hold 0.2 w`, `type 'aB!'`.
+   launch, windows, focus, `key ctrl+shift+t`, `key --hold 0.2 w`, `type 'aB!'`,
+   `click --x 100 --y 50` and a right-button double click.
    Then `screenshot --window` and graceful `close`. After the fixture exits, its
    complete Wayland key log must show the exact key order, the effective Ctrl/Shift
    state when each key went down (back to none at the end), the text and a hold of
-   about 200ms.
+   about 200ms, and its button log must show each click's exact button and
+   client position.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
-   query until the title contains the typed text. Then `key ctrl+a`, a full and a
+   query until the title contains the typed text. A click on the header bar's
+   "New Tab" button must switch to an empty document (the title drops the text).
+   Then `key ctrl+a`, a full and a
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.
 5. `session stop`. No process may remain in the generation's cgroup, the systemd

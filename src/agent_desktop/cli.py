@@ -73,7 +73,8 @@ def parser():
     leaves["type"].add_argument("text", metavar="TEXT")
     for axis in ("x", "y"):
         leaves["click"].add_argument(f"--{axis}", required=True)
-    leaves["click"].add_argument("--button", default="left")
+    leaves["click"].add_argument("--button", default="left", metavar="left|right|middle")
+    leaves["click"].add_argument("--count", default="1", metavar="1-3", help="2 = double click, 3 = triple click")
     leaves["screenshot"].add_argument("--output")
     leaves["logs"].add_argument("--source", default="all")
     return root

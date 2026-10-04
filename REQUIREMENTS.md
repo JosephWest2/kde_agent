@@ -94,7 +94,7 @@ Terminology:
 
 | ID | Requirement |
 | --- | --- |
-| REQ-023 | Every keyboard or pointer action **MUST** name a window and verify its existence and focus before sending input. This is a checked focus-based operation, not a promise of atomic compositor-level targeting. |
+| REQ-023 | Every keyboard or pointer action **MUST** name a window and verify its existence and focus before sending input. This is a checked focus-based operation, not a promise of atomic compositor-level targeting. The one explicit exception is `click` without `--window`, which takes screen coordinates and checks only screen bounds. |
 | REQ-024 | Ordinary actions within a session **MUST** be serialized. During held or repeated input, the toolkit must recheck target existence and focus at documented bounded intervals, cancel further input upon detecting loss, and attempt release of held input. Instantaneous focus-loss detection is not required. |
 | REQ-025 | Keyboard input **MUST** support documented physical key mappings, chords, and finite key holds, including common game keys. The initial interface must not allow indefinite key-down state across commands. |
 | REQ-026 | Text entry **MUST** support a documented US-layout character set. Complete text and chord requests must be validated before emitting input; unsupported characters or keys must be rejected rather than skipped or partially typed. |

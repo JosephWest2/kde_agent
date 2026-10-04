@@ -98,6 +98,10 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         from .input_actions import InputTask
                         return InputTask(request, context, readiness.adapter, lambda: readiness.input,
                                          applications, launch_health)
+                    if request.operation == 'click':
+                        from .input_actions import ClickTask
+                        return ClickTask(request, context, readiness.adapter, lambda: readiness.input,
+                                         applications, launch_health)
                     if request.operation == 'screenshot':
                         from .screenshots import ScreenshotTask
                         return ScreenshotTask(request, context, foundation, readiness.adapter, applications,

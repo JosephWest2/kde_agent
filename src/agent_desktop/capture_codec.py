@@ -1,4 +1,4 @@
-"""Provisional packaged ScreenShot2 codec derived from tools/capture_codec.py.
+"""Packaged ScreenShot2 codec derived from tools/capture_codec.py.
 
 This is deliberately limited to the private desktop's single unscaled 1280x720 output,
 not a general screenshot API. The caller must establish EOF separately: a raw

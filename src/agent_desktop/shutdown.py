@@ -1,4 +1,4 @@
-"""One progressing owner, one fixed graceful deadline; no production adapters.
+"""One progressing owner, one fixed graceful deadline.
 
 Hooks must be bounded/nonblocking and return None while pending or a result dict.
 A blocked hook is terminated by the independent manager; later hooks then remain
@@ -9,6 +9,22 @@ import time
 
 def unavailable(now, deadline):
     return {'state': 'not_connected', 'confirmed': False}
+
+
+def release_input(owner):
+    """Backstop after task cancellation: release any key still held."""
+    if owner is None:
+        return {'state': 'not_connected', 'confirmed': False}
+    held = lambda: any(device.held for device in owner.devices.values())
+    had = held()
+    if had:
+        try:
+            owner.release()
+        except Exception:
+            pass
+    if held() or owner.retired_held or owner.uncertain:
+        return {'state': 'uncertain', 'confirmed': False}
+    return {'state': 'released' if had else 'nothing_held', 'confirmed': True}
 
 
 class Shutdown:

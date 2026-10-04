@@ -16,8 +16,8 @@ import dbus.lowlevel
 from gi.repository import GLib
 from PIL import Image
 
-from agent_desktop import provisional_capture as capture
-from agent_desktop import provisional_codec as codec
+from agent_desktop import capture
+from agent_desktop import capture_codec as codec
 
 METADATA = {'type': 'raw', 'width': 1280, 'height': 720, 'stride': 5120,
             'format': 6, 'screen': 'Virtual-1', 'scale': 1.0}
@@ -102,7 +102,7 @@ class ConfigTests(CaptureFixture):
     def test_valid_configuration_is_anchored_and_private(self):
         config, fd = capture.load_config(self.config_path, self.env)
         try:
-            self.assertEqual(config, self.config)
+            self.assertEqual(config, self.config | {'crop': None})
             self.assertEqual(os.fstat(fd).st_ino, self.folder.stat().st_ino)
         finally:
             os.close(fd)
@@ -200,6 +200,26 @@ class TransportTests(CaptureFixture):
         for name in ('request.json', 'image.png', 'result.json'):
             self.assertEqual((self.folder / name).stat().st_mode & 0o777, 0o600)
         self.assertLess((self.folder / 'result.json').stat().st_size, capture.MAX_RECEIPT)
+
+    def test_crop_publishes_only_the_requested_rectangle(self):
+        self.config['crop'] = [290, 100, 700, 520]
+        self.write_config()
+        self.fake_call()
+        result, receipt = self.run_capture()
+        self.assertEqual(result, 0)
+        self.assertEqual(receipt['dimensions'], [700, 520])
+        self.assertEqual(receipt['screen_dimensions'], [1280, 720])
+        self.assertEqual(receipt['crop'], [290, 100, 700, 520])
+        with Image.open(self.folder / 'image.png') as image:
+            self.assertEqual(image.size, (700, 520))
+
+    def test_crop_outside_the_output_is_rejected_before_capture(self):
+        for crop in ([0, 0, 0, 10], [1200, 0, 100, 10], [-1, 0, 10, 10], [0, 0, 10.0, 10], [0, 0, 10]):
+            with self.subTest(crop=crop):
+                self.config['crop'] = crop
+                self.write_config()
+                with self.assertRaises(capture.Failure):
+                    capture.load_config(self.config_path, self.env)
 
     def test_eof_with_short_image_is_rejected(self):
         self.fake_call(byte_count=128)

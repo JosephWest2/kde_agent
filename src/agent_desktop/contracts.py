@@ -26,14 +26,15 @@ OPERATIONS = {
     "session.status": (3, 3, 20), "session.stop": (15, 15, 21),
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),
-    "key": (3, 3, 64), "type": (3, 3, 64), "click": (3, 3, 66),
+    "key": (3, 3, 64), "type": (3, 30, 64), "click": (3, 3, 66),
     "input.reset": (3, 3, 67), "screenshot": (3, 3, 64),
     "logs": (3, 3, 68), "close": (5, 60, 25), "kill": (5, 15, 26),
 }
 # Operations that are implemented end to end. Everything else returns
 # unsupported_operation. --help, doctor and session status all read this.
 SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
-                        "launch", "windows", "focus", "wait", "close", "kill")
+                        "launch", "windows", "focus", "wait", "key", "type", "screenshot",
+                        "close", "kill")
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
                            if op not in ("doctor", "session.start", "session.status", "session.stop"))
@@ -156,7 +157,7 @@ ARGUMENTS = {
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window"}, "key": {"window", "chord", "hold"},
     "type": {"window", "text"}, "click": {"window", "x", "y", "button"},
-    "input.reset": set(), "screenshot": {"output"}, "logs": {"app", "source"},
+    "input.reset": set(), "screenshot": {"output", "window"}, "logs": {"app", "source"},
     "close": {"app", "window"}, "kill": {"app"},
 }
 

@@ -71,8 +71,10 @@ ROOT/generations/GENERATION/
   requests/REQUEST_ID/ATTEMPT_ID/
     record.json
     launch.json                  # dedicated future launch producer
-    ALLOCATION_ID.KIND.partial
+    ALLOCATION_ID.{stdout,stderr}.log   # application output; name never changes
     ALLOCATION_ID.json
+  startup-failure.json             # first owner failure (any time, despite the name)
+  terminal.json                    # finalizer receipt
   applications/APP_ID/record.json
 ```
 
@@ -86,18 +88,29 @@ disposable runtime/settings are rejected. Unrelated user directories are not
 chmodded. Reopening validates the required manifest schema, directories, event/log files and
 existing lock inode; attachment never recreates a missing lock or repairs an
 incomplete layout. Worker/runtime shutdown never removes durable records. An allocator
-returns a reserved `.partial` path and metadata; only the producing adapter may
-mark it complete after its full validation. The allocator does not certify PNGs.
+returns a reserved path and metadata; only the producing adapter may mark it
+complete after its full validation. Application logs are created with their final
+`.log` name, so the paths `launch` returns stay valid; their allocation record
+becomes `complete` once the application's cgroup is empty.
 
 | Record | Producer |
 | --- | --- |
 | Identity, headless mode, requested 1280x720 scale-1 output, package/Python versions | Store creation |
-| Actual output and native dependency version/source/hash/patch inventory | Explicit provenance API; M3/doctor real collectors |
+| Observed output (`output.observed`) | Worker, from the readiness window query |
+| Dependency versions (`dependencies.inventory`: kwin, systemd, libei, kdotool, GLib, gi, dbus, PIL) | `session start`, from its prerequisite check |
 | Worker PID and Linux start ticks | Actual worker; managed workers include their generation-derived service unit |
 | Admission, start, effects, cancellation, finalizing and accepted terminal result | Scheduler bridge and transport acceptance callback |
 | Exact argv/cwd, application handle/process birth identity, selected executable, log paths and window refs | Dedicated Store APIs; M4 launcher/window producers |
 | Allocated/partial/complete/failed artifact state and dimensions | Allocation API; M6 capture producer |
 | Sticky session failure, cleanup state and final outcome | Store transitions; M3 authoritative supervisor/cleanup hook |
+| First failure's cause (`failure`: code, message, component, return code) | Worker when it fails, else the finalizer from `startup-failure.json` |
+| Application summary (`applications`: argv up to 1024 characters, cwd, state, exit code, log paths, record links, `ended_by_session_stop`; newest 16, `applications_omitted` counts the rest) | Finalizer, once the generation's cgroup is verified empty |
+
+When the compositor or bus dies, losing input is often noticed first. The worker
+waits up to 100ms for an essential child's exit and records that as the cause
+instead, so `failure.context.component` names `compositor` or `bus`. `session
+status` reports the same failure (`context.failure`, message `Session failed: …`)
+while the session is shutting down and after.
 
 Absent real observations are explicitly `not_collected`; copied M1 dependency
 versions are never presented as observations. Infrastructure loop exit records

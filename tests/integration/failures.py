@@ -166,8 +166,7 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure('generation', f'expected generation_mismatch: {json.dumps(payload)[:300]}')
         ok('generation', 'window ref from another generation refused')
 
-    def kill_component(self, name, *components):
-        """COMPONENTS: acceptable recorded causes; the first is the process itself."""
+    def kill_component(self, name, component):
         _, window, _ = self.fixture_window()
         os.kill(self.session_process(name), signal.SIGKILL)
         ok(f'{name} killed', '')
@@ -175,17 +174,25 @@ class Scenario(smoke.Smoke):
         payload = self.desktop(f'key after {name} death', 'key', '--window', window, 'a', expect_ok=False)
         if (payload['error'] or {}).get('code') != 'session_unavailable':
             raise SmokeFailure(f'{name} death', f'expected session_unavailable: {json.dumps(payload)[:300]}')
+        status = self.run_cli(f'{name} death (status)', 'session', 'status', '--session', self.session,
+                              expect_ok=False, quiet=True)
+        failure = (status['result'] or (status['error'] or {}).get('context') or {}).get('failure') or {}
+        if failure.get('context', {}).get('component') != component:
+            raise SmokeFailure(f'{name} death', f'status does not name the cause: {json.dumps(status)[:400]}')
+        ok(f'{name} death', f'status: {(status["error"] or {}).get("message") or failure.get("message")}')
         self.stop_session()
-        terminal = json.loads(read(self.artifacts / 'generations' / self.generation / 'terminal.json'))
-        cause = (terminal.get('early_failure') or {}).get('context', {})
-        component = cause.get('component')
-        if component not in components or component == components[0] and cause.get('returncode') != -signal.SIGKILL:
-            raise SmokeFailure(f'{name} death', f'terminal record does not name the cause: {json.dumps(terminal)[:400]}')
-        ok(f'{name} death', f'terminal record: {component} ({cause.get("returncode", cause.get("message"))})')
+        manifest = json.loads(read(self.artifacts / 'generations' / self.generation / 'manifest.json'))
+        cause = (manifest.get('failure') or {}).get('context', {})
+        if (cause.get('component'), cause.get('returncode')) != (component, -signal.SIGKILL):
+            raise SmokeFailure(f'{name} death', f'manifest does not name the cause: {json.dumps(manifest)[:400]}')
+        ended = [app['ended_by_session_stop'] for app in manifest.get('applications', [])]
+        if ended != [True]:
+            raise SmokeFailure(f'{name} death', f'manifest applications: {manifest.get("applications")}')
+        ok(f'{name} death', f'manifest failure: {component} exited with SIGKILL')
 
     def compositor_death(self):
-        # The worker may notice the lost EIS connection before the compositor's exit.
-        self.kill_component('kwin_wayland', 'compositor', 'input_resumed')
+        # Also drops the EIS connection; the compositor's exit must still be the recorded cause.
+        self.kill_component('kwin_wayland', 'compositor')
 
     def bus_death(self):
         self.kill_component('dbus-daemon', 'bus')

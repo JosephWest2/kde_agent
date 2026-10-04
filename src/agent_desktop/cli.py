@@ -76,7 +76,8 @@ def parser():
     leaves["click"].add_argument("--button", default="left", metavar="left|right|middle")
     leaves["click"].add_argument("--count", default="1", metavar="1-3", help="2 = double click, 3 = triple click")
     leaves["screenshot"].add_argument("--output")
-    leaves["logs"].add_argument("--source", default="all")
+    leaves["logs"].add_argument("--source", default="all", metavar="all|application|worker|compositor|bus")
+    leaves["logs"].add_argument("--tail", default="20", metavar="0-200", help="last lines of each log to include")
     return root
 
 

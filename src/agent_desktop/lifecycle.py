@@ -172,6 +172,20 @@ class Systemd:
 
 
 
+def inventory(report):
+    """Component versions from a prerequisite report, for the manifest."""
+    observed = {item['name']: item['observed'] for item in report.get('dependencies', [])
+                if item.get('status') == 'passed' and isinstance(item.get('observed'), dict)}
+    executables = observed.get('runtime_executables', {})
+    bindings = observed.get('python_bindings', {}).get('versions', {})
+    entries = [('kwin', executables.get('kwin_version')), ('systemd', executables.get('systemd_version')),
+               ('libei', observed.get('libei', {}).get('version')),
+               ('kdotool', observed.get('kdotool', {}).get('version'))]
+    entries += [(name, bindings.get(name)) for name in sorted(bindings)]
+    return [{'component': name, 'version': version.strip()[:256]} for name, version in entries
+            if isinstance(version, str) and version.strip()]
+
+
 def retained_failure(data):
     """Historical diagnostic only; never used as evidence of live readiness."""
     path = Path(data['configuration']['artifacts']) / 'generations' / data['generation'] / 'startup-failure.json'
@@ -385,7 +399,13 @@ class Manager:
             runtime.socket_path(generation).parent.mkdir(mode=0o700)
             store = Store(configuration['artifacts'], request.session, generation, create=True,
                           disposable=[str(runtime.root.parent)])
-            store.close()
+            try:
+                if prerequisite is not None:
+                    store.provenance(dependencies=inventory(prerequisite))
+            except (ContractError, OSError):
+                pass  # Versions are diagnostics; they never gate startup.
+            finally:
+                store.close()
             self._write(runtime, data)
             from .ownership import generation_lock
             from contextlib import nullcontext
@@ -484,14 +504,21 @@ class Manager:
                                         {'state': data['state'], 'desktop_ready': False, 'cleanup': 'complete',
                                          'failure': retained_failure(data) if data['state'] == 'failed' else None})
                 if info['ActiveState'] != 'active':
-                    raise ContractError('session_unavailable', 'Managed service is not active.',
+                    failure = retained_failure(data)
+                    raise ContractError('session_unavailable', 'Session failed: ' + failure['message'] if failure
+                                        else 'Managed service is not active.',
                                         context={'state': 'failed', 'cleanup': 'pending', 'component': 'service',
-                                                 'failure': retained_failure(data), 'service': data['unit']})
+                                                 'failure': failure, 'service': data['unit']})
                 try:
                     result = self._ping(pinned, generation, deadline)
                 except ContractError as error:
+                    failure = retained_failure(data)
+                    if failure is not None:
+                        # The worker is shutting down after a recorded failure; name it.
+                        error.message = 'Session failed: ' + failure['message']
                     error.context.update(state='failed', component='worker', cleanup='pending',
-                                         resolved_generation=generation, service=data['unit'])
+                                         resolved_generation=generation, service=data['unit'],
+                                         failure=failure)
                     raise
                 if result['state'] in ('failed', 'stopping', 'stopped'):
                     raise ContractError('session_unavailable', 'Managed generation is unavailable.', context=result)

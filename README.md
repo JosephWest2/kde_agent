@@ -19,5 +19,5 @@ The readiness screenshot is an internal diagnostic artifact.
 See [CLI installation and commands](docs/CLI.md), [service lifecycle](docs/LIFECYCLE.md),
 [requirements](REQUIREMENTS.md), and [architecture](ARCHITECTURE.md).
 [Prerequisite setup](docs/SETUP.md) prepares the pinned local dependency build;
-[the M1 decision](docs/M1_DECISION.md) records the source adapter evidence.
+[the M1 decision](docs/M1_DECISION.md) records the source adapter evidence. [Validation history](docs/VALIDATION.md) summarizes completed work; [the revised plan](planning/REVISED_PLAN.md) tracks what remains.
 No command controls the personal desktop.

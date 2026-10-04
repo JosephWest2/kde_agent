@@ -119,7 +119,7 @@ class Probe:
         self.generation, self.runtime, self.artifacts, self.manifest, deadline = private_context(self.env)
         self.deadline = deadline - 3  # Leave worker/probe failure cleanup room.
         self.binary = Path(binary).resolve(strict=True)
-        report = json.loads((PROJECT / "evidence/issue-9/environment.json").read_text())
+        report = json.loads((PROJECT / "tests/data/issue9-environment.json").read_text())
         # Exact selected artifact is the reviewed #9 baseline, not any same-version executable.
         def hashes(value):
             if isinstance(value, dict):

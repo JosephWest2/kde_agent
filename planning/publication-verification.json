@@ -1,0 +1,10 @@
+{
+  "repository": "JosephWest2/kde_agent",
+  "issues_verified": 41,
+  "milestones": 8,
+  "native_subissue_links": 33,
+  "spec_sha256": {
+    "milestones.json": "913e0889989dfe55f3ff91143b02e0b328a5bf6cc86651a1ca7a626238eee0eb",
+    "subissues.json": "57590130ca998269405736d68066f15361adb76cc67828b6ba8c21fce1d2301d"
+  }
+}

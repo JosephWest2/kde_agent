@@ -105,7 +105,7 @@ class DependencyTests(unittest.TestCase):
             self.assertEqual(caught.exception.error["code"], "provenance_mismatch")
 
     def test_cli_malformed_nested_receipts_return_actionable_json(self):
-        receipt = json.loads((deps.PROJECT / "evidence/issue-9/environment.json").read_text())["kdotool"]
+        receipt = json.loads((deps.PROJECT / "tests/data/issue9-environment.json").read_text())["kdotool"]
         receipt_path = self.root / "build.json"
         mutations = [
             ("toolchain", None), ("toolchain", []), ("toolchain", "old-format"),

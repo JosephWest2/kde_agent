@@ -132,7 +132,7 @@ Input cancellation retains its independent dispatch bound throughout.
 
 ## Acceptance deadline correction from fresh review
 
-The [separate correction evidence](../evidence/issue-13/acceptance-deadline-fix/README.md)
+The [separate correction evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/acceptance-deadline-fix/README.md)
 fixes a stale acceptance timestamp taken before process/publication checks. The
 supervisor now samples the clock after those checks and rejects expiry immediately
 at acceptance. Two reproducing regressions and all **60 tests** pass. Three
@@ -146,9 +146,9 @@ source hashes; they were not silently replaced or attributed to the corrected co
 
 ## Recorded evidence and measurements
 
-The [#13 evidence](../evidence/issue-13/README.md),
-[selected-run index](../evidence/issue-13/runs.json) and
-[complete measurement summary](../evidence/issue-13/summary.json) record eleven
+The [#13 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/README.md),
+[selected-run index](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/runs.json) and
+[complete measurement summary](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/summary.json) record eleven
 selected private generations, all with expected outcomes and observed cleanup.
 Three functional generations produced thirty pixel-checked PNGs with 36 checks
 each: **1,080 exact pixel assertions**. InvalidScreen recovery and the slow-query

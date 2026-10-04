@@ -19,6 +19,17 @@ This document defines the proposed product contract. [ARCHITECTURE.md](ARCHITECT
 proposes how to satisfy it. An implementation plan will follow these documents.
 The requirements describe intended behavior, not capabilities already delivered.
 
+> **Revised release bar (2026-10-03, #62):** this is a personal tool. The
+> exact-artifact pinning in REQ-036 and the verification and qualification
+> requirements REQ-038, REQ-039 (twenty consecutive runs) and REQ-040 are
+> superseded by the release bar in [the revised plan](planning/REVISED_PLAN.md):
+> - unit tests;
+> - an automated end-to-end smoke test (#65);
+> - focused failure-path tests (#67);
+> - recorded tested versions, with the smoke test rerun after dependency updates.
+>
+> The other requirements stand.
+
 - **MUST**: required for the first supported version, unless explicitly conditional.
 - **SHOULD**: expected, but an exception may be made with a documented reason and
   its consequences.

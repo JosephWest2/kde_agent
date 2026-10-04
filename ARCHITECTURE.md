@@ -7,8 +7,8 @@ small local toolkit that runs a trusted graphical application in a separate
 KWin desktop and exposes launch, window control, input, screenshots, and cleanup
 through a CLI.
 
-Status: proposed design. No implementation or compatibility guarantee is implied.
-Implementation sequencing belongs in a later plan. The requirements are the
+Status: implemented through window control and the persistent input connection (M1–M4, #27); input actions and screenshots are in progress per [the revised plan](planning/REVISED_PLAN.md).
+The requirements are the
 product contract; dependency choices here can change when evidence justifies it.
 
 ## 1. Main decisions
@@ -301,11 +301,29 @@ Requirements: REQ-036, REQ-041, REQ-042.
 | Python, PyGObject, dbus-python, Pillow | Use a project environment with documented access to the required distribution native bindings; record the complete resolved environment. |
 | kdotool | Pin a tested revision supporting custom scripts. Reviewed candidate: `be03ce90c09350898556436bac74ed35fe928617`. A Cargo source build is an installation dependency when a suitable package is unavailable; the compiled executable is used at runtime. |
 
-`ydotool` and `kwin-mcp` are excluded from build and runtime dependencies. Do not
-install, invoke, patch, or vendor either package as part of this toolkit. Input
+`ydotool` and `kwin-mcp` are excluded from build and runtime dependencies. Input
 and capture are project-owned modules using the underlying platform APIs. The
 initial toolkit has no MCP SDK dependency; a future MCP integration is optional
 under REQ-050.
+
+**kwin-mcp comparison (#61, 2026-10-03).** [kwin-mcp](https://github.com/isac322/kwin-mcp)
+(v0.10.0, MIT) uses the same KWin EIS and ScreenShot2 interfaces. It offers
+more operations today: pointer gestures, clipboard, and the AT-SPI
+accessibility tree. When tested on the target machine:
+- A SIGKILL of its controller left the private compositor, the application,
+  the accessibility bus, the temporary HOME and the sockets running or on disk.
+  It owns processes by process group, not cgroup.
+- HOME isolation and screenshot retention are opt-in.
+- A session cannot persist across separate CLI invocations.
+
+The same SIGKILL test against this toolkit's worker left nothing running and
+kept the artifacts. This project therefore keeps its own lifecycle, ownership
+and contracts. kwin-mcp may be used as a *reference* for keymaps and libei
+pointer usage. Any copied code keeps its MIT notice.
+
+The accessibility tree is deliberately absent: the private environment disables
+AT-SPI. A private accessibility bus inside the session is a possible later
+addition, not a first-version goal.
 
 ### Alternatives and reasons to reconsider
 
@@ -403,7 +421,7 @@ from the internal stop relay and watchdog SIGTERM, preserving prior failures and
 requested-fallback outcome semantics. Durable post receipts distinguish ordinary
 process absence from an outside observation of total cgroup emptiness. See
 [the shutdown contract](docs/LIFECYCLE.md#autonomous-shutdown-and-finalization-21)
-and [installed qualification](evidence/issue-21/README.md).
+and [installed qualification](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-21/README.md).
 
 M4.1 application ownership uses one delegated cgroup per application beneath the
 existing session service. A gated isolated helper enters containment and the

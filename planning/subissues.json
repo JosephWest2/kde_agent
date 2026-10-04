@@ -1,0 +1,947 @@
+[
+  {
+    "id": "M1.1",
+    "parent": "M1",
+    "title": "Record reproducible native and Python dependency setup",
+    "depends_on": [],
+    "requirements": [
+      "REQ-002",
+      "REQ-005",
+      "REQ-036",
+      "REQ-041",
+      "REQ-042"
+    ],
+    "outcome": "Developers can reproduce the candidate stack and identify unsupported prerequisites before running desktop probes.",
+    "scope": [
+      "Add setup instructions/scripts and a machine-readable environment report for Arch/KDE, KWin, systemd, D-Bus, libei, Python, PyGObject, dbus-python and Pillow, including resolved/native versions and maintained patches.",
+      "Pin and build/evaluate kdotool candidate be03ce90c09350898556436bac74ed35fe928617 with custom-script support; record the actual tested revision and access to distro native bindings.",
+      "Record the dependency exclusions and define which compatibility probes must rerun after each dependency changes."
+    ],
+    "acceptance": [
+      "Setup and version reporting run reproducibly in the recorded target environment; missing tools/bindings produce actionable errors and bounded subprocess waits.",
+      "Reports identify exact revisions/releases and all maintained patches without inherited environment or secrets; neither ydotool nor kwin-mcp is installed, invoked or vendored, and no MCP SDK is added."
+    ]
+  },
+  {
+    "id": "M1.2",
+    "parent": "M1",
+    "title": "Build a bounded private-desktop harness and acknowledged Wayland fixture",
+    "depends_on": [
+      "M1.1"
+    ],
+    "requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-006",
+      "REQ-007",
+      "REQ-009",
+      "REQ-012",
+      "REQ-034",
+      "REQ-037"
+    ],
+    "outcome": "Every adapter probe has a real private KWin session and deterministic custom-rendered application available before production implementation.",
+    "scope": [
+      "Add a development harness using a transient user service, private bus/runtime/HOME/XDG and headless KWin with one 1280\u00d7720 scale-1 output; keep all ordinary children in its cgroup.",
+      "Add a minimal native Wayland fixture with custom rendering, machine-readable input acknowledgments and controllable visual state; provide a separate local test control channel to request state changes.",
+      "Bound startup and teardown, preserve generation-attributed evidence outside disposable settings, and prevent any host input/capture fallback."
+    ],
+    "acceptance": [
+      "The harness opens the fixture on the private desktop without prompts; its reported output configuration is correct and it requires no viewer or accessibility metadata.",
+      "The fixture emits deterministic input receipts and signals when an intended visual change has been rendered; later screenshot checks can synchronize using that signal.",
+      "Normal completion and injected startup failure remove owned processes within a recorded provisional deadline and retain diagnostics. This harness is clearly marked as feasibility tooling, not a supported session implementation."
+    ]
+  },
+  {
+    "id": "M1.3",
+    "parent": "M1",
+    "title": "Validate kdotool structured queries and bounded focus polling",
+    "depends_on": [
+      "M1.2"
+    ],
+    "requirements": [
+      "REQ-017",
+      "REQ-018",
+      "REQ-019",
+      "REQ-024",
+      "REQ-036",
+      "REQ-041",
+      "REQ-042"
+    ],
+    "outcome": "Measured evidence establishes whether pinned kdotool meets the proposed window transport contract.",
+    "scope": [
+      "Create a fixed query script against the private bus for UUID/PID/title/class/client and frame geometry/active identity with explicit unavailable values and encoded dynamic data.",
+      "Probe activation followed by observed focus, vanished-window behavior, timeout/script cleanup, JSON result ordering and repeated query latency.",
+      "Record retain/replace evidence; custom JSON alone does not justify replacing kdotool."
+    ],
+    "acceptance": [
+      "The real fixture is discovered without accessibility, exact client bounds are recorded and success requires observed focus rather than a successful subprocess exit.",
+      "Slow/failed queries terminate within a recorded limit and leave no query scripts/processes; measurements support a proposed bounded polling interval or record a blocker before production integration."
+    ]
+  },
+  {
+    "id": "M1.4",
+    "parent": "M1",
+    "title": "Prove the minimal libei binding and device-lifecycle test mechanism",
+    "depends_on": [
+      "M1.2"
+    ],
+    "requirements": [
+      "REQ-025",
+      "REQ-028",
+      "REQ-029",
+      "REQ-030",
+      "REQ-031",
+      "REQ-036",
+      "REQ-042"
+    ],
+    "outcome": "Project-owned libei calls can negotiate usable devices, deliver acknowledged input and observe connection/device failures in the private compositor.",
+    "scope": [
+      "Declare only required ctypes symbols, verify argument/return types and object/FD ownership against installed supported headers, including void ei_dispatch.",
+      "Demonstrate GLib-integrated event consumption, resumed-device gating, key press/release and cancellation with acknowledgment from the M1 fixture.",
+      "Establish a reproducible real-compositor lifecycle fault procedure for pause/removal/disconnect and reset; document any required harness extension. Record binding maintainability and known correctness issues."
+    ],
+    "acceptance": [
+      "Header audit and real input evidence pass; no input is emitted on merely announced or paused devices and released keys are observed by the fixture.",
+      "A concrete fault-injection/reproduction procedure and evidence exist for lifecycle events; inability to obtain required evidence remains a blocker, not a mock-only pass.",
+      "Record measured initial cancellation/release behavior and a justified Python-versus-compiled-boundary decision; unresolved input correctness defects block the milestone."
+    ]
+  },
+  {
+    "id": "M1.5",
+    "parent": "M1",
+    "title": "Prove ScreenShot2 capture and choose the control-loop integration boundaries",
+    "depends_on": [
+      "M1.3",
+      "M1.4"
+    ],
+    "requirements": [
+      "REQ-001",
+      "REQ-005",
+      "REQ-009",
+      "REQ-028",
+      "REQ-032",
+      "REQ-033",
+      "REQ-036",
+      "REQ-041",
+      "REQ-042"
+    ],
+    "outcome": "All proposed adapters have feasibility evidence and measured integration decisions before production work begins.",
+    "scope": [
+      "Probe private ScreenShot2 request/pipe handling with concurrent draining, metadata/pixel-format inspection, Pillow encoding and bounded FD cleanup.",
+      "Demonstrate a fresh capture after the fixture's rendered-state signal and keep blocking work outside responsive GLib event/control handling.",
+      "Record an architecture decision choosing the capture thread/process boundary and finite proposed startup/query/action/capture/stop deadlines, focus polling interval and cancellation/release bound with tested conditions; include the preceding window/libei findings."
+    ],
+    "acceptance": [
+      "The private whole-output image is a complete fresh 1280\u00d7720 PNG without a viewer; partial/hung capture fails and cleans up within the proposed deadline.",
+      "Slow capture and window queries do not stall prototype event processing/cancellation. The chosen boundary identifies how blocking work is terminated or drained and owned resources are reclaimed.",
+      "A consolidated go/no-go report links reproducible evidence for every platform adapter and records any required architecture changes; unresolved feasibility blockers prevent completing M1."
+    ]
+  },
+  {
+    "id": "M2.1",
+    "parent": "M2",
+    "title": "Scaffold agent-desktop and define JSON command/error contracts",
+    "depends_on": [
+      "M1"
+    ],
+    "requirements": [
+      "REQ-003",
+      "REQ-004",
+      "REQ-005",
+      "REQ-013",
+      "REQ-033",
+      "REQ-035",
+      "REQ-043",
+      "REQ-046"
+    ],
+    "outcome": "An installable Python CLI exposes explicit command contracts and stable machine-readable failures.",
+    "scope": [
+      "Add packaging and command parsing for doctor; session start/status/stop; launch/windows/focus/wait; key/type/click/input reset; screenshot/logs; close/kill, with documented flags/defaults and headless mode.",
+      "Specify JSON result/error envelopes, meaningful exit statuses and stable codes for each required failure class; include request/generation identifiers, partial outcomes and handles where available.",
+      "Accept --generation on every session-addressed command; document current-generation name lookup, dispatch semantics and no automatic launch/input retry on unknown completion. Unwired operations explicitly fail."
+    ],
+    "acceptance": [
+      "CLI contract checks cover success/error examples, invalid flags/arguments and unsupported commands in JSON mode; stdout has only the result and diagnostics use stderr or files.",
+      "No supported command path requires a prompt; blocking command contracts name finite worker-enforced limits, and future viewer mode does not require a backend framework."
+    ]
+  },
+  {
+    "id": "M2.2",
+    "parent": "M2",
+    "title": "Implement generation-bound Unix-socket request transport",
+    "depends_on": [
+      "M2.1"
+    ],
+    "requirements": [
+      "REQ-004",
+      "REQ-006",
+      "REQ-008",
+      "REQ-013",
+      "REQ-035",
+      "REQ-045"
+    ],
+    "outcome": "Separate CLI invocations can address one persistent worker through a private versioned protocol with identity checked before dispatch.",
+    "scope": [
+      "Define framing/version validation, bounded request reads, request IDs, operation arguments, finite timeouts and structured replies over an owner-only Unix socket.",
+      "Resolve generation-qualified session/application/window references and reject mismatches before dispatch; correlate transport failures and partial/uncertain outcomes.",
+      "Provide the worker entrypoint and transport lifecycle without retaining connections or desktop state in the CLI."
+    ],
+    "acceptance": [
+      "Two independent CLI processes contact the same worker and generation; malformed/incompatible protocol and stale references produce stable errors without action side effects.",
+      "Socket/runtime permissions restrict access to the owner; worker/subprocess logs cannot enter the protocol or JSON output. A lost response is not automatically retried as launch or input."
+    ]
+  },
+  {
+    "id": "M2.3",
+    "parent": "M2",
+    "title": "Implement the responsive ordinary-action queue and cancellation channel",
+    "depends_on": [
+      "M2.2"
+    ],
+    "requirements": [
+      "REQ-005",
+      "REQ-024",
+      "REQ-028",
+      "REQ-029",
+      "REQ-033",
+      "REQ-035"
+    ],
+    "outcome": "Ordinary actions serialize while control requests and deadlines remain responsive, including when the caller disappears.",
+    "scope": [
+      "Use the chosen GLib loop and monotonic admission deadlines including queue time; express waits/actions as short cancellable steps and observe desktop subprocesses asynchronously.",
+      "Route SIGINT, client disconnect and worker timeout to the corresponding unfinished request; cancel queued work before side effects when its deadline expires.",
+      "Make cancellation, reset and stop bypass the ordinary queue and signal the owning execution context. Define cleanup continuation and result preservation for actions with partial effects."
+    ],
+    "acceptance": [
+      "Deterministic task doubles demonstrate serialization, queued expiry, active cancellation, control bypass and no concurrent input-owner mutation under a slow operation.",
+      "SIGINT/socket loss cancels only the corresponding ordinary request within the provisional bound; lifecycle cleanup continues after caller departure and completed side effects are not described as undone.",
+      "Checks use worker-enforced deadlines, not just a client timeout. Later M5/M7 issues explicitly own real-adapter timing validation."
+    ]
+  },
+  {
+    "id": "M2.4",
+    "parent": "M2",
+    "title": "Implement caller-path normalization and durable generation records",
+    "depends_on": [
+      "M2.1"
+    ],
+    "requirements": [
+      "REQ-014",
+      "REQ-015",
+      "REQ-034",
+      "REQ-035",
+      "REQ-043",
+      "REQ-045",
+      "REQ-046"
+    ],
+    "outcome": "CLI and worker share normalized paths and durable generation-specific manifests/log locations.",
+    "scope": [
+      "Normalize relative application cwd, artifact root and screenshot output against caller cwd before transport; define omitted cwd, slash-containing executables, final PATH lookup and environment precedence.",
+      "Allocate collision-free generation/request artifact paths outside disposable settings and atomic manifest updates; define logging interfaces shared by supervisor/apps/adapters.",
+      "Record mode/output/dependency provenance, argv/cwd, process and target references, partial outcomes, cleanup status and terminal outcome, without dumping credentials or the inherited environment."
+    ],
+    "acceptance": [
+      "Checks from a directory different from the worker verify all relative/default path cases and executable-resolution contracts.",
+      "Repeated allocations do not collide, interrupted manifest writes preserve a valid prior record, and all required schema fields have defined producers.",
+      "A simulated failed startup/terminal cleanup retains artifact records and preserves an already-recorded failure; M3/M6 wire the real producers and artifact access."
+    ]
+  },
+  {
+    "id": "M3.1",
+    "parent": "M3",
+    "title": "Implement generation-owned transient service start and idempotent lifecycle",
+    "depends_on": [
+      "M1",
+      "M2"
+    ],
+    "requirements": [
+      "REQ-008",
+      "REQ-010",
+      "REQ-012",
+      "REQ-013",
+      "REQ-034"
+    ],
+    "outcome": "Session names resolve to distinct service generations that cannot be confused across start/stop races.",
+    "scope": [
+      "Serialize per-name start/stop decisions, bind service and runtime paths to random immutable generations and compare all supported configuration for duplicate starts.",
+      "Launch the persistent worker in a transient user service with no automatic restart, KillMode=control-group and finite TimeoutStopSec; retain service identity for fallback stop.",
+      "Guard manager-side start/status/stop and runtime removal with expected-generation checks, including when the worker socket is unavailable."
+    ],
+    "acceptance": [
+      "Repeated compatible start returns the same identity, conflicting start fails, stopped stop succeeds and restarting the same name produces a new generation.",
+      "Concurrent lifecycle/race checks show stale start/stop requests cannot stop or remove a replacement generation, including the unresponsive-worker path.",
+      "Separate CLI invocations retain a live session; systemd owns ordinary descendants and records use the correct generation."
+    ]
+  },
+  {
+    "id": "M3.2",
+    "parent": "M3",
+    "title": "Construct the private desktop and protected application environment",
+    "depends_on": [
+      "M3.1"
+    ],
+    "requirements": [
+      "REQ-001",
+      "REQ-006",
+      "REQ-007",
+      "REQ-014",
+      "REQ-034"
+    ],
+    "outcome": "Private KWin, adapters and trusted applications receive explicit isolated desktop/settings endpoints.",
+    "scope": [
+      "Create owner-only runtime/control storage and disposable HOME/XDG settings, launch observed private D-Bus and KWin children with one headless 1280\u00d7720 scale-1 output.",
+      "Centralize application environment construction: strip host DISPLAY/XAUTHORITY/Wayland/D-Bus/accessibility endpoints, apply allowed overrides, then install private protected settings and reject protected overrides.",
+      "Keep host user-manager access confined to lifecycle control and any EIS/ScreenShot2 permission adjustments confined to the created compositor; retain trusted project/network access."
+    ],
+    "acceptance": [
+      "A real environment-reporting child has the intended private endpoints/settings and can read its project files; protected override attempts fail before launch.",
+      "Contaminated host environment tests show neither adapters nor applications fall back to personal display/accessibility/clipboard endpoints; runtime sockets/files are owner-only.",
+      "No global KDE configuration is changed; private settings are disposable and artifact roots remain outside them."
+    ]
+  },
+  {
+    "id": "M3.3",
+    "parent": "M3",
+    "title": "Gate readiness on capabilities and monitor essential-process health",
+    "depends_on": [
+      "M3.2"
+    ],
+    "requirements": [
+      "REQ-005",
+      "REQ-009",
+      "REQ-011",
+      "REQ-035"
+    ],
+    "outcome": "Session state reflects live capabilities and essential process health instead of persisted files alone.",
+    "scope": [
+      "Implement starting/ready/stopping/stopped/failed states and monitor worker service, bus and compositor health.",
+      "Require control connectivity, structured window query, resumed input device and screenshot probe before ready; adapt the real M1 probes behind interfaces until production adapters arrive in M7.1.",
+      "Bound readiness/subprocess/pipe waits; reject desktop work on essential failure and initiate the cleanup path. Supply structured health/prerequisite details for doctor/status."
+    ],
+    "acceptance": [
+      "Socket appearance alone cannot make the session ready; each missing capability causes a specific startup failure with retained diagnostics.",
+      "Independent bus/compositor death and worker death/unresponsiveness produce unavailable status based on live observations and reject further work.",
+      "Probe timeout and status checks obey finite deadlines; tests name the production replacement owned by M7.1 so provisional readiness cannot pass release qualification."
+    ]
+  },
+  {
+    "id": "M3.4",
+    "parent": "M3",
+    "title": "Implement graceful shutdown orchestration and crash-independent cgroup cleanup",
+    "depends_on": [
+      "M3.3"
+    ],
+    "requirements": [
+      "REQ-009",
+      "REQ-011",
+      "REQ-012",
+      "REQ-013",
+      "REQ-028",
+      "REQ-029",
+      "REQ-034"
+    ],
+    "outcome": "Stop and essential failures clean ordinary descendants within a finite deadline even when the worker or client cannot cooperate.",
+    "scope": [
+      "Order shutdown hooks as cancellation, tracked release, normal application-window close, then service-manager termination of remaining owned processes within the overall shutdown budget.",
+      "Implement a bounded service cleanup hook that records terminal outcome and removes only generation-owned runtime/settings files, preserving earlier failures and durable artifacts.",
+      "Cover startup failure and independent worker/compositor/private-bus death, worker hang, and client disconnect; use the manager fallback when socket control is unusable. Production app/input hooks are wired in M7.1."
+    ],
+    "acceptance": [
+      "Real ordinary child/grandchild processes disappear within the shutdown bound after normal stop, failed start and each essential-process failure, including a blocked worker.",
+      "Hook-order checks prove release/close are attempted before escalation; no client connection is required for cleanup to finish.",
+      "Stale hooks cannot touch replacement-generation files/services; artifacts and a truthful final manifest survive worker death before it can record its outcome."
+    ]
+  },
+  {
+    "id": "M4.1",
+    "parent": "M4",
+    "title": "Launch argv workloads with durable ownership and a one-active-application limit",
+    "depends_on": [
+      "M2",
+      "M3"
+    ],
+    "requirements": [
+      "REQ-002",
+      "REQ-007",
+      "REQ-013",
+      "REQ-014",
+      "REQ-015",
+      "REQ-016",
+      "REQ-034",
+      "REQ-035"
+    ],
+    "outcome": "A launch is tracked from process creation through exit, including descendants, timeout and cancellation.",
+    "scope": [
+      "Launch argument vectors without an implicit shell using normalized cwd, final application PATH and protected environment construction; allocate logs and an application ID before observable side effects where possible.",
+      "Track kernel-backed process identities, exit status and ordinary descendants using a documented reliable ownership mechanism; retain handles/results if subsequent processing or the client connection fails. Expose retention hooks for the real window waits implemented in M4.3.",
+      "Enforce one active application per session, including tracked living descendants; allow its dialogs and a later sequential launch after the tracked process set exits. Extend the fixture with exits, delayed windows and descendants."
+    ],
+    "acceptance": [
+      "Different-cwd tests verify executable paths, bare PATH lookup, argv boundaries, explicit allowed environment overrides and durable stdout/stderr logs.",
+      "A simulated post-launch wait failure, cancellation and a disconnected real launch retain the application/process handle and known side effects in records; no automatic launch retry occurs. Real compositor window-timeout acceptance belongs to M4.3, after discovery/waits exist.",
+      "A second launch while the first app or its descendants remains live fails before spawning; a later launch after complete exit succeeds. Ownership records cannot become signaling authority for a reused PID."
+    ]
+  },
+  {
+    "id": "M4.2",
+    "parent": "M4",
+    "title": "Implement asynchronous structured KWin window discovery",
+    "depends_on": [
+      "M4.1"
+    ],
+    "requirements": [
+      "REQ-013",
+      "REQ-017",
+      "REQ-018",
+      "REQ-024",
+      "REQ-027",
+      "REQ-042"
+    ],
+    "outcome": "Window snapshots carry compositor identity and geometry without relying on titles or accessibility metadata.",
+    "scope": [
+      "Promote the pinned kdotool fixed-script probe to a typed adapter on explicit private D-Bus endpoints; asynchronously supervise each subprocess with deadlines and script cleanup.",
+      "Return generation-scoped KWin identity, PID, title/class, client/frame bounds and active focus, representing unavailable metadata explicitly.",
+      "Safely encode data instead of accepting caller JavaScript and associate windows with verified owned application processes. Extend the fixture with dialogs, duplicate titles and unavailable/unassociated metadata cases where feasible."
+    ],
+    "acceptance": [
+      "Real custom-rendered windows/dialogs return expected identities and client geometry without accessibility; duplicate titles remain distinct candidates.",
+      "Unassociated windows are exposed without false ownership claims; malformed adapter output and slow/hung queries fail explicitly and do not block control-loop cancellation.",
+      "Query subprocess/script resources are reclaimed on error, timeout and cancellation; dynamic values cannot become arbitrary script source."
+    ]
+  },
+  {
+    "id": "M4.3",
+    "parent": "M4",
+    "title": "Implement unambiguous target resolution, verified focus and bounded waits",
+    "depends_on": [
+      "M4.2"
+    ],
+    "requirements": [
+      "REQ-013",
+      "REQ-015",
+      "REQ-018",
+      "REQ-019",
+      "REQ-020",
+      "REQ-023",
+      "REQ-027",
+      "REQ-035"
+    ],
+    "outcome": "Targeting and waits use current compositor state and return distinct, actionable outcomes.",
+    "scope": [
+      "Resolve explicit identity or a unique owned-application association; return candidates on ambiguity, reject vanished/stale-generation references and recheck at execution after queue delay.",
+      "Implement focus as activation followed by bounded observation of the exact active window; provide reusable existence/focus/current-geometry checks for input.",
+      "Add bounded window/focus/app-exit waits that distinguish timeout, application exit, cancellation and failed session and retain launch handles on window timeout."
+    ],
+    "acceptance": [
+      "Identical-title dialogs force explicit selection; windows that vanish or move while queued are revalidated before side effects.",
+      "Activation subprocess success without observed focus fails or times out; waits cover each documented outcome against the real fixture.",
+      "Focus queries honor the chosen deadline and return fresh client geometry suitable for click translation; no title-based identity fallback occurs."
+    ]
+  },
+  {
+    "id": "M4.4",
+    "parent": "M4",
+    "title": "Implement graceful window close without implicit escalation",
+    "depends_on": [
+      "M4.3"
+    ],
+    "requirements": [
+      "REQ-020",
+      "REQ-021",
+      "REQ-033",
+      "REQ-035"
+    ],
+    "outcome": "Close requests normal window closure and reports application exit while leaving confirmation dialogs under caller control.",
+    "scope": [
+      "Wire close to explicit/unique target resolution, request normal KWin window closure and wait within the shared deadline for tracked application exit.",
+      "Extend the real fixture with close confirmation and refusal/delay cases; return application/window references and remaining process state on timeout.",
+      "Expose a reusable bounded close hook for session shutdown while keeping explicit close semantics independent of shutdown escalation."
+    ],
+    "acceptance": [
+      "Normal close reports observed application exit; a confirmation dialog remains open and discoverable for explicit subsequent input.",
+      "Close timeout does not send signals, auto-dismiss dialogs or report application exit merely because a window closed. Vanished and ambiguous targets return documented errors."
+    ]
+  },
+  {
+    "id": "M4.5",
+    "parent": "M4",
+    "title": "Implement explicit termination of verified application processes",
+    "depends_on": [
+      "M4.1",
+      "M4.3"
+    ],
+    "requirements": [
+      "REQ-015",
+      "REQ-016",
+      "REQ-020",
+      "REQ-022",
+      "REQ-035"
+    ],
+    "outcome": "The separate kill command terminates only verified owned processes and accurately reports remaining descendants.",
+    "scope": [
+      "Define the finite explicit termination sequence and use tracked kernel process identities and descendant ownership instead of saved PID authority.",
+      "Wait for the tracked application process set, including descendants after original-parent exit, and return exited/remaining process outcomes.",
+      "Add PID-reuse/ownership-race checks and real child/grandchild lifetime cases; distinguish application termination from session-wide systemd cleanup."
+    ],
+    "acceptance": [
+      "A reused PID or unowned process is never signaled; generation mismatch fails before termination begins.",
+      "Real tracked descendants are terminated or explicitly reported as remaining within the deadline, and subsequent wait/status sees correct exit state.",
+      "Calling kill is explicit; launch, wait and graceful close failures cannot invoke it automatically."
+    ]
+  },
+  {
+    "id": "M5.1",
+    "parent": "M5",
+    "title": "Implement the persistent libei connection and resumed-device lifecycle",
+    "depends_on": [
+      "M1",
+      "M2",
+      "M3",
+      "M4.3"
+    ],
+    "requirements": [
+      "REQ-006",
+      "REQ-028",
+      "REQ-029",
+      "REQ-030",
+      "REQ-036"
+    ],
+    "outcome": "One worker execution context owns a header-checked private EIS/libei connection and continuously updated device readiness.",
+    "scope": [
+      "Promote the M1 binding to a limited production module with verified ctypes signatures, explicit object/FD ownership and GLib event integration.",
+      "Negotiate EIS only through the private compositor, consume events continuously and gate emission on usable resumed devices.",
+      "On pause/removal/disconnect mark affected devices unusable, notify the active action to cancel and record release uncertainty; expose readiness/reconnect hooks for reset and startup."
+    ],
+    "acceptance": [
+      "Real event traces demonstrate negotiation and resumed readiness before input; events continue to be consumed during ordinary actions and slow external work.",
+      "The M1 real-compositor fault procedure exercises pause/removal/connection loss with explicit unavailable errors and resource cleanup; no stale-ready or host fallback path exists.",
+      "Native declarations/ownership are checked against the recorded headers and no known correctness defect remains; tests supplement but do not replace real lifecycle evidence."
+    ]
+  },
+  {
+    "id": "M5.2",
+    "parent": "M5",
+    "title": "Implement fully validated physical keys, chords, text and finite holds",
+    "depends_on": [
+      "M5.1"
+    ],
+    "requirements": [
+      "REQ-025",
+      "REQ-026",
+      "REQ-029",
+      "REQ-033",
+      "REQ-035"
+    ],
+    "outcome": "Supported input requests compile into finite press/release sequences before any emission.",
+    "scope": [
+      "Document physical-key names including common game keys, legal chord structure, finite hold limits and the supported US-layout character set.",
+      "Prevalidate the complete request and generate short sequence steps; track explicit keys/buttons and modifiers generated for text, with a release ledger shared by completion/cancellation/reset.",
+      "Extend fixture acknowledgments for key order, modifier state, text and hold duration; expose dispatch results without claiming application rendering."
+    ],
+    "acceptance": [
+      "Supported text/chords/game keys and finite holds are received by the real fixture in the expected order and all normal-completion releases are observed.",
+      "Unsupported characters anywhere in text, invalid chord keys or invalid/nonfinite holds reject the entire request before emitting any input.",
+      "No public operation can leave an indefinite key-down state across commands; the ledger includes generated modifiers and identifies uncertain effects."
+    ]
+  },
+  {
+    "id": "M5.3",
+    "parent": "M5",
+    "title": "Enforce window focus and current client-coordinate targeting for every input action",
+    "depends_on": [
+      "M5.2",
+      "M4.3"
+    ],
+    "requirements": [
+      "REQ-018",
+      "REQ-019",
+      "REQ-023",
+      "REQ-024",
+      "REQ-027",
+      "REQ-033"
+    ],
+    "outcome": "Input executes only after current target checks, with finite rechecks during repeated or held input and correctly translated clicks.",
+    "scope": [
+      "Require explicit or unambiguously resolved window identity for key/type/click, confirm existence and verified focus before emission and revalidate after queue delay.",
+      "Schedule bounded focus/existence polls during sequences/holds using asynchronous queries; stop further input on lost target/focus or a timed-out check.",
+      "Prevalidate click button/coordinates, then check current client-content bounds and translate to output coordinates excluding decorations immediately before dispatch."
+    ],
+    "acceptance": [
+      "Real fixture clicks at valid client edges reach the expected content positions; negative/out-of-range coordinates fail without emission and moving/resizing queued targets uses new geometry.",
+      "Focus theft and vanished windows cancel held/repeated input within the measured polling bound; a slow or timed-out query never permits continued input using stale focus.",
+      "All input commands reject missing/ambiguous/stale targets, and documentation states checked focus-based behavior and its non-atomic compositor race limit."
+    ]
+  },
+  {
+    "id": "M5.4",
+    "parent": "M5",
+    "title": "Guarantee bounded input cancellation and tracked release on every exit path",
+    "depends_on": [
+      "M5.3",
+      "M2.3"
+    ],
+    "requirements": [
+      "REQ-024",
+      "REQ-028",
+      "REQ-029",
+      "REQ-030",
+      "REQ-033",
+      "REQ-035"
+    ],
+    "outcome": "Cancellation stops further emission and attempts all tracked releases within a measured bound, without queueing behind an active action.",
+    "scope": [
+      "Connect the single input owner to completion, SIGINT, client loss, worker timeout, focus/target loss, device failure and shutdown cancellation paths.",
+      "Use short steps and timers, stop future sequence work, release tracked keys/buttons/modifiers and preserve partial/uncertain effects and handles in replies/logs.",
+      "Extend the harness for cancellation during holds and shifted typing with slow asynchronous queries and controlled external work using the M1 capture harness or a delay double; collect emission-stop and release-attempt timing evidence. Production capture responsiveness belongs to M7.4. Preserve ordinary-action serialization: test active input and active capture scenarios separately, including cancellation of queued work."
+    ],
+    "acceptance": [
+      "Separate CLI interruption/disconnection and worker-enforced timeout meet the documented bound during real holds and modified text; fixture receipts show no continuing sequence after cancellation detection.",
+      "Normal completion and every failure path attempt release; an unconfirmable release is reported and blocks further input rather than silently clearing the ledger.",
+      "Control bypass works under queued requests and slow desktop calls, with no concurrent libei mutation and no automatic retry or claim that earlier side effects were undone."
+    ]
+  },
+  {
+    "id": "M5.5",
+    "parent": "M5",
+    "title": "Implement input reset and recovery from uncertain release",
+    "depends_on": [
+      "M5.4"
+    ],
+    "requirements": [
+      "REQ-028",
+      "REQ-029",
+      "REQ-030",
+      "REQ-031",
+      "REQ-035"
+    ],
+    "outcome": "Explicit reset recovers a usable private input connection or leaves input unavailable with truthful diagnostics.",
+    "scope": [
+      "Make reset bypass the action queue, ask the input owner to cancel active input first, then release tracked state or replace the private connection.",
+      "Wait for newly usable resumed devices before reporting reset success; clean up old connection resources and never replay interrupted input.",
+      "Provide production release/reset hooks for M7.1 startup/shutdown integration and exercise the established real lifecycle failure procedures."
+    ],
+    "acceptance": [
+      "Reset during a held key cancels the active sequence and restores usable input only after safe release/reconnection; a subsequent targeted action is acknowledged correctly.",
+      "Connection loss with uncertain release blocks new input until successful reset or session stop, and a failed reset leaves it blocked.",
+      "Pause/removal/disconnect and repeated reset attempts do not leak connection resources or publish readiness early; reset/stop remain responsive during active input."
+    ]
+  },
+  {
+    "id": "M6.1",
+    "parent": "M6",
+    "title": "Implement bounded private ScreenShot2 transport and pixel decoding",
+    "depends_on": [
+      "M1",
+      "M2",
+      "M3"
+    ],
+    "requirements": [
+      "REQ-001",
+      "REQ-006",
+      "REQ-028",
+      "REQ-032",
+      "REQ-035"
+    ],
+    "outcome": "Fresh whole-output pixel data arrives through a validated private capture path that cannot block worker control handling.",
+    "scope": [
+      "Implement explicit private-bus ScreenShot2 calls, concurrent pipe draining during pending replies, supported metadata/stride/pixel-format validation and Pillow decoding.",
+      "Use the M1-selected execution boundary with enforced deadlines, cancellation and owned pipe/descriptor/task cleanup; disallow personal-desktop fallback.",
+      "Return typed complete image data or stable capture/unsupported/timeout/session errors with side-effect context."
+    ],
+    "acceptance": [
+      "Real headless captures produce correctly decoded whole-output dimensions/colors after the M1 fixture's rendered-state signal.",
+      "Truncated data, invalid metadata/unsupported formats, hung producer, bus death and cancellation fail within the bound and reclaim owned resources.",
+      "Slow capture cannot stall control/health processing; a disconnected client does not abandon the adapter's required cleanup."
+    ]
+  },
+  {
+    "id": "M6.2",
+    "parent": "M6",
+    "title": "Publish unique complete PNG artifacts and screenshot metadata",
+    "depends_on": [
+      "M6.1",
+      "M2.4"
+    ],
+    "requirements": [
+      "REQ-001",
+      "REQ-004",
+      "REQ-014",
+      "REQ-032",
+      "REQ-033",
+      "REQ-034",
+      "REQ-035"
+    ],
+    "outcome": "Each successful screenshot identifies a newly captured fully written PNG and its generation/provenance.",
+    "scope": [
+      "Wire screenshot CLI to fresh capture, a unique temporary output, Pillow PNG encoding and atomic complete-file publication; define safe behavior for an already-existing explicit destination.",
+      "Resolve destinations at the calling CLI and return absolute path, dimensions, capture timestamp, backend and generation only after writing completes.",
+      "Keep failed temporary images distinguishable from completed artifacts and preserve earlier screenshots across stop/failure."
+    ],
+    "acceptance": [
+      "Repeated requests yield distinct fresh complete 1280\u00d7720 PNGs; fixture-acknowledged visual changes appear and no previous image is returned as a new capture.",
+      "Disk/write failure, cancellation and partial capture cannot publish a partial PNG as success or destroy an earlier artifact; output paths work from a different caller cwd.",
+      "JSON stdout is clean and results/documentation make no claim that prior input has been acknowledged or rendered without an application-specific signal."
+    ]
+  },
+  {
+    "id": "M6.3",
+    "parent": "M6",
+    "title": "Wire artifact discovery, correlated logs and complete durable manifests",
+    "depends_on": [
+      "M6.2"
+    ],
+    "requirements": [
+      "REQ-004",
+      "REQ-013",
+      "REQ-034",
+      "REQ-035",
+      "REQ-043",
+      "REQ-045"
+    ],
+    "outcome": "Users can locate generation-attributed diagnostics and understand failed runs after the session runtime has been removed.",
+    "scope": [
+      "Wire the logs command and artifact index to generation-specific durable storage, with a documented way to inspect stopped/failed-generation artifacts and generation checks on session-addressed requests.",
+      "Connect helper/compositor/bus/capture producers to the M2 manifest/logging API and integrate app records when M4 is available; M7.1 verifies the final complete schema.",
+      "Correlate request IDs, application/window handles and screenshot paths; retain dependency revisions/patches, argv/cwd, mode/geometry, final outcome and cleanup diagnostics without credentials."
+    ],
+    "acceptance": [
+      "Logs/artifacts for stopped and failed startup sessions remain discoverable and cannot be confused with a same-name replacement generation.",
+      "Manifest completeness checks verify each required field's producer, preserve prior failure outcomes and validate collision-free artifacts; application fields are exercised with M4 records in M7.1.",
+      "Inspecting artifacts cannot alter session state or pollute JSON output with application logs; screenshots and logs survive runtime/settings deletion."
+    ]
+  },
+  {
+    "id": "M7.1",
+    "parent": "M7",
+    "title": "Connect production adapters to readiness, doctor and shutdown",
+    "depends_on": [
+      "M3",
+      "M4",
+      "M5",
+      "M6"
+    ],
+    "requirements": [
+      "REQ-003",
+      "REQ-004",
+      "REQ-005",
+      "REQ-009",
+      "REQ-011",
+      "REQ-012",
+      "REQ-028",
+      "REQ-029",
+      "REQ-034",
+      "REQ-035"
+    ],
+    "outcome": "All CLI commands and session lifecycle checks use production behavior with no provisional readiness or shutdown hooks.",
+    "scope": [
+      "Replace M3's probe adapters with production control/window/resumed-input/fresh-capture probes and wire actual app-close and input-release hooks into bounded shutdown.",
+      "Complete doctor checks for installed versions, user-manager availability and private desktop capabilities, with actionable errors and finite limits.",
+      "Audit command wiring, stable error mapping, partial outcomes and manifest producers across components; enforce noninteractive operation and cleanup independent of the client."
+    ],
+    "acceptance": [
+      "Ready is impossible unless every production probe succeeds; failure in any probe retains diagnostics and invokes bounded cleanup.",
+      "Stop attempts actual release and graceful close before cgroup escalation; hung/dead helper fallback still works and records truthful outcomes.",
+      "Every documented command family has a real successful or explicitly unsupported path with valid JSON/errors, and manifests contain all required actual launch/dependency/terminal data."
+    ]
+  },
+  {
+    "id": "M7.2",
+    "parent": "M7",
+    "title": "Assemble the real-desktop workflow integration suite",
+    "depends_on": [
+      "M7.1"
+    ],
+    "requirements": [
+      "REQ-002",
+      "REQ-004",
+      "REQ-014",
+      "REQ-015",
+      "REQ-017",
+      "REQ-019",
+      "REQ-020",
+      "REQ-021",
+      "REQ-022",
+      "REQ-025",
+      "REQ-026",
+      "REQ-027",
+      "REQ-032",
+      "REQ-033",
+      "REQ-037"
+    ],
+    "outcome": "A repeatable automated workflow verifies input and visible results against the real private KWin desktop through separate CLI processes.",
+    "scope": [
+      "Assemble the existing M1/M4/M5 fixtures and harness with one CLI process per action: doctor/start, launch, discover, focus, capture, type, chord/hold/release, click, close and stop.",
+      "Wait on fixture input acknowledgments and rendered-state signals before expected pixel checks; assert complete PNG metadata and retained application logs/handles.",
+      "Include graceful-close confirmation, explicit termination and window/focus/exit waits, caller-relative path cases and output isolation in the reusable suite."
+    ],
+    "acceptance": [
+      "The full workflow passes on the recorded real target environment and proves expected input receipts plus visual change; mocks alone cannot satisfy it.",
+      "Every run records environment, generations, requests and artifacts and checks no owned processes or held input remain at teardown.",
+      "A required unavailable platform capability is a failed qualification prerequisite, not a silent skip; the harness is reusable for the twenty-run gate."
+    ]
+  },
+  {
+    "id": "M7.3",
+    "parent": "M7",
+    "title": "Verify lifecycle, identity, environment and target failure contracts",
+    "depends_on": [
+      "M7.2"
+    ],
+    "requirements": [
+      "REQ-006",
+      "REQ-009",
+      "REQ-010",
+      "REQ-011",
+      "REQ-012",
+      "REQ-013",
+      "REQ-014",
+      "REQ-015",
+      "REQ-016",
+      "REQ-018",
+      "REQ-020",
+      "REQ-021",
+      "REQ-022",
+      "REQ-034",
+      "REQ-035",
+      "REQ-038",
+      "REQ-045"
+    ],
+    "outcome": "Automated failures establish generation safety, honest target/process outcomes and cleanup independent of essential processes.",
+    "scope": [
+      "Create an explicit REQ-038 case index and exercise stale generations after restart, start/stop races, duplicate/conflicting starts, ambiguous/vanished targets and application exit versus window timeout.",
+      "Independently kill worker/compositor/private bus, hang the worker and fail startup; verify unavailable status, client-independent bounded descendant cleanup and durable terminal artifacts.",
+      "Check contaminated host endpoints, protected overrides, different caller cwd, PID reuse, surviving descendants, close confirmation/timeout and explicit-kill remaining-process reporting."
+    ],
+    "acceptance": [
+      "Each listed failure has an identified test and retained evidence; stale commands/fallback cleanup cannot affect a replacement generation or unrelated process.",
+      "Each essential-process failure leaves no ordinary owned descendants after its deadline, preserves original failure diagnostics and rejects later desktop work.",
+      "Environment/path tests establish separation and no host fallback. Application handles and uncertain outcomes remain available after timeout/cancellation without automatic retries."
+    ]
+  },
+  {
+    "id": "M7.4",
+    "parent": "M7",
+    "title": "Verify cancellation, device faults and capture responsiveness against measured bounds",
+    "depends_on": [
+      "M7.2"
+    ],
+    "requirements": [
+      "REQ-023",
+      "REQ-024",
+      "REQ-026",
+      "REQ-028",
+      "REQ-029",
+      "REQ-030",
+      "REQ-031",
+      "REQ-032",
+      "REQ-033",
+      "REQ-035",
+      "REQ-038"
+    ],
+    "outcome": "Production evidence proves input stopping/release attempts and control responsiveness during slow or failed desktop operations.",
+    "scope": [
+      "Complete the REQ-038 index with unsupported full text/chords, focus loss, vanished input targets, SIGINT/disconnect and worker timeout during holds and modified typing.",
+      "Exercise real device pause/removal/disconnect using the established procedure, uncertain release, reset during active work and failed reset; supplement with deterministic edge-case doubles only where appropriate.",
+      "Inject slow/timed-out focus queries and blocked/partial capture, queued deadline expiry and stop/reset while active; measure polling, emission-stop/release-attempt, capture and cleanup limits under recorded conditions."
+    ],
+    "acceptance": [
+      "Each required case meets the documented finite bound and records actual timing; failures require fixes or explicitly revised measured limits before support, never silent acceptance.",
+      "Unsupported requests emit nothing, uncertain release blocks input, failed reset stays unavailable and successful reset waits for resumed devices without replay.",
+      "Slow capture/query work cannot starve cancellation/stop/health handling, resources are reclaimed and partial images are never successful artifacts; the complete REQ-038 index is satisfied with real lifecycle evidence."
+    ]
+  },
+  {
+    "id": "M8.1",
+    "parent": "M8",
+    "title": "Document reproducible setup, CLI workflows and measured support semantics",
+    "depends_on": [
+      "M7"
+    ],
+    "requirements": [
+      "REQ-003",
+      "REQ-007",
+      "REQ-013",
+      "REQ-014",
+      "REQ-023",
+      "REQ-024",
+      "REQ-025",
+      "REQ-026",
+      "REQ-028",
+      "REQ-033",
+      "REQ-036",
+      "REQ-040",
+      "REQ-043",
+      "REQ-045",
+      "REQ-046"
+    ],
+    "outcome": "A user can install the recorded stack, run a smoke workflow and understand targeting, timing and recovery behavior.",
+    "scope": [
+      "Write setup and CLI reference with JSON examples, explicit flags/defaults, cwd/PATH/env precedence, protected endpoints, generation-qualified handles and durable artifact retrieval.",
+      "Publish measured deadlines/cancellation and focus polling limits with tested conditions, supported physical keys/chords/US text, client coordinates and reset/uncertain-release troubleshooting.",
+      "Provide a repeatable real-desktop smoke command and supported-versus-deferred scope, trusted filesystem/network access and dispatch-versus-acknowledgment/rendering semantics."
+    ],
+    "acceptance": [
+      "Reproduce installation and the documented workflow from a clean project environment with the required native packages; operations are noninteractive after prerequisite setup.",
+      "Examples work from a different directory and preserve generations across invocations; smoke output identifies artifacts and meaningful failures.",
+      "Docs name measured limits and dependency revisions, avoid unsupported application promises, and explain the compatibility checks required after dependency changes."
+    ]
+  },
+  {
+    "id": "M8.2",
+    "parent": "M8",
+    "title": "Pass twenty consecutive full CLI workflows in the recorded target environment",
+    "depends_on": [
+      "M8.1"
+    ],
+    "requirements": [
+      "REQ-002",
+      "REQ-036",
+      "REQ-037",
+      "REQ-038",
+      "REQ-039",
+      "REQ-040"
+    ],
+    "outcome": "The first supported version has reproducible consecutive-run reliability evidence for its final implementation and dependencies.",
+    "scope": [
+      "Run the M7 workflow twenty consecutive times in the recorded Arch/KDE target, preserving per-run logs/screenshots/manifests, timing and dependency provenance.",
+      "Assert no unexpected prompts, stuck input or leftover owned processes after every run; retain failure history and restart the consecutive count after fixes.",
+      "Confirm the full M7 failure suite is passing on the qualified build, and rerun affected compatibility/failure checks after dependency or code changes."
+    ],
+    "acceptance": [
+      "A report links twenty uninterrupted passing runs of the complete separate-CLI workflow and per-run teardown/input checks, not merely twenty compositor starts.",
+      "All MUST failure conditions have current passing evidence; failures/environment limitations remain recorded and required checks are not silently skipped.",
+      "The evidence identifies the exact qualified code revision and resolved target environment; later relevant changes invalidate affected evidence until rerun."
+    ]
+  },
+  {
+    "id": "M8.3",
+    "parent": "M8",
+    "title": "Record representative application validation and close requirement coverage",
+    "depends_on": [
+      "M8.2"
+    ],
+    "requirements": [
+      "REQ-002",
+      "REQ-036",
+      "REQ-039",
+      "REQ-040",
+      "REQ-041",
+      "REQ-042",
+      "REQ-043",
+      "REQ-044",
+      "REQ-045",
+      "REQ-046"
+    ],
+    "outcome": "Published support claims match recorded application evidence and every required behavior has an implementation/test reference.",
+    "scope": [
+      "Select a representative native Wayland app/game relevant to the user's workflow at implementation time; record a successful supported workflow and exact app/environment versions, or document a reasoned REQ-044 exception and consequences.",
+      "Publish a requirement-to-code/test/evidence index for every MUST and disposition for each SHOULD, including reuse choices, diagnostics, configuration and future-viewing compatibility.",
+      "Review the twenty-run report and docs, record remaining environment limitations and explicitly defer REQ-047\u2013050 and all outside-first-version features."
+    ],
+    "acceptance": [
+      "Every REQ-001\u2013040 has passing implementation/validation evidence; every REQ-041\u2013046 is satisfied or has an explicit reason and consequences for an exception.",
+      "Support is claimed only for recorded successful native app/environment combinations; an optional representative-app exception cannot waive any MUST or the twenty-run gate.",
+      "No live-viewer, XWayland, richer input/output/multiple-app, MCP, sandbox or general game support commitment slips into the initial release; relevant post-qualification changes trigger revalidation."
+    ]
+  }
+]

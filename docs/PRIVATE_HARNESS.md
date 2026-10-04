@@ -200,7 +200,7 @@ It checks private socket modes, actual readable child environments, cgroup
 membership, invalid control traffic and distinct presented states. KWin denies
 `/proc/PID/environ` reads on this target; evidence records that observation
 limitation alongside its explicit launch environment and working private
-endpoints. See [issue #10 evidence](../evidence/issue-10/README.md) for actual
+endpoints. See [issue #10 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-10/README.md) for actual
 measurements, failure history and remaining milestone checks.
 
 ## Structured window/focus feasibility probe (#11)
@@ -272,7 +272,7 @@ script absence and fresh-query recovery. All scenarios retain stdout/stderr,
 script inputs, per-query process/lifecycle/timing receipts and the final probe
 report beside the usual harness logs and cleanup manifest.
 
-[Issue #11 evidence](../evidence/issue-11/README.md) records the measured retain
+[Issue #11 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-11/README.md) records the measured retain
 assessment and reproducible samples. A proposed focus-loss detection window is
 100ms poll delay plus the 500ms query budget, under the recorded target conditions.
 This does not establish input release/cancellation timing. Production integration

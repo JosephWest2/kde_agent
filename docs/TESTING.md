@@ -25,17 +25,22 @@ invocations, the way an agent would:
 2. `session start`.
 3. **Native fixture** (built once into `.local/smoke/`, rebuilt when its source changes):
    launch, windows, focus, `key ctrl+shift+t`, `key --hold 0.2 w`, `type 'aB!'`.
-   The fixture's own Wayland key log must show the exact key order, modifiers,
-   text and a hold of about 200ms. Then `screenshot --window` and graceful `close`.
+   Then `screenshot --window` and graceful `close`. After the fixture exits, its
+   complete Wayland key log must show the exact key order, the effective Ctrl/Shift
+   state when each key went down (back to none at the end), the text and a hold of
+   about 200ms.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
    query until the title contains the typed text. Then `key ctrl+a`, a full and a
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.
 5. `session stop`. No process may remain in the generation's cgroup, the systemd
-   unit must be gone, and the manifest, shutdown record and screenshots must exist.
+   unit must be gone, the manifest must say `stopped` (not `failed`), and the
+   shutdown record and screenshots must exist.
 
-The session stops and the leak check runs even when an earlier step fails. A
-failing run prints the step, the error payload and the kept artifact directory.
+Stop, the leak check and the artifact check each run even when an earlier step,
+or stop itself, fails. Stop is by session name, so it also runs if `session start`
+timed out before reporting its generation. A failing run prints the step, the
+error payload and the kept artifact directory.
 Passing runs delete their artifacts unless you pass `--keep-artifacts`.
 
 Options:

@@ -36,6 +36,9 @@ EDITOR = '/usr/bin/gnome-text-editor'
 EXPECTED_KEYS = [(29, 1), (42, 1), (20, 1), (20, 0), (42, 0), (29, 0),
                  (17, 1), (17, 0),
                  (30, 1), (30, 0), (42, 1), (48, 1), (48, 0), (42, 0), (42, 1), (2, 1), (2, 0), (42, 0)]
+# Effective XKB modifiers (Shift=1, Ctrl=4) when each non-modifier key goes down.
+EXPECTED_MODIFIERS = {20: 5, 17: 0, 30: 0, 48: 1, 2: 1}
+MODIFIER_KEYS = {29, 42}
 
 
 class SmokeFailure(Exception):
@@ -51,6 +54,7 @@ class Smoke:
         self.verbose = verbose
         self.session = 'smoke-' + uuid.uuid4().hex[:8]
         self.generation = None
+        self.start_attempted = False
         self.pids = []
         self.screenshots = []
 
@@ -77,8 +81,11 @@ class Smoke:
     # Steps -----------------------------------------------------------------
 
     def start(self):
+        self.start_attempted = True
+        # Start may use its 30s budget plus a 15s cleanup reserve.
         payload = self.run_cli('session start', 'session', 'start', '--session', self.session,
-                               '--artifacts', str(self.artifacts), '--dependency-root', str(self.dependency_root))
+                               '--artifacts', str(self.artifacts), '--dependency-root', str(self.dependency_root),
+                               timeout=60)
         self.generation = payload['session']['generation']
         self.pids.append(payload['result']['worker_pid'])
         supported = set(payload['result']['supported_operations'])
@@ -113,19 +120,14 @@ class Smoke:
         self.desktop('fixture: key ctrl+shift+t', 'key', '--window', window, 'ctrl+shift+t')
         self.desktop('fixture: key --hold 0.2 w', 'key', '--window', window, '--hold', '0.2', 'w')
         self.desktop("fixture: type 'aB!'", 'type', '--window', window, 'aB!')
-        events = wait_for_keys(Path(logs['stdout']), len(EXPECTED_KEYS))
-        observed = [(event['key'], event['state']) for event in events]
-        if observed != EXPECTED_KEYS:
-            raise SmokeFailure('fixture: key acknowledgements', f'expected {EXPECTED_KEYS}, saw {observed}')
-        texts = ''.join(event['text'] for event in events[8:] if event['state'] == 1 and event['key'] != 42)
-        hold = events[7]['time_ms'] - events[6]['time_ms']
-        if texts != 'aB!' or not 180 <= hold <= 1000:
-            raise SmokeFailure('fixture: key acknowledgements', f'text {texts!r}, hold {hold}ms')
-        print(f'  ok  {"fixture: key acknowledgements":<34}       order, modifiers, text, hold {hold}ms')
+        wait_for_keys(Path(logs['stdout']), len(EXPECTED_KEYS))
         self.screenshot('fixture', '--window', window)
         result = self.desktop('fixture: close', 'close', '--app', app)['result']
         if result['exited'] is not True:
             raise SmokeFailure('fixture: close', 'application did not exit')
+        # The fixture has exited, so this is its complete log: no late extras.
+        hold = check_key_log(Path(logs['stdout']))
+        print(f'  ok  {"fixture: key acknowledgements":<34}       order, modifiers, text, hold {hold}ms')
 
     def editor_flow(self):
         app, window, _ = self.launch('editor', self.editor)
@@ -149,8 +151,12 @@ class Smoke:
             raise SmokeFailure('editor: kill', f'application did not exit: {json.dumps(result)[:300]}')
 
     def stop(self):
-        payload = self.run_cli('session stop', 'session', 'stop', '--session', self.session)
-        if payload['result'].get('cleanup') != 'complete':
+        # Stop by name: it works even if start's response was lost before the
+        # generation was known, and reports that generation for verification.
+        payload = self.run_cli('session stop', 'session', 'stop', '--session', self.session, timeout=30)
+        if self.generation is None and payload.get('session'):
+            self.generation = payload['session'].get('generation')
+        if payload['result'].get('cleanup') not in ('complete', None):
             raise SmokeFailure('session stop', f'cleanup {payload["result"].get("cleanup")}')
 
     def check_leaks(self):
@@ -159,8 +165,12 @@ class Smoke:
         deadline = time.monotonic() + 5
         while True:
             leftovers = cgroup_members(marker)
-            state = subprocess.run(['systemctl', '--user', 'show', unit, '-p', 'LoadState', '-p', 'ActiveState', '--value'],
-                                   capture_output=True, text=True, stdin=subprocess.DEVNULL).stdout.split()
+            try:
+                state = subprocess.run(['systemctl', '--user', 'show', unit, '-p', 'LoadState', '-p', 'ActiveState', '--value'],
+                                       capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                                       timeout=max(.5, deadline - time.monotonic())).stdout.split()
+            except subprocess.TimeoutExpired:
+                raise SmokeFailure('leak check', 'systemctl --user show did not answer') from None
             if not leftovers and state[:1] == ['not-found']:
                 break
             if time.monotonic() >= deadline:
@@ -174,7 +184,9 @@ class Smoke:
     def check_artifacts(self):
         generation = self.artifacts / 'generations' / self.generation
         manifest = json.loads((generation / 'manifest.json').read_text())
-        if manifest.get('state') not in ('stopped', 'failed') or not all(path.is_file() for path in self.screenshots):
+        # A desktop that failed after the last step can still stop cleanly; that
+        # is not a pass.
+        if manifest.get('state') != 'stopped' or not all(path.is_file() for path in self.screenshots):
             raise SmokeFailure('artifacts', f'manifest state {manifest.get("state")}, screenshots {self.screenshots}')
         if not (generation / 'shutdown.json').is_file():
             raise SmokeFailure('artifacts', 'shutdown.json missing')
@@ -183,22 +195,27 @@ class Smoke:
     def run(self):
         started = time.monotonic()
         failure = None
+        recoverable = (SmokeFailure, subprocess.TimeoutExpired, OSError, ValueError, KeyError, TypeError)
         try:
             self.start()
             if self.fixture is not None:
                 self.fixture_flow()
             if self.editor is not None:
                 self.editor_flow()
-        except (SmokeFailure, subprocess.TimeoutExpired) as error:
+        except recoverable as error:
             failure = error
         finally:
-            if self.generation is not None:
-                try:
-                    self.stop()
-                    self.check_leaks()
-                    self.check_artifacts()
-                except (SmokeFailure, subprocess.TimeoutExpired, OSError, ValueError) as error:
-                    failure = failure or error
+            # Each cleanup stage runs independently, so verification still
+            # happens when stop itself fails. Runs on KeyboardInterrupt too.
+            if self.start_attempted:
+                for stage in (self.stop, self.check_leaks, self.check_artifacts):
+                    if stage != self.stop and self.generation is None:
+                        failure = failure or SmokeFailure('cleanup', 'generation unknown; cannot verify cleanup')
+                        break
+                    try:
+                        stage()
+                    except recoverable as error:
+                        failure = failure or error
         if failure is not None:
             raise failure
         return time.monotonic() - started
@@ -227,21 +244,49 @@ def png_size(path):
     return struct.unpack('>II', header[16:24])
 
 
+def log_events(log, kinds):
+    events = []
+    for line in read(log).splitlines():
+        if line.startswith('{'):
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get('event') in kinds:
+                events.append(row)
+    return events
+
+
 def wait_for_keys(log, count, timeout=3):
+    """Bounded wait until the fixture has logged at least COUNT key events."""
     deadline = time.monotonic() + timeout
-    while True:
-        events = []
-        for line in read(log).splitlines():
-            if line.startswith('{'):
-                try:
-                    row = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if row.get('event') == 'key':
-                    events.append(row)
-        if len(events) >= count or time.monotonic() >= deadline:
-            return events
+    while len(log_events(log, {'key'})) < count and time.monotonic() < deadline:
         time.sleep(.05)
+
+
+def check_key_log(log):
+    """Validate the complete fixture log; return the measured hold of `w` in ms."""
+    step = 'fixture: key acknowledgements'
+    rows = log_events(log, {'key', 'modifiers'})
+    keys = [row for row in rows if row['event'] == 'key']
+    observed = [(row['key'], row['state']) for row in keys]
+    if observed != EXPECTED_KEYS:
+        raise SmokeFailure(step, f'expected {EXPECTED_KEYS}, saw {observed}')
+    depressed = 0
+    for row in rows:
+        if row['event'] == 'modifiers':
+            depressed = row['depressed']
+        elif row['state'] == 1 and row['key'] not in MODIFIER_KEYS:
+            if depressed != EXPECTED_MODIFIERS[row['key']]:
+                raise SmokeFailure(step, f'key {row["key"]} arrived with modifiers {depressed}, '
+                                         f'expected {EXPECTED_MODIFIERS[row["key"]]}')
+    if depressed != 0:
+        raise SmokeFailure(step, f'modifiers still active at the end: {depressed}')
+    texts = ''.join(row['text'] for row in keys[8:] if row['state'] == 1 and row['key'] not in MODIFIER_KEYS)
+    hold = keys[7]['time_ms'] - keys[6]['time_ms']
+    if texts != 'aB!' or not 180 <= hold <= 1000:
+        raise SmokeFailure(step, f'text {texts!r}, hold {hold}ms')
+    return hold
 
 
 def build_fixture():

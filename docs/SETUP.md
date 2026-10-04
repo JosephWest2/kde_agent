@@ -88,10 +88,22 @@ the venv.
 Setup refuses to reinstall or recreate the venv while an `agent-desktop-*` session
 service is running, because a live session's stop hooks run the installed code.
 Stop the sessions first. It asks the same user manager the session code uses
-(`/run/user/UID/bus`) and also refuses if that query fails. Nothing locks setup
-against a `session start` during the install itself. Setup checks again
-afterwards, and if a session appeared, it exits 1 and asks you to stop it and
-rerun, so don't start sessions while setup runs.
+(`/run/user/UID/bus`) and also refuses if that query fails.
+
+Setup and `session start` share one install lock,
+`/run/user/UID/agent-desktop/install.lock` (directory 0700, file 0600). Setup
+holds it exclusively from the venv check through pip, the import check and the
+stamp write, and releases it before `doctor`. `session start` holds it shared
+while it launches a new service, until the start returns. So a session never
+starts during an install, and setup never installs under a starting session:
+- If a start is in progress, setup waits up to 60 seconds, then finds the
+  session and refuses as above.
+- If setup is installing, `session start` waits within its own `--timeout`, then
+  fails with `session_conflict` ("agent-desktop setup is installing; retry when
+  it finishes"; `context.lock` is the path).
+
+The lock sits next to the user manager's bus rather than under `XDG_RUNTIME_DIR`,
+so both sides agree on it whatever their environment.
 
 To start over, delete `.local/dependencies` and rerun.
 

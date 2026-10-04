@@ -11,9 +11,10 @@
 #
 # Never runs sudo or installs system packages: a missing prerequisite is printed
 # with the command to install it, and the script exits 1. Rerunning is a quick no-op.
-# Test hooks: AGENT_DESKTOP_SETUP_PACMAN replaces /usr/bin/pacman and
+# Test hooks: AGENT_DESKTOP_SETUP_PACMAN replaces /usr/bin/pacman,
 # AGENT_DESKTOP_SETUP_USER_RUNTIME replaces /run/user/UID (the user manager's
-# runtime directory), to exercise the failure messages.
+# runtime directory) and AGENT_DESKTOP_SETUP_LOCK_WAIT the install-lock wait
+# (default 60s), to exercise the failure messages.
 set -euo pipefail
 
 PROJECT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
@@ -25,6 +26,9 @@ PYTHON=/usr/bin/python
 PACMAN=${AGENT_DESKTOP_SETUP_PACMAN:-/usr/bin/pacman}
 RUSTUP=/usr/bin/rustup
 USER_RUNTIME=${AGENT_DESKTOP_SETUP_USER_RUNTIME:-/run/user/$(id -u)}
+# Shared by `session start` (src/agent_desktop/lifecycle.py install_lock_path).
+INSTALL_LOCK="$USER_RUNTIME/agent-desktop/install.lock"
+LOCK_WAIT=${AGENT_DESKTOP_SETUP_LOCK_WAIT:-60}
 
 case "${1:-}" in
     "") ;;
@@ -62,6 +66,31 @@ Their stop hooks run the installed code. Stop them first
 (agent-desktop session stop --session NAME), then rerun tools/setup.sh."
     fi
 }
+
+# Exclusive install lock: a `session start` holds it shared while it launches a
+# worker, so it never imports a half-installed package, and setup never changes
+# the package under a starting session.
+take_install_lock() {
+    local dir=${INSTALL_LOCK%/*}
+    [[ -d $USER_RUNTIME && ! -L $USER_RUNTIME ]] || fail "$USER_RUNTIME does not exist; the systemd user manager is not running.
+Run setup from a normal login session."
+    [[ -e $dir ]] || mkdir -m 700 -- "$dir" 2>/dev/null || [[ -d $dir ]] \
+        || fail "cannot create $dir"
+    [[ -d $dir && ! -L $dir && $(stat -c '%u %a' -- "$dir") == "$(id -u) 700" ]] \
+        || fail "$dir must be a directory owned by you with mode 0700."
+    [[ ! -L $INSTALL_LOCK ]] || fail "$INSTALL_LOCK is a symlink; remove it."
+    (umask 077 && : >>"$INSTALL_LOCK") || fail "cannot create $INSTALL_LOCK"
+    [[ $(stat -c '%u %a' -- "$INSTALL_LOCK") == "$(id -u) 600" ]] \
+        || fail "$INSTALL_LOCK must be a file owned by you with mode 0600."
+    exec {LOCK_FD}<"$INSTALL_LOCK"
+    if ! flock -x -n "$LOCK_FD"; then
+        say "waiting up to ${LOCK_WAIT}s for a session start to finish (install lock $INSTALL_LOCK)"
+        flock -x -w "$LOCK_WAIT" "$LOCK_FD" || fail "a session start still holds $INSTALL_LOCK after ${LOCK_WAIT}s.
+Let it finish (or stop that session), then rerun tools/setup.sh."
+    fi
+}
+
+release_install_lock() { exec {LOCK_FD}<&-; }
 
 # Interpreter identity of the venv: full version and the resolved executable.
 venv_identity() {
@@ -101,6 +130,9 @@ then rerun tools/setup.sh."
 fi
 
 # --- Pinned dependencies and venv --------------------------------------------
+# Everything that changes the venv or the installed package runs under the
+# exclusive install lock; it is released before doctor.
+take_install_lock
 # A venv whose interpreter no longer runs, or now runs a different Python minor
 # version than it was created for (an Arch Python upgrade), cannot be repaired by
 # pip. Recreate only the venv; the kdotool build next to it is kept.
@@ -160,8 +192,8 @@ else
     location=$(venv_health) || fail "the installed package does not import from $VENV.
 Delete $VENV and rerun tools/setup.sh."
     say "installed: $location"
-    # A session that started during the install may be running a mix of old and
-    # new code; there is no lock between setup and session start.
+    # Belt and braces: session start waits for the install lock, so this should
+    # never find anything.
     late=$(live_sessions) || exit 1
     if [[ -n $late ]]; then
         fail "agent-desktop sessions started while the package was being installed:
@@ -170,6 +202,8 @@ Stop them (agent-desktop session stop --session NAME) and rerun tools/setup.sh."
     fi
     printf '%s\n' "$expected" >"$STAMP"
 fi
+
+release_install_lock
 
 # --- Diagnose -----------------------------------------------------------------
 doctor=$(cd "$PROJECT" && "$CLI" --json doctor --dependency-root "$ROOT") || true

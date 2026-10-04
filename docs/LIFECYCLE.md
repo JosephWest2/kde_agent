@@ -26,7 +26,13 @@ configuration participates in compatible-start comparison: headless mode, normal
 absolute artifact root, normalized dependency root, and the fixed 1280×720 scale-1 output. Timeouts, request IDs
 and the caller cwd itself are not persistent configuration. A live compatible
 start returns the same identity only after correlated control and current readiness;
-a conflict fails. A name-only start after positive old-service quiescence creates
+a conflict fails. Launching a new service holds the per-user install lock
+`/run/user/UID/agent-desktop/install.lock` shared until start returns.
+`tools/setup.sh` holds it exclusively while it changes the installed package
+([SETUP.md](SETUP.md#rerunning)), so a worker never imports a half-installed
+package. If the lock stays exclusive past the start deadline, start fails with
+`session_conflict`, reason `install_in_progress`, before anything is reserved.
+A name-only start after positive old-service quiescence creates
 a fresh token. An expected-generation start never creates a replacement lifetime.
 
 Runtime storage adds `g/TOKEN/lifecycle.json` to the existing private layout. It

@@ -1,7 +1,9 @@
 """Generation-owned service lifecycle, live readiness and bounded fallback cleanup."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import replace
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -17,6 +19,7 @@ from .runtime import Runtime, check_directory, check_file
 from .transport import exchange
 
 STOP_SECONDS = 15.0
+INSTALL_LOCK_RETRY = .05
 SYSTEMD_STOP_SECONDS = 3
 
 
@@ -204,13 +207,60 @@ def retained_failure(data):
     return None
 
 
+def install_lock_path():
+    """Fixed per-user path that tools/setup.sh also computes (docs/SETUP.md).
+
+    It sits beside the user manager's bus, independent of XDG_RUNTIME_DIR, so
+    setup and every CLI agree on it whatever their environment.
+    """
+    return Path('/run/user') / str(os.getuid()) / 'agent-desktop' / 'install.lock'
+
+
+@contextmanager
+def install_lock(path, deadline):
+    """Hold the install lock shared while a new service is launched.
+
+    tools/setup.sh holds it exclusively while it changes the installed package,
+    so a starting worker never imports a half-installed package.
+    """
+    path = Path(path)
+    try:
+        try:
+            path.parent.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        check_directory(path.parent)
+        fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+    except FileNotFoundError:
+        raise ContractError('prerequisite_missing', 'The user service manager is unavailable.',
+                            context={'lock': str(path)}) from None
+    except OSError:
+        raise ContractError('transport_error', 'Session runtime is unavailable or unsafe.',
+                            context={'lock': str(path)}) from None
+    try:
+        check_file(fd)
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise ContractError('session_conflict', 'agent-desktop setup is installing; retry when it finishes.',
+                                        context={'lock': str(path), 'reason': 'install_in_progress'}) from None
+                time.sleep(min(INSTALL_LOCK_RETRY, max(0, deadline - time.monotonic())))
+        yield
+    finally:
+        os.close(fd)
+
+
 def settled(info):
     return (info['ActiveState'] in ('inactive', 'failed') and not info['Job'] and info['empty'])
 
 
 class Manager:
-    def __init__(self, *, systemd=None, worker_command=None):
+    def __init__(self, *, systemd=None, worker_command=None, install_lock=None):
         self.systemd = systemd or Systemd()
+        self.install_lock = install_lock or install_lock_path()
         # Internal Python injection supports process fixtures, never CLI/plugin loading.
         self.worker_command = worker_command
 
@@ -390,82 +440,85 @@ class Manager:
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
                 self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
-            previous = data
-            generation = uuid.uuid4().hex
-            unit = unit_name(generation)
-            data = dict(schema_version=1, session=request.session, generation=generation, unit=unit,
-                        cgroup=self.systemd.cgroup(unit, deadline), configuration=configuration,
-                        submission='reserved', state='starting')
-            runtime.socket_path(generation).parent.mkdir(mode=0o700)
-            store = Store(configuration['artifacts'], request.session, generation, create=True,
-                          disposable=[str(runtime.root.parent)])
-            try:
-                if prerequisite is not None:
-                    store.provenance(dependencies=inventory(prerequisite))
-            except (ContractError, OSError):
-                pass  # Versions are diagnostics; they never gate startup.
-            finally:
-                store.close()
-            self._write(runtime, data)
-            from .ownership import generation_lock
-            from contextlib import nullcontext
-            with generation_lock(runtime, generation) as root:
-                atomic(root / 'service-control.json', dict(schema_version=1, session=request.session,
-                       generation=generation, request_id=uuid.uuid4().hex))
-            # Old hooks validate current routing while holding this same lock.
-            with generation_lock(runtime, previous['generation']) if previous else nullcontext():
-                atomic(runtime.current / (request.session + '.json'),
-                       dict(schema_version=1, session=request.session, generation=generation))
-            command = (self.worker_command(data) if self.worker_command else
-                       [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
-                        '--session', request.session, '--generation', generation,
-                        '--artifacts', configuration['artifacts'],
-                        '--kdotool', prerequisite['kdotool']['executable'], '--startup-deadline', str(deadline)])
-            try:
-                remaining(deadline)
-                data['submission'] = 'uncertain'
-                self._write(runtime, data)
-                self.systemd.start(data, runtime, command, deadline)
-                data['submission'] = 'acknowledged'
-                self._write(runtime, data)
-                while True:
-                    info = self._observe(runtime, data, deadline)
-                    if self._quiescent(data, info):
-                        raise ContractError('session_failed', 'Worker service exited during startup.')
-                    if info['ActiveState'] == 'active':
-                        try:
-                            result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
-                            if result['state'] == 'ready' or self.worker_command is not None:
-                                if result['state'] == 'ready':
-                                    data['state'] = 'ready'
-                                    self._write(runtime, data)
-                                remaining(deadline)
-                                return self._result(request, generation, result | {'reused': False})
-                            if result['state'] == 'failed':
-                                raise ContractError('session_failed', 'Capability startup failed.', context=result)
-                        except ContractError as error:
-                            if error.code not in ('session_unavailable', 'completion_unknown', 'timeout', 'transport_error'):
-                                raise
-                    time.sleep(min(.02, remaining(deadline)))
-            except BaseException as error:
-                if isinstance(error, ContractError):
-                    failure = retained_failure(data)
-                    if failure:
-                        error.code, error.message = failure['code'], failure['message']
-                        error.context.update(failure['context'])
-                # Separate finite cleanup reserve follows the start work budget.
-                cleanup, preserved = 'uncertain', False
+            # Shared while launching; tools/setup.sh installs under the exclusive lock.
+            # Held until start returns: the worker imports lazily during readiness.
+            with install_lock(self.install_lock, deadline):
+                previous = data
+                generation = uuid.uuid4().hex
+                unit = unit_name(generation)
+                data = dict(schema_version=1, session=request.session, generation=generation, unit=unit,
+                            cgroup=self.systemd.cgroup(unit, deadline), configuration=configuration,
+                            submission='reserved', state='starting')
+                runtime.socket_path(generation).parent.mkdir(mode=0o700)
+                store = Store(configuration['artifacts'], request.session, generation, create=True,
+                              disposable=[str(runtime.root.parent)])
                 try:
-                    preserved = self._stop(runtime, data, time.monotonic() + STOP_SECONDS, failed=True)
-                    cleanup = 'complete'
+                    if prerequisite is not None:
+                        store.provenance(dependencies=inventory(prerequisite))
                 except (ContractError, OSError):
-                    pass  # Ownership survives when manager completion is uncertain.
-                if isinstance(error, ContractError):
-                    error.context.update(resolved_generation=generation, service=data['unit'],
-                                         cleanup=cleanup, records_preserved=preserved)
-                    if cleanup == 'uncertain':
-                        error.outcome = 'unknown'
-                raise
+                    pass  # Versions are diagnostics; they never gate startup.
+                finally:
+                    store.close()
+                self._write(runtime, data)
+                from .ownership import generation_lock
+                from contextlib import nullcontext
+                with generation_lock(runtime, generation) as root:
+                    atomic(root / 'service-control.json', dict(schema_version=1, session=request.session,
+                           generation=generation, request_id=uuid.uuid4().hex))
+                # Old hooks validate current routing while holding this same lock.
+                with generation_lock(runtime, previous['generation']) if previous else nullcontext():
+                    atomic(runtime.current / (request.session + '.json'),
+                           dict(schema_version=1, session=request.session, generation=generation))
+                command = (self.worker_command(data) if self.worker_command else
+                           [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
+                            '--session', request.session, '--generation', generation,
+                            '--artifacts', configuration['artifacts'],
+                            '--kdotool', prerequisite['kdotool']['executable'], '--startup-deadline', str(deadline)])
+                try:
+                    remaining(deadline)
+                    data['submission'] = 'uncertain'
+                    self._write(runtime, data)
+                    self.systemd.start(data, runtime, command, deadline)
+                    data['submission'] = 'acknowledged'
+                    self._write(runtime, data)
+                    while True:
+                        info = self._observe(runtime, data, deadline)
+                        if self._quiescent(data, info):
+                            raise ContractError('session_failed', 'Worker service exited during startup.')
+                        if info['ActiveState'] == 'active':
+                            try:
+                                result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
+                                if result['state'] == 'ready' or self.worker_command is not None:
+                                    if result['state'] == 'ready':
+                                        data['state'] = 'ready'
+                                        self._write(runtime, data)
+                                    remaining(deadline)
+                                    return self._result(request, generation, result | {'reused': False})
+                                if result['state'] == 'failed':
+                                    raise ContractError('session_failed', 'Capability startup failed.', context=result)
+                            except ContractError as error:
+                                if error.code not in ('session_unavailable', 'completion_unknown', 'timeout', 'transport_error'):
+                                    raise
+                        time.sleep(min(.02, remaining(deadline)))
+                except BaseException as error:
+                    if isinstance(error, ContractError):
+                        failure = retained_failure(data)
+                        if failure:
+                            error.code, error.message = failure['code'], failure['message']
+                            error.context.update(failure['context'])
+                    # Separate finite cleanup reserve follows the start work budget.
+                    cleanup, preserved = 'uncertain', False
+                    try:
+                        preserved = self._stop(runtime, data, time.monotonic() + STOP_SECONDS, failed=True)
+                        cleanup = 'complete'
+                    except (ContractError, OSError):
+                        pass  # Ownership survives when manager completion is uncertain.
+                    if isinstance(error, ContractError):
+                        error.context.update(resolved_generation=generation, service=data['unit'],
+                                             cleanup=cleanup, records_preserved=preserved)
+                        if cleanup == 'uncertain':
+                            error.outcome = 'unknown'
+                    raise
 
     def _result(self, request, generation, result):
         return response(request.request_id, request.operation, session=request.session,

@@ -138,6 +138,9 @@ different cwd selects a different default root and can produce a configuration
 conflict. The wheel includes its own Python and KWin script (`window_query.js`) code; the worker never
 imports the checkout's tools/evidence or uses caller PYTHONPATH. Runtime setup does
 not require Rust/compiler tools once the pinned build is prepared.
+`session start` also fails with `session_conflict` (reason `install_in_progress`,
+`context.lock`) when `tools/setup.sh` is still installing the package at the start
+deadline; retry once setup finishes ([setup](SETUP.md#rerunning)).
 
 Timeout and hold values must be finite and strictly positive. No unbounded mode
 exists. Key and type targets always use a window; click uses one unless given

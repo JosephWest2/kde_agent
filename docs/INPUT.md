@@ -58,7 +58,8 @@ agent-desktop --json click --x 640 --y 360    # screen coordinates, no window ch
 
 **Coordinates.** With `--window`, `x`/`y` are integer pixels from the top-left
 of the window's **client area**, the same space as `screenshot --window`, so a
-pixel read from a window screenshot can be clicked directly. A GTK header bar is
+pixel read from a window screenshot can be clicked directly when the window is
+fully on screen (see [Screenshots](CLI.md#screenshots) for clipped windows). A GTK header bar is
 client content (gnome-text-editor's "New Tab" button is at about 107,23). A KWin
 title bar, which Qt/KDE apps get, is not. The point must be inside the client area
 (`invalid_arguments`, reason `outside_window`) and on screen (`outside_screen`). It

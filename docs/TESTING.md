@@ -33,7 +33,8 @@ invocations, the way an agent would:
    client position.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
    query until the title contains the typed text. A click on the header bar's
-   "New Tab" button must switch to an empty document (the title drops the text).
+   "New Tab" button must switch the same window to a "New Document", and
+   `ctrl+page_up` must bring the typed document back.
    Then `key ctrl+a`, a full and a
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.

@@ -25,6 +25,11 @@ def held(owner):
     return any(device.held for device in owner.devices.values())
 
 
+def busy(owner):
+    """Held keys/buttons, or emulation left open by a motion whose press never happened."""
+    return any(device.held or device.emulating for device in owner.devices.values())
+
+
 class InputTask:
     cleanup_seconds = 1.5
     kind = 'keyboard'
@@ -147,15 +152,15 @@ class InputTask:
             return
         # Consult the owner's ledger, not pressed_at: press() records keys as held
         # before each native call, so a partially failed press still needs release.
-        if not held(owner) and not owner.uncertain:
+        if not busy(owner) and not owner.uncertain:
             self.pressed_at = None
             return
         try:
-            if held(owner):
+            if busy(owner):
                 owner.release()
         except Exception:
             pass
-        if held(owner) or owner.uncertain:
+        if busy(owner) or owner.uncertain:
             if strict:
                 raise ContractError('input_uncertain', 'Key release could not be confirmed.',
                                     outcome='unknown')
@@ -183,7 +188,7 @@ class InputTask:
     def cleanup(self, now):
         self.release()
         owner = self.input_owner()
-        released = owner is None or not held(owner)
+        released = owner is None or not busy(owner)
         return released and (self.target is None or self.target.cleanup(now))
 
 

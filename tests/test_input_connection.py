@@ -193,6 +193,15 @@ class InputTests(unittest.TestCase):
         self.lib.ei_device_stop_emulating.assert_called_once_with(11)
         self.assertFalse(value.devices[11].emulating)
 
+    def test_failed_stop_after_motion_is_uncertain_and_keeps_evidence(self):
+        value = self.make(); self.pointer(value)
+        value.move(5, 5)
+        self.lib.ei_device_stop_emulating.side_effect = RuntimeError('native')
+        value.release()
+        self.assertTrue(value.uncertain)
+        self.assertTrue(value.devices[11].emulating)
+        self.assertFalse(value.ready('pointer'))
+
     def test_removed_pointer_with_held_button_is_retired_and_blocks_input(self):
         value = self.make(); self.pointer(value)
         value.move(5, 5); value.press([0x110], 'pointer')

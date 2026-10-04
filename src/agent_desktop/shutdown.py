@@ -15,7 +15,7 @@ def release_input(owner):
     """Backstop after task cancellation: release any key still held."""
     if owner is None:
         return {'state': 'not_connected', 'confirmed': False}
-    held = lambda: any(device.held for device in owner.devices.values())
+    held = lambda: any(device.held or device.emulating for device in owner.devices.values())
     had = held()
     if had:
         try:

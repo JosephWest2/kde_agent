@@ -21,8 +21,11 @@ in [keyboard and pointer input](INPUT.md).
 `screenshot [--window REF] [--output PATH]` captures the 1280×720 output as PNG.
 With `--window`, the image is the window's client area, rounded outward and
 clipped to the screen; a fully offscreen window fails with `capture_failed`. This
-is the coordinate space of `click --window`: a pixel at (x, y) in the image is
-`click --x x --y y`. It includes a GTK header bar but not a KWin title bar (Qt/KDE
+is the coordinate space of `click --window`: for a window that is fully on screen,
+a pixel at (x, y) in the image is `click --x x --y y`. If the window extends past
+a screen edge the image is clipped, so add `crop[0] - client.x` and
+`crop[1] - client.y` (or click the screen point `crop[0] + x`, `crop[1] + y`
+without `--window`). It includes a GTK header bar but not a KWin title bar (Qt/KDE
 apps); full-screen screenshots show both. The window doesn't need focus.
 Each capture has a unique `capture_id` and is stored in the artifact root. The
 result gives `path`, `png_sha256`, `png_bytes`, `dimensions`, `screen_dimensions`

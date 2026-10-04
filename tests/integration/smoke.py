@@ -155,13 +155,24 @@ class Smoke:
         x, y = EDITOR_NEW_TAB
         self.desktop('editor: click New Tab', 'click', '--window', window, '--x', str(x), '--y', str(y))
         deadline = time.monotonic() + 5
-        while True:  # The new empty document becomes current, so the title drops the typed text.
+        while True:  # The new empty document becomes current: same window, "New Document" title.
             rows = self.desktop('editor: windows (new tab check)', 'windows', '--app', app)['result']['windows']
-            if rows and not any(text in (row['title'] or '') for row in rows):
+            titles = [row['title'] or '' for row in rows if row['window']['ref'] == window]
+            if titles and titles[0].startswith('New Document') and text not in titles[0]:
                 break
             if time.monotonic() >= deadline:
                 raise SmokeFailure('editor: new tab check', f'title still shows the typed text: '
                                    f'{[r["title"] for r in rows]}')
+            time.sleep(.2)
+        # Switching back to the first tab must show the typed document again.
+        self.desktop('editor: key ctrl+page_up', 'key', '--window', window, 'ctrl+page_up')
+        deadline = time.monotonic() + 5
+        while True:
+            rows = self.desktop('editor: windows (first tab check)', 'windows', '--app', app)['result']['windows']
+            if any(text in (row['title'] or '') for row in rows if row['window']['ref'] == window):
+                break
+            if time.monotonic() >= deadline:
+                raise SmokeFailure('editor: first tab check', f'typed document not back: {[r["title"] for r in rows]}')
             time.sleep(.2)
         self.desktop('editor: key ctrl+a', 'key', '--window', window, 'ctrl+a')
         self.screenshot('editor')

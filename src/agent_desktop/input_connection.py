@@ -429,7 +429,10 @@ class Input:
                     try:
                         self.lib.ei_device_stop_emulating(device.pointer)
                     except Exception:
-                        pass
+                        if self._current(epoch, context):
+                            self.uncertain = True
+                            self.log('stop_emulating_uncertain', epoch=epoch, identity=device.identity)
+                        continue
                     device.emulating = False
                 continue
             if not self.connected or self.backlog or not device.resumed or not device.emulating or self.error:

@@ -73,7 +73,8 @@ class Owner:
     """Fake input owner with the ledger fields InputTask relies on."""
 
     def __init__(self):
-        self.device = SimpleNamespace(held=[])
+        self.device = SimpleNamespace(held=[], emulating=False)
+        self.fail_press_before_record = False
         self.devices = {1: self.device}
         self.uncertain = False
         self.retired_held = []
@@ -84,6 +85,9 @@ class Owner:
     def press(self, codes, kind='keyboard'):
         assert not self.device.held
         self.kinds = getattr(self, 'kinds', []) + [kind]
+        if self.fail_press_before_record:
+            raise ContractError('input_unavailable', 'Input changed during emission.')
+        self.device.emulating = True
         for index, code in enumerate(codes):
             self.device.held.append(code)  # Like Input.press: recorded before the native call.
             if self.fail_press_at == index:
@@ -92,6 +96,7 @@ class Owner:
         self.events.append(('press', list(codes), time.monotonic()))
 
     def move(self, x, y):
+        self.device.emulating = True  # Like Input.move: emulation opens before motion.
         self.events.append(('move', (x, y), time.monotonic()))
 
     def release(self):
@@ -99,8 +104,12 @@ class Owner:
             self.uncertain = True
             return
         self.uncertain = False
-        self.events.append(('release', list(reversed(self.device.held)), time.monotonic()))
+        if self.device.held:
+            self.events.append(('release', list(reversed(self.device.held)), time.monotonic()))
+        else:
+            self.events.append(('stop_emulating', [], time.monotonic()))
         self.device.held.clear()
+        self.device.emulating = False
 
 
 class Target:
@@ -324,6 +333,21 @@ class ClickTaskTests(unittest.TestCase):
         task.request_cancel('client_disconnected')
         self.assertEqual(self.owner.device.held, [])
         self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_press_failure_after_motion_still_closes_emulation(self):
+        task = self.click(x=1, y=1)
+        self.owner.fail_press_before_record = True
+        with self.assertRaises(ContractError):
+            task.step(time.monotonic())
+        self.assertEqual([event[0] for event in self.owner.events], ['move', 'stop_emulating'])
+        self.assertFalse(self.owner.device.emulating)
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_shutdown_backstop_closes_motion_only_emulation(self):
+        owner = Owner()
+        owner.move(1, 1)
+        self.assertEqual(release_input(owner), {'state': 'released', 'confirmed': True})
+        self.assertFalse(owner.device.emulating)
 
     def test_click_arguments_are_validated(self):
         request = make_request('click', arguments={'x': '3', 'y': 4, 'count': '2'}, caller_cwd='/')

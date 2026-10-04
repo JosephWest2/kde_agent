@@ -68,8 +68,17 @@ def reviewed_libei(binding):
 
 
 def libei_headers(binding):
-    """reviewed_libei plus the compiler, pkg-config and header the audit uses."""
+    """reviewed_libei plus the compiler, pkg-config entry and header the audit uses."""
     for path in ('/usr/bin/cc', '/usr/bin/pkg-config', '/usr/include/libei-1.0/libei.h'):
         if not Path(path).exists():
             return 'no ' + path
-    return reviewed_libei(binding)
+    if reviewed_libei(binding):
+        return reviewed_libei(binding)
+    # The audit's own sanitized environment: no caller PKG_CONFIG_PATH.
+    try:
+        result = binding.command(['/usr/bin/pkg-config', '--cflags', '--libs', 'libei-1.0'])
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return 'pkg-config failed: ' + str(error)
+    if result.returncode:
+        return 'pkg-config cannot resolve libei-1.0: ' + (result.stderr.strip().splitlines() or ['exit ' + str(result.returncode)])[-1]
+    return None

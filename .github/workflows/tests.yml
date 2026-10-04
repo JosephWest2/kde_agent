@@ -29,24 +29,8 @@ jobs:
             python3-gi gir1.2-glib-2.0 python3-dbus python3-pil dbus-daemon
           /usr/bin/python3 --version
 
+      # The documented discovery, run by tests/run_ci.py so skips are checked on the
+      # structured results: only the host-test modules may skip, and the run,
+      # skipped and executed counts go to the log and the job summary.
       - name: Unit tests
-        run: |
-          set -o pipefail
-          PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -v 2>&1 | tee unittest.log
-
-      # Only the known host-test modules may skip; any other skip fails the job.
-      - name: Test count
-        if: always()
-        env:
-          HOST_MODULES: test_input_connection test_libei_probe test_lifecycle_process
-        run: |
-          ran=$(grep -E '^Ran [0-9]+ tests? ' unittest.log | grep -oE '[0-9]+' | head -1)
-          skipped=$(grep -c ' \.\.\. skipped ' unittest.log || true)
-          echo "Tests run: $ran, skipped: $skipped, executed: $((ran - skipped))" | tee -a "$GITHUB_STEP_SUMMARY"
-          grep ' \.\.\. skipped ' unittest.log | tee -a "$GITHUB_STEP_SUMMARY" || true
-          unexpected=$(grep ' \.\.\. skipped ' unittest.log | grep -vE "\(($(echo $HOST_MODULES | tr ' ' '|'))\." || true)
-          if [ -n "$unexpected" ]; then
-            echo "Unexpected skips outside the host-test modules:"
-            echo "$unexpected"
-            exit 1
-          fi
+        run: PYTHONPATH=src /usr/bin/python3 tests/run_ci.py

@@ -19,7 +19,8 @@ Supported today:
 
 Pointer input and click are next (#66). JSON results give
 every application and window a ready-to-use `ref` string for `--app` and
-`--window`. See [application ownership](docs/APPLICATIONS.md),
+`--window`. [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke
+test (`python tests/integration/smoke.py`). See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.
 

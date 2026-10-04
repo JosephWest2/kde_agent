@@ -61,7 +61,7 @@ class SchedulerTests(unittest.TestCase):
             self.tasks.append(task)
             return task
         self.owner = Scheduler(clock=self.clock, factory=factory,
-                               capabilities={"input.reset", "session.stop"})
+                               capabilities={"session.stop"})
     def submit(self, operation="session.status", timeout=3):
         a = Admission(self.clock, operation, timeout)
         self.owner.submit(a.request, a)
@@ -145,24 +145,20 @@ class SchedulerTests(unittest.TestCase):
         escalation.assert_called_once()
         self.assertEqual(len(self.tasks), 1)
 
-    def test_reset_and_stop_bypass_and_survive_callers(self):
+    def test_stop_bypasses_and_survives_callers(self):
         first = self.submit("type")
         self.owner.tick()
         self.tasks[0].clean = False
-        reset = self.submit("input.reset")
-        reset.disconnect()
-        self.owner.tick()
-        self.assertEqual(len(self.tasks), 1)
-        self.tasks[0].clean = True
-        self.owner.tick()
-        self.assertEqual(len(self.tasks), 2)
-        self.assertEqual(first.results[0]["error"].code, "cancelled")
         stop = self.submit("session.stop")
         stop.disconnect()
         joined = self.submit("session.stop")
         self.owner.tick()
+        self.assertEqual(len(self.tasks), 1)  # Stop waits for the cancelled task's cleanup.
+        self.tasks[0].clean = True
         self.owner.tick()
-        self.assertEqual(len(self.tasks), 3)
+        self.owner.tick()
+        self.assertEqual(first.results[0]["error"].code, "cancelled")
+        self.assertEqual(len(self.tasks), 2)
         self.assertEqual(self.owner.lifecycle.request, stop.request)
         self.tasks[-1].done = True
         self.owner.tick()
@@ -172,18 +168,16 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(self.submit().results[0]["error"].code, "session_unavailable")
 
     def test_joined_waiter_cannot_extend_or_cancel_owner(self):
-        first = self.submit("input.reset", timeout=1)
+        first = self.submit("session.stop", timeout=1)
         self.owner.tick()
-        joined = self.submit("input.reset", timeout=.01)
+        joined = self.submit("session.stop", timeout=.01)
         self.clock.now = .02
         self.owner.tick()
         self.assertEqual(joined.results[0]["error"].code, "timeout")
         self.assertEqual(self.owner.lifecycle.admission.deadline, 1)
-        self.assertFalse(self.owner.input_available)
         self.tasks[0].done = True
         self.owner.tick()
         self.assertIsNone(first.results[0]["error"])
-        self.assertTrue(self.owner.input_available)
 
     def test_unsupported_controls_do_not_cancel_active(self):
         self.owner.capabilities = frozenset()
@@ -327,9 +321,8 @@ class SchedulerTests(unittest.TestCase):
                 self.assertEqual(active.results[0]["error"].code, "timeout")
                 self.assertEqual(active.results[0]["error"].partial_result["app"]["application_id"], "retained")
 
-    def test_stop_deadline_includes_superseded_reset_cleanup_and_joiners(self):
-        reset = self.submit("input.reset", timeout=3)
-        reset_joined = self.submit("input.reset", timeout=2)
+    def test_stop_deadline_includes_cancelled_active_cleanup_and_joiners(self):
+        reset = self.submit("type", timeout=3)
         self.owner.tick()
         self.tasks[0].clean = False
         self.tasks[0].cleanup_seconds = 2
@@ -340,8 +333,9 @@ class SchedulerTests(unittest.TestCase):
         long_waiter.disconnect()
         escalation = Mock()
         self.owner.escalate = escalation
-        self.assertEqual(self.owner.lifecycle.cleanup_deadline, .05)
-        self.assertEqual(self.owner.pending_stop.admission.deadline, .05)
+        # The cancelled task's 2s cleanup allowance is capped by the stop deadline.
+        self.assertEqual(self.owner.active.cleanup_deadline, .05)
+        self.assertEqual(self.owner.lifecycle.admission.deadline, .05)
         self.clock.now = .01
         self.owner.tick()
         self.assertEqual(short_waiter.results[0]["error"].code, "timeout")
@@ -351,14 +345,12 @@ class SchedulerTests(unittest.TestCase):
         self.clock.now = .05
         self.owner.tick()
         self.assertTrue(self.owner.unavailable)
-        self.assertFalse(self.owner.input_available)
         self.assertTrue(escalation.called)
         for waiter in (stop, long_waiter):
             self.assertEqual(waiter.results[0]["error"].code, "timeout")
             self.assertEqual(waiter.results[0]["error"].outcome, "unknown")
-        for waiter in (reset, reset_joined):
-            self.assertEqual(waiter.results[0]["error"].code, "cancelled")
-            self.assertEqual(waiter.results[0]["error"].outcome, "unknown")
+        self.assertEqual(reset.results[0]["error"].code, "cancelled")
+        self.assertEqual(reset.results[0]["error"].outcome, "unknown")
         self.assertEqual(len(self.tasks), 1, "No concurrent or late stop task")
         self.owner.tick()
         self.assertEqual(len(self.tasks), 1)

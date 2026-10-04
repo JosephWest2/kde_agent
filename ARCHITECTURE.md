@@ -149,7 +149,7 @@ Proposed command families:
 doctor
 session start | status | stop
 launch | windows | focus | wait
-key | type | click | input reset
+key | type | click
 screenshot | logs
 close | kill
 ```

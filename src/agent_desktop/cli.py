@@ -40,7 +40,7 @@ def parser():
     for operation in OPERATIONS:
         if "." not in operation:
             leaves[operation] = commands.add_parser(operation, help=note(operation))
-    for family, actions in (("session", ("start", "status", "stop")), ("input", ("reset",))):
+    for family, actions in (("session", ("start", "status", "stop")),):
         implemented = any(f"{family}.{action}" in SUPPORTED_OPERATIONS for action in actions)
         group = commands.add_parser(family, help=None if implemented else "(not yet implemented)")
         group.add_argument("--json", action="store_true", help="emit one JSON result")

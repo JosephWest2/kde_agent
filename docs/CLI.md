@@ -12,8 +12,8 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
 `focus`, `wait`, `key`, `type`, `click`, `screenshot`, `close` and `kill`.
-`input reset` and `logs` return `unsupported_operation` until their issues land
-(#67, #68). Key names, text limits, click coordinates and release guarantees are
+`logs` returns `unsupported_operation` until #68 lands. There is no `input reset`;
+recover from `input_uncertain` with `session stop` and `session start`. Key names, text limits, click coordinates and release guarantees are
 in [keyboard and pointer input](INPUT.md).
 
 ## Screenshots
@@ -113,7 +113,6 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
 | `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |
-| `input reset` | none | 3 / 3 |
 | `screenshot` | optional `--window WINDOW_REF` (crop to its client area), optional `--output PATH` (file or existing directory) | 3 / 3 |
 | `logs` | optional `--app APP_REF`; `--source all\|worker\|compositor\|application` (default all) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
@@ -197,7 +196,7 @@ separation is not filesystem or network isolation; applications remain trusted.
 ## Requests, results and errors
 
 The shared Request contains `schema_version: 1`, a fresh `request_id`, operation
-(`session.start`, `input.reset`, etc.), session name, `expected_generation`,
+(`session.start`, `click`, etc.), session name, `expected_generation`,
 `arguments`, finite `timeout_seconds`, and `caller_cwd`. Pure validators consume
 ordinary data; the worker additionally enforces strict wire types, framing/version
 and immutable live worker identity independently of the CLI.
@@ -271,8 +270,8 @@ error object within the common failure envelope:
 
 Ambiguity returns `target_ambiguous` with `context.candidates` containing full
 window handles. Uncertain release returns `input_uncertain`, `outcome: unknown`,
-and context describing the uncertainty; further input is blocked until a safe
-reset or stop. Close/kill report `application`, `exited`, `exit_status` (null if
+and context describing the uncertainty; further input is blocked until the
+session is stopped. Close/kill report `application`, `exited`, `exit_status` (null if
 unknown), and `remaining_processes`; timeout retains available partial outcomes.
 For close, `exit_status` is the root return code (also `root_returncode`), and
 `remaining_processes` is null because complete enumeration is unavailable. The

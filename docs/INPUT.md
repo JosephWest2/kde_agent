@@ -7,9 +7,22 @@ agent-desktop --json key  --window REF ctrl+shift+t [--hold 0.05]
 agent-desktop --json type --window REF 'Hello, World!' [--timeout 30]
 ```
 
-**Focus first.** Both commands query the window once and require it to exist and
-be focused. Otherwise they fail with `target_lost` (reason `focus_lost`) and send
-nothing. Use `focus` first. Focus is not rechecked mid-sequence (#67).
+**Focus first.** Both commands query the window before the first stroke and
+require it to exist and be focused. Otherwise they fail with `target_lost` (reason
+`focus_lost`) and send nothing. Use `focus` first.
+
+**Focus rechecks.** While a hold or a sequence is still being sent, the window is
+queried again every 250ms. If it is gone or no longer focused, everything held is
+released at once and the request fails with `target_lost` and the progress so far
+(`strokes_sent`, `strokes_total`, `key_held`, `focus_rechecks`). Detection is not
+instantaneous: the next query starts 250ms after the previous one finishes, and a
+query takes about 0.1s (at most 0.5s), so typically 0.25–0.35s and at worst about
+0.75s of input, including the release itself, can reach whatever took focus. A
+recheck still running when the last stroke is sent is waited for, so a late loss
+is reported even though every stroke was sent. No recheck is started when less
+than 250ms of input remains at the pace achieved so far, so `key` with the default
+hold and short `type` text never recheck. Successful results
+include `focus_rechecks`.
 
 **Key names.** Chords are names joined by `+`, case-insensitive, pressed in order
 and released in reverse, with up to 8 distinct keys. Each name is one physical key:
@@ -34,15 +47,25 @@ before anything is sent, with its `index` and `codepoint` (non-ASCII lookalikes
 such as the Kelvin sign included). If `key caps_lock` has turned Caps Lock on,
 `type` inverts Shift for letters so the text still comes out as written; only this
 toolkit sends input to the private desktop, so the worker tracks that state. Each character is one
-press and one release, about 10ms apart, so roughly 200 characters fit the default
-3s and about 2000 fit the 30s maximum. Text whose estimate (15ms per character)
-does not fit the remaining time fails with `timeout`, phase `budget`, and sends nothing.
+press and one release, about 10ms apart, so roughly 170 characters fit the default
+3s and about 1900 fit the 30s maximum. Text whose estimate (15ms per character,
+plus 0.25s for a final focus recheck when it takes longer than 250ms) does not fit
+the remaining time fails with `timeout`, phase `budget`, and sends nothing.
 
 **Release guarantees.** The worker owns every hold. Client disconnect, Ctrl-C,
 timeout, cancellation and `session stop` release held keys immediately on the owner
 thread, and shutdown releases again as a backstop (`shutdown.json` stage `release`).
 If a release cannot be confirmed, later `key`/`type` fail with `input_uncertain`
 and `session stop` still works. Losing the input device fails the session.
+
+**Recovery is `session stop` then `session start`** (about a second). There is no
+`input reset`: the only paths to an unconfirmed release (device pause, removal or
+disconnect) already fail the session, and a replacement connection cannot release
+keys for the old one, because KWin ignores releases for keys another connection
+pressed. Dropping a connection while keys are held is also unsafe: KWin 6.7.5
+crashes (SIGSEGV) when an EIS client disconnects while holding keys on a focused
+surface (3 of 3 attempts; releasing first was safe). The worker therefore always
+releases before it closes the connection, and stop does the same.
 
 **Results.** `dispatched: true` means the events reached the compositor for the
 focused window, not that the application handled them. Check with a screenshot or
@@ -95,7 +118,7 @@ and touch devices are never bound or referenced. The startup gate requires CONNE
 and one resumed keyboard, within the existing shared startup deadline and a
 three-second input limit. The pointer device is checked when `click` uses it
 (`input_unavailable` if it is missing). Public `key`, `type` and `click` use this
-same connection (above); reset is #67.
+same connection (above). It is never replaced within a session; see recovery above.
 
 The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
 1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
@@ -128,15 +151,13 @@ holds and focus checks. Release uses explicit release events and a frame.
 
 Held state becomes uncertain after lifecycle loss or an emission failure.
 RESUMED does not clear uncertainty, and disposal preserves uncertain held
-history. An explicit replacement/reset policy must establish when it can clear
-that gate; the adapter does not replay input or claim generic application
-acknowledgment. The known KWin pause key-ledger behavior remains covered by the
+history. Nothing clears that gate; a new session does. The adapter does not
+replay input or claim generic application acknowledgment. The known KWin pause key-ledger behavior remains covered by the
 [M1 decision](M1_DECISION.md).
 
-For this intermediate milestone, runtime input capability loss still fails and
-stops the worker's owned session. Public recovery will switch atomically with
-issue #31's reset implementation. Callback/protocol errors remain sticky and
-are checked before ordinary work and worker heartbeats.
+Runtime input capability loss fails and stops the worker's owned session.
+Callback/protocol errors remain sticky and are checked before ordinary work and
+worker heartbeats.
 
 The [issue #27 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-27/README.md) records installed production
 async negotiation and real compositor lifecycle faults. The test harness uses
@@ -146,4 +167,4 @@ production uses the `agent-desktop` prefix. Fault control is not a product API.
 Canceling pending negotiation guarantees local callback/FD cleanup, not confirmed
 server context destruction while the originating bus stays open. Startup failure
 and worker stop close that bus. Recovery from unknown negotiation completion on
-a reused bus is deliberately left to the public reset policy in issue #31.
+a reused bus does not arise: the bus is never reused for a second negotiation.

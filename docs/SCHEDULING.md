@@ -9,7 +9,7 @@ input delivery, compositor cleanup or actual service shutdown.
 ## One owner, finite work
 
 A single GLib owner admits up to 32 ordinary requests, including active work. All
-session operations except `input.reset` and `session.stop` use that queue. Admission
+session operations except `session.stop` use that queue. Admission
 captures one monotonic deadline after complete wire validation; queue delay counts.
 A queued request expiring before execution has `timeout`, `outcome: not_started`,
 and its task factory is never invoked. Factories construct tasks without effects;

@@ -201,7 +201,7 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertFalse(result['desktop_ready'])
         self.assertNotIn('release_qualified', result)
         self.assertEqual(set(result['capabilities'].values()), {'not_tested'})
-        self.assertIn('input.reset', result['unsupported_operations'])
+        self.assertIn('logs', result['unsupported_operations'])
         self.assertIn('launch', result['supported_operations'])
         self.assertEqual(set(result['supported_operations']) | set(result['unsupported_operations']),
                          set(OPERATIONS))

@@ -226,20 +226,15 @@ class SchedulerProcessTests(unittest.TestCase):
         self.assertFalse(Path(f"/proc/{child['pid']}").exists(), "Owned child must be reaped")
         self.assertTrue(self.records("done", next_req.request_id))
 
-    def test_reset_and_stop_cleanup_survive_cli_exit(self):
+    def test_stop_cleanup_survives_cli_exit(self):
         first, sock = self.send()
         self.wait(lambda: self.records("start", first.request_id))
-        reset = self.cli("input", "reset")
-        reset_start = self.wait(lambda: [r for r in self.records("control_admitted") if r["operation"] == "input.reset"])[0]
-        reset.kill()
-        reset.communicate(timeout=2)
-        self.wait(lambda: self.records("done", reset_start["id"]))
-        self.assertEqual(self.receive(sock)["error"]["code"], "cancelled")
         stop = self.cli("session", "stop")
         stop_start = self.wait(lambda: [r for r in self.records("control_admitted") if r["operation"] == "session.stop"])[0]
         stop.kill()
         stop.communicate(timeout=2)
         self.wait(lambda: self.records("done", stop_start["id"]))
+        self.assertEqual(self.receive(sock)["error"]["code"], "cancelled")
         _, rejected = self.send(text="quick")
         self.assertEqual(self.receive(rejected)["error"]["code"], "session_unavailable")
 

@@ -27,7 +27,7 @@ OPERATIONS = {
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),
     "key": (3, 3, 64), "type": (3, 30, 64), "click": (3, 3, 66),
-    "input.reset": (3, 3, 67), "screenshot": (3, 3, 64),
+    "screenshot": (3, 3, 64),
     "logs": (3, 3, 68), "close": (5, 60, 25), "kill": (5, 15, 26),
 }
 # Operations that are implemented end to end. Everything else returns
@@ -157,7 +157,7 @@ ARGUMENTS = {
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window"}, "key": {"window", "chord", "hold"},
     "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
-    "input.reset": set(), "screenshot": {"output", "window"}, "logs": {"app", "source"},
+    "screenshot": {"output", "window"}, "logs": {"app", "source"},
     "close": {"app", "window"}, "kill": {"app"},
 }
 

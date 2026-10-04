@@ -78,11 +78,19 @@ Run setup from a normal login session."
         || fail "cannot create $dir"
     [[ -d $dir && ! -L $dir && $(stat -c '%u %a' -- "$dir") == "$(id -u) 700" ]] \
         || fail "$dir must be a directory owned by you with mode 0700."
-    [[ ! -L $INSTALL_LOCK ]] || fail "$INSTALL_LOCK is a symlink; remove it."
-    (umask 077 && : >>"$INSTALL_LOCK") || fail "cannot create $INSTALL_LOCK"
-    [[ $(stat -c '%u %a' -- "$INSTALL_LOCK") == "$(id -u) 600" ]] \
-        || fail "$INSTALL_LOCK must be a file owned by you with mode 0600."
-    exec {LOCK_FD}<"$INSTALL_LOCK"
+    # Only a regular file: opening a FIFO or device could block or misbehave.
+    if [[ -L $INSTALL_LOCK || ( -e $INSTALL_LOCK && ! -f $INSTALL_LOCK ) ]]; then
+        fail "$INSTALL_LOCK is not a regular file; remove it and rerun tools/setup.sh."
+    fi
+    # Read-write opens never block, even if a FIFO appeared since the check; the
+    # opened descriptor is what gets verified.
+    local mask
+    mask=$(umask)
+    umask 077
+    exec {LOCK_FD}<>"$INSTALL_LOCK" || fail "cannot open $INSTALL_LOCK"
+    umask "$mask"
+    [[ $(stat -L -c '%F %u %a' -- "/proc/$$/fd/$LOCK_FD") == "regular "*"file $(id -u) 600" ]] \
+        || fail "$INSTALL_LOCK must be a regular file owned by you with mode 0600."
     if ! flock -x -n "$LOCK_FD"; then
         say "waiting up to ${LOCK_WAIT}s for a session start to finish (install lock $INSTALL_LOCK)"
         flock -x -w "$LOCK_WAIT" "$LOCK_FD" || fail "a session start still holds $INSTALL_LOCK after ${LOCK_WAIT}s.
@@ -130,6 +138,20 @@ then rerun tools/setup.sh."
 fi
 
 # --- Pinned dependencies and venv --------------------------------------------
+# The dependency root and venv must be real directories owned by you, as
+# tools/dependencies.py requires, before anything inside them is inspected or
+# deleted: a symlinked root would otherwise redirect the venv recreation below.
+check_owned_directory() {  # $1: path, $2: description
+    if [[ -L $1 || ( -e $1 && ! -d $1 ) ]]; then
+        fail "$1 ($2) is a symlink or not a directory. Move it away and rerun tools/setup.sh."
+    fi
+    if [[ -e $1 && $(stat -c '%u' -- "$1") != "$(id -u)" ]]; then
+        fail "$1 ($2) is not owned by you. Move it away and rerun tools/setup.sh."
+    fi
+}
+check_owned_directory "$ROOT" "dependency root"
+[[ -e $ROOT ]] && chmod 700 -- "$ROOT"  # dependencies.py enforces 0700 the same way
+check_owned_directory "$VENV" "venv"
 # Everything that changes the venv or the installed package runs under the
 # exclusive install lock; it is released before doctor.
 take_install_lock

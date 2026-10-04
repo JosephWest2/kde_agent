@@ -94,10 +94,13 @@ Setup and `session start` share one install lock,
 `/run/user/UID/agent-desktop/install.lock` (directory 0700, file 0600). Setup
 holds it exclusively from the venv check through pip, the import check and the
 stamp write, and releases it before `doctor`. `session start` holds it shared
-while it launches a new service, until the start returns. So a session never
+for the whole call, from before its prerequisite check (which imports the
+installed worker) until it returns, including when it reuses a running session. So a session never
 starts during an install, and setup never installs under a starting session:
 - If a start is in progress, setup waits up to 60 seconds, then finds the
   session and refuses as above.
+- Setup also refuses a dependency root, venv or lock that is a symlink, isn't
+  owned by you, or (for the lock) isn't a regular file.
 - If setup is installing, `session start` waits within its own `--timeout`, then
   fails with `session_conflict` ("agent-desktop setup is installing; retry when
   it finishes"; `context.lock` is the path).

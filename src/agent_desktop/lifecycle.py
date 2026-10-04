@@ -402,10 +402,18 @@ class Manager:
 
     def start(self, request):
         """Wait for real capability readiness and correlated live control."""
-        from .artifacts import Store
         from .paths import normalize
         request = normalize(request)
         deadline = time.monotonic() + request.timeout_seconds
+        # Shared for the whole start: tools/setup.sh changes the installed package
+        # under the exclusive lock, and every step here can depend on it (the
+        # prerequisite check imports the worker; a new worker imports lazily
+        # during readiness).
+        with install_lock(self.install_lock, deadline):
+            return self._start(request, deadline)
+
+    def _start(self, request, deadline):
+        from .artifacts import Store
         configuration = dict(mode=request.arguments['mode'], artifacts=request.arguments['artifacts'],
                              dependency_root=request.arguments['dependency_root'],
                              output=dict(width=1280, height=720, scale=1))
@@ -440,85 +448,82 @@ class Manager:
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
                 self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
-            # Shared while launching; tools/setup.sh installs under the exclusive lock.
-            # Held until start returns: the worker imports lazily during readiness.
-            with install_lock(self.install_lock, deadline):
-                previous = data
-                generation = uuid.uuid4().hex
-                unit = unit_name(generation)
-                data = dict(schema_version=1, session=request.session, generation=generation, unit=unit,
-                            cgroup=self.systemd.cgroup(unit, deadline), configuration=configuration,
-                            submission='reserved', state='starting')
-                runtime.socket_path(generation).parent.mkdir(mode=0o700)
-                store = Store(configuration['artifacts'], request.session, generation, create=True,
-                              disposable=[str(runtime.root.parent)])
-                try:
-                    if prerequisite is not None:
-                        store.provenance(dependencies=inventory(prerequisite))
-                except (ContractError, OSError):
-                    pass  # Versions are diagnostics; they never gate startup.
-                finally:
-                    store.close()
+            previous = data
+            generation = uuid.uuid4().hex
+            unit = unit_name(generation)
+            data = dict(schema_version=1, session=request.session, generation=generation, unit=unit,
+                        cgroup=self.systemd.cgroup(unit, deadline), configuration=configuration,
+                        submission='reserved', state='starting')
+            runtime.socket_path(generation).parent.mkdir(mode=0o700)
+            store = Store(configuration['artifacts'], request.session, generation, create=True,
+                          disposable=[str(runtime.root.parent)])
+            try:
+                if prerequisite is not None:
+                    store.provenance(dependencies=inventory(prerequisite))
+            except (ContractError, OSError):
+                pass  # Versions are diagnostics; they never gate startup.
+            finally:
+                store.close()
+            self._write(runtime, data)
+            from .ownership import generation_lock
+            from contextlib import nullcontext
+            with generation_lock(runtime, generation) as root:
+                atomic(root / 'service-control.json', dict(schema_version=1, session=request.session,
+                       generation=generation, request_id=uuid.uuid4().hex))
+            # Old hooks validate current routing while holding this same lock.
+            with generation_lock(runtime, previous['generation']) if previous else nullcontext():
+                atomic(runtime.current / (request.session + '.json'),
+                       dict(schema_version=1, session=request.session, generation=generation))
+            command = (self.worker_command(data) if self.worker_command else
+                       [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
+                        '--session', request.session, '--generation', generation,
+                        '--artifacts', configuration['artifacts'],
+                        '--kdotool', prerequisite['kdotool']['executable'], '--startup-deadline', str(deadline)])
+            try:
+                remaining(deadline)
+                data['submission'] = 'uncertain'
                 self._write(runtime, data)
-                from .ownership import generation_lock
-                from contextlib import nullcontext
-                with generation_lock(runtime, generation) as root:
-                    atomic(root / 'service-control.json', dict(schema_version=1, session=request.session,
-                           generation=generation, request_id=uuid.uuid4().hex))
-                # Old hooks validate current routing while holding this same lock.
-                with generation_lock(runtime, previous['generation']) if previous else nullcontext():
-                    atomic(runtime.current / (request.session + '.json'),
-                           dict(schema_version=1, session=request.session, generation=generation))
-                command = (self.worker_command(data) if self.worker_command else
-                           [sys.executable, '-I', '-m', 'agent_desktop.worker', '--managed',
-                            '--session', request.session, '--generation', generation,
-                            '--artifacts', configuration['artifacts'],
-                            '--kdotool', prerequisite['kdotool']['executable'], '--startup-deadline', str(deadline)])
+                self.systemd.start(data, runtime, command, deadline)
+                data['submission'] = 'acknowledged'
+                self._write(runtime, data)
+                while True:
+                    info = self._observe(runtime, data, deadline)
+                    if self._quiescent(data, info):
+                        raise ContractError('session_failed', 'Worker service exited during startup.')
+                    if info['ActiveState'] == 'active':
+                        try:
+                            result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
+                            if result['state'] == 'ready' or self.worker_command is not None:
+                                if result['state'] == 'ready':
+                                    data['state'] = 'ready'
+                                    self._write(runtime, data)
+                                remaining(deadline)
+                                return self._result(request, generation, result | {'reused': False})
+                            if result['state'] == 'failed':
+                                raise ContractError('session_failed', 'Capability startup failed.', context=result)
+                        except ContractError as error:
+                            if error.code not in ('session_unavailable', 'completion_unknown', 'timeout', 'transport_error'):
+                                raise
+                    time.sleep(min(.02, remaining(deadline)))
+            except BaseException as error:
+                if isinstance(error, ContractError):
+                    failure = retained_failure(data)
+                    if failure:
+                        error.code, error.message = failure['code'], failure['message']
+                        error.context.update(failure['context'])
+                # Separate finite cleanup reserve follows the start work budget.
+                cleanup, preserved = 'uncertain', False
                 try:
-                    remaining(deadline)
-                    data['submission'] = 'uncertain'
-                    self._write(runtime, data)
-                    self.systemd.start(data, runtime, command, deadline)
-                    data['submission'] = 'acknowledged'
-                    self._write(runtime, data)
-                    while True:
-                        info = self._observe(runtime, data, deadline)
-                        if self._quiescent(data, info):
-                            raise ContractError('session_failed', 'Worker service exited during startup.')
-                        if info['ActiveState'] == 'active':
-                            try:
-                                result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
-                                if result['state'] == 'ready' or self.worker_command is not None:
-                                    if result['state'] == 'ready':
-                                        data['state'] = 'ready'
-                                        self._write(runtime, data)
-                                    remaining(deadline)
-                                    return self._result(request, generation, result | {'reused': False})
-                                if result['state'] == 'failed':
-                                    raise ContractError('session_failed', 'Capability startup failed.', context=result)
-                            except ContractError as error:
-                                if error.code not in ('session_unavailable', 'completion_unknown', 'timeout', 'transport_error'):
-                                    raise
-                        time.sleep(min(.02, remaining(deadline)))
-                except BaseException as error:
-                    if isinstance(error, ContractError):
-                        failure = retained_failure(data)
-                        if failure:
-                            error.code, error.message = failure['code'], failure['message']
-                            error.context.update(failure['context'])
-                    # Separate finite cleanup reserve follows the start work budget.
-                    cleanup, preserved = 'uncertain', False
-                    try:
-                        preserved = self._stop(runtime, data, time.monotonic() + STOP_SECONDS, failed=True)
-                        cleanup = 'complete'
-                    except (ContractError, OSError):
-                        pass  # Ownership survives when manager completion is uncertain.
-                    if isinstance(error, ContractError):
-                        error.context.update(resolved_generation=generation, service=data['unit'],
-                                             cleanup=cleanup, records_preserved=preserved)
-                        if cleanup == 'uncertain':
-                            error.outcome = 'unknown'
-                    raise
+                    preserved = self._stop(runtime, data, time.monotonic() + STOP_SECONDS, failed=True)
+                    cleanup = 'complete'
+                except (ContractError, OSError):
+                    pass  # Ownership survives when manager completion is uncertain.
+                if isinstance(error, ContractError):
+                    error.context.update(resolved_generation=generation, service=data['unit'],
+                                         cleanup=cleanup, records_preserved=preserved)
+                    if cleanup == 'uncertain':
+                        error.outcome = 'unknown'
+                raise
 
     def _result(self, request, generation, result):
         return response(request.request_id, request.operation, session=request.session,

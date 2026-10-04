@@ -96,6 +96,36 @@ class LifecycleTests(unittest.TestCase):
             Runtime().read('default')
         self.assertEqual(missing.exception.code, 'session_not_found')
 
+    def test_prerequisite_check_runs_under_the_install_lock(self):
+        manager = Manager(systemd=self.services, install_lock=self.lock_path)
+        observed = []
+
+        def check(root, deadline):
+            probe = os.open(self.lock_path, os.O_RDWR)
+            try:
+                fcntl.flock(probe, fcntl.LOCK_SH | fcntl.LOCK_NB)  # shared holders coexist
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                os.close(probe)
+            observed.append(root)
+            raise ContractError('prerequisite_missing', 'Stub stops start here.')
+        with patch('agent_desktop.prerequisites.check', check), self.assertRaises(ContractError) as caught:
+            manager.start(self.request())
+        self.assertEqual(caught.exception.code, 'prerequisite_missing')
+        self.assertEqual(len(observed), 1)
+        self.hold_install_lock(fcntl.LOCK_EX)  # released after the failure
+
+    def test_exclusive_install_lock_precedes_the_prerequisite_check(self):
+        manager = Manager(systemd=self.services, install_lock=self.lock_path)
+        self.hold_install_lock(fcntl.LOCK_EX)
+        calls = []
+        with patch('agent_desktop.prerequisites.check', lambda *args: calls.append(args)), \
+                self.assertRaises(ContractError) as caught:
+            manager.start(self.request(timeout=.2))
+        self.assertEqual(caught.exception.code, 'session_conflict')
+        self.assertEqual(calls, [])
+
     def test_start_with_free_install_lock_releases_it(self):
         generation = self.start()
         self.assertIn(('start', unit_name(generation)), self.services.calls)

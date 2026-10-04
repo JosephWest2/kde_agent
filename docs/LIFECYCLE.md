@@ -26,8 +26,9 @@ configuration participates in compatible-start comparison: headless mode, normal
 absolute artifact root, normalized dependency root, and the fixed 1280×720 scale-1 output. Timeouts, request IDs
 and the caller cwd itself are not persistent configuration. A live compatible
 start returns the same identity only after correlated control and current readiness;
-a conflict fails. Launching a new service holds the per-user install lock
-`/run/user/UID/agent-desktop/install.lock` shared until start returns.
+a conflict fails. Every start holds the per-user install lock
+`/run/user/UID/agent-desktop/install.lock` shared for the whole call, from before
+the prerequisite check (which imports the installed worker) until it returns.
 `tools/setup.sh` holds it exclusively while it changes the installed package
 ([SETUP.md](SETUP.md#rerunning)), so a worker never imports a half-installed
 package. If the lock stays exclusive past the start deadline, start fails with

@@ -1,15 +1,13 @@
-"""Capability gate: a session is ready only after control, window query, resumed input and a screenshot pass."""
+"""Capability gate: a session is ready only after control, window query, resumed input and a screenshot pass.
+
+The same input connection, window adapter and capture adapter then serve public
+operations; there is no separate provisional provider.
+"""
 from __future__ import annotations
-import json
 from copy import deepcopy
-import math
-import stat
-import re
 import os
 from pathlib import Path
-import sys
 import time
-import uuid
 from importlib.resources import files
 from .contracts import ContractError
 from .health import fresh
@@ -120,55 +118,18 @@ class Readiness:
         self.fatal = self.fatal or error
 
     def _capture_start(self):
-        from .lifecycle import atomic
+        from .capture import Capture
         self.phase = 'screenshot'
-        self.capture_deadline = min(self.deadline, time.monotonic() + 3)
-        self.capture_id = 'capture-' + uuid.uuid4().hex
-        self.capture_folder = self.folder / self.capture_id
-        self.capture_folder.mkdir(mode=0o700)
-        config = self.capture_folder / 'request.json'
-        atomic(config, dict(generation=self.generation, request_id=self.capture_id,
-            deadline=self.capture_deadline, screen=self.screen, output_dir=str(self.capture_folder),
-            runtime_dir=str(self.desktop.root), bus_address=self.desktop.env['DBUS_SESSION_BUS_ADDRESS']))
-        with self.desktop.store.open_log('worker') as log:
-            self.capture = self.desktop.launch([sys.executable, '-I', '-m', 'agent_desktop.provisional_capture', str(config)],
-                                              str(self.desktop.root), {}, stdout=log, stderr=log)
+        self.capture = Capture(self.desktop, self.generation, self.folder, self.screen, self.deadline)
 
     def _capture_finish(self):
-        if time.monotonic() >= self.capture_deadline:
-            self.fail(ContractError('timeout', 'Screenshot probe timed out; session cleanup required.'), 'screenshot')
-        if self.capture.returncode is None:
-            return
-        path = self.capture_folder / 'result.json'
-        if self.capture.returncode != 0 or not path.exists() or path.stat().st_size > 32768:
-            self.fail(ContractError('capture_failed', 'Screenshot probe failed; session cleanup required.'), 'screenshot')
-        from .runtime import check_file
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         try:
-            check_file(fd)
-            raw = os.read(fd, 32769)
-            if len(raw) > 32768:
-                self.fail(ContractError('capture_failed', 'Oversized screenshot receipt.'), 'screenshot')
-            result = json.loads(raw)
-        finally:
-            os.close(fd)
-        image_info = (self.capture_folder / 'image.png').lstat()
-        completed = result.get('completed_at')
-        if (type(result.get('schema')) is not int or result.get('schema') != 1 or result.get('provider') != 'm1-provisional'
-                or result.get('session_stop_required') is not False
-                or type(completed) not in (int, float) or not math.isfinite(completed)
-                or completed >= self.capture_deadline or type(result.get('raw_bytes')) is not int or result.get('raw_bytes') != 3686400
-                or not isinstance(result.get('png_sha256'), str) or not re.fullmatch(r'[0-9a-f]{64}', result['png_sha256'])
-                or type(result.get('png_bytes')) is not int or result.get('png_bytes') != image_info.st_size or image_info.st_uid != os.getuid()
-                or image_info.st_mode & 0o077 or not stat.S_ISREG(image_info.st_mode)
-                or result.get('generation') != self.generation or result.get('request_id') != self.capture_id
-                or result.get('ok') is not True or result.get('eof') is not True
-                or result.get('dimensions') != [1280, 720] or result.get('deadline') != self.capture_deadline
-                or result.get('path') != str(self.capture_folder / 'image.png')
-                or result.get('completed_at', self.capture_deadline) >= self.capture_deadline
-                or not (self.capture_folder / 'image.png').is_file()):
-            self.fail(ContractError('capture_failed', 'Screenshot result could not be accepted.'), 'screenshot')
-        if time.monotonic() >= min(self.deadline, self.capture_deadline):
+            result = self.capture.step()
+        except ContractError as error:
+            self.fail(ContractError(error.code, error.message + ' Session cleanup required.'), 'screenshot')
+        if result is None:
+            return
+        if time.monotonic() >= self.deadline:
             self.fail(ContractError('timeout', 'Late screenshot acceptance.'), 'screenshot')
         self._passed('screenshot', path=result['path'])
         self.phase = 'health'
@@ -267,6 +228,5 @@ class Readiness:
             self.input.dispose()
         self.bus.close()
         self.adapter.close()
-        for child in (self.capture,):
-            if child is not None and child.returncode is None:
-                child.abort()
+        if self.capture is not None:
+            self.capture.cancel()

@@ -59,8 +59,8 @@ The internal foreground worker requires an explicit absolute `--artifacts` root.
 It allocates the store before importing native GLib or publishing routing. Its
 Python API also accepts a supervisor-precreated Store, validating immutable
 session/generation identity; create and open are separate operations. Tests may
-inject task doubles without pretending to establish a desktop. Production public
-operations remain unsupported by their respective later milestones.
+inject task doubles without pretending to establish a desktop. Screenshots are
+stored under `generations/GEN/screenshots/capture-ID/` (`image.png`, `result.json`).
 
 ```text
 ROOT/generations/GENERATION/

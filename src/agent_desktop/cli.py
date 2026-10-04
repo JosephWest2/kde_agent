@@ -116,6 +116,37 @@ def parse_request(argv, request_id, caller_cwd):
     return normalize(request), None, operation, json_mode
 
 
+def copy_output(payload, output):
+    """Copy the worker's artifact PNG to --output (a file path, or an existing directory)."""
+    result = payload["result"]
+    target = output
+    if os.path.isdir(target):
+        target = os.path.join(target, result["capture_id"] + ".png")
+    temporary = f"{target}.{uuid.uuid4().hex}.partial"
+    error = None
+    try:
+        with open(result["path"], "rb") as source, open(temporary, "xb") as destination:
+            destination.write(source.read())
+        os.replace(temporary, target)
+    except OSError:
+        error = ContractError("artifact_failed", "Screenshot was captured but could not be copied to --output.",
+                              context={"output": output}, outcome="partial", partial_result=result)
+    except KeyboardInterrupt:
+        error = ContractError("cancelled", "Screenshot was captured; copying to --output was interrupted.",
+                              context={"output": output}, outcome="partial", partial_result=result)
+    finally:
+        if error is not None or not os.path.exists(target):
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+    if error is not None:
+        return dict(payload, ok=False, result=None, error=error.payload())
+    payload = dict(payload)
+    payload["result"] = result | {"output": target}
+    return payload
+
+
 def render(payload, json_mode):
     if json_mode:
         print(json.dumps(payload, ensure_ascii=True, allow_nan=False, separators=(",", ":")))
@@ -154,6 +185,9 @@ def main(argv=None):
             else:
                 from .transport import exchange
                 payload = exchange(request)
+                if (operation == "screenshot" and payload["ok"] and request.arguments.get("output")
+                        and "capture_id" in payload["result"]):
+                    payload = copy_output(payload, request.arguments["output"])
             status = 0 if payload["ok"] else EXIT_CODES[payload["error"]["code"]]
         else:
             result = dispatch(request) if request is not None else local_result

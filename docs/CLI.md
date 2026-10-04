@@ -11,9 +11,23 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 - `session status` lists the desktop operations available once the session is ready.
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
-`focus`, `wait`, `close` and `kill`. `key`, `type`, `click`, `input reset`,
-`screenshot` and `logs` return `unsupported_operation` until their issues land
-(#64, #66, #67, #68). See [application ownership](APPLICATIONS.md),
+`focus`, `wait`, `key`, `type`, `screenshot`, `close` and `kill`. `click`,
+`input reset` and `logs` return `unsupported_operation` until their issues land
+(#66, #67, #68). Key names, text limits and release guarantees are in
+[keyboard input](INPUT.md).
+
+## Screenshots
+
+`screenshot [--window REF] [--output PATH]` captures the 1280×720 output as PNG.
+With `--window`, the image is the window's frame (including client-side
+decorations and shadows), rounded outward and clipped to the screen; a fully
+offscreen window fails with `capture_failed`. The window doesn't need focus.
+Each capture has a unique `capture_id` and is stored in the artifact root. The
+result gives `path`, `png_sha256`, `png_bytes`, `dimensions`, `screen_dimensions`
+and `crop`, plus `window` and `frame` with `--window`. `--output` copies the PNG
+to a file path, or into an existing directory as `capture-ID.png`. If the copy
+fails, the result is `artifact_failed` with the capture in `partial_result`. A
+failed screenshot fails only that request, not the session. See [application ownership](APPLICATIONS.md),
 [window discovery](WINDOWS.md), [lifecycle](LIFECYCLE.md) and
 [transport](TRANSPORT.md).
 
@@ -92,10 +106,10 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `focus` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 2 / 2 |
 | `wait` | `--for window\|focus\|exit`; window/exit require `--app`, focus requires `--window` | 10 / 60 |
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
-| `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 3 |
+| `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
 | `click` | required `--window WINDOW_REF --x INT --y INT`; `--button left\|middle\|right` (default left) | 3 / 3 |
 | `input reset` | none | 3 / 3 |
-| `screenshot` | optional `--output PATH` (default future unique artifact path) | 3 / 3 |
+| `screenshot` | optional `--window WINDOW_REF` (crop to its frame), optional `--output PATH` (file or existing directory) | 3 / 3 |
 | `logs` | optional `--app APP_REF`; `--source all\|worker\|compositor\|application` (default all) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
 | `kill` | required `--app APP_REF` | 5 / 15 |
@@ -121,8 +135,8 @@ Timeout and hold values must be finite and strictly positive. No unbounded mode
 exists. Input targets always use a window; app selection for focus/close must
 resolve unambiguously. Titles are descriptive, never identities. Click coordinates
 are nonnegative client-content pixels, excluding decorations; the future worker
-must validate current bounds before dispatch. Key/chord/US text mapping validation
-belongs to #28; accepting argument shape now does not claim input support.
+must validate current bounds before dispatch. Key and text validation happens
+before anything is sent; see [keyboard input](INPUT.md).
 
 `launch` recognizes the first literal `--` after the command as the end of toolkit
 options. It cannot supply a missing value for `--cwd`, `--env` or another option.

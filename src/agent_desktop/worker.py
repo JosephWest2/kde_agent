@@ -1,4 +1,4 @@
-"""Generation-owned GLib worker with provisional M1 readiness and live health."""
+"""Generation-owned GLib worker with capability readiness and live health."""
 from __future__ import annotations
 
 import argparse
@@ -94,6 +94,14 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     if request.operation == 'kill':
                         from .terminating import KillTask
                         return KillTask(request, context, applications, launch_health)
+                    if request.operation in ('key', 'type'):
+                        from .input_actions import InputTask
+                        return InputTask(request, context, readiness.adapter, lambda: readiness.input,
+                                         applications, launch_health)
+                    if request.operation == 'screenshot':
+                        from .screenshots import ScreenshotTask
+                        return ScreenshotTask(request, context, foundation, readiness.adapter, applications,
+                                              launch_health, lambda: readiness.screen, store.path / 'screenshots')
                     if request.operation in ('focus', 'wait'):
                         from .targeting import TargetTask
                         return TargetTask(request, context, readiness.adapter, applications, launch_health)
@@ -105,12 +113,17 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 from .lifecycle import atomic
                 atomic(store.path / 'shutdown.json', value | {'generation': generation, 'session': name})
 
+        def release_input(now, deadline):
+            from .shutdown import release_input as release
+            return release(getattr(readiness, 'input', None))
+
         def begin_stop(deadline=None, *, failure=False):
             nonlocal shutdown
             if shutdown is None:
                 from .shutdown import Shutdown
+                hooks = {'release': release_input} | (shutdown_hooks or {})
                 shutdown = Shutdown(scheduler, min(time.monotonic() + 1.8, deadline or float('inf')),
-                                    observe=shutdown_record, failure=failure, **(shutdown_hooks or {}))
+                                    observe=shutdown_record, failure=failure, **hooks)
             return shutdown
 
         def tick():

@@ -96,7 +96,7 @@ tombstone into a prior crash. The autonomous post hook preserves early worker
 failure diagnostics even when a blocked graceful hook prevents the worker from
 updating its aggregate manifest. It records ordinary-process/runtime cleanup;
 the manager independently verifies whole-cgroup emptiness. The #21 shutdown
-section below describes these hooks; readiness remains provisional in M3.3.
+section below describes these hooks.
 
 ## Verification
 
@@ -199,8 +199,8 @@ fixed `env -i -S` bootstrap expansion; no caller text enters that expansion and
 application/adapter environments never receive these values. Source fixtures can
 exercise this policy while still reporting starting, without claiming readiness.
 
-#64 replaces the provisional readiness adapters with the production input and
-capture adapters. The ordered graceful action shutdown and autonomous terminal record/runtime
+Readiness uses the same input connection and capture adapter as the public
+`key`, `type` and `screenshot` commands. The ordered graceful action shutdown and autonomous terminal record/runtime
 cleanup hook are implemented by #21 below.
 
 
@@ -215,11 +215,10 @@ and attempts normal application-window close with the remaining owner budget
 can prevent later hook attempts; the manager then terminates it and records
 uncertainty. Cleanup continues when the initiating client disconnects.
 
-Release and application-close adapters are **not connected in M3**. Their default
-receipts say `not_connected` and `confirmed: false`; #64 connects input release. Internal
-fixtures prove orchestration order; they do not qualify production input release
-or application window closure. Provisional readiness resources close after the
-ordered hooks, before direct-child disposal.
+The release hook is connected to the input owner. It reports `nothing_held`,
+`released` or `uncertain`, and `not_connected` before input exists. The close hook
+is not connected and reports `not_connected`, `confirmed: false`. Readiness
+resources close after the ordered hooks, before direct-child disposal.
 
 Systemd retains `KillMode=control-group`, `Restart=no`, a 3s `TimeoutStopSec`,
 5s watchdog and 3s abort bound, and uses `TimeoutStopFailureMode=kill` for stalled

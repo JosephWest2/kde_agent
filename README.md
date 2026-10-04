@@ -13,9 +13,11 @@ Supported today:
 - structured window discovery;
 - verified focus;
 - bounded waits;
+- keyboard chords and US-layout text, with worker-owned key release;
+- full-screen or single-window screenshots;
 - graceful close and explicit kill.
 
-Keyboard/pointer input and screenshots are next (#64, #66). JSON results give
+Pointer input and click are next (#66). JSON results give
 every application and window a ready-to-use `ref` string for `--app` and
 `--window`. See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).

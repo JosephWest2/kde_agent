@@ -201,11 +201,11 @@ class ReadinessTests(unittest.TestCase):
 
     def write_receipt(self, provider=None, *, changes=None):
         provider = provider or self.provider
-        image = provider.capture_folder / 'image.png'
+        image = provider.capture.folder / 'image.png'
         image.write_bytes(b'PNG validation lives in the independently tested capture child')
         image.chmod(0o600)
-        receipt = {'schema': 1, 'provider': 'm1-provisional', 'generation': provider.generation,
-                   'request_id': provider.capture_id, 'deadline': provider.capture_deadline,
+        receipt = {'schema': 2, 'generation': provider.generation, 'crop': None, 'screen_dimensions': [1280, 720],
+                   'request_id': provider.capture.capture_id, 'deadline': provider.capture.deadline,
                    'ok': True, 'eof': True, 'dimensions': [1280, 720], 'path': str(image),
                    'completed_at': self.clock() + .1, 'raw_bytes': 1280 * 720 * 4,
                    'png_bytes': image.stat().st_size, 'png_sha256': hashlib.sha256(image.read_bytes()).hexdigest(),
@@ -213,10 +213,10 @@ class ReadinessTests(unittest.TestCase):
                                 'format': 6, 'screen': 'Virtual-1', 'scale': 1.0},
                    'session_stop_required': False, 'stages': []}
         receipt.update(changes or {})
-        path = provider.capture_folder / 'result.json'
+        path = provider.capture.folder / 'result.json'
         path.write_text(json.dumps(receipt))
         path.chmod(0o600)
-        provider.capture.returncode = 0
+        provider.capture.child.returncode = 0
         return path
 
     def to_health(self, provider=None):
@@ -282,7 +282,7 @@ class ReadinessTests(unittest.TestCase):
                     self.clock.return_value = provider.input_deadline
                 else:
                     self.to_capture(provider)
-                    provider.capture.returncode = 1
+                    provider.capture.child.returncode = 1
                 self.failure(provider, component)
                 self.clock.return_value = 100.0
 
@@ -320,28 +320,28 @@ class ReadinessTests(unittest.TestCase):
     def test_screenshot_child_must_exit_before_receipt_can_be_accepted(self):
         provider = self.to_capture()
         self.write_receipt()
-        provider.capture.returncode = None
+        provider.capture.child.returncode = None
         provider.tick()
         self.assertEqual(provider.health['screenshot']['state'], 'pending')
-        self.clock.return_value = provider.capture_deadline
+        self.clock.return_value = provider.capture.deadline
         self.failure(provider, 'screenshot')
 
     def test_late_screenshot_stat_cannot_refresh_acceptance_time(self):
         provider = self.to_capture()
         self.write_receipt()
-        original = Path.is_file
+        original = Path.lstat
         def late(path):
             answer = original(path)
-            if path == provider.capture_folder / 'image.png':
-                self.clock.return_value = provider.capture_deadline
+            if path == provider.capture.folder / 'image.png':
+                self.clock.return_value = provider.capture.deadline
             return answer
-        with patch.object(Path, 'is_file', late):
+        with patch.object(Path, 'lstat', late):
             self.failure(provider, 'screenshot')
 
     def test_screenshot_receipt_strict_shape_and_correlated_identity(self):
         cases = ({'generation': 'b' * 32}, {'request_id': 'stale'}, {'ok': 1}, {'eof': 1},
                  {'dimensions': [640, 360]}, {'deadline': 0}, {'completed_at': float('nan')},
-                 {'completed_at': True}, {'schema': 2}, {'schema': True}, {'provider': 'unrelated'},
+                 {'completed_at': True}, {'schema': 1}, {'schema': True}, {'crop': [0, 0, 10, 10]},
                  {'png_sha256': 'not-a-hash'}, {'png_sha256': 'z' * 64},
                  {'raw_bytes': 1}, {'raw_bytes': 3686400.0}, {'png_bytes': -1},
                  {'path': '/tmp/other.png'}, {'session_stop_required': True})
@@ -354,8 +354,8 @@ class ReadinessTests(unittest.TestCase):
     def test_screenshot_symlink_publication_is_rejected(self):
         provider = self.to_capture()
         self.write_receipt()
-        image = provider.capture_folder / 'image.png'
-        target = provider.capture_folder / 'elsewhere.png'
+        image = provider.capture.folder / 'image.png'
+        target = provider.capture.folder / 'elsewhere.png'
         image.rename(target)
         image.symlink_to(target)
         self.failure(provider, 'screenshot')

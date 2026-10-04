@@ -86,7 +86,7 @@ class LogsTaskTests(StoreCase):
 
     def registry(self):
         registry = object.__new__(Registry)
-        registry.generation, registry.store, registry.active = GEN, self.store, None
+        registry.generation, registry.store, registry.active, registry.latest = GEN, self.store, None, None
         return registry
 
     def test_session_logs_only_before_any_launch(self):
@@ -101,13 +101,44 @@ class LogsTaskTests(StoreCase):
         newer = self.launch('c' * 32)
         Path(older['stderr']).write_text('old failure\n')
         Path(newer['stdout']).write_text('hello\n')
-        result = self.task(self.registry(), source='application').step(0)
+        registry = self.registry()
+        registry.latest = {'generation': GEN, 'application_id': 'c' * 32}
+        result = self.task(registry, source='application').step(0)
         self.assertEqual([(e['stream'], e['tail'], e['complete']) for e in result['logs']],
                          [('stdout', ['hello'], False), ('stderr', [], False)])
         self.assertEqual(result['logs'][0]['application']['application_id'], 'c' * 32)
-        result = self.task(self.registry(), app=f'{GEN}:{"b" * 32}').step(0)
+        result = self.task(registry, app=f'{GEN}:{"b" * 32}').step(0)
         self.assertEqual([(e['stream'], e['tail'], e['complete']) for e in result['logs']],
                          [('stdout', [], True), ('stderr', ['old failure'], True)])
+
+    def test_active_application_is_complete_only_once_verified(self):
+        self.launch('b' * 32, state='launch-failed')
+        registry = self.registry()
+        handle = {'generation': GEN, 'application_id': 'b' * 32}
+        registry.latest = handle
+        registry.active = SimpleNamespace(handle=handle, completed=False,
+                                          snapshot=lambda: self.store.application_read('b' * 32))
+        registry.lookup = lambda app: self.store.application_read(app['application_id'])
+        self.assertEqual({e['complete'] for e in self.task(registry).step(0)['logs'] if e['source'] == 'application'},
+                         {False})
+        registry.active.completed = True
+        self.assertEqual({e['complete'] for e in self.task(registry).step(0)['logs'] if e['source'] == 'application'},
+                         {True})
+
+    def test_latest_launch_without_a_record_has_no_application_logs(self):
+        registry = self.registry()
+        registry.latest = {'generation': GEN, 'application_id': 'd' * 32}
+        self.assertEqual([e['source'] for e in self.task(registry).step(0)['logs']], ['worker', 'compositor', 'bus'])
+
+    def test_symlinked_log_directory_is_refused(self):
+        other = self.root / 'elsewhere'
+        other.mkdir(mode=0o700)
+        (other / 'worker.log').write_text('not ours\n')
+        logs = self.store.path / 'logs'
+        logs.rename(self.root / 'moved')
+        logs.symlink_to(other)
+        with self.assertRaises((ContractError, OSError)):
+            self.task(self.registry(), source='worker').step(0)
 
     def test_app_with_a_session_source_is_rejected(self):
         self.launch('b' * 32)
@@ -169,6 +200,25 @@ class ManifestTests(StoreCase):
         self.assertEqual(manifest['applications_omitted'], 2)
         self.assertLess(len((self.store.path / 'manifest.json').read_bytes()), 65536)
 
+    def test_summary_fits_the_manifest_limit_after_escaping(self):
+        for index in range(SUMMARY_APPLICATIONS):
+            self.launch('%032x' % (index + 1), ['/bin/true', '\u6f22' * 1000, *[''] * 300])
+        self.store.provenance(dependencies=[{'component': f'c{i}', 'version': 'v' * 200} for i in range(100)])
+        self.store.summarize_applications()
+        manifest = self.store.read()
+        self.assertLessEqual(len((self.store.path / 'manifest.json').read_bytes()), 65536)
+        self.assertEqual(len(manifest['applications']) + manifest['applications_omitted'], SUMMARY_APPLICATIONS)
+        self.assertTrue(all(row['argv'] == ['/bin/true'] and row['argv_truncated'] for row in manifest['applications']))
+
+    def test_malformed_failure_is_a_contract_error(self):
+        manifest = json.loads((self.store.path / 'manifest.json').read_text())
+        manifest['failure'] = {'code': [], 'message': 'x', 'context': {}}
+        (self.store.path / 'manifest.json').write_text(json.dumps(manifest))
+        with self.assertRaises(ContractError):
+            self.store.read()
+        with self.assertRaises(ContractError):
+            failure_detail({'code': {}, 'message': 'x'})
+
     def test_inventory_from_prerequisite_report(self):
         report = {'dependencies': [
             {'name': 'kdotool', 'status': 'passed', 'observed': {'version': 'kdotool v0.3.0'}},
@@ -197,19 +247,17 @@ class RootCauseTests(unittest.TestCase):
                                     context={'component': 'compositor', 'returncode': -9})
         return SimpleNamespace(tick=tick), calls
 
-    def test_a_child_exit_replaces_its_symptom(self):
+    def test_a_visible_child_exit_replaces_its_symptom(self):
         symptom = ContractError('session_failed', 'Resumed input capability was lost.',
                                 context={'component': 'input_resumed'})
+        self.assertEqual(root_cause(symptom, self.foundation()[0]).context['component'], 'compositor')
         foundation, calls = self.foundation(after=2)
-        self.assertEqual(root_cause(symptom, foundation).context['component'], 'compositor')
-        self.assertEqual(len(calls), 3)
+        self.assertIs(root_cause(symptom, foundation), symptom)  # Never waits; shutdown keeps looking.
+        self.assertEqual(len(calls), 1)
 
-    def test_unrelated_failures_are_kept_after_a_short_wait(self):
+    def test_unrelated_failures_are_kept(self):
         symptom = ContractError('internal_error', 'bug')
-        healthy = SimpleNamespace(tick=lambda: None)
-        started = time.monotonic()
-        self.assertIs(root_cause(symptom, healthy, wait=.05), symptom)
-        self.assertLess(time.monotonic() - started, .2)
+        self.assertIs(root_cause(symptom, SimpleNamespace(tick=lambda: None)), symptom)
         child = ContractError('session_failed', 'x', context={'component': 'bus'})
         self.assertIs(root_cause(child, self.foundation()[0]), child)
         self.assertIs(root_cause(symptom, None), symptom)

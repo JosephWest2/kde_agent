@@ -18,9 +18,14 @@ SESSION_SOURCES = ('worker', 'compositor', 'bus')
 CONTROL = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b[@-_]|[\x00-\x08\x0b-\x1f\x7f]')
 
 
-def tail(path, lines):
-    """(bytes, last LINES lines, truncated) of the regular file at PATH."""
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+def tail(path, lines, store=None):
+    """(bytes, last LINES lines, truncated) of the regular file at PATH.
+
+    With STORE, PATH must be inside its generation and every directory on the
+    way is opened without following symlinks.
+    """
+    fd = (store.open_owned(path) if store is not None
+          else os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC))
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
@@ -66,28 +71,29 @@ class LogsTask:
                     entries.append({'source': name, 'path': str(self.store.path / 'logs' / (name + '.log')),
                                     'complete': False})
         for entry in entries:
-            entry['bytes'], entry['tail'], entry['truncated'] = tail(entry['path'], lines)
+            entry['bytes'], entry['tail'], entry['truncated'] = tail(entry['path'], lines, self.store)
         return {'logs': entries, 'tail': lines}
 
     def application_logs(self, app):
+        explicit = app is not None
+        app = app or getattr(self.applications, 'latest', None)
         if app is None:
-            latest = self.latest()
-            if latest is None:
-                return []
-            app = latest
-        record = self.applications.lookup(app)
-        complete = record['state'] in ('all-exited', 'launch-failed')
+            return []
+        try:
+            record = self.applications.lookup(app)
+        except ContractError as error:
+            if explicit or error.code != 'target_not_found':
+                raise
+            return []  # The latest launch failed before recording anything.
+        active = getattr(self.applications, 'active', None)
+        if active is not None and active.handle == app:
+            complete = active.completed  # Verified empty cgroup, not just a launch outcome.
+        else:
+            # Retired applications were verified empty before the registry let go of them.
+            complete = record['state'] in ('all-exited', 'launch-failed')
         return [{'source': 'application', 'stream': stream, 'application': app,
                  'path': record['logs'][stream], 'complete': complete}
                 for stream in ('stdout', 'stderr') if stream in record['logs']]
-
-    def latest(self):
-        """Handle of the most recently launched application, if any."""
-        active = getattr(self.applications, 'active', None)
-        if active is not None:
-            return active.handle
-        apps = self.store.applications_by_launch()
-        return apps[-1]['application'] if apps else None
 
     def request_cancel(self, reason):
         pass

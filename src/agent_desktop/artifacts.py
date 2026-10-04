@@ -110,7 +110,7 @@ def failure_detail(value):
         code, message, context = value['code'], value['message'], value.get('context') or {}
     except (TypeError, KeyError):
         fail('schema')
-    if code not in EXIT_CODES or not isinstance(message, str) or not isinstance(context, dict):
+    if not isinstance(code, str) or code not in EXIT_CODES or not isinstance(message, str) or not isinstance(context, dict):
         fail('schema')
     kept = {key: item for key, item in list(context.items())[:16]
             if isinstance(key, str) and len(key) <= 64
@@ -435,7 +435,8 @@ class Store:
             fail('schema')
         failure = value.get('failure')
         if failure is not None and (not isinstance(failure, dict) or set(failure) != {'code', 'message', 'context'}
-                or failure['code'] not in EXIT_CODES or not isinstance(failure['message'], str)
+                or not isinstance(failure['code'], str) or failure['code'] not in EXIT_CODES
+                or not isinstance(failure['message'], str)
                 or not 0 < len(failure['message']) <= 512 or not isinstance(failure['context'], dict)):
             fail('schema')
         applications = value.get('applications', [])
@@ -531,8 +532,9 @@ class Store:
         with self.lock():
             return self._read(self.fd, 'manifest.json')
 
-    def generation_update(self, *, state=None, failure=None, cleanup=None, detail=None):
-        """DETAIL: the first failure's {code, message, context}; only the first is kept."""
+    def generation_update(self, *, state=None, failure=None, cleanup=None, detail=None, replace_detail=False):
+        """DETAIL: the first failure's {code, message, context}; only the first is kept
+        unless REPLACE_DETAIL (a symptom recorded first, then its root cause)."""
         if state not in (None, 'running', 'ready', 'stopping', 'stopped', 'failed') or failure not in (None, *EXIT_CODES):
             fail('schema')
         if detail is not None:
@@ -543,7 +545,7 @@ class Store:
             value = self._read(self.fd, 'manifest.json')
             if failure:
                 value['first_failure'] = value['first_failure'] or failure
-            if detail is not None and value.get('failure') is None:
+            if detail is not None and (replace_detail or value.get('failure') is None):
                 value['failure'] = detail
             terminal = value['state'] in ('stopped', 'failed')
             if state and not (terminal and state in ('running', 'ready', 'stopping')):
@@ -965,6 +967,19 @@ class Store:
             value['updated_at'] = timestamp()
             self._write(self.fd, 'manifest.json', value)
 
+    def open_owned(self, path):
+        """Read-only fd for a file under this generation, opened component by component."""
+        try:
+            parts = Path(path).relative_to(self.path).parts
+        except (TypeError, ValueError):
+            fail('path')
+        if not parts:
+            fail('path')
+        with self.directory(*parts[:-1]) as directory:
+            if '/' in parts[-1] or parts[-1] in ('.', '..'):
+                fail('path')
+            return os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+
     def _read_launch(self, directory, request_id, attempt):
         fd = os.open('launch.json', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
         try:
@@ -983,14 +998,24 @@ class Store:
             fail('launch_record')
         return value
 
-    def applications_by_launch(self):
-        """Every application's summary row, oldest launch first."""
+    def applications_by_launch(self, limit=SUMMARY_APPLICATIONS):
+        """Summary rows of the LIMIT most recently updated applications, oldest launch first,
+        and how many others were left out. Reads at most LIMIT records."""
         rows = []
         try:
             with self.directory('applications') as parent:
-                names = [entry.name for entry in os.scandir(parent) if APP_ID.fullmatch(entry.name)]
+                found = []
+                for entry in os.scandir(parent):
+                    if APP_ID.fullmatch(entry.name):
+                        try:
+                            found.append((entry.stat(follow_symlinks=False).st_mtime_ns, entry.name))
+                        except OSError:
+                            continue
         except FileNotFoundError:
-            names = []
+            found = []
+        found.sort(reverse=True)
+        names = [name for _, name in found[:limit]]
+        self.applications_skipped = max(0, len(found) - limit)
         for name in names:
             try:
                 record = self.application_read(name)  # Validates; the raw record has the request.
@@ -1004,10 +1029,10 @@ class Store:
                 continue
             argv, shown, size = launch.get('argv') or [], [], 0
             for arg in argv:
-                if size + len(arg) > SUMMARY_ARGV:
+                size += len(json.dumps(arg))  # Serialized size: non-ASCII becomes \uXXXX.
+                if size > SUMMARY_ARGV:
                     break
                 shown.append(arg)
-                size += len(arg)
             rows.append({'application': {'generation': self.generation, 'application_id': name},
                          'argv': shown, 'argv_truncated': len(shown) < len(argv), 'cwd': launch.get('cwd'),
                          'state': record['state'], 'exit_code': record.get('exit_code'),
@@ -1021,20 +1046,28 @@ class Store:
         """Record the most recent applications in the manifest.
 
         EMPTIED: the session's cgroup is verified empty, so an application whose
-        record never saw its exit was ended by the session stopping.
+        record never saw its exit was ended by the session stopping. The oldest
+        rows are dropped until the manifest fits its size limit.
         """
         rows = self.applications_by_launch()
+        omitted = self.applications_skipped
         for row in rows:
             row['ended_by_session_stop'] = emptied and row['state'] not in ('all-exited', 'launch-failed')
-        omitted = max(0, len(rows) - SUMMARY_APPLICATIONS)
-        rows = rows[omitted:]
         with self.lock():
             value = self._read(self.fd, 'manifest.json')
-            value['applications'] = rows
-            if omitted:
+            while True:
+                value['applications'] = rows
                 value['applications_omitted'] = omitted
-            value['revision'] += 1
-            value['updated_at'] = timestamp()
+                value['revision'] += 1
+                value['updated_at'] = timestamp()
+                try:
+                    packed(value)
+                    break
+                except ContractError:
+                    if not rows:
+                        raise
+                    rows, omitted = rows[1:], omitted + 1
+                    value['revision'] -= 1
             self._write(self.fd, 'manifest.json', value)
 
     def worker_identity(self, *, managed=False):

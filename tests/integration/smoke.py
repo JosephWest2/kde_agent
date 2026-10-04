@@ -157,9 +157,9 @@ class Smoke:
                 or not all(entry['complete'] for entry in entries) or len(stdout.get('tail', [])) != 3
                 or any(path.endswith('.partial') for path in launched.values())):
             raise SmokeFailure('fixture: logs', json.dumps(entries)[:600])
-        last = json.loads(stdout['tail'][-1])
-        if last.get('generation') is None or stdout['bytes'] != Path(launched['stdout']).stat().st_size:
-            raise SmokeFailure('fixture: logs', f'tail does not match the log: {stdout["tail"][-1][:200]}')
+        content = Path(launched['stdout']).read_text()
+        if stdout['tail'] != content.splitlines()[-3:] or stdout['bytes'] != len(content.encode()):
+            raise SmokeFailure('fixture: logs', f'tail does not match the log\'s last lines: {stdout["tail"]}')
         session = self.desktop('logs --source compositor', 'logs', '--source', 'compositor', '--tail', '0')
         if [entry['source'] for entry in session['result']['logs']] != ['compositor']:
             raise SmokeFailure('logs', json.dumps(session['result'])[:300])

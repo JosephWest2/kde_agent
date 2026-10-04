@@ -106,9 +106,9 @@ becomes `complete` once the application's cgroup is empty.
 | First failure's cause (`failure`: code, message, component, return code) | Worker when it fails, else the finalizer from `startup-failure.json` |
 | Application summary (`applications`: argv up to 1024 characters, cwd, state, exit code, log paths, record links, `ended_by_session_stop`; newest 16, `applications_omitted` counts the rest) | Finalizer, once the generation's cgroup is verified empty |
 
-When the compositor or bus dies, losing input is often noticed first. The worker
-waits up to 100ms for an essential child's exit and records that as the cause
-instead, so `failure.context.component` names `compositor` or `bus`. `session
+When the compositor or bus dies, losing input is often noticed first. Shutdown
+starts at once, but for up to 100ms the worker keeps watching for an essential
+child's exit and, if one appears, records that as the cause instead, so `failure.context.component` names `compositor` or `bus`. `session
 status` reports the same failure (`context.failure`, message `Session failed: …`)
 while the session is shutting down and after.
 

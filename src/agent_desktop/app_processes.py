@@ -499,6 +499,7 @@ class Registry:
             pass
         self.apps_fd = os.open('applications', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.root_fd)
         self.active = None
+        self.latest = None
         self.identity_index = {}
         self.identity_revision = 0
         self.window_checkpoint = None
@@ -648,6 +649,7 @@ class Registry:
         fd = os.open(app_id, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.apps_fd)
         self.active = Application(self, app_id, fd, self.root / 'applications' / app_id,
                                   self.cgroup + '/applications/' + app_id)
+        self.latest = self.active.handle  # For `logs` without --app; survives retirement.
         return self.active
 
     def tick(self):

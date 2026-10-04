@@ -14,7 +14,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 from agent_desktop import cli
 from agent_desktop.contracts import (EXIT_CODES, OPERATIONS, ContractError,
-                                     dispatch, make_request, response)
+                                     dispatch, handle, make_request, response, with_refs)
 
 GEN = "a" * 32
 OTHER = "b" * 32
@@ -247,6 +247,26 @@ class ContractTests(unittest.TestCase):
                 self.request("launch", {"argv": ["app"], "env": environment})
         with self.assertRaises(ContractError):
             self.request("launch", {"argv": ["app", "nul\0value"]})
+
+
+class RefTests(unittest.TestCase):
+    def test_public_handles_gain_ref_strings_that_round_trip(self):
+        app = {"generation": GEN, "application_id": "app-1"}
+        window = {"generation": GEN, "window_id": WINDOW}
+        payload = {"result": {"application": app, "windows": [{"window": window, "pid": 1}]},
+                   "session": {"name": "default", "generation": GEN}}
+        shown = with_refs(payload)
+        self.assertEqual(shown["result"]["application"]["ref"], APP)
+        self.assertEqual(shown["result"]["windows"][0]["window"]["ref"], REF)
+        self.assertNotIn("ref", shown["session"])
+        self.assertNotIn("ref", payload["result"]["application"])  # input is not mutated
+        self.assertEqual(handle(shown["result"]["application"], "app"), app)
+        self.assertEqual(handle(shown["result"]["application"]["ref"], "app"), app)
+        self.assertEqual(handle(shown["result"]["windows"][0]["window"], "window"), window)
+
+    def test_mismatched_ref_is_rejected(self):
+        with self.assertRaises(ContractError):
+            handle({"generation": GEN, "application_id": "app-1", "ref": OTHER + ":app-1"}, "app")
 
 
 if __name__ == "__main__":

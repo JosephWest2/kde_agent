@@ -7,12 +7,15 @@ and fallback are absent. The startup gate requires CONNECT and one resumed
 keyboard, within the existing shared startup deadline and a three-second input
 limit. No public key, type, click or reset operation is enabled by this stage.
 
-The limited ctypes declarations in `libei_binding.py` require the recorded
-x86_64 libei 1.6.0 binary hash. The compiler audit checks that production table
-against installed headers, including void dispatch and variadic promoted enums.
+The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
+1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
+version, and `doctor` warns on others. The M1 compiler audit checked this table
+against the installed headers, including void dispatch and variadic promoted enums.
 Gio owns original received descriptors. The duplicated descriptor is owned by
-setup until successful transfer to libei; on the audited negative setup result
-it is closed immediately before context cleanup. FD watches borrow libei's FD.
+setup until it is handed to `ei_setup_backend_fd`. If that call fails, the
+toolkit never closes the descriptor, because whether libei already closed it
+varies by version. A leaked FD is harmless (the connection is unusable anyway);
+a double close could hit an unrelated reused descriptor. FD watches borrow libei's FD.
 Events, retained seats/devices and the context have explicit reference ownership.
 Disposal removes sources first, invalidates pending replies, and is idempotent.
 

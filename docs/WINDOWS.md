@@ -4,8 +4,7 @@
 snapshot through the qualified pinned kdotool binary and explicit private bus.
 The packaged `window_query.js` is fixed; requests cannot supply script source,
 transport arguments or fault modes. Construction is effect-free. Readiness uses
-the same adapter without process association, while input/capture qualification
-remains `m1-provisional`, `release_qualified: false`, replacement issue #35.
+the same adapter without process association.
 KWin output scale is explicitly null when its scripting wrapper omits it; fixed
 1280×720 geometry is validated here and scale-1 capture remains separately qualified.
 

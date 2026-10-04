@@ -3,9 +3,10 @@
 M3.1/M3.2 provide generation-owned services and private desktop construction.
 M3.3 enables public start after real capability probes and adds live essential
 health monitoring. A correlated control response and every required probe must
-pass before start returns `state: ready, desktop_ready: true`. Installed probes
-are explicitly `m1-provisional`, with `release_qualified: false` and replacement
-owner #35 (M7.1); public desktop operations remain unsupported.
+pass before start returns `state: ready, desktop_ready: true`. Once ready,
+`session status` lists the available desktop operations in `supported_operations`.
+After a failed generation is reconciled, the toolkit runs
+`systemctl --user reset-failed` on its unit so stale entries do not accumulate.
 
 `session status` and `session stop` recognize managed generations. Standalone
 foreground workers retain the previous transport behavior. Stop on an absent or

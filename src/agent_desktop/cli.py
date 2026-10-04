@@ -8,7 +8,7 @@ import sys
 import uuid
 
 from . import __version__
-from .contracts import ARGUMENTS, EXIT_CODES, OPERATIONS, ContractError, dispatch, make_request, response
+from .contracts import ARGUMENTS, EXIT_CODES, OPERATIONS, SUPPORTED_OPERATIONS, ContractError, dispatch, make_request, response, with_refs
 
 
 class HelpRequested(Exception):
@@ -29,20 +29,24 @@ class Parser(argparse.ArgumentParser):
 
 
 def parser():
-    root = Parser(prog="agent-desktop", description="Private headless KWin command scaffold. Desktop operations are not wired yet.")
+    root = Parser(prog="agent-desktop", description="Private headless KWin desktop for testing GUI applications. "
+                  "Commands marked (not yet implemented) return unsupported_operation.")
     root.add_argument("--json", action="store_true", help="emit one JSON result, including help and errors")
     root.add_argument("--version", action="store_true", help="show package version")
     commands = root.add_subparsers(dest="command", required=True)
     leaves = {}
+    def note(operation):
+        return None if operation in SUPPORTED_OPERATIONS else "(not yet implemented)"
     for operation in OPERATIONS:
         if "." not in operation:
-            leaves[operation] = commands.add_parser(operation)
+            leaves[operation] = commands.add_parser(operation, help=note(operation))
     for family, actions in (("session", ("start", "status", "stop")), ("input", ("reset",))):
-        group = commands.add_parser(family)
+        implemented = any(f"{family}.{action}" in SUPPORTED_OPERATIONS for action in actions)
+        group = commands.add_parser(family, help=None if implemented else "(not yet implemented)")
         group.add_argument("--json", action="store_true", help="emit one JSON result")
         sub = group.add_subparsers(dest="action", required=True)
         for action in actions:
-            leaves[f"{family}.{action}"] = sub.add_parser(action)
+            leaves[f"{family}.{action}"] = sub.add_parser(action, help=note(f"{family}.{action}"))
     for operation, leaf in leaves.items():
         default, maximum, _ = OPERATIONS[operation]
         leaf.set_defaults(operation=operation)
@@ -168,5 +172,5 @@ def main(argv=None):
         failure = ContractError("internal_error", "Internal command failure.", outcome="unknown" if request else "not_started")
         payload = response(request_id, operation, session=request.session if request else None, error=failure)
         status = EXIT_CODES[failure.code]
-    render(payload, json_mode)
+    render(with_refs(payload), json_mode)
     return status

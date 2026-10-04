@@ -210,21 +210,31 @@ class InputTests(unittest.TestCase):
             setup.assert_called_once_with(87)
         self.assertIs(value.bus, bus); self.assertEqual(value.cookie, 123)
 
-    def test_failed_native_setup_closes_owned_fd_before_reuse(self):
-        # Real epoll EPERM, then reuse the number before disposal: no double close.
+    def test_failed_native_setup_never_closes_an_ambiguous_fd(self):
+        # Real epoll EPERM. Whether libei closed the FD varies by version, so the
+        # toolkit never closes it: at most one FD leaks per failed setup, and a
+        # descriptor that reuses the number is never closed by disposal.
         with patch('agent_desktop.input_connection.binding.load', wraps=libei_binding.load):
             value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)
         value.name = 'ownership-test'
         before = len(os.listdir('/proc/self/fd'))
+        leaked = []
         for _ in range(8):
             with tempfile.TemporaryFile() as regular:
                 fd = os.dup(regular.fileno())
                 with self.assertRaises(Failure): value._setup(fd)
-                with self.assertRaises(OSError): os.fstat(fd)
                 reused = os.open('/dev/null', os.O_RDONLY)
                 try:
                     value.dispose(); os.fstat(reused)
                 finally: os.close(reused)
+                try:
+                    os.fstat(fd)
+                    leaked.append(fd)
+                except OSError:
+                    pass
+        self.assertLessEqual(len(os.listdir('/proc/self/fd')) - before, 8)
+        for fd in leaked:
+            os.close(fd)
         self.assertEqual(before, len(os.listdir('/proc/self/fd')))
 
     def test_successful_native_setup_transfers_fd_once(self):

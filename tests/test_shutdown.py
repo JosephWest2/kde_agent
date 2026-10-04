@@ -42,7 +42,7 @@ class ShutdownTests(unittest.TestCase):
         shutdown.tick()
         self.assertTrue(shutdown.done)
         self.assertEqual(shutdown.results['release']['state'], 'not_connected')
-        self.assertEqual(shutdown.results['close']['replacement_issue'], 35)
+        self.assertEqual(shutdown.results['close']['state'], 'not_connected')
 
     def test_raising_and_late_release_still_attempt_close_within_original_end(self):
         for mode in ('raise', 'late'):

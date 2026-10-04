@@ -148,13 +148,15 @@ class Input:
             self.lib.ei_configure_name(self.context, self.name.encode())
             result = self.lib.ei_setup_backend_fd(self.context, fd)
             if result < 0:
-                # Pinned 1.6.0 failed epoll ADD leaves descriptor caller-owned.
-                os.close(fd)
+                # Whether libei closed the descriptor on failure varies by
+                # version. Never close it here: a leaked FD is harmless because
+                # failed setup makes the connection unusable, while a double
+                # close could hit an unrelated reused descriptor.
                 owned = False
                 raise Failure('input_setup', f'libei setup errno {-result}.')
             owned = False  # Only libei closes successful setup descriptors.
             epoch, context = self.epoch, self.context
-            self.watch = self.GLib.io_add_watch(self.lib.ei_get_fd(context),
+            self.watch = self.GLib.io_add_watch(self.lib.ei_get_fd(context), self.GLib.PRIORITY_DEFAULT,
                 self.GLib.IO_IN | self.GLib.IO_HUP | self.GLib.IO_ERR,
                 lambda fd, condition: self.on_fd(fd, condition, epoch, context))
             self.log('setup', epoch=epoch, result=result, fd_ownership='libei', nonblocking=True)

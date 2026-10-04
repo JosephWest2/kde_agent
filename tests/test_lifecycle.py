@@ -79,14 +79,13 @@ class LifecycleTests(unittest.TestCase):
         from copy import deepcopy
         generation = 'a' * 32
         base = {'state': 'ready', 'desktop_ready': True, 'observed_at': time.monotonic(),
-                'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
                 'health': {key: {'state': 'passed', 'observed_at': time.monotonic()} for key in
                            ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot')}}
         with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': deepcopy(base)}):
             result = self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
             self.assertEqual(result['health']['control']['state'], 'passed')
         variants = [dict(base, observed_at=time.monotonic()-3), dict(base, observed_at=float('nan')),
-                    dict(base, health=[]), dict(base, desktop_ready=False), dict(base, release_qualified=True)]
+                    dict(base, health=[]), dict(base, desktop_ready=False)]
         for key in base['health']:
             changed = deepcopy(base)
             changed['health'][key] = {'state': 'pending'}

@@ -165,6 +165,11 @@ class Systemd:
     def stop(self, data, deadline):
         self.command(self.control('stop', '--no-block', data['unit']), deadline)
 
+    def reset_failed(self, data, deadline):
+        # Clears systemd's "failed" listing for a unit that is already settled
+        # and finalized. It never stops or starts anything.
+        self.command(self.control('reset-failed', data['unit']), deadline)
+
 
 
 def retained_failure(data):
@@ -244,7 +249,14 @@ class Manager:
         with generation_lock(runtime, data['generation']):
             updated, preserved = finalize(runtime, data, failed=failed or data['state'] == 'failed')
             data.update(updated)
-            return preserved
+        # Best effort, outside the lock: a leftover failed-unit entry is cosmetic.
+        reset = getattr(self.systemd, 'reset_failed', None)
+        if reset is not None:
+            try:
+                reset(data, time.monotonic() + 1)
+            except (ContractError, OSError):
+                pass
+        return preserved
 
     def _stop(self, runtime, data, deadline, *, failed=False, requested=None):
         stop_submitted = False
@@ -313,8 +325,7 @@ class Manager:
             observed = result.get('observed_at')
             now = time.monotonic()
             health = result.get('health', {})
-            if (not isinstance(health, dict) or result.get('provider') != 'm1-provisional'
-                    or result.get('release_qualified') is not False or result.get('replacement_issue') != 35
+            if (not isinstance(health, dict)
                     or result['desktop_ready'] is not True or not fresh(observed, now)
                     or any(not isinstance(health.get(key), dict) or health[key].get('state') != 'passed'
                            for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))

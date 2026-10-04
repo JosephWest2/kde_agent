@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from agent_desktop import prerequisites as pre
-from agent_desktop.contracts import ContractError, make_request
+from agent_desktop.contracts import OPERATIONS, ContractError, make_request
 
 
 class PrerequisiteTests(unittest.TestCase):
@@ -41,8 +41,7 @@ class PrerequisiteTests(unittest.TestCase):
         (self.root / 'build.json').write_text(json.dumps(self.receipt))
 
     def test_pinned_receipt_works_without_checkout_or_build_toolchain(self):
-        with patch.object(pre, 'KDOTool_BINARY_SHA256S', {self.digest}):
-            result = pre._kdotool(self.root, time.monotonic() + 2)
+        result = pre._kdotool(self.root, time.monotonic() + 2)
         self.assertTrue(result['provenance_verified'])
         self.assertFalse(result['source_checkout_required'])
         self.assertEqual(result['executable'], str(self.binary))
@@ -51,16 +50,15 @@ class PrerequisiteTests(unittest.TestCase):
     def test_changed_binary_rejected_before_execution_even_with_valid_receipt(self):
         marker = self.root / 'executed'
         self.binary.write_text(f'#!/bin/sh\ntouch {marker}\n')
-        with patch.object(pre, 'KDOTool_BINARY_SHA256S', {self.digest}):
-            with self.assertRaises(pre._Failure) as caught:
-                pre._kdotool(self.root, time.monotonic() + 2)
+        with self.assertRaises(pre._Failure) as caught:
+            pre._kdotool(self.root, time.monotonic() + 2)
         self.assertEqual(caught.exception.reason, 'binary_digest_mismatch')
         self.assertFalse(marker.exists())
 
-    def test_matching_self_asserted_receipt_does_not_allow_unknown_build(self):
-        with self.assertRaises(pre._Failure) as caught:
-            pre._kdotool(self.root, time.monotonic() + 2)
-        self.assertEqual(caught.exception.reason, 'provenance_mismatch')
+    def test_rebuild_at_pinned_revision_is_accepted_when_it_matches_its_receipt(self):
+        # The binary hash itself is not pinned: a newer rustc changes it.
+        result = pre._kdotool(self.root, time.monotonic() + 2)
+        self.assertEqual(result['binary_sha256'], self.digest)
 
     def test_receipt_policy_and_resolved_graph_fail_closed(self):
         original = json.loads(json.dumps(self.receipt))
@@ -72,12 +70,11 @@ class PrerequisiteTests(unittest.TestCase):
                                 'resolved_nodes': [{'id': 'x', 'dependencies': [], 'features': [],
                                                     'deps': [{'name': 'x', 'pkg': 'x', 'dep_kinds': [{}]}]}]}),
         ]
-        with patch.object(pre, 'KDOTool_BINARY_SHA256S', {self.digest}):
-            for key, value in mutations:
-                with self.subTest(field=key, value=value):
-                    receipt = original | {key: value}
-                    with self.assertRaises(pre._Failure):
-                        pre._validate_receipt(receipt)
+        for key, value in mutations:
+            with self.subTest(field=key, value=value):
+                receipt = original | {key: value}
+                with self.assertRaises(pre._Failure):
+                    pre._validate_receipt(receipt)
 
     def test_read_rejects_fifo_and_oversized_state_without_blocking(self):
         fifo = self.root / 'fifo'
@@ -91,17 +88,46 @@ class PrerequisiteTests(unittest.TestCase):
         with self.assertRaises(pre._Failure):
             pre._read(large, start + 1, 100)
 
-    def test_libei_rejects_unaudited_library_and_architecture(self):
-        library = self.root / 'libei.so.1'
-        library.write_bytes(b'unreviewed ABI')
-        with patch.object(pre, 'LIBEI_PATH', library):
-            with self.assertRaises(pre._Failure) as caught:
-                pre._libei(time.monotonic() + 1)
-        self.assertEqual(caught.exception.reason, 'unsupported_libei_abi')
-        self.assertIn('FD ownership', caught.exception.repair)
-        with patch.object(pre, 'LIBEI_PATH', library), patch.object(pre, 'LIBEI_SHA256', hashlib.sha256(library.read_bytes()).hexdigest()), patch.object(pre.platform, 'machine', return_value='aarch64'):
-            with self.assertRaises(pre._Failure):
-                pre._libei(time.monotonic() + 1)
+    def test_libei_failures_from_the_runtime_probe_are_reported(self):
+        with self.assertRaises(pre._Failure) as caught:
+            pre._libei({'worker': True, 'libei_error': {'reason': 'missing_libei_symbols', 'observed': ['ei_now']}})
+        self.assertEqual(caught.exception.reason, 'missing_libei_symbols')
+        self.assertEqual(caught.exception.observed, ['ei_now'])
+        with self.assertRaises(pre._Failure) as caught:
+            pre._libei({'worker': False})
+        self.assertEqual(caught.exception.reason, 'not_checked')
+        self.assertEqual(pre._libei({'worker': True, 'libei': {'version': '1.6.0'}}), {'version': '1.6.0'})
+
+    def test_unimportable_worker_explains_pythonpath(self):
+        with self.assertRaises(pre._Failure) as caught:
+            pre._worker({'worker': False, 'error': 'ModuleNotFoundError'})
+        self.assertEqual(caught.exception.code, 'prerequisite_missing')
+        self.assertEqual(caught.exception.reason, 'worker_not_importable')
+        self.assertIn('PYTHONPATH', caught.exception.repair)
+
+    def test_runtime_probe_reproduces_service_isolation(self):
+        # Under -I from /, a source tree reachable only via PYTHONPATH is invisible.
+        result = pre._runtime_probe(time.monotonic() + 10)
+        importable = subprocess.run([sys.executable, '-I', '-c', 'import agent_desktop'], cwd='/',
+                                    env={'PATH': '/usr/bin:/bin'}, capture_output=True).returncode == 0
+        self.assertEqual(result['worker'], importable)
+
+    def test_libei_binding_checks_architecture_version_and_symbols(self):
+        from agent_desktop import libei_binding
+        old = self.root / 'libei.so.0.9.0'
+        old.write_bytes(b'')
+        with patch.object(libei_binding, 'SUPPORTED_LIBRARY', old):
+            with self.assertRaises(libei_binding.Unsupported) as caught:
+                libei_binding.describe()
+        self.assertEqual(caught.exception.reason, 'unsupported_libei_version')
+        with patch.object(libei_binding, 'SUPPORTED_LIBRARY', old), \
+                patch.object(libei_binding.platform, 'machine', return_value='aarch64'):
+            with self.assertRaises(libei_binding.Unsupported) as caught:
+                libei_binding.describe()
+        self.assertEqual(caught.exception.reason, 'unsupported_architecture')
+        if libei_binding.SUPPORTED_LIBRARY.exists():
+            info = libei_binding.describe()
+            self.assertEqual(info['symbols_checked'], len(libei_binding.DECLARATIONS))
 
     def test_shadowed_binding_or_absent_fd_or_png_support_rejected(self):
         base = {'origins': {name: '/usr/lib/python/site-packages/' + name for name in ('gi', 'dbus', 'PIL')},
@@ -163,8 +189,8 @@ class PrerequisiteTests(unittest.TestCase):
 
     def test_doctor_is_read_only_and_never_reports_capability_readiness(self):
         request = make_request('doctor', arguments={'dependency_root': str(self.root)}, caller_cwd='/')
-        with patch.object(pre, 'KDOTool_BINARY_SHA256S', {self.digest}), \
-                patch.object(pre, '_libei', return_value={}), patch.object(pre, '_bindings', return_value={}), \
+        with \
+                patch.object(pre, '_runtime_probe', return_value={'worker': True, 'libei': {}}), patch.object(pre, '_bindings', return_value={}), \
                 patch.object(pre, '_executables', return_value={}), patch.object(pre, '_manager', return_value={}):
             before = sorted(str(p) for p in self.root.rglob('*'))
             result = pre.doctor(request)
@@ -173,15 +199,16 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertTrue(result['ok'])
         self.assertFalse(result['desktop_launched'])
         self.assertFalse(result['desktop_ready'])
-        self.assertFalse(result['production_readiness'])
-        self.assertFalse(result['release_qualified'])
-        self.assertEqual(result['replacement_issue'], 35)
+        self.assertNotIn('release_qualified', result)
         self.assertEqual(set(result['capabilities'].values()), {'not_tested'})
         self.assertIn('screenshot', result['unsupported_operations'])
-        self.assertIn('launch', result['unsupported_operations'])
+        self.assertIn('launch', result['supported_operations'])
+        self.assertEqual(set(result['supported_operations']) | set(result['unsupported_operations']),
+                         set(OPERATIONS))
+        self.assertFalse(set(result['supported_operations']) & set(result['unsupported_operations']))
 
     def test_doctor_error_retains_all_component_diagnostics_and_repairs(self):
-        with patch.object(pre, '_libei', return_value={}), patch.object(pre, '_bindings', return_value={}), \
+        with patch.object(pre, '_runtime_probe', return_value={'worker': True, 'libei': {}}), patch.object(pre, '_bindings', return_value={}), \
                 patch.object(pre, '_executables', return_value={}), patch.object(pre, '_manager', return_value={}):
             with self.assertRaises(ContractError) as caught:
                 pre.check(self.root / 'missing', time.monotonic() + 2)
@@ -189,10 +216,19 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertEqual(error.code, 'prerequisite_missing')
         self.assertEqual(error.context['component'], 'kdotool')
         report = error.context['prerequisite_report']
-        self.assertEqual(len(report['dependencies']), 5)
+        self.assertEqual(len(report['dependencies']), 6)
         self.assertEqual(report['dependencies'][0]['status'], 'failed')
         self.assertTrue(report['dependencies'][0]['repair'])
         self.assertEqual(report['dependencies'][-1]['status'], 'passed')
+
+    def test_untested_kwin_version_warns_without_failing(self):
+        executables = {'kwin_version': 'kwin 6.9.0', 'kwin_matches_tested': False}
+        with patch.object(pre, '_runtime_probe', return_value={'worker': True, 'libei': {'version': '1.6.0', 'tested_version': '1.6.0'}}), \
+                patch.object(pre, '_bindings', return_value={}), patch.object(pre, '_kdotool', return_value={}), \
+                patch.object(pre, '_executables', return_value=executables), patch.object(pre, '_manager', return_value={}):
+            report = pre.check(self.root, time.monotonic() + 2)
+        self.assertTrue(report['ok'])
+        self.assertEqual([warning['code'] for warning in report['warnings']], ['untested_kwin_version'])
 
     def test_expired_deadline_launches_no_helper(self):
         with patch.object(pre, '_run') as run:

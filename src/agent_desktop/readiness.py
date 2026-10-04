@@ -1,4 +1,4 @@
-"""Real M1-derived capability gate. Production replacement: M7.1 / issue #35."""
+"""Capability gate: a session is ready only after control, window query, resumed input and a screenshot pass."""
 from __future__ import annotations
 import json
 from copy import deepcopy
@@ -17,8 +17,6 @@ from .private_bus import PrivateBus
 from .input_connection import Input
 from .windows import Adapter
 
-PROVIDER = {'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
-            'desktop_operations_supported': False}
 CAPABILITIES = ('window_query', 'input_resumed', 'screenshot')
 
 
@@ -62,7 +60,7 @@ class Readiness:
         atomic(self.folder / 'health.json', self.snapshot())
 
     def snapshot(self):
-        return {**PROVIDER, 'state': self.state, 'desktop_ready': self.state == 'ready',
+        return {'state': self.state, 'desktop_ready': self.state == 'ready',
                 'observed_at': self.observed_at, 'health': deepcopy(self.health),
                 'failure': None if self.error is None else self.error.payload()}
 

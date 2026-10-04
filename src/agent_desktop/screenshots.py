@@ -40,6 +40,9 @@ class ScreenshotTask:
                 if observed is None:
                     return None
                 self.observed = observed
+                if observed['frame'] is None:
+                    raise ContractError('capture_failed', 'KWin did not report the window frame geometry.',
+                                        context={'window': observed['window'], 'reason': 'frame_unavailable'})
                 crop = crop_rect(observed['frame'])
                 if crop is None:
                     raise ContractError('capture_failed', 'Window is entirely outside the screen.',

@@ -30,7 +30,10 @@ keys such as `w` or `shift+w` with `--hold` (at most 2s).
 
 **Text.** `type` maps printable ASCII, space, newline (Return) and tab (Tab) to the
 US layout, adding Shift where needed. Any other character rejects the whole request
-before anything is sent, with its `index` and `codepoint`. Each character is one
+before anything is sent, with its `index` and `codepoint` (non-ASCII lookalikes
+such as the Kelvin sign included). If `key caps_lock` has turned Caps Lock on,
+`type` inverts Shift for letters so the text still comes out as written; only this
+toolkit sends input to the private desktop, so the worker tracks that state. Each character is one
 press and one release, about 10ms apart, so roughly 200 characters fit the default
 3s and about 2000 fit the 30s maximum. Text whose estimate (15ms per character)
 does not fit the remaining time fails with `timeout`, phase `budget`, and sends nothing.

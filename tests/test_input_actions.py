@@ -51,6 +51,18 @@ class KeymapTests(unittest.TestCase):
         self.assertEqual(len(strokes), len(printable))
         self.assertTrue(all(len(stroke) in (1, 2) for stroke in strokes))
 
+    def test_caps_lock_inverts_letters_only(self):
+        self.assertEqual(text_strokes('aA1!', caps_lock=True), [[SHIFT, 30], [30], [2], [SHIFT, 2]])
+
+    def test_non_ascii_lookalikes_are_rejected(self):
+        kelvin = '\u212a'
+        self.assertEqual(kelvin.lower(), 'k')
+        with self.assertRaises(ContractError) as caught:
+            text_strokes('o' + kelvin)
+        self.assertEqual(caught.exception.context, {'index': 1, 'codepoint': 'U+212A'})
+        with self.assertRaises(ContractError):
+            parse_chord('ctrl+' + kelvin)
+
     def test_unsupported_character_rejects_everything_with_its_position(self):
         with self.assertRaises(ContractError) as caught:
             text_strokes('ok café')
@@ -67,16 +79,22 @@ class Owner:
         self.retired_held = []
         self.events = []
         self.fail_release = False
+        self.fail_press_at = None
 
     def press(self, codes):
         assert not self.device.held
-        self.device.held.extend(codes)
+        for index, code in enumerate(codes):
+            self.device.held.append(code)  # Like Input.press: recorded before the native call.
+            if self.fail_press_at == index:
+                self.uncertain = True
+                raise ContractError('input_failed', 'Native press failed.')
         self.events.append(('press', list(codes), time.monotonic()))
 
     def release(self):
         if self.fail_release:
             self.uncertain = True
             return
+        self.uncertain = False
         self.events.append(('release', list(reversed(self.device.held)), time.monotonic()))
         self.device.held.clear()
 
@@ -171,6 +189,35 @@ class InputTaskTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, 'input_uncertain')
         self.assertEqual(self.owner.events, [])
 
+    def test_partially_failed_press_is_still_released(self):
+        task = self.make('key', chord='ctrl+a', hold=.01)
+        self.owner.fail_press_at = 1
+        with self.assertRaises(ContractError):
+            self.run_task(task)
+        self.assertEqual(self.owner.device.held, [])
+        self.assertEqual(self.owner.events, [('release', [30, 29], self.owner.events[0][2])])
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_health_check_that_consumes_the_deadline_prevents_emission(self):
+        task = self.make('key', chord='a', hold=.01)
+        def slow():
+            task.deadline = time.monotonic()
+        task.healthy = slow
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual(caught.exception.code, 'timeout')
+        self.assertEqual(self.owner.events, [])
+
+    def test_caps_lock_state_follows_completed_key_presses(self):
+        task = self.make('key', chord='caps_lock', hold=.01)
+        owner = self.owner
+        self.run_task(task)
+        self.assertTrue(owner.caps_lock)
+        with patch('agent_desktop.input_actions.TargetTask', Target):
+            typed = InputTask(make_request('type', arguments={'window': WINDOW, 'text': 'Hi'}, caller_cwd='/'),
+                              task.context, None, lambda: owner, None, lambda: None)
+        self.assertEqual(typed.strokes, [[35], [SHIFT, 23]])
+
     def test_text_that_cannot_fit_the_deadline_sends_nothing(self):
         task = self.make('type', text='x' * 400)
         with self.assertRaises(ContractError) as caught:
@@ -214,6 +261,35 @@ class ScreenshotTests(unittest.TestCase):
         self.assertEqual(crop_rect({'x': -40, 'y': 600, 'width': 200, 'height': 300}), [0, 600, 160, 120])
         self.assertIsNone(crop_rect({'x': 1280, 'y': 0, 'width': 100, 'height': 100}))
         self.assertIsNone(crop_rect({'x': -200, 'y': -200, 'width': 100, 'height': 100}))
+
+    def test_window_without_frame_geometry_fails_cleanly(self):
+        from agent_desktop.screenshots import ScreenshotTask
+        request = make_request('screenshot', arguments={'window': WINDOW}, caller_cwd='/')
+        context = SimpleNamespace(work=SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + 3)))
+        with patch('agent_desktop.screenshots.TargetTask', Target):
+            task = ScreenshotTask(request, context, None, None, None, lambda: None, lambda: 'Virtual-1', Path('/nonexistent'))
+        task.target.result = {'window': WINDOW, 'frame': None, 'focused': False, 'query_artifact': 'q'}
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']), ('capture_failed', 'frame_unavailable'))
+
+    def test_interrupted_copy_leaves_no_partial_file_and_keeps_the_capture(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = Path(root) / 'image.png'
+            source.write_bytes(b'png-bytes')
+            payload = response('r' * 32, 'screenshot', session='default', generation=GEN,
+                               result={'capture_id': 'capture-1', 'path': str(source)})
+            real_open = open
+            def interrupting(path, mode='r', *args, **kwargs):
+                handle = real_open(path, mode, *args, **kwargs)
+                if 'x' in mode:
+                    handle.write = Mock(side_effect=KeyboardInterrupt)
+                return handle
+            with patch('builtins.open', interrupting):
+                failed = cli.copy_output(payload, str(Path(root) / 'out.png'))
+            self.assertEqual(failed['error']['code'], 'cancelled')
+            self.assertEqual(failed['error']['partial_result']['path'], str(source))
+            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ['image.png'])
 
     def test_cli_copies_capture_to_output_file_or_directory(self):
         with tempfile.TemporaryDirectory() as root:

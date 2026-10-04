@@ -8,7 +8,7 @@ Focus is verified once before the first stroke; mid-sequence rechecks are #67.
 import time
 
 from .contracts import ContractError
-from .keymap import parse_chord, text_strokes
+from .keymap import CAPS_LOCK, parse_chord, text_strokes
 from .targeting import TargetTask
 
 TYPE_HOLD = .004      # Press-to-release for each typed character.
@@ -34,7 +34,10 @@ class InputTask:
             self.strokes = [parse_chord(arguments['chord'])]
             self.hold = arguments['hold']
         else:
-            self.strokes = text_strokes(arguments['text'])
+            # Only this toolkit sends input to the private desktop, so the Caps
+            # Lock state is whatever completed `key caps_lock` presses left it.
+            owner = input_owner()
+            self.strokes = text_strokes(arguments['text'], caps_lock=getattr(owner, 'caps_lock', False))
             self.hold = TYPE_HOLD
         self.target = TargetTask(request, context, adapter, registry, healthy,
                                  condition='observe', require_focus=True)
@@ -96,12 +99,16 @@ class InputTask:
             if now < self.next_at:
                 return None
             self.healthy()
+            if time.monotonic() >= self.deadline:
+                raise ContractError('timeout', 'Input deadline expired.')
             owner.press(self.strokes[self.index])
             self.pressed_at = time.monotonic()
             return None
         if now - self.pressed_at < self.hold:
             return None
         self.release(strict=True)
+        if CAPS_LOCK in self.strokes[self.index]:
+            owner.caps_lock = not getattr(owner, 'caps_lock', False)
         self.index += 1
         self.next_at = time.monotonic() + TYPE_GAP
         if self.index == len(self.strokes):
@@ -112,7 +119,12 @@ class InputTask:
     def release(self, *, strict=False):
         """Release anything held now. Strict mode raises if release is unconfirmed."""
         owner = self.input_owner()
-        if owner is None or self.pressed_at is None:
+        if owner is None:
+            return
+        # Consult the owner's ledger, not pressed_at: press() records keys as held
+        # before each native call, so a partially failed press still needs release.
+        if not held(owner) and not owner.uncertain:
+            self.pressed_at = None
             return
         try:
             if held(owner):

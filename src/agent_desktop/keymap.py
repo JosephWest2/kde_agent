@@ -10,6 +10,7 @@ from .contracts import ContractError
 
 MAX_CHORD = 8
 SHIFT = 42
+CAPS_LOCK = 58
 
 _LETTERS = dict(zip('qwertyuiop', range(16, 26))) | dict(zip('asdfghjkl', range(30, 39))) \
     | dict(zip('zxcvbnm', range(44, 51)))
@@ -58,6 +59,8 @@ def _unsupported(message, **context):
 def key_code(name):
     if not isinstance(name, str) or not name:
         _unsupported('Empty key name in chord.')
+    if not name.isascii():
+        _unsupported('Key names are ASCII.', key=name[:32])
     lowered = name.lower()
     code = KEYS.get(ALIASES.get(lowered, lowered))
     if code is None:
@@ -81,17 +84,18 @@ def parse_chord(chord):
     return codes
 
 
-def text_strokes(text):
+def text_strokes(text, *, caps_lock=False):
     """US-layout keystrokes for TEXT; each stroke is pressed together then released.
 
     Rejects the whole text if any character has no mapping, before anything is sent.
+    With Caps Lock on, letters invert their Shift; other keys are unaffected.
     """
     strokes = []
     for index, char in enumerate(text):
         if char in _LETTERS:
-            strokes.append([_LETTERS[char]])
-        elif char.lower() in _LETTERS and char.isupper():
-            strokes.append([SHIFT, _LETTERS[char.lower()]])
+            strokes.append([SHIFT, _LETTERS[char]] if caps_lock else [_LETTERS[char]])
+        elif 'A' <= char <= 'Z':  # ASCII only: 'K' (Kelvin) also lowercases to 'k'.
+            strokes.append([_LETTERS[char.lower()]] if caps_lock else [SHIFT, _LETTERS[char.lower()]])
         elif char in _DIGITS:
             strokes.append([_DIGITS[char]])
         elif char in _PUNCTUATION:

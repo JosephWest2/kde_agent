@@ -123,17 +123,24 @@ def copy_output(payload, output):
     if os.path.isdir(target):
         target = os.path.join(target, result["capture_id"] + ".png")
     temporary = f"{target}.{uuid.uuid4().hex}.partial"
+    error = None
     try:
         with open(result["path"], "rb") as source, open(temporary, "xb") as destination:
             destination.write(source.read())
         os.replace(temporary, target)
     except OSError:
-        try:
-            os.unlink(temporary)
-        except OSError:
-            pass
         error = ContractError("artifact_failed", "Screenshot was captured but could not be copied to --output.",
                               context={"output": output}, outcome="partial", partial_result=result)
+    except KeyboardInterrupt:
+        error = ContractError("cancelled", "Screenshot was captured; copying to --output was interrupted.",
+                              context={"output": output}, outcome="partial", partial_result=result)
+    finally:
+        if error is not None or not os.path.exists(target):
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+    if error is not None:
         return dict(payload, ok=False, result=None, error=error.payload())
     payload = dict(payload)
     payload["result"] = result | {"output": target}

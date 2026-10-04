@@ -14,10 +14,11 @@ Supported today:
 - verified focus;
 - bounded waits;
 - keyboard chords and US-layout text, with worker-owned key release;
+- left, right and middle clicks (single, double, triple) in window or screen coordinates;
 - full-screen or single-window screenshots;
 - graceful close and explicit kill.
 
-Pointer input and click are next (#66). JSON results give
+Input reset and logs are next (#67, #68). JSON results give
 every application and window a ready-to-use `ref` string for `--app` and
 `--window`. [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke
 test (`python tests/integration/smoke.py`). See [application ownership](docs/APPLICATIONS.md),

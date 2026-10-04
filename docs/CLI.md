@@ -11,20 +11,25 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 - `session status` lists the desktop operations available once the session is ready.
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
-`focus`, `wait`, `key`, `type`, `screenshot`, `close` and `kill`. `click`,
+`focus`, `wait`, `key`, `type`, `click`, `screenshot`, `close` and `kill`.
 `input reset` and `logs` return `unsupported_operation` until their issues land
-(#66, #67, #68). Key names, text limits and release guarantees are in
-[keyboard input](INPUT.md).
+(#67, #68). Key names, text limits, click coordinates and release guarantees are
+in [keyboard and pointer input](INPUT.md).
 
 ## Screenshots
 
 `screenshot [--window REF] [--output PATH]` captures the 1280×720 output as PNG.
-With `--window`, the image is the window's frame (including client-side
-decorations and shadows), rounded outward and clipped to the screen; a fully
-offscreen window fails with `capture_failed`. The window doesn't need focus.
+With `--window`, the image is the window's client area, rounded outward and
+clipped to the screen; a fully offscreen window fails with `capture_failed`. This
+is the coordinate space of `click --window`: for a window that is fully on screen,
+a pixel at (x, y) in the image is `click --x x --y y`. If the window extends past
+a screen edge the image is clipped, so add `crop[0] - client.x` and
+`crop[1] - client.y` (or click the screen point `crop[0] + x`, `crop[1] + y`
+without `--window`). It includes a GTK header bar but not a KWin title bar (Qt/KDE
+apps); full-screen screenshots show both. The window doesn't need focus.
 Each capture has a unique `capture_id` and is stored in the artifact root. The
 result gives `path`, `png_sha256`, `png_bytes`, `dimensions`, `screen_dimensions`
-and `crop`, plus `window` and `frame` with `--window`. `--output` copies the PNG
+and `crop`, plus `window`, `client` and `frame` with `--window`. `--output` copies the PNG
 to a file path, or into an existing directory as `capture-ID.png`. If the copy
 fails, the result is `artifact_failed` with the capture in `partial_result`. A
 failed screenshot fails only that request, not the session. See [application ownership](APPLICATIONS.md),
@@ -107,9 +112,9 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `wait` | `--for window\|focus\|exit`; window/exit require `--app`, focus requires `--window` | 10 / 60 |
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
-| `click` | required `--window WINDOW_REF --x INT --y INT`; `--button left\|middle\|right` (default left) | 3 / 3 |
+| `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |
 | `input reset` | none | 3 / 3 |
-| `screenshot` | optional `--window WINDOW_REF` (crop to its frame), optional `--output PATH` (file or existing directory) | 3 / 3 |
+| `screenshot` | optional `--window WINDOW_REF` (crop to its client area), optional `--output PATH` (file or existing directory) | 3 / 3 |
 | `logs` | optional `--app APP_REF`; `--source all\|worker\|compositor\|application` (default all) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
 | `kill` | required `--app APP_REF` | 5 / 15 |
@@ -132,11 +137,12 @@ imports the checkout's tools/evidence or uses caller PYTHONPATH. Runtime setup d
 not require Rust/compiler tools once the pinned build is prepared.
 
 Timeout and hold values must be finite and strictly positive. No unbounded mode
-exists. Input targets always use a window; app selection for focus/close must
-resolve unambiguously. Titles are descriptive, never identities. Click coordinates
-are nonnegative client-content pixels, excluding decorations; the future worker
-must validate current bounds before dispatch. Key and text validation happens
-before anything is sent; see [keyboard input](INPUT.md).
+exists. Key and type targets always use a window; click uses one unless given
+screen coordinates. App selection for focus/close must resolve unambiguously.
+Titles are descriptive, never identities. Click coordinates are nonnegative
+integer pixels, bounds-checked against current geometry before dispatch. Key,
+text and click validation happens before anything is sent; see
+[keyboard and pointer input](INPUT.md).
 
 `launch` recognizes the first literal `--` after the command as the end of toolkit
 options. It cannot supply a missing value for `--cwd`, `--env` or another option.

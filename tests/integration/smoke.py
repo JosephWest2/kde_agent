@@ -4,8 +4,8 @@
 Drives the real CLI through separate invocations against the native Wayland
 fixture (exact key acknowledgements) and gnome-text-editor (a real GTK app):
 
-    doctor, session start, launch, windows, focus, key, type, screenshot,
-    wait, close, kill, session stop
+    doctor, session start, launch, windows, focus, key, type, click,
+    screenshot, wait, close, kill, session stop
 
 After stop it checks that no process remains in the generation's cgroup, the
 systemd unit is gone and the artifacts survived. Run it after system updates:
@@ -39,6 +39,10 @@ EXPECTED_KEYS = [(29, 1), (42, 1), (20, 1), (20, 0), (42, 0), (29, 0),
 # Effective XKB modifiers (Shift=1, Ctrl=4) when each non-modifier key goes down.
 EXPECTED_MODIFIERS = {20: 5, 17: 0, 30: 0, 48: 1, 2: 1}
 MODIFIER_KEYS = {29, 42}
+# click --x 100 --y 50; click --x 20 --y 30 --button right --count 2 (button, state, x, y)
+EXPECTED_BUTTONS = [(272, 1, 100, 50), (272, 0, 100, 50)] + [(273, 1, 20, 30), (273, 0, 20, 30)] * 2
+# gnome-text-editor's "New Tab" header-bar button, in client coordinates.
+EDITOR_NEW_TAB = (107, 23)
 
 
 class SmokeFailure(Exception):
@@ -89,7 +93,7 @@ class Smoke:
         self.generation = payload['session']['generation']
         self.pids.append(payload['result']['worker_pid'])
         supported = set(payload['result']['supported_operations'])
-        missing = {'launch', 'windows', 'focus', 'key', 'type', 'screenshot', 'close', 'kill'} - supported
+        missing = {'launch', 'windows', 'focus', 'key', 'type', 'click', 'screenshot', 'close', 'kill'} - supported
         if missing:
             raise SmokeFailure('session start', f'operations not supported: {sorted(missing)}')
 
@@ -120,6 +124,9 @@ class Smoke:
         self.desktop('fixture: key ctrl+shift+t', 'key', '--window', window, 'ctrl+shift+t')
         self.desktop('fixture: key --hold 0.2 w', 'key', '--window', window, '--hold', '0.2', 'w')
         self.desktop("fixture: type 'aB!'", 'type', '--window', window, 'aB!')
+        self.desktop('fixture: click 100,50', 'click', '--window', window, '--x', '100', '--y', '50')
+        self.desktop('fixture: double right-click', 'click', '--window', window, '--x', '20', '--y', '30',
+                     '--button', 'right', '--count', '2')
         wait_for_keys(Path(logs['stdout']), len(EXPECTED_KEYS))
         self.screenshot('fixture', '--window', window)
         result = self.desktop('fixture: close', 'close', '--app', app)['result']
@@ -128,6 +135,8 @@ class Smoke:
         # The fixture has exited, so this is its complete log: no late extras.
         hold = check_key_log(Path(logs['stdout']))
         print(f'  ok  {"fixture: key acknowledgements":<34}       order, modifiers, text, hold {hold}ms')
+        check_button_log(Path(logs['stdout']))
+        print(f'  ok  {"fixture: button acknowledgements":<34}       position, button, count')
 
     def editor_flow(self):
         app, window, _ = self.launch('editor', self.editor)
@@ -142,6 +151,28 @@ class Smoke:
                 break
             if time.monotonic() >= deadline:
                 raise SmokeFailure('editor: title check', f'typed text not in title: {[r["title"] for r in rows]}')
+            time.sleep(.2)
+        x, y = EDITOR_NEW_TAB
+        self.desktop('editor: click New Tab', 'click', '--window', window, '--x', str(x), '--y', str(y))
+        deadline = time.monotonic() + 5
+        while True:  # The new empty document becomes current: same window, "New Document" title.
+            rows = self.desktop('editor: windows (new tab check)', 'windows', '--app', app)['result']['windows']
+            titles = [row['title'] or '' for row in rows if row['window']['ref'] == window]
+            if titles and titles[0].startswith('New Document') and text not in titles[0]:
+                break
+            if time.monotonic() >= deadline:
+                raise SmokeFailure('editor: new tab check', f'title still shows the typed text: '
+                                   f'{[r["title"] for r in rows]}')
+            time.sleep(.2)
+        # Switching back to the first tab must show the typed document again.
+        self.desktop('editor: key ctrl+page_up', 'key', '--window', window, 'ctrl+page_up')
+        deadline = time.monotonic() + 5
+        while True:
+            rows = self.desktop('editor: windows (first tab check)', 'windows', '--app', app)['result']['windows']
+            if any(text in (row['title'] or '') for row in rows if row['window']['ref'] == window):
+                break
+            if time.monotonic() >= deadline:
+                raise SmokeFailure('editor: first tab check', f'typed document not back: {[r["title"] for r in rows]}')
             time.sleep(.2)
         self.desktop('editor: key ctrl+a', 'key', '--window', window, 'ctrl+a')
         self.screenshot('editor')
@@ -262,6 +293,13 @@ def wait_for_keys(log, count, timeout=3):
     deadline = time.monotonic() + timeout
     while len(log_events(log, {'key'})) < count and time.monotonic() < deadline:
         time.sleep(.05)
+
+
+def check_button_log(log):
+    rows = log_events(log, {'button'})
+    observed = [(row['button'], row['state'], row['x'], row['y']) for row in rows]
+    if observed != EXPECTED_BUTTONS or any(row['surface'] != 'primary' for row in rows):
+        raise SmokeFailure('fixture: button acknowledgements', f'expected {EXPECTED_BUTTONS}, saw {observed}')
 
 
 def check_key_log(log):

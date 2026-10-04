@@ -1,8 +1,8 @@
-"""Installed, read-only M1 prerequisite checks; production replacement is #35.
+"""Installed, read-only runtime prerequisite checks used by doctor and session start.
 
 Policy and receipt validation derive from tools/dependencies.py (M1 #9).
-The fixed libei ABI/FD-ownership boundary derives from tools/libei_binding.py
-(M1 #12). Neither checkout tools nor historical evidence are runtime imports.
+Worker importability and libei are probed in a child interpreter started the
+same way as the session service, so doctor sees what the service will see.
 """
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import re
 import selectors
 import signal
@@ -19,27 +18,37 @@ import subprocess
 import sys
 import time
 
-from .contracts import ContractError, OPERATIONS
+from .contracts import ContractError, OPERATIONS, SUPPORTED_OPERATIONS
 
 KDOTool_REVISION = 'be03ce90c09350898556436bac74ed35fe928617'
 KDOTool_LOCK_SHA256 = 'd6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc'
-# M1 historical build plus the same pinned-source rebuild qualified by #20.
-# Both passed real private query/cleanup runs; see docs/VALIDATION.md (#20).
-KDOTool_BINARY_SHA256S = frozenset({
-    '62e7ee53096d933ec29e8e5d439b895590f851a40f0dcd87b87db9a6dc4749de',
-    'b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21',
-})
+# The source revision and Cargo.lock are pinned; the binary hash is not, since
+# a rebuild with a newer rustc legitimately changes it. The installed binary
+# must still match its own build receipt.
 KDOTool_RELEASE = '0.3.0'
-LIBEI_PATH = Path('/usr/lib/libei.so.1')
-LIBEI_SHA256 = '93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501'
+# KWin's private EIS, ScreenShot2 and scripting interfaces are the most fragile
+# dependency. Other 6.x versions are allowed with a warning to rerun the smoke test.
+TESTED_KWIN_VERSION = '6.7.5'
 MAX_OUTPUT = 65536
 MAX_RECEIPT = 2 * 1024 * 1024
 MAX_BINARY = 64 * 1024 * 1024
 RUNTIME_EXECUTABLES = ('kwin_wayland', 'dbus-daemon', 'dbus-send', 'systemctl', 'systemd-run', 'env')
-PROVISIONAL = {
-    'provider': 'm1-provisional', 'production_readiness': False,
-    'release_qualified': False, 'replacement_issue': 35,
-}
+# Runs as `python -I` from / with a minimal environment, like the service.
+RUNTIME_PROBE = r'''
+import json
+try:
+    import agent_desktop.worker  # noqa: F401  (what systemd-run will execute)
+except Exception as error:
+    print(json.dumps({'worker': False, 'error': type(error).__name__}))
+    raise SystemExit
+from agent_desktop import libei_binding
+try:
+    print(json.dumps({'worker': True, 'libei': libei_binding.describe()}))
+except libei_binding.Unsupported as error:
+    print(json.dumps({'worker': True, 'libei_error': {'reason': error.reason, 'observed': error.observed}}))
+except OSError as error:
+    print(json.dumps({'worker': True, 'libei_error': {'reason': 'missing_libei', 'observed': type(error).__name__}}))
+'''
 BINDINGS_PROBE = r'''
 import json, sys, gi, dbus, PIL
 from PIL import Image
@@ -158,7 +167,7 @@ def _validate_receipt(receipt):
     """Retain M1's complete resolved-build receipt shape and pinned policy."""
     def fail():
         raise _Failure('prerequisite_incompatible', 'provenance_mismatch',
-                       'Restore the audited kdotool build and complete setup receipt; a new build needs renewed evidence.')
+                       'Rebuild kdotool at the pinned revision with the documented setup command (docs/SETUP.md).')
 
     def text(value):
         return isinstance(value, str) and bool(value)
@@ -173,7 +182,7 @@ def _validate_receipt(receipt):
                 'patches': [], 'clean_checkout': True}
     if any(receipt.get(key) != value for key, value in required.items()) or receipt.get('clean_checkout') is not True:
         fail()
-    if receipt.get('binary_sha256') not in KDOTool_BINARY_SHA256S:
+    if not isinstance(receipt.get('binary_sha256'), str) or not re.fullmatch(r'[0-9a-f]{64}', receipt['binary_sha256']):
         fail()
     if receipt.get('build_command') != 'cargo build --release --locked --manifest-path <pinned-source>/Cargo.toml':
         fail()
@@ -218,7 +227,7 @@ def _kdotool(root, deadline):
     observed_hash = hashlib.sha256(_read(executable, deadline, MAX_BINARY)).hexdigest()
     if observed_hash != receipt['binary_sha256']:
         raise _Failure('prerequisite_incompatible', 'binary_digest_mismatch',
-                       'Restore the audited kdotool artifact; requalify changed builds before updating policy.', observed_hash)
+                       'The kdotool binary does not match its build receipt; rebuild it with the documented setup command (docs/SETUP.md).', observed_hash)
     if not os.access(executable, os.X_OK):
         raise _Failure('prerequisite_missing', 'not_executable', 'Restore executable permissions on the audited kdotool artifact.')
     version = _run([str(executable), '--version'], deadline)
@@ -230,14 +239,27 @@ def _kdotool(root, deadline):
             'source_checkout_required': False}
 
 
-def _libei(deadline):
-    observed = hashlib.sha256(_read(LIBEI_PATH, deadline, MAX_BINARY)).hexdigest()
-    if platform.machine() != 'x86_64' or observed != LIBEI_SHA256:
-        raise _Failure('prerequisite_incompatible', 'unsupported_libei_abi',
-                       'Restore the audited x86_64 libei build, or renew the ABI and failed-setup FD ownership audit.',
-                       {'architecture': platform.machine(), 'sha256': observed})
-    return {'path': str(LIBEI_PATH), 'sha256': observed, 'architecture': 'x86_64',
-            'audit_issue': 12, 'compiler_required_at_runtime': False}
+def _runtime_probe(deadline):
+    return json.loads(_run([sys.executable, '-I', '-c', RUNTIME_PROBE], deadline))
+
+
+def _worker(probe):
+    if probe.get('worker') is not True:
+        raise _Failure('prerequisite_missing', 'worker_not_importable',
+                       'Install agent-desktop into this interpreter (pip install .). The session service runs '
+                       '`python -I` and ignores PYTHONPATH, so a source checkout on PYTHONPATH is not enough.',
+                       {'interpreter': sys.executable, 'error': probe.get('error')})
+    return {'interpreter': sys.executable, 'module': 'agent_desktop.worker', 'isolated': True}
+
+
+def _libei(probe):
+    if probe.get('worker') is not True:
+        raise _Failure('prerequisite_missing', 'not_checked', 'Fix worker_import first; libei is checked through it.')
+    if 'libei_error' in probe:
+        error = probe['libei_error']
+        raise _Failure('prerequisite_incompatible', error.get('reason'),
+                       'Install the distribution libei 1.x package for x86_64 (pacman -S libei).', error.get('observed'))
+    return probe['libei']
 
 
 def _bindings(deadline):
@@ -264,6 +286,9 @@ def _executables(deadline):
     if not re.search(r'\bkwin\s+6\.', kwin, re.IGNORECASE):
         raise _Failure('prerequisite_incompatible', 'unsupported_kwin', 'Use the recorded KDE 6 target.', kwin)
     result['kwin_version'] = kwin
+    match = re.search(r'\b(6\.\d+\.\d+)\b', kwin)
+    result['kwin_tested_version'] = TESTED_KWIN_VERSION
+    result['kwin_matches_tested'] = bool(match) and match.group(1) == TESTED_KWIN_VERSION
     result['systemd_version'] = _run(['/usr/bin/systemctl', '--version'], deadline).splitlines()[0]
     return result
 
@@ -294,12 +319,21 @@ def check(root, deadline):
         raise ContractError('invalid_arguments', 'Dependency root must be absolute.', context={'field': 'dependency-root'})
     started = time.monotonic()
     report = {'schema_version': 1, 'scope': 'prerequisites', 'dependency_root': str(root),
-              'desktop_ready': False, 'desktop_launched': False, **PROVISIONAL,
+              'desktop_ready': False, 'desktop_launched': False,
               'capabilities': {key: 'not_tested' for key in ('control', 'window_query', 'input_resumed', 'screenshot')},
-              'unsupported_operations': [key for key in OPERATIONS if key not in
-                                         {'doctor', 'session.start', 'session.status', 'session.stop'}],
+              'supported_operations': list(SUPPORTED_OPERATIONS),
+              'unsupported_operations': [key for key in OPERATIONS if key not in SUPPORTED_OPERATIONS],
               'dependencies': []}
-    checks = [('kdotool', lambda: _kdotool(root, deadline)), ('libei', lambda: _libei(deadline)),
+    runtime_result = {}  # one child interpreter serves worker_import and libei
+
+    def runtime(check):
+        def run():
+            if not runtime_result:
+                runtime_result.update(_runtime_probe(deadline))
+            return check(runtime_result)
+        return run
+    checks = [('kdotool', lambda: _kdotool(root, deadline)), ('worker_import', runtime(_worker)),
+              ('libei', runtime(_libei)),
               ('python_bindings', lambda: _bindings(deadline)), ('runtime_executables', lambda: _executables(deadline)),
               ('user_manager', lambda: _manager(deadline))]
     for name, probe in checks:
@@ -319,6 +353,17 @@ def check(root, deadline):
                     'repair': ('Install the documented runtime packages and restore the audited dependency root. '
                                'Build/setup repair is a separate operation; doctor never installs dependencies.')}
         report['dependencies'].append(item)
+    report['warnings'] = []
+    for item in report['dependencies']:
+        observed = item['observed'] if isinstance(item['observed'], dict) else {}
+        if item['name'] == 'runtime_executables' and observed.get('kwin_matches_tested') is False:
+            report['warnings'].append({'code': 'untested_kwin_version', 'observed': observed.get('kwin_version'),
+                                       'tested': TESTED_KWIN_VERSION,
+                                       'advice': 'Run the end-to-end smoke test (docs/TESTING.md) on this KWin version.'})
+        if item['name'] == 'libei' and item['status'] == 'passed' and observed.get('version') != observed.get('tested_version'):
+            report['warnings'].append({'code': 'untested_libei_version', 'observed': observed.get('version'),
+                                       'tested': observed.get('tested_version'),
+                                       'advice': 'Run the end-to-end smoke test (docs/TESTING.md) on this libei version.'})
     report['elapsed_seconds'] = round(time.monotonic() - started, 6)
     failures = [item for item in report['dependencies'] if item['status'] == 'failed']
     report['ok'] = not failures

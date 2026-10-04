@@ -7,12 +7,17 @@ and fallback are absent. The startup gate requires CONNECT and one resumed
 keyboard, within the existing shared startup deadline and a three-second input
 limit. No public key, type, click or reset operation is enabled by this stage.
 
-The limited ctypes declarations in `libei_binding.py` require the recorded
-x86_64 libei 1.6.0 binary hash. The compiler audit checks that production table
-against installed headers, including void dispatch and variadic promoted enums.
+The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
+1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
+version, and `doctor` warns on others. The M1 compiler audit checked this table
+against the installed headers, including void dispatch and variadic promoted enums.
 Gio owns original received descriptors. The duplicated descriptor is owned by
-setup until successful transfer to libei; on the audited negative setup result
-it is closed immediately before context cleanup. FD watches borrow libei's FD.
+setup until it is handed to `ei_setup_backend_fd`. If that call fails, libei
+1.6.0 leaves the descriptor caller-owned, but the API does not promise this.
+Setup records the descriptor's (device, inode) before the call and closes it
+afterwards only if the number still refers to that same file. Nothing else runs
+on the single-threaded owner in between, so this never closes a descriptor libei
+closed and reused. FD watches borrow libei's FD.
 Events, retained seats/devices and the context have explicit reference ownership.
 Disposal removes sources first, invalidates pending replies, and is idempotent.
 
@@ -39,8 +44,8 @@ acknowledgment. The known KWin pause key-ledger behavior remains covered by the
 For this intermediate milestone, runtime input capability loss still fails and
 stops the worker's owned session. Public recovery will switch atomically with
 issue #31's reset implementation. Callback/protocol errors remain sticky and
-are checked before ordinary work and worker heartbeats. The aggregate readiness
-provider remains provisional pending issue #35.
+are checked before ordinary work and worker heartbeats. Readiness moves to the
+production input and capture adapters in #64.
 
 The [issue #27 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-27/README.md) records installed production
 async negotiation and real compositor lifecycle faults. The test harness uses

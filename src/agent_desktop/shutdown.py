@@ -8,7 +8,7 @@ import time
 
 
 def unavailable(now, deadline):
-    return {'state': 'not_connected', 'replacement_issue': 35, 'confirmed': False}
+    return {'state': 'not_connected', 'confirmed': False}
 
 
 class Shutdown:
@@ -39,7 +39,7 @@ class Shutdown:
 
     def snapshot(self):
         return {'deadline': self.deadline, 'started_at': self.started_at, 'done': self.done,
-                'events': list(self.events), 'stages': dict(self.results), 'replacement_issue': 35}
+                'events': list(self.events), 'stages': dict(self.results)}
 
     def tick(self):
         if self.done:

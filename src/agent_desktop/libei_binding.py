@@ -1,10 +1,10 @@
-"""Limited production libei sender ABI, audited against the pinned native build."""
+"""Limited production libei sender ABI (keyboard only), checked by soname, version and symbols."""
 from __future__ import annotations
 
 import ctypes as C
-import hashlib
 from pathlib import Path
 import platform
+import re
 
 # C spellings preserve opaque object distinctions for compiler checking, although
 # ctypes represents every opaque pointer as void*. Never dereference them here.
@@ -43,21 +43,44 @@ CONSTANTS = {"EI_EVENT_CONNECT": 1, "EI_EVENT_DISCONNECT": 2,
              "EI_EVENT_DEVICE_PAUSED": 7, "EI_EVENT_DEVICE_RESUMED": 8,
              "EI_DEVICE_CAP_KEYBOARD": 4}
 
-# The negative setup ownership rule below is implementation-specific, not the
-# generic header promise. Reject unreviewed native builds before obtaining an FD.
+# The soname major version is libei's ABI promise. Any 1.x build that exports
+# every declared symbol is accepted; the input code never depends on
+# version-specific behavior (see Input._setup for failed-setup FD handling).
 SUPPORTED_LIBRARY = Path("/usr/lib/libei.so.1")
-SUPPORTED_LIBRARY_SHA256 = "93897fc311319920c1c25e9422db62ebe8324d54c5e0c3d4a9f15a0a6cac2501"
+MIN_VERSION = (1, 0)
+TESTED_VERSION = "1.6.0"
 
 
-def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+class Unsupported(RuntimeError):
+    def __init__(self, reason, message, observed=None):
+        super().__init__(message)
+        self.reason, self.observed = reason, observed
+
+
+def _open():
+    path = SUPPORTED_LIBRARY.resolve(strict=True)
+    if platform.machine() != "x86_64":
+        # capabilities() relies on SysV x86_64 vararg promotion.
+        raise Unsupported("unsupported_architecture", "libei input is only supported on x86_64.", platform.machine())
+    match = re.fullmatch(r"libei\.so\.(\d+)\.(\d+)\.(\d+)", path.name)
+    version = ".".join(match.groups()) if match else None
+    if match and tuple(int(part) for part in match.groups()[:2]) < MIN_VERSION:
+        raise Unsupported("unsupported_libei_version", "libei is older than the supported minimum.", version)
+    library = C.CDLL(str(path))
+    missing = sorted(name for name in DECLARATIONS if not hasattr(library, name))
+    if missing:
+        raise Unsupported("missing_libei_symbols", "libei does not export every required symbol.", missing)
+    return library, {"path": str(path), "version": version, "tested_version": TESTED_VERSION,
+                     "architecture": "x86_64", "symbols_checked": len(DECLARATIONS)}
+
+
+def describe():
+    """Validate the installed library without configuring any function."""
+    return _open()[1]
 
 
 def load():
-    path = SUPPORTED_LIBRARY.resolve(strict=True)
-    if platform.machine() != "x86_64" or digest(path) != SUPPORTED_LIBRARY_SHA256:
-        raise RuntimeError("Unsupported libei build: re-audit ABI and failed-setup FD ownership before updating the tested library hash")
-    library = C.CDLL(str(path))
+    library = _open()[0]
     for name, (result, args) in DECLARATIONS.items():
         function = getattr(library, name)
         function.restype = TYPES[result][1]

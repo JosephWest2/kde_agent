@@ -1,3 +1,3 @@
-"""Agent Desktop's public command contract; desktop adapters are not wired yet."""
+"""Agent Desktop: a private headless KWin desktop for testing GUI applications."""
 
 __version__ = "0.1.0"

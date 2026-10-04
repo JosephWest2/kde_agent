@@ -22,14 +22,21 @@ EXIT_CODES = {
 }
 # operation: (default work seconds, maximum work seconds, implementation issue)
 OPERATIONS = {
-    "doctor": (120, 120, 35), "session.start": (30, 30, 20),
+    "doctor": (120, 120, 63), "session.start": (30, 30, 20),
     "session.status": (3, 3, 20), "session.stop": (15, 15, 21),
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),
-    "key": (3, 3, 28), "type": (3, 3, 28), "click": (3, 3, 29),
-    "input.reset": (3, 3, 31), "screenshot": (3, 3, 33),
-    "logs": (3, 3, 34), "close": (5, 60, 25), "kill": (5, 15, 26),
+    "key": (3, 3, 64), "type": (3, 3, 64), "click": (3, 3, 66),
+    "input.reset": (3, 3, 67), "screenshot": (3, 3, 64),
+    "logs": (3, 3, 68), "close": (5, 60, 25), "kill": (5, 15, 26),
 }
+# Operations that are implemented end to end. Everything else returns
+# unsupported_operation. --help, doctor and session status all read this.
+SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
+                        "launch", "windows", "focus", "wait", "close", "kill")
+# Supported operations that need a ready desktop session.
+DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
+                           if op not in ("doctor", "session.start", "session.status", "session.stop"))
 GENERATION = re.compile(r"[0-9a-f]{32}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 APP_ID = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -79,14 +86,19 @@ def finite_seconds(value, field, maximum):
 
 
 def handle(value, kind):
-    """Validate CLI strings or JSON objects; preserve KWin's native UUID spelling."""
+    """Validate CLI strings or JSON objects; preserve KWin's native UUID spelling.
+
+    Objects may carry the "ref" string that public output adds; it must match.
+    """
     key = "application_id" if kind == "app" else "window_id"
     if isinstance(value, str):
         generation, separator, local_id = value.partition(":")
         if not separator:
             invalid(kind)
-    elif isinstance(value, dict) and set(value) == {"generation", key}:
+    elif isinstance(value, dict) and set(value) - {"ref"} == {"generation", key}:
         generation, local_id = value["generation"], value[key]
+        if "ref" in value and value["ref"] != f"{generation}:{local_id}":
+            invalid(kind)
     else:
         invalid(kind)
     pattern = APP_ID if kind == "app" else WINDOW_ID
@@ -251,6 +263,22 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
                    args, timeout, caller_cwd)
 
 
+def with_refs(value):
+    """Copy of a public payload where every app/window handle also has "ref".
+
+    "ref" is the GENERATION:ID string that --app and --window accept.
+    """
+    if isinstance(value, list):
+        return [with_refs(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    copied = {key: with_refs(item) for key, item in value.items()}
+    for key in ("application_id", "window_id"):
+        if set(value) == {"generation", key} and all(isinstance(value[k], str) for k in value):
+            copied["ref"] = f"{value['generation']}:{value[key]}"
+    return copied
+
+
 def response(request_id, operation, *, session=None, generation=None, result=None, error=None):
     return dict(schema_version=SCHEMA_VERSION, request_id=request_id, operation=operation,
                 ok=error is None,
@@ -263,8 +291,6 @@ def dispatch(request):
     """The production implementation seam; never simulate successful desktop work."""
     issue = OPERATIONS[request.operation][2]
     message = "Operation is not implemented yet."
-    if request.operation == "doctor":
-        message += " For M1 prerequisites, run tools/dependencies.py report from the source checkout."
     raise ContractError("unsupported_operation", message, context={
         "implementation_issue": issue, "expected_generation": request.expected_generation,
     })

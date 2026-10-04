@@ -210,8 +210,9 @@ class InputTests(unittest.TestCase):
             setup.assert_called_once_with(87)
         self.assertIs(value.bus, bus); self.assertEqual(value.cookie, 123)
 
-    def test_failed_native_setup_closes_owned_fd_before_reuse(self):
-        # Real epoll EPERM, then reuse the number before disposal: no double close.
+    def test_failed_native_setup_closes_its_own_fd_exactly_once(self):
+        # Real epoll EPERM. libei 1.6.0 leaves the FD caller-owned on failure,
+        # so setup closes it; a descriptor reusing the number survives disposal.
         with patch('agent_desktop.input_connection.binding.load', wraps=libei_binding.load):
             value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)
         value.name = 'ownership-test'
@@ -226,6 +227,27 @@ class InputTests(unittest.TestCase):
                     value.dispose(); os.fstat(reused)
                 finally: os.close(reused)
         self.assertEqual(before, len(os.listdir('/proc/self/fd')))
+
+    def test_failed_setup_never_closes_a_descriptor_libei_already_replaced(self):
+        # Simulates a libei that closes the FD on failure and reuses the number
+        # internally: setup must notice the different file and leave it open.
+        value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)
+        value.name = 'ownership-test'
+        replacement = []
+        def closing_setup(context, fd):
+            os.close(fd)
+            replacement.append(os.open('/dev/null', os.O_RDONLY))
+            return -1
+        with tempfile.TemporaryFile() as regular:
+            fd = os.dup(regular.fileno())
+            with patch.object(value.lib, 'ei_setup_backend_fd', side_effect=closing_setup):
+                with self.assertRaises(Failure): value._setup(fd)
+        try:
+            self.assertEqual(replacement, [fd])
+            os.fstat(fd)
+            value.dispose(); os.fstat(fd)
+        finally:
+            os.close(replacement[0])
 
     def test_successful_native_setup_transfers_fd_once(self):
         value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)

@@ -89,7 +89,7 @@ explicitly None (void); connection state comes from consumed events.
 | Object or FD | Ownership rule |
 | --- | --- |
 | `ei_new_sender` | One owned context, released with ei_unref. |
-| D-Bus UnixFd | `.take()` once transfers ownership to Python. Set O_NONBLOCK and non-inheritable before setup. Python closes it if preparation fails or the audited setup returns negative. |
+| D-Bus UnixFd | `.take()` once transfers ownership to Python. Set O_NONBLOCK and non-inheritable before setup. Python closes it if preparation fails, or if setup returns negative and the number still refers to the same (device, inode). |
 | `ei_setup_backend_fd` | Success transfers ownership to libei; Python must not close it again. In the pinned 1.6.0 implementation, a negative initial epoll-add result leaves the supplied FD caller-owned. Python closes it immediately before logging/context destruction/any FD reuse. Its initial success-path dispatch can block without O_NONBLOCK. |
 | `ei_get_fd` | Borrowed poll FD; remove GLib sources before context destruction/FD reuse. Terminal DISCONNECT removes its watch immediately. |
 | `ei_get_event` | Owned event, always unrefed in finally, including unknown event types. |
@@ -104,10 +104,11 @@ to close-on-remove, and neither failure cleanup nor later context unref removes
 it, so the FD remains open. The caller closes that known-owned descriptor before
 any reuse. It never unrefs first and then probes/closes the old integer.
 
-To avoid applying this behavior to a changed implementation, `load()` checks
-x86_64 and the recorded installed library SHA256 before loading the explicit
-resolved `/usr/lib/libei.so.1` path. Unknown binaries fail before obtaining an EIS
-FD; they require a fresh ABI/ownership audit and an explicit tested-hash update.
+Since #63, `load()` no longer pins the library hash. It requires x86_64, soname
+`libei.so.1` with version 1.0 or newer, and every declared symbol. To stay safe on
+a libei that does close the FD on failure, setup closes it only when an `fstat`
+(device, inode) taken before the call still matches afterwards. `doctor` warns
+when the version differs from the audited 1.6.0.
 The regression forces actual EPERM with a regular FD, verifies immediate close,
 reuses its integer before context disposal, and verifies the reused/unrelated FDs
 survive. Eight iterations preserve the FD count; a nonblocking socketpair verifies

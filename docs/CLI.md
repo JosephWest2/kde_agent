@@ -5,13 +5,33 @@ checks runtime prerequisites without starting a desktop. `session start` waits f
 real control, structured window query, resumed EIS input and a complete screenshot;
 `status` observes current service and worker health; `stop` is idempotent.
 
-Readiness is supplied by the packaged `m1-provisional` provider. Results explicitly
-report `release_qualified: false`, `replacement_issue: 35` and
-`desktop_operations_supported: false`. Public `launch`, `windows`, `focus` and `wait` are supported after readiness;
-status lists them in `supported_operations`. Input and screenshot commands remain unsupported.
-The provider flag describes provisional desktop adapters, not the separate
-application and window capabilities. See [application ownership](APPLICATIONS.md) and [window discovery](WINDOWS.md). Examples of
-future operation results below are illustrative. See [lifecycle](LIFECYCLE.md) and [transport](TRANSPORT.md).
+One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
+- `--help` marks other commands "(not yet implemented)";
+- `doctor` reports `supported_operations` and `unsupported_operations`;
+- `session status` lists the desktop operations available once the session is ready.
+
+Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
+`focus`, `wait`, `close` and `kill`. `key`, `type`, `click`, `input reset`,
+`screenshot` and `logs` return `unsupported_operation` until their issues land
+(#64, #66, #67, #68). See [application ownership](APPLICATIONS.md),
+[window discovery](WINDOWS.md), [lifecycle](LIFECYCLE.md) and
+[transport](TRANSPORT.md).
+
+## References
+
+Applications and windows are addressed by generation-scoped references. In JSON
+output, every handle object (`{"generation": ..., "application_id": ...}` or
+`{"generation": ..., "window_id": ...}`) also carries a `ref` string,
+`GENERATION:ID`. Pass that string straight to `--app` or `--window`:
+
+```sh
+ref=$(agent-desktop --json launch --wait-window -- /usr/bin/gnome-text-editor | jq -r .result.application.ref)
+agent-desktop --json focus --app "$ref"
+```
+
+Window IDs keep KWin's UUID spelling, braces included when KWin reports them.
+Handle objects are also accepted as JSON wherever the worker protocol takes a
+handle. A `ref` inside an object must match its fields.
 
 ## Install and inspect
 
@@ -29,7 +49,13 @@ Packaging uses setuptools, requires Python >=3.11, and has no pip runtime
 dependencies. The Python floor does not claim native adapter support on all those
 interpreters. Platform native bindings remain governed by [setup](SETUP.md).
 Installing or inspecting the CLI does not import native desktop adapters or run
-feasibility scripts. `doctor` checks installed runtime executables, the pinned
+feasibility scripts. `doctor` checks that the interpreter the session service
+will use (`python -I`, which ignores PYTHONPATH) can import
+`agent_desktop.worker`. It validates libei through the same binding the worker
+uses: x86_64, soname `libei.so.1`, version 1.0 or newer, and every required
+symbol. It warns, without failing, when the KWin or libei version differs from
+the tested one (`warnings`); run the smoke test then. It also checks installed
+runtime executables, the pinned
 kdotool build receipt/binary, native bindings/libei and the user service manager.
 Missing/incompatible dependencies include repair instructions. It does not install
 anything or certify capability execution or release support.

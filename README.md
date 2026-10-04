@@ -8,12 +8,17 @@ and a systemd watchdog detect essential failures. Independent service hooks
 terminate owned descendants, remove private settings and preserve terminal
 artifacts even when the worker dies or freezes.
 
-Readiness currently uses a packaged **M1 provisional provider**. Results report
-`release_qualified: false` and replacement issue #35 (M7.1). Public desktop
-launch and structured window discovery are supported with durable cgroup
-ownership and conservative process association. Window waits, input and
-screenshots remain explicitly unsupported; see [application ownership](docs/APPLICATIONS.md)
-and [window discovery](docs/WINDOWS.md).
+Supported today:
+- launch, with durable cgroup ownership;
+- structured window discovery;
+- verified focus;
+- bounded waits;
+- graceful close and explicit kill.
+
+Keyboard/pointer input and screenshots are next (#64, #66). JSON results give
+every application and window a ready-to-use `ref` string for `--app` and
+`--window`. See [application ownership](docs/APPLICATIONS.md),
+[window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.
 
 See [CLI installation and commands](docs/CLI.md), [service lifecycle](docs/LIFECYCLE.md),

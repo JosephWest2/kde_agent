@@ -436,14 +436,12 @@ class ReadinessTests(unittest.TestCase):
         provider.bus.complete('compositor', ())
         self.failure(provider, 'screenshot')
 
-    def test_ready_manifest_retains_provisional_scope_and_replacement_owner(self):
+    def test_ready_snapshot_reports_passed_capabilities_without_provisional_fields(self):
         provider = self.ready()
         value = provider.snapshot()
         self.assertTrue(value['desktop_ready'])
-        self.assertEqual(value['provider'], 'm1-provisional')
-        self.assertFalse(value['release_qualified'])
-        self.assertFalse(value['desktop_operations_supported'])
-        self.assertEqual(value['replacement_issue'], 35)
+        for retired in ('provider', 'release_qualified', 'desktop_operations_supported', 'replacement_issue'):
+            self.assertNotIn(retired, value)
         self.assertTrue(all(value['health'][key]['state'] == 'passed' for key in readiness.CAPABILITIES))
         provider.close()
         self.assertTrue(provider.bus.closed)

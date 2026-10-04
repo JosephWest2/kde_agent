@@ -74,19 +74,35 @@ class LifecycleTests(unittest.TestCase):
     def start(self):
         return self.manager.start(self.request())['session']['generation']
 
+    def test_retired_generation_resets_its_unit_best_effort(self):
+        resets = []
+        self.services.reset_failed = lambda data, deadline: resets.append((data['unit'], deadline))
+        generation = self.start()
+        stop = time.monotonic()
+        self.manager.handle(self.request("session.stop", generation=generation))
+        self.assertEqual([unit for unit, _ in resets], [unit_name(generation)])
+        self.assertLessEqual(resets[0][1], stop + 1 + .5)
+
+    def test_reset_failed_errors_never_fail_stop(self):
+        def broken(data, deadline):
+            raise ContractError('session_unavailable', 'Unit not loaded.')
+        self.services.reset_failed = broken
+        generation = self.start()
+        result = self.manager.handle(self.request("session.stop", generation=generation))
+        self.assertEqual(result['result']['cleanup'], 'complete')
+
     def test_ready_status_requires_fresh_complete_correlated_health(self):
         self.ping.stop()
         from copy import deepcopy
         generation = 'a' * 32
         base = {'state': 'ready', 'desktop_ready': True, 'observed_at': time.monotonic(),
-                'provider': 'm1-provisional', 'release_qualified': False, 'replacement_issue': 35,
                 'health': {key: {'state': 'passed', 'observed_at': time.monotonic()} for key in
                            ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot')}}
         with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': deepcopy(base)}):
             result = self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
             self.assertEqual(result['health']['control']['state'], 'passed')
         variants = [dict(base, observed_at=time.monotonic()-3), dict(base, observed_at=float('nan')),
-                    dict(base, health=[]), dict(base, desktop_ready=False), dict(base, release_qualified=True)]
+                    dict(base, health=[]), dict(base, desktop_ready=False)]
         for key in base['health']:
             changed = deepcopy(base)
             changed['health'][key] = {'state': 'pending'}
@@ -168,7 +184,7 @@ class LifecycleTests(unittest.TestCase):
                 (self.manager.start if operation == 'session.start' else self.manager.handle)(request)
             self.assertEqual(caught.exception.code, 'generation_mismatch')
         with self.assertRaises(ContractError):
-            self.manager._retire(runtime, data)
+            self.manager._retire(runtime, data, time.monotonic() + 1)
         self.assertEqual(before, self.services.calls)
         self.assertEqual(runtime.read('default'), new)
         self.assertTrue(self.services.active[unit_name(new)])

@@ -165,6 +165,11 @@ class Systemd:
     def stop(self, data, deadline):
         self.command(self.control('stop', '--no-block', data['unit']), deadline)
 
+    def reset_failed(self, data, deadline):
+        # Clears systemd's "failed" listing for a unit that is already settled
+        # and finalized. It never stops or starts anything.
+        self.command(self.control('reset-failed', data['unit']), deadline)
+
 
 
 def retained_failure(data):
@@ -237,14 +242,21 @@ class Manager:
         # the reservation rather than allowing a replacement to race that start.
         return data['submission'] != 'uncertain' and settled(info)
 
-    def _retire(self, runtime, data, *, failed=False):
+    def _retire(self, runtime, data, deadline, *, failed=False):
         # Unit quiescence was observed before entry; never wait with this lock.
         from .ownership import generation_lock
         from .service_cleanup import finalize
         with generation_lock(runtime, data['generation']):
             updated, preserved = finalize(runtime, data, failed=failed or data['state'] == 'failed')
             data.update(updated)
-            return preserved
+        # Best effort, outside the lock: a leftover failed-unit entry is cosmetic.
+        reset = getattr(self.systemd, 'reset_failed', None)
+        if reset is not None:
+            try:
+                reset(data, min(deadline, time.monotonic() + 1))
+            except (ContractError, OSError):
+                pass
+        return preserved
 
     def _stop(self, runtime, data, deadline, *, failed=False, requested=None):
         stop_submitted = False
@@ -289,7 +301,7 @@ class Manager:
                 self.systemd.stop(data, deadline)
                 stop_submitted = True
             time.sleep(min(.02, remaining(deadline)))
-        preserved = self._retire(runtime, data, failed=failed)
+        preserved = self._retire(runtime, data, deadline, failed=failed)
         return preserved and not bookkeeping_uncertain
 
     def _ping(self, request, generation, deadline):
@@ -313,8 +325,7 @@ class Manager:
             observed = result.get('observed_at')
             now = time.monotonic()
             health = result.get('health', {})
-            if (not isinstance(health, dict) or result.get('provider') != 'm1-provisional'
-                    or result.get('release_qualified') is not False or result.get('replacement_issue') != 35
+            if (not isinstance(health, dict)
                     or result['desktop_ready'] is not True or not fresh(observed, now)
                     or any(not isinstance(health.get(key), dict) or health[key].get('state') != 'passed'
                            for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))
@@ -364,7 +375,7 @@ class Manager:
                         time.sleep(min(.02, remaining(deadline)))
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
-                self._retire(runtime, data, failed=data['state'] != 'stopped')
+                self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
             previous = data
             generation = uuid.uuid4().hex
             unit = unit_name(generation)
@@ -468,7 +479,7 @@ class Manager:
             else:
                 info = self._observe(runtime, data, deadline)
                 if self._quiescent(data, info):
-                    self._retire(runtime, data, failed=data['state'] != 'stopped')
+                    self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
                     return self._result(request, generation,
                                         {'state': data['state'], 'desktop_ready': False, 'cleanup': 'complete',
                                          'failure': retained_failure(data) if data['state'] == 'failed' else None})

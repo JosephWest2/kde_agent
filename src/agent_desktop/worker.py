@@ -8,12 +8,23 @@ import os
 import time
 import math
 from contextlib import ExitStack, redirect_stdout, redirect_stderr
-from .contracts import ContractError, dispatch
+from .contracts import DESKTOP_OPERATIONS, ContractError, dispatch
 from .runtime import Endpoint
 from .transport import Server
 from .scheduler import Scheduler, UnsupportedTask
 from .children import Children
 
+
+
+def _unix_signal_add(GLib):
+    """GLibUnix.signal_add on PyGObject 3.52+, GLib.unix_signal_add before that."""
+    try:
+        import gi
+        gi.require_version('GLibUnix', '2.0')
+        from gi.repository import GLibUnix
+        return GLibUnix.signal_add
+    except (ImportError, ValueError, AttributeError):
+        return GLib.unix_signal_add
 
 def unsupported(request, admission):
     dispatch(request)
@@ -239,7 +250,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if managed and request.operation == "session.status":
                 admission.complete(result=({"state": "starting", "desktop_ready": False}
                                            if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
-                    "supported_operations": ["launch", "windows", "focus", "wait", "close", "kill"] if applications is not None and readiness is not None and readiness.state == "ready" else []})
+                    "supported_operations": list(DESKTOP_OPERATIONS) if applications is not None and readiness is not None and readiness.state == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')
@@ -266,7 +277,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 store.close()
         raise
     loop = GLib.MainLoop()
-    sources = [GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
+    signal_add = _unix_signal_add(GLib)
+    sources = [signal_add(GLib.PRIORITY_DEFAULT, sig, lambda: (begin_stop(), False)[1])
                for sig in (signal.SIGTERM, signal.SIGINT)]
     loop_failed = False
     try:

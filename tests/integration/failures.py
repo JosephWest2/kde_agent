@@ -168,13 +168,13 @@ class Scenario(smoke.Smoke):
 
     def kill_component(self, name, *components):
         """COMPONENTS: acceptable recorded causes; the first is the process itself."""
-        self.fixture_window()
+        _, window, _ = self.fixture_window()
         os.kill(self.session_process(name), signal.SIGKILL)
         ok(f'{name} killed', '')
         self.wait_state(f'{name} death', 'failed')
-        payload = self.desktop(f'key after {name} death', 'key', 'a', expect_ok=False)
-        if payload['ok']:
-            raise SmokeFailure(f'{name} death', 'input still accepted after the session failed')
+        payload = self.desktop(f'key after {name} death', 'key', '--window', window, 'a', expect_ok=False)
+        if (payload['error'] or {}).get('code') != 'session_unavailable':
+            raise SmokeFailure(f'{name} death', f'expected session_unavailable: {json.dumps(payload)[:300]}')
         self.stop_session()
         terminal = json.loads(read(self.artifacts / 'generations' / self.generation / 'terminal.json'))
         cause = (terminal.get('early_failure') or {}).get('context', {})
@@ -191,14 +191,16 @@ class Scenario(smoke.Smoke):
         self.kill_component('dbus-daemon', 'bus')
 
     def worker_sigkill(self):
-        _, window, _ = self.fixture_window()
+        _, window, log = self.fixture_window()
         process = self.background_cli('key', '--session', self.session, '--window', window, '--hold', '2', 'w')
-        time.sleep(.6)
+        rows = smoke_wait(lambda: self.keys(log), lambda rows: any(r[:2] == (W, 1) for r in rows))
+        if not any(r[:2] == (W, 1) for r in rows) or process.poll() is not None:
+            raise SmokeFailure('worker-sigkill', f'the hold never started: {rows}')
         os.kill(self.pids[0], signal.SIGKILL)
         out, _ = process.communicate(timeout=10)
         payload = json.loads(out)
-        if payload['ok']:
-            raise SmokeFailure('worker-sigkill', 'key reported success after its worker was killed')
+        if (payload['error'] or {}).get('code') != 'completion_unknown':
+            raise SmokeFailure('worker-sigkill', f'expected completion_unknown: {json.dumps(payload)[:300]}')
         ok('worker-sigkill', f'client got {payload["error"]["code"]}')
         status = self.run_cli('worker-sigkill (status)', 'session', 'status', '--session', self.session, expect_ok=False)
         ok('worker-sigkill', f'status: {json.dumps(status["result"] or status["error"])[:160]}')

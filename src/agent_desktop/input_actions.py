@@ -84,9 +84,11 @@ class InputTask:
         now = time.monotonic()
         if self.recheck is None:
             # Skip a recheck that could only finish after the input does.
-            if finishing or now < self.next_recheck or self.ends_at - now < RECHECK:
+            if finishing or now < self.next_recheck or self.remaining(now) < RECHECK:
                 return True
             self.recheck = self.make_target(self.request, self.context, self.adapter, self.registry, self.healthy)
+            # The window was already seen, so its disappearance is target_lost, not target_not_found.
+            self.recheck.selected = self.focus['window']
         if self.recheck.step(now) is None:
             return False
         self.rechecks += 1
@@ -97,9 +99,23 @@ class InputTask:
     def emission(self):
         return len(self.strokes) * STROKE_ESTIMATE + (self.hold if self.request.operation == 'key' else 0)
 
+    def remaining(self, now):
+        """Time still needed to send everything, at the pace actually achieved so far."""
+        if not self.strokes:
+            return 0
+        pace = self.emission() / len(self.strokes)
+        if self.index:
+            pace = max(pace, (now - self.started_at) / self.index)
+        if self.pressed_at is None:
+            return (len(self.strokes) - self.index) * pace
+        held = max(0, self.pressed_at + self.hold - now)
+        return held + (len(self.strokes) - self.index - 1) * pace
+
     def estimate(self):
+        # A recheck only starts with at least RECHECK of input left, so one
+        # still running at the end overruns it by at most RECHECK_QUERY - RECHECK.
         emission = self.emission()
-        return emission + (RECHECK_QUERY if self.target is not None and emission > RECHECK else 0)
+        return emission + (RECHECK_QUERY - RECHECK if self.target is not None and emission > RECHECK else 0)
 
     def prepare(self, owner):
         """Called once on the owner thread, after targeting and before the first stroke."""
@@ -152,7 +168,6 @@ class InputTask:
             self.phase = 'emit'
             self.started_at = time.monotonic()
             self.next_recheck = self.started_at + RECHECK
-            self.ends_at = self.started_at + self.emission()
         if time.monotonic() >= self.deadline:
             raise ContractError('timeout', 'Input deadline expired.')
         owner = self.owner()

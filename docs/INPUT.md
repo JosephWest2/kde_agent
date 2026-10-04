@@ -15,11 +15,13 @@ require it to exist and be focused. Otherwise they fail with `target_lost` (reas
 queried again every 250ms. If it is gone or no longer focused, everything held is
 released at once and the request fails with `target_lost` and the progress so far
 (`strokes_sent`, `strokes_total`, `key_held`, `focus_rechecks`). Detection is not
-instantaneous: up to about 350ms of input (one interval plus one query) can reach
-whatever took focus, including the release itself. A recheck still running when
-the last stroke is sent is waited for, so a late loss is reported even though
-every stroke was sent. No recheck is started within 250ms of the end, so `key`
-with the default hold and short `type` text never recheck. Successful results
+instantaneous: the next query starts 250ms after the previous one finishes, and a
+query takes about 0.1s (at most 0.5s), so typically 0.25–0.35s and at worst about
+0.75s of input, including the release itself, can reach whatever took focus. A
+recheck still running when the last stroke is sent is waited for, so a late loss
+is reported even though every stroke was sent. No recheck is started when less
+than 250ms of input remains at the pace achieved so far, so `key` with the default
+hold and short `type` text never recheck. Successful results
 include `focus_rechecks`.
 
 **Key names.** Chords are names joined by `+`, case-insensitive, pressed in order
@@ -45,9 +47,9 @@ before anything is sent, with its `index` and `codepoint` (non-ASCII lookalikes
 such as the Kelvin sign included). If `key caps_lock` has turned Caps Lock on,
 `type` inverts Shift for letters so the text still comes out as written; only this
 toolkit sends input to the private desktop, so the worker tracks that state. Each character is one
-press and one release, about 10ms apart, so roughly 150 characters fit the default
+press and one release, about 10ms apart, so roughly 170 characters fit the default
 3s and about 1900 fit the 30s maximum. Text whose estimate (15ms per character,
-plus 0.5s for a final focus recheck when it takes longer than 250ms) does not fit
+plus 0.25s for a final focus recheck when it takes longer than 250ms) does not fit
 the remaining time fails with `timeout`, phase `budget`, and sends nothing.
 
 **Release guarantees.** The worker owns every hold. Client disconnect, Ctrl-C,

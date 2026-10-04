@@ -448,6 +448,21 @@ class FocusRecheckTests(unittest.TestCase):
         self.assertEqual((context['strokes_sent'], context['key_held']), (context['strokes_total'], False))
         self.assertEqual(self.owner.device.held, [])
 
+    def test_slow_typing_keeps_rechecking_until_near_the_end(self):
+        # Typing at twice the estimated pace must not stop rechecking at the estimated end.
+        task = self.make('type', [{}] * 20, text='a' * 60)
+        task.gap = .02
+        self.run_task(task)
+        elapsed = time.monotonic() - task.started_at
+        self.assertGreater(elapsed, 1.5 * task.emission())
+        last_start = Recheck.created[-1].started - task.started_at
+        self.assertGreater(last_start, elapsed - 3 * RECHECK)
+
+    def test_vanished_window_is_target_lost(self):
+        task = self.make('key', [{}], chord='a', hold=.6)
+        self.run_task(task)  # The recheck carries the window already seen.
+        self.assertEqual(Recheck.created[1].selected, WINDOW)
+
     def test_no_recheck_starts_when_input_is_about_to_end(self):
         result = self.run_task(self.make('key', [], chord='a', hold=.6))
         # One recheck at .25s; none at ~.5s because the hold ends within RECHECK of it.
@@ -456,7 +471,7 @@ class FocusRecheckTests(unittest.TestCase):
 
     def test_budget_includes_one_recheck_query(self):
         task = self.make('key', [], chord='a', hold=1)
-        self.assertAlmostEqual(task.estimate(), task.emission() + .5)
+        self.assertAlmostEqual(task.estimate(), task.emission() + .25)
         self.assertEqual(self.make('key', [], chord='a', hold=.1).estimate(), self.make('key', [], chord='a', hold=.1).emission())
 
     def test_cancel_cancels_and_reaps_the_recheck(self):

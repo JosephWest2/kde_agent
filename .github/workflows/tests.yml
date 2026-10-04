@@ -1,0 +1,36 @@
+# Portable unit tests. Host tests skip themselves with a reason (tests/host_facilities.py);
+# see docs/TESTING.md for the categories and the exclusions.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    # Pinned rather than ubuntu-latest: the Python version comes from this image.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      # The system Python 3.12 (pyproject requires >= 3.11) with the distribution's
+      # PyGObject, dbus-python and Pillow, as the tool runs on a desktop host.
+      # python-is-python3 and git supply /usr/bin/python and /usr/bin/git, which
+      # tools/ and their tests invoke by absolute path.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 python-is-python3 git \
+            python3-gi gir1.2-glib-2.0 python3-dbus python3-pil dbus-daemon
+          /usr/bin/python3 --version
+
+      # The documented discovery, run by tests/run_ci.py so skips are checked on the
+      # structured results: only the host-test modules may skip, and the run,
+      # skipped and executed counts go to the log and the job summary.
+      - name: Unit tests
+        run: PYTHONPATH=src /usr/bin/python3 tests/run_ci.py

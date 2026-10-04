@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 from gi.repository import GLib
 from agent_desktop.input_connection import Input, Device, Failure
 from agent_desktop import libei_binding
+import host_facilities
 
 
 class InputTests(unittest.TestCase):
@@ -305,6 +306,7 @@ class InputTests(unittest.TestCase):
         self.assertIs(value.bus, bus); self.assertEqual(value.cookie, 123)
 
     def test_failed_native_setup_closes_its_own_fd_exactly_once(self):
+        host_facilities.require(self, host_facilities.libei())
         # Real epoll EPERM. libei 1.6.0 leaves the FD caller-owned on failure,
         # so setup closes it; a descriptor reusing the number survives disposal.
         with patch('agent_desktop.input_connection.binding.load', wraps=libei_binding.load):
@@ -323,6 +325,7 @@ class InputTests(unittest.TestCase):
         self.assertEqual(before, len(os.listdir('/proc/self/fd')))
 
     def test_failed_setup_never_closes_a_descriptor_libei_already_replaced(self):
+        host_facilities.require(self, host_facilities.libei())
         # Simulates a libei that closes the FD on failure and reuses the number
         # internally: setup must notice the different file and leave it open.
         value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)
@@ -344,6 +347,7 @@ class InputTests(unittest.TestCase):
             os.close(replacement[0])
 
     def test_successful_native_setup_transfers_fd_once(self):
+        host_facilities.require(self, host_facilities.libei())
         value = Input('e'*32, GLib, invalidated=lambda cause: None, failed=lambda error: None)
         value.name = 'ownership-test'
         left, right = socket.socketpair()

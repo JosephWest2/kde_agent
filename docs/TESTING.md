@@ -9,6 +9,53 @@ PYTHONPATH=src python -m unittest discover -s tests
 These need no desktop. Some use real native resources (libei, pipes, sockets)
 but never start KWin.
 
+Tests that need a facility only the real host has check for it and skip with
+the reason (`tests/host_facilities.py`). On the host, insist on full coverage:
+
+```sh
+AGENT_DESKTOP_REQUIRE_HOST_TESTS=1 PYTHONPATH=src python -m unittest discover -s tests
+```
+
+With `AGENT_DESKTOP_REQUIRE_HOST_TESTS=1` a missing facility fails the test instead
+of skipping it. On a complete host nothing skips either way.
+
+### Categories
+
+| Category | Tests | What they need |
+| --- | --- | --- |
+| Portable | 511 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
+| Needs native build | 8 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
+
+Skipped outside the host (all other modules are portable):
+
+| Module | Skipped tests | Condition |
+| --- | --- | --- |
+| `test_lifecycle_process` | all 4 | No user service manager, user bus or `app.slice` cgroup: they start real `systemd-run --user` services |
+| `test_libei_probe` | 5 of 9 | No `/usr/lib/libei.so.1`, or not the SHA-256 that `tools/libei_binding.py` pins; the header audit also needs `/usr/bin/cc`, `/usr/bin/pkg-config`, a `libei-1.0` entry it resolves without `PKG_CONFIG_PATH`, and `/usr/include/libei-1.0/libei.h` |
+| `test_input_connection` | 3 of 31 | `agent_desktop.libei_binding.describe()` rejects or cannot find libei |
+
+`test_prerequisites` also checks the real libei only when `/usr/lib/libei.so.1`
+exists; the rest of that test always runs.
+
+### CI
+
+`.github/workflows/tests.yml` runs the unit tests on pull requests and pushes to
+`main`, on `ubuntu-24.04` with its system Python 3.12 and the distribution's
+`python3-gi`, `python3-dbus` and `python3-pil`. It runs the same discovery through
+
+```sh
+PYTHONPATH=src python tests/run_ci.py
+```
+
+which prints how many tests ran, were skipped and were executed, with each skip's
+reason, to the log and the job summary. It checks skips by test id, not by output
+text: a skip in any module other than the three above fails the job, as do failures,
+errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
+purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
+have a user systemd manager, so `test_lifecycle_process` runs there: 515 of the 523
+tests. CI never runs the smoke or failure-path tests below.
+
 ## End-to-end smoke test
 
 ```sh

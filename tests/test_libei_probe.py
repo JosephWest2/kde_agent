@@ -8,6 +8,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+import host_facilities
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("libei_probe", ROOT / "tools/libei_probe.py")
 probe = importlib.util.module_from_spec(spec)
@@ -61,6 +63,7 @@ class InputSafetyTests(unittest.TestCase):
         self.assertEqual(events[0][0], ("release_uncertain",))
 
     def test_real_installed_header_audit(self):
+        host_facilities.require(self, host_facilities.libei_headers(probe.binding))
         with tempfile.TemporaryDirectory() as directory:
             receipt = probe.binding.audit(directory)
         self.assertTrue(receipt["passed"])
@@ -68,11 +71,13 @@ class InputSafetyTests(unittest.TestCase):
         self.assertEqual(len(receipt["declarations"]), 24)
 
     def test_unknown_native_build_rejected_before_loading(self):
+        host_facilities.require(self, host_facilities.libei_file(probe.binding))
         with patch.object(probe.binding, "SUPPORTED_LIBRARY_SHA256", "0" * 64):
             with self.assertRaisesRegex(RuntimeError, "failed-setup FD ownership"):
                 probe.binding.load()
 
     def test_installed_negative_setup_keeps_fd_until_caller_closes(self):
+        host_facilities.require(self, host_facilities.reviewed_libei(probe.binding))
         library = probe.binding.load()
         with tempfile.TemporaryFile() as regular:
             fd = os.dup(regular.fileno())
@@ -86,6 +91,7 @@ class InputSafetyTests(unittest.TestCase):
                 library.ei_unref(context)
 
     def test_failed_setup_closes_immediately_without_reused_or_unrelated_fd_damage(self):
+        host_facilities.require(self, host_facilities.reviewed_libei(probe.binding))
         # Exercise Input.setup with the real library. The log callback reuses the
         # just-closed number BEFORE dispose, exposing a late/double close.
         probe.binding.load()
@@ -121,6 +127,7 @@ class InputSafetyTests(unittest.TestCase):
         self.assertEqual(len(os.listdir("/proc/self/fd")), before)
 
     def test_successful_setup_transfers_fd_once_to_installed_library(self):
+        host_facilities.require(self, host_facilities.reviewed_libei(probe.binding))
         library = probe.binding.load()
         left, right = socket.socketpair()
         fd = left.detach()

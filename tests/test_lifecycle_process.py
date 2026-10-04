@@ -15,10 +15,12 @@ sys.path.insert(0, str(SRC))
 from agent_desktop.lifecycle import Systemd, read_metadata
 from agent_desktop.runtime import Runtime
 from unittest.mock import patch
+import host_facilities
 
 
 class LifecycleProcessTests(unittest.TestCase):
     def setUp(self):
+        host_facilities.require(self, host_facilities.user_systemd())
         self.temp = tempfile.TemporaryDirectory(prefix='adp-')
         self.root = Path(self.temp.name)
         self.runtime = self.root / 'r'

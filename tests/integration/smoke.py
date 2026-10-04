@@ -61,6 +61,7 @@ class Smoke:
         self.start_attempted = False
         self.pids = []
         self.screenshots = []
+        self.launched = 0
 
     def run_cli(self, step, *args, timeout=40, expect_ok=True, quiet=False):
         started = time.monotonic()
@@ -101,6 +102,7 @@ class Smoke:
     def launch(self, label, *argv, windows=1):
         payload = self.desktop(f'{label}: launch', 'launch', '--wait-window', '--', *argv)
         result = payload['result']
+        self.launched += 1
         self.pids.append(result['process']['pid'])
         app = result['application']['ref']
         expected, windows = windows, []
@@ -144,6 +146,24 @@ class Smoke:
         print(f'  ok  {"fixture: key acknowledgements":<34}       order, modifiers, text, hold {hold}ms')
         check_button_log(Path(logs['stdout']))
         print(f'  ok  {"fixture: button acknowledgements":<34}       position, button, count')
+        self.check_logs(app, logs)
+
+    def check_logs(self, app, launched):
+        """`logs` finds the exited fixture's complete logs at the paths launch returned."""
+        entries = self.desktop('fixture: logs --tail 3', 'logs', '--app', app, '--tail', '3')['result']['logs']
+        streams = {entry['stream']: entry for entry in entries}
+        stdout = streams.get('stdout', {})
+        if (set(streams) != {'stdout', 'stderr'} or any(streams[s]['path'] != launched[s] for s in streams)
+                or not all(entry['complete'] for entry in entries) or len(stdout.get('tail', [])) != 3
+                or any(path.endswith('.partial') for path in launched.values())):
+            raise SmokeFailure('fixture: logs', json.dumps(entries)[:600])
+        content = Path(launched['stdout']).read_text()
+        if stdout['tail'] != content.splitlines()[-3:] or stdout['bytes'] != len(content.encode()):
+            raise SmokeFailure('fixture: logs', f'tail does not match the log\'s last lines: {stdout["tail"]}')
+        session = self.desktop('logs --source compositor', 'logs', '--source', 'compositor', '--tail', '0')
+        if [entry['source'] for entry in session['result']['logs']] != ['compositor']:
+            raise SmokeFailure('logs', json.dumps(session['result'])[:300])
+        print(f'  ok  {"fixture: log artifacts":<34}       final names, complete, tail matches')
 
     def editor_flow(self):
         app, window, _ = self.launch('editor', self.editor)
@@ -228,7 +248,14 @@ class Smoke:
             raise SmokeFailure('artifacts', f'manifest state {manifest.get("state")}, screenshots {self.screenshots}')
         if not (generation / 'shutdown.json').is_file():
             raise SmokeFailure('artifacts', 'shutdown.json missing')
-        print(f'  ok  {"artifacts":<34}       manifest, shutdown record, {len(self.screenshots)} screenshots')
+        components = {entry['component'] for entry in manifest['dependencies'].get('inventory', [])}
+        if not {'kwin', 'libei', 'kdotool'} <= components or manifest['output']['state'] != 'collected':
+            raise SmokeFailure('artifacts', f'manifest lacks versions or output: {sorted(components)}')
+        applications = manifest.get('applications', [])
+        if len(applications) != self.launched or manifest.get('failure') is not None:
+            raise SmokeFailure('artifacts', f'manifest lists {len(applications)} of {self.launched} applications')
+        print(f'  ok  {"artifacts":<34}       manifest (versions, {len(applications)} apps), shutdown record, '
+              f'{len(self.screenshots)} screenshots')
 
     def run(self):
         started = time.monotonic()

@@ -34,10 +34,12 @@ OPERATIONS = {
 # unsupported_operation. --help, doctor and session status all read this.
 SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
                         "launch", "windows", "focus", "wait", "key", "type", "click", "screenshot",
-                        "close", "kill")
+                        "logs", "close", "kill")
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
                            if op not in ("doctor", "session.start", "session.status", "session.stop"))
+LOG_SOURCES = ("all", "application", "worker", "compositor", "bus")
+MAX_TAIL = 200
 GENERATION = re.compile(r"[0-9a-f]{32}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 APP_ID = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -157,7 +159,7 @@ ARGUMENTS = {
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window"}, "key": {"window", "chord", "hold"},
     "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
-    "screenshot": {"output", "window"}, "logs": {"app", "source"},
+    "screenshot": {"output", "window"}, "logs": {"app", "source", "tail"},
     "close": {"app", "window"}, "kill": {"app"},
 }
 
@@ -258,8 +260,14 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         args["output"] = text(args["output"], "output")
     if operation == "logs":
         args.setdefault("source", "all")
-        if args["source"] not in ("all", "worker", "compositor", "application"):
+        if args["source"] not in LOG_SOURCES:
             invalid("source")
+        tail = args.get("tail", 20)
+        if isinstance(tail, str) and re.fullmatch(r"[0-9]{1,3}", tail):
+            tail = int(tail)
+        if type(tail) is not int or not 0 <= tail <= MAX_TAIL:
+            invalid("tail")
+        args["tail"] = tail
     caller_cwd = text(caller_cwd, "caller_cwd")
     if not caller_cwd.startswith("/"):
         invalid("caller_cwd")

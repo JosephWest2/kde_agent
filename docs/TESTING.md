@@ -30,7 +30,8 @@ invocations, the way an agent would:
    complete Wayland key log must show the exact key order, the effective Ctrl/Shift
    state when each key went down (back to none at the end), the text and a hold of
    about 200ms, and its button log must show each click's exact button and
-   client position.
+   client position. `logs --app` must then report both logs complete, at the
+   `.log` paths launch returned, with a tail matching the file.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
    query until the title contains the typed text. A click on the header bar's
    "New Tab" button must switch the same window to a "New Document", and
@@ -39,8 +40,9 @@ invocations, the way an agent would:
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.
 5. `session stop`. No process may remain in the generation's cgroup, the systemd
-   unit must be gone, the manifest must say `stopped` (not `failed`), and the
-   shutdown record and screenshots must exist.
+   unit must be gone, the manifest must say `stopped` (not `failed`) and list
+   the KWin, libei and kdotool versions, the observed output and both
+   applications, and the shutdown record and screenshots must exist.
 
 Stop, the leak check and the artifact check each run even when an earlier step,
 or stop itself, fails. Stop is by session name, so it also runs if `session start`
@@ -72,9 +74,9 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `cancel-hold` | Ctrl-C on the client 0.6s into `key --hold 2 w` | `cancelled`, exit 130, release within 1s, and the next `key` works |
 | `cancel-type` | Ctrl-C 0.8s into typing 1500 characters | `cancelled`; no character arrives after the cancel |
 | `generation` | `--generation` and a window ref from another generation | `generation_mismatch` for both |
-| `compositor-death` | SIGKILL `kwin_wayland` | session `failed`, input refused, terminal record names the compositor (or the lost input, if the worker noticed that first) |
+| `compositor-death` | SIGKILL `kwin_wayland` | session `failed`, input refused with `session_unavailable`; `session status` and the manifest's `failure` name the compositor and SIGKILL; the app is `ended_by_session_stop` |
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
-| `worker-sigkill` | SIGKILL the worker during a hold | the client gets an error, not success |
+| `worker-sigkill` | SIGKILL the worker once the fixture sees the held key | the client gets `completion_unknown` |
 | `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
 
 It takes the same `--cli`, `--dependency-root` and `--verbose` options as the smoke

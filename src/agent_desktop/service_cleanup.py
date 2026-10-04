@@ -150,9 +150,15 @@ def finalize(runtime, data, *, service_result=None, exit_code=None, exit_status=
                         for key in ('service_result', 'exit_code', 'exit_status'):
                             receipt[key] = old.get(key)
                 atomic(target, receipt)
+                if complete:
+                    try:
+                        store.summarize_applications(emptied=receipt['ordinary_processes_absent'])
+                    except (ContractError, OSError):
+                        pass  # The per-application records remain authoritative.
                 store.generation_update(state=data['state'],
                     failure=(previous.get('first_failure') or 'session_failed') if data['state'] == 'failed' else None,
-                    cleanup='complete' if complete else 'uncertain')
+                    cleanup='complete' if complete else 'uncertain',
+                    detail=early_failure if data['state'] == 'failed' else None)
             except (ContractError, OSError):
                 preserved = False
         record()

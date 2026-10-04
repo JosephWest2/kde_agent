@@ -12,8 +12,8 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
 `focus`, `wait`, `key`, `type`, `click`, `screenshot`, `close` and `kill`.
-`logs` returns `unsupported_operation` until #68 lands. There is no `input reset`;
-recover from `input_uncertain` with `session stop` and `session start`. Key names, text limits, click coordinates and release guarantees are
+Every command in the table below is supported. There is no `input reset`; recover
+from `input_uncertain` with `session stop` and `session start`. Key names, text limits, click coordinates and release guarantees are
 in [keyboard and pointer input](INPUT.md).
 
 ## Screenshots
@@ -114,7 +114,7 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
 | `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |
 | `screenshot` | optional `--window WINDOW_REF` (crop to its client area), optional `--output PATH` (file or existing directory) | 3 / 3 |
-| `logs` | optional `--app APP_REF`; `--source all\|worker\|compositor\|application` (default all) | 3 / 3 |
+| `logs` | optional `--app APP_REF`; `--source all\|application\|worker\|compositor\|bus` (default all); `--tail 0-200` (default 20) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
 | `kill` | required `--app APP_REF` | 5 / 15 |
 
@@ -154,7 +154,6 @@ Environment names use `[A-Za-z_][A-Za-z0-9_]*`. Values may be empty or contain `
 the last repeated explicit key wins. NULs are invalid in all argument strings.
 The initial desktop configuration is one 1280×720 scale-1 output. A different
 mode is explicitly unsupported; future viewing needs no backend/plugin framework.
-`logs` will return artifact locations and metadata, never an unbounded tail.
 `close` requests normal closure and reports application exit, leaving confirmation
 dialogs to explicit interaction; it never escalates to a signal. `kill` separately
 terminates verified owned application processes, never an arbitrary PID.
@@ -193,6 +192,29 @@ text. See [paths, environments and durable records](ARTIFACTS.md) for defaults,
 producer boundaries, atomicity and storage-failure semantics. Desktop/settings
 separation is not filesystem or network isolation; applications remain trusted.
 
+## Logs
+
+`logs` returns where each log is, its size, whether it is complete and its last
+`--tail` lines (default 20, at most 200, from at most the last 16 KB of the file).
+It never returns a whole log; read the `path` for more.
+
+- With no `--app`, `application` means the most recently launched application.
+  `--app REF` selects any application of this session, including exited ones,
+  and cannot be combined with `--source worker|compositor|bus`.
+- `worker`, `compositor` and `bus` are the session's own logs. They are never
+  `complete` while the session runs.
+- An application log is `complete` once the application and all its descendants
+  have exited. Its path is the one `launch` returned and never changes.
+- `truncated` means there is more before the returned lines. ANSI color codes
+  and other control characters are removed from returned lines, not the files.
+
+```json
+{"logs":[{"source":"application","stream":"stderr","application":{"generation":"…","application_id":"…"},
+  "path":"/…/requests/…/….stderr.log","complete":false,"bytes":812,"tail":["Gtk-WARNING …"],"truncated":true},
+ {"source":"worker","path":"/…/logs/worker.log","complete":false,"bytes":0,"tail":[],"truncated":false}],
+ "tail":20}
+```
+
 ## Requests, results and errors
 
 The shared Request contains `schema_version: 1`, a fresh `request_id`, operation
@@ -222,7 +244,7 @@ codes may be added without breaking version 1.
 | 4 | `session_not_found`, `session_failed`, `session_unavailable`, `session_conflict`, `generation_mismatch` |
 | 5 | `unsupported_operation`, `unsupported_input` |
 | 6 | `target_not_found`, `target_ambiguous`, `target_lost` |
-| 7 | `application_exited` |
+| 7 | `application_active`, `application_exited` |
 | 8 | `timeout` |
 | 9 | `input_failed`, `input_unavailable`, `input_uncertain` |
 | 10 | `capture_failed` |

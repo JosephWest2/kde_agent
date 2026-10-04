@@ -30,6 +30,31 @@ def unsupported(request, admission):
     dispatch(request)
 
 
+CAUSE_WAIT = .1  # How long shutdown keeps looking for an essential child's exit.
+
+
+def essential_exit(error):
+    return ((getattr(error, 'context', None) or {}).get('component') in ('bus', 'compositor'))
+
+
+def root_cause(error, foundation):
+    """An essential child's exit if one is already visible, else ERROR. Never waits.
+
+    Killing KWin also drops the EIS connection, and the worker can see either
+    first; shutdown keeps polling for CAUSE_WAIT (see `cause_deadline`).
+    """
+    if foundation is None or essential_exit(error):
+        return error
+    try:
+        foundation.tick()
+    except ContractError as cause:
+        if essential_exit(cause):
+            return cause
+    except Exception:
+        pass
+    return error
+
+
 def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities=(), observer=None,
         artifacts=None, store=None, managed=False, desktop=False, desktop_observer=None,
         kdotool=None, startup_deadline=None, readiness_factory=None, shutdown_hooks=None):
@@ -48,6 +73,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     endpoint = server = children = None
     foundation = readiness = applications = None
     foundation_error = None
+    cause_deadline = None  # While set, a later essential child exit replaces the recorded cause.
     shutdown = None
     stop_waiters = []
     quit_after = None
@@ -106,6 +132,9 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         from .screenshots import ScreenshotTask
                         return ScreenshotTask(request, context, foundation, readiness.adapter, applications,
                                               launch_health, lambda: readiness.screen, store.path / 'screenshots')
+                    if request.operation == 'logs':
+                        from .logs import LogsTask
+                        return LogsTask(request, context, store, applications, launch_health)
                     if request.operation in ('focus', 'wait'):
                         from .targeting import TargetTask
                         return TargetTask(request, context, readiness.adapter, applications, launch_health)
@@ -130,9 +159,56 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                                     observe=shutdown_record, failure=failure, **hooks)
             return shutdown
 
+        def record_failure(error, *, replace=False):
+            """Persist ERROR as the session's failure cause; returns its failure code."""
+            if store is None:
+                return getattr(error, 'code', 'session_failed')
+            first = None
+            try:
+                from .lifecycle import atomic, retained_failure
+                if not replace:
+                    first = retained_failure({'generation': generation,
+                                              'configuration': {'artifacts': str(store.root)}})
+                if first is None:
+                    first = {'generation': generation, 'code': getattr(error, 'code', 'session_failed'),
+                             'message': getattr(error, 'message', 'Private desktop owner failed.'),
+                             'context': getattr(error, 'context', {})}
+                    atomic(store.path / 'startup-failure.json', first)
+                code = first['code']
+            except Exception:
+                code = getattr(error, 'code', 'session_failed')
+            try:
+                # Nonblocking best effort before any shutdown hook can
+                # stall. The independent finalizer also reads the earlier
+                # diagnostic if this aggregate update is unavailable.
+                store.generation_update(state='failed', failure=code, cleanup='uncertain', detail=first,
+                                        replace_detail=replace)
+            except Exception:
+                pass
+            return code
+
+        def watch_cause():
+            """During shutdown, prefer an essential child's exit that shows up late."""
+            nonlocal cause_deadline, foundation_error
+            if cause_deadline is None:
+                return
+            if time.monotonic() >= cause_deadline:
+                cause_deadline = None
+                return
+            try:
+                foundation.tick()
+            except ContractError as cause:
+                if essential_exit(cause):
+                    cause_deadline = None
+                    foundation_error = cause
+                    record_failure(cause, replace=True)
+            except Exception:
+                pass
+
         def tick():
-            nonlocal foundation_error, readiness, quit_after, applications
+            nonlocal foundation_error, readiness, quit_after, applications, cause_deadline
             if shutdown is not None:
+                watch_cause()
                 if (shutdown.phase == 'cancel' and readiness is not None
                         and getattr(readiness, 'state', None) != 'ready'
                         and hasattr(readiness, 'cleanup_query')):
@@ -151,7 +227,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                                                        'graceful': shutdown.snapshot()})
                     if quit_after is None:
                         quit_after = time.monotonic() + .05
-                    if time.monotonic() >= quit_after:
+                    if time.monotonic() >= quit_after and cause_deadline is None:
                         loop.quit()
                 return
             try:
@@ -171,6 +247,13 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                                 readiness.adapter.registry = applications
                         if previous != readiness.state:
                             store.generation_update(state=readiness.state)
+                            output = getattr(getattr(getattr(readiness, 'query', None), 'decoder', None), 'output', None)
+                            if readiness.state == 'ready' and output is not None:
+                                try:
+                                    store.provenance(output={'width': output.width, 'height': output.height,
+                                                             'scale': int(output.scale or 1)})
+                                except (ContractError, OSError):
+                                    pass
                     if desktop_observer is not None:
                         desktop_observer(foundation)
                 children.poll()
@@ -181,32 +264,16 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             except Exception as error:
                 # GLib otherwise reports callback exceptions and leaves the
                 # worker running. A failed owner must exit the service instead.
+                error = root_cause(error, foundation)
+                if foundation is not None and not essential_exit(error):
+                    cause_deadline = time.monotonic() + CAUSE_WAIT
                 foundation_error = error
                 if readiness is not None and readiness.error is None:
                     try:
                         readiness.fail(error)
                     except Exception:
                         pass
-                if store is not None:
-                    try:
-                        from .lifecycle import atomic, retained_failure
-                        first = retained_failure({'generation': generation,
-                            'configuration': {'artifacts': str(store.root)}})
-                        if first is None:
-                            atomic(store.path / 'startup-failure.json', {
-                                'generation': generation, 'code': getattr(error, 'code', 'session_failed'),
-                                'message': getattr(error, 'message', 'Private desktop owner failed.'),
-                                'context': getattr(error, 'context', {})})
-                        code = first['code'] if first is not None else getattr(error, 'code', 'session_failed')
-                    except Exception:
-                        code = getattr(error, 'code', 'session_failed')
-                    try:
-                        # Nonblocking best effort before any shutdown hook can
-                        # stall. The independent finalizer also reads the earlier
-                        # diagnostic if this aggregate update is unavailable.
-                        store.generation_update(state='failed', failure=code, cleanup='uncertain')
-                    except Exception:
-                        pass
+                record_failure(error)
                 begin_stop(failure=True)
         def escalate_query_cleanup(reason):
             nonlocal foundation_error

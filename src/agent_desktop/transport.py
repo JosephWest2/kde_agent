@@ -30,7 +30,7 @@ def exchange(request, *, deadline=None):
     sock = None
     try:
         runtime = Runtime()
-        if request.operation in {"input.reset", "session.stop"}:
+        if request.operation == "session.stop":
             generation, path = runtime.discover(request.session, request.expected_generation, priority=True)
         else:
             generation, path = runtime.discover(request.session, request.expected_generation)
@@ -277,7 +277,7 @@ class Connection:
                 request = cancel_from_wire(value)
             else:
                 request = request_from_wire(value)
-            control = request.operation in {"request.cancel", "input.reset", "session.stop"}
+            control = request.operation in {"request.cancel", "session.stop"}
             if control != self.priority:
                 raise ContractError("protocol_error", "Request used the wrong endpoint.")
             if request.session != self.server.name or request.expected_generation != self.server.generation:

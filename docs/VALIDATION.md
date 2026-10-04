@@ -5,8 +5,8 @@ copies) were removed from the working tree in #62. They are still in git
 history: every folder exists at commit `d1efe95b` under `evidence/issue-N/`,
 for example `git show d1efe95b:evidence/issue-27/README.md`.
 
-Ongoing validation is the unit suite plus the end-to-end smoke test and
-failure-path tests (#65, #67); see `planning/REVISED_PLAN.md`.
+Ongoing validation is the unit suite plus the end-to-end smoke test (#65) and
+failure-path tests (#67); see [TESTING.md](TESTING.md).
 
 | Issue | Area | Headline result | Added in |
 | --- | --- | --- | --- |

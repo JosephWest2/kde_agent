@@ -12,7 +12,7 @@ class ShutdownTests(unittest.TestCase):
             task = Task(context, events, clock)
             tasks.append(task)
             return task
-        owner = Scheduler(clock=clock, factory=factory, capabilities={'input.reset', 'session.stop'})
+        owner = Scheduler(clock=clock, factory=factory, capabilities={'session.stop'})
         active = Admission(clock)
         owner.submit(active.request, active)
         owner.tick()
@@ -70,9 +70,9 @@ class ShutdownTests(unittest.TestCase):
         self.assertTrue(shutdown.done)
         self.assertFalse(shutdown.results['close']['confirmed'])
 
-    def test_superseded_reset_cancellation_is_bounded_by_shutdown(self):
+    def test_unclean_stop_cleanup_is_bounded_by_shutdown(self):
         clock, events, tasks, owner, active = self.setup_owner()
-        reset = Admission(clock, 'input.reset')
+        reset = Admission(clock, 'session.stop')
         owner.submit(reset.request, reset)
         owner.tick()
         tasks[-1].clean = False

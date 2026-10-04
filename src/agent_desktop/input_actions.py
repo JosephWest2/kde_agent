@@ -3,7 +3,9 @@
 The worker owns every press-to-release interval. Client disconnect, cancellation,
 timeout and shutdown all reach ``request_cancel``, which releases immediately on
 the owner thread. Input is refused while an earlier release is uncertain.
-Focus is verified once before the first stroke; mid-sequence rechecks are #67.
+Focus is verified before the first stroke, then rechecked every RECHECK seconds
+while a sequence or hold is still being sent. A recheck that finds the window
+gone or unfocused releases everything and fails with what was already sent.
 """
 import time
 
@@ -16,6 +18,8 @@ TYPE_HOLD = .004      # Press-to-release for each typed character.
 TYPE_GAP = .004       # Release-to-next-press.
 STROKE_ESTIMATE = .015  # Per-character budget; measured ~10ms with the 5ms owner tick.
 MARGIN = .1
+RECHECK = .25         # Focus recheck interval during long holds and typing.
+RECHECK_QUERY = .5    # A window query caps itself at .5s; input may end with one in flight.
 CLICK_HOLD = .02      # Button press-to-release.
 CLICK_GAP = .06       # Between the clicks of a multi-click; far inside toolkit double-click times.
 BUTTONS = {'left': 0x110, 'right': 0x111, 'middle': 0x112}
@@ -48,6 +52,10 @@ class InputTask:
         self.pressed_at = None
         self.next_at = 0
         self.started_at = self.finished_at = None
+        self.recheck = None
+        self.next_recheck = None
+        self.rechecks = 0
+        self.adapter, self.registry = adapter, registry
 
     def parse(self, request, input_owner):
         arguments = request.arguments
@@ -64,8 +72,34 @@ class InputTask:
     def make_target(self, request, context, adapter, registry, healthy):
         return TargetTask(request, context, adapter, registry, healthy, condition='observe', require_focus=True)
 
-    def estimate(self):
+    def watch_focus(self, *, finishing=False):
+        """Advance the periodic focus recheck; raises if the window lost focus.
+
+        Returns True when no recheck is in flight. A running recheck is always
+        finished rather than cancelled: cancelling a window query costs more
+        than letting it complete, and a result must not leave one behind.
+        """
+        if self.target is None:
+            return True
+        now = time.monotonic()
+        if self.recheck is None:
+            # Skip a recheck that could only finish after the input does.
+            if finishing or now < self.next_recheck or self.ends_at - now < RECHECK:
+                return True
+            self.recheck = self.make_target(self.request, self.context, self.adapter, self.registry, self.healthy)
+        if self.recheck.step(now) is None:
+            return False
+        self.rechecks += 1
+        self.recheck = None
+        self.next_recheck = time.monotonic() + RECHECK
+        return True
+
+    def emission(self):
         return len(self.strokes) * STROKE_ESTIMATE + (self.hold if self.request.operation == 'key' else 0)
+
+    def estimate(self):
+        emission = self.emission()
+        return emission + (RECHECK_QUERY if self.target is not None and emission > RECHECK else 0)
 
     def prepare(self, owner):
         """Called once on the owner thread, after targeting and before the first stroke."""
@@ -84,7 +118,8 @@ class InputTask:
 
     def progress(self):
         return {'window': self.request.arguments.get('window'), 'strokes_sent': self.index,
-                'strokes_total': len(self.strokes), 'key_held': self.pressed_at is not None}
+                'strokes_total': len(self.strokes), 'key_held': self.pressed_at is not None,
+                'focus_rechecks': self.rechecks}
 
     def step(self, now):
         try:
@@ -116,13 +151,16 @@ class InputTask:
                                   'strokes_total': len(self.strokes)}, uncertain=True)
             self.phase = 'emit'
             self.started_at = time.monotonic()
+            self.next_recheck = self.started_at + RECHECK
+            self.ends_at = self.started_at + self.emission()
         if time.monotonic() >= self.deadline:
             raise ContractError('timeout', 'Input deadline expired.')
         owner = self.owner()
+        if self.index == len(self.strokes):
+            return self.result() if self.watch_focus(finishing=True) else None
+        self.watch_focus()
         now = time.monotonic()
         if self.pressed_at is None:
-            if self.index == len(self.strokes):
-                return self.result()
             if now < self.next_at:
                 return None
             self.healthy()
@@ -142,7 +180,7 @@ class InputTask:
         self.next_at = time.monotonic() + self.gap
         if self.index == len(self.strokes):
             self.finished_at = time.monotonic()
-            return self.result()
+            return self.result() if self.watch_focus(finishing=True) else None
         return None
 
     def release(self, *, strict=False):
@@ -169,7 +207,7 @@ class InputTask:
 
     def result(self):
         base = {'window': self.focus['window'], 'focused': True, 'dispatched': True,
-                'query_artifact': self.focus['query_artifact'],
+                'query_artifact': self.focus['query_artifact'], 'focus_rechecks': self.rechecks,
                 'started_at': self.started_at, 'finished_at': self.finished_at or time.monotonic()}
         if self.request.operation == 'key':
             return base | {'chord': self.request.arguments['chord'], 'codes': self.strokes[0],
@@ -181,6 +219,8 @@ class InputTask:
         self.release()
         if self.target is not None:
             self.target.request_cancel(reason)
+        if self.recheck is not None:
+            self.recheck.request_cancel(reason)
         error = getattr(self.context.work, 'error', None)
         if error is not None and self.phase == 'emit':
             error.context.update(self.progress())
@@ -189,7 +229,8 @@ class InputTask:
         self.release()
         owner = self.input_owner()
         released = owner is None or not busy(owner)
-        return released and (self.target is None or self.target.cleanup(now))
+        rechecked = self.recheck is None or self.recheck.cleanup(now)
+        return released and rechecked and (self.target is None or self.target.cleanup(now))
 
 
 class ClickTask(InputTask):
@@ -220,7 +261,7 @@ class ClickTask(InputTask):
         self.strokes = [[BUTTONS[self.button]]] * self.count
         self.hold = CLICK_HOLD
 
-    def estimate(self):
+    def emission(self):
         return self.count * (CLICK_HOLD + CLICK_GAP + STROKE_ESTIMATE)
 
     def locate(self):
@@ -247,5 +288,5 @@ class ClickTask(InputTask):
                 'dispatched': True, 'query_artifact': self.focus and self.focus['query_artifact'],
                 'client': self.focus and self.focus['client'],
                 'x': self.x, 'y': self.y, 'screen_x': self.point[0], 'screen_y': self.point[1],
-                'button': self.button, 'count': self.count,
+                'button': self.button, 'count': self.count, 'focus_rechecks': self.rechecks,
                 'started_at': self.started_at, 'finished_at': self.finished_at or time.monotonic()}

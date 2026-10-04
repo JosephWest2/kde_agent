@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop import cli
 from agent_desktop.contracts import ContractError, make_request, response
-from agent_desktop.input_actions import CLICK_GAP, CLICK_HOLD, ClickTask, InputTask
+from agent_desktop.input_actions import CLICK_GAP, CLICK_HOLD, RECHECK, ClickTask, InputTask
 from agent_desktop.keymap import KEYS, SHIFT, parse_chord, text_strokes
 from agent_desktop.screenshots import crop_rect
 from agent_desktop.shutdown import release_input
@@ -357,6 +357,119 @@ class ClickTaskTests(unittest.TestCase):
                     {'x': -1}, {'x': '1.5'}):
             with self.subTest(bad=bad), self.assertRaises(ContractError):
                 make_request('click', arguments={'x': 1, 'y': 1, **bad}, caller_cwd='/')
+
+
+class Recheck(Target):
+    """A focus recheck: answers after DELAY seconds, or raises ERROR when it answers."""
+    created = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.started = time.monotonic()
+        self.delay, self.clean = .01, True
+        Recheck.created.append(self)
+        if len(Recheck.created) > 1:  # The first instance is the initial target check.
+            plan = Recheck.plan.pop(0) if Recheck.plan else {}
+            self.delay = plan.get('delay', .01)
+            self.error = plan.get('error')
+            self.clean = plan.get('clean', True)
+
+    def step(self, now):
+        if self is not Recheck.created[0] and time.monotonic() - self.started < self.delay:
+            return None
+        return super().step(now)
+
+    def cleanup(self, now):
+        return self.clean or self.cancelled is not None and time.monotonic() - self.started > .05
+
+
+class FocusRecheckTests(unittest.TestCase):
+    run_task = InputTaskTests.run_task
+
+    def make(self, operation, plan, **arguments):
+        Recheck.created, Recheck.plan = [], list(plan)
+        request = make_request(operation, arguments={'window': WINDOW, **arguments}, caller_cwd='/')
+        work = SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + request.timeout_seconds),
+                               error=None)
+        context = SimpleNamespace(work=work, effects=lambda partial, uncertain=False: None)
+        self.owner = Owner()
+        with patch('agent_desktop.input_actions.TargetTask', Recheck):
+            task = InputTask(request, context, None, lambda: self.owner, None, lambda: None)
+        self.patch = patch('agent_desktop.input_actions.TargetTask', Recheck)
+        self.patch.start()
+        self.addCleanup(self.patch.stop)
+        return task
+
+    def test_long_hold_is_rechecked_and_focus_loss_releases_early(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        task = self.make('key', [{}, {'error': lost}], chord='shift+w', hold=1.5)
+        started = time.monotonic()
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        elapsed = time.monotonic() - started
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']), ('target_lost', 'focus_lost'))
+        self.assertEqual(caught.exception.context['focus_rechecks'], 1)
+        self.assertEqual(self.owner.device.held, [])
+        self.assertLess(elapsed, 3 * RECHECK)  # Released at the second recheck, not after 1.5s.
+        self.assertEqual([event[0] for event in self.owner.events], ['press', 'release'])
+
+    def test_focus_loss_mid_typing_stops_with_progress(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        task = self.make('type', [{'error': lost}], text='a' * 100)
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        sent = caught.exception.context['strokes_sent']
+        self.assertGreater(sent, 0)
+        self.assertLess(sent, 100)
+        self.assertEqual(self.owner.device.held, [])
+
+    def test_short_input_needs_no_recheck(self):
+        result = self.run_task(self.make('key', [], chord='a', hold=.01))
+        self.assertEqual(result['focus_rechecks'], 0)
+        self.assertEqual(len(Recheck.created), 1)
+
+    def test_result_waits_for_an_in_flight_recheck_to_finish(self):
+        # A slow recheck outlives the hold; the result waits for it rather than cancelling it.
+        task = self.make('key', [{'delay': .3}], chord='a', hold=.6)
+        result = self.run_task(task)
+        recheck = Recheck.created[1]
+        self.assertIsNone(recheck.cancelled)
+        self.assertEqual(result['focus_rechecks'], 1)
+        self.assertGreaterEqual(time.monotonic() - recheck.started, .3)
+        self.assertEqual(len(Recheck.created), 2)
+
+    def test_late_focus_loss_is_reported_even_after_every_stroke(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        # The recheck starts at .25s and answers at .65s, after the .55s hold ended.
+        task = self.make('key', [{'delay': .4, 'error': lost}], chord='a', hold=.55)
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        context = caught.exception.context
+        self.assertEqual((context['strokes_sent'], context['key_held']), (context['strokes_total'], False))
+        self.assertEqual(self.owner.device.held, [])
+
+    def test_no_recheck_starts_when_input_is_about_to_end(self):
+        result = self.run_task(self.make('key', [], chord='a', hold=.6))
+        # One recheck at .25s; none at ~.5s because the hold ends within RECHECK of it.
+        self.assertEqual(result['focus_rechecks'], 1)
+        self.assertEqual(len(Recheck.created), 2)
+
+    def test_budget_includes_one_recheck_query(self):
+        task = self.make('key', [], chord='a', hold=1)
+        self.assertAlmostEqual(task.estimate(), task.emission() + .5)
+        self.assertEqual(self.make('key', [], chord='a', hold=.1).estimate(), self.make('key', [], chord='a', hold=.1).emission())
+
+    def test_cancel_cancels_and_reaps_the_recheck(self):
+        task = self.make('key', [{'delay': 60, 'clean': False}], chord='a', hold=1)
+        end = time.monotonic() + RECHECK + .1
+        while time.monotonic() < end:
+            task.step(time.monotonic()); time.sleep(.005)
+        task.request_cancel('client_disconnected')
+        self.assertEqual(Recheck.created[1].cancelled, 'client_disconnected')
+        self.assertEqual(self.owner.device.held, [])
+        self.assertFalse(task.cleanup(time.monotonic()) and time.monotonic() - Recheck.created[1].started < .05)
+        time.sleep(.06)
+        self.assertTrue(task.cleanup(time.monotonic()))
 
 
 class ShutdownReleaseTests(unittest.TestCase):

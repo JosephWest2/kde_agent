@@ -55,8 +55,34 @@ Options:
 - `--no-editor`: skip gnome-text-editor.
 - `--verbose`: print every result.
 
-**When to run it:** after system updates (KWin, libei, PyGObject, Python), after
-rebuilding kdotool, and before merging changes to input, capture, windows or
-lifecycle code. If `doctor` warns about an untested version and the smoke test
-passes, update `TESTED_KWIN_VERSION` in `prerequisites.py` or `TESTED_VERSION`
+## Failure-path tests
+
+```sh
+python tests/integration/failures.py               # all scenarios, about 20 seconds
+python tests/integration/failures.py focus-loss cancel-hold --loop 3
+```
+
+Each scenario starts its own session with the native fixture, breaks something on
+purpose, checks what is reported, then stops the session and requires that no
+process remains in the generation's cgroup and the systemd unit is gone:
+
+| Scenario | What it does | What must happen |
+| --- | --- | --- |
+| `focus-loss` | `kdotool` activates a second fixture window 0.8s into `key --hold 2 w` | `target_lost`/`focus_lost` within 1.6s; the fixture sees the release |
+| `cancel-hold` | Ctrl-C on the client 0.6s into `key --hold 2 w` | `cancelled`, exit 130, release within 1s, and the next `key` works |
+| `cancel-type` | Ctrl-C 0.8s into typing 1500 characters | `cancelled`; no character arrives after the cancel |
+| `generation` | `--generation` and a window ref from another generation | `generation_mismatch` for both |
+| `compositor-death` | SIGKILL `kwin_wayland` | session `failed`, input refused, terminal record names the compositor (or the lost input, if the worker noticed that first) |
+| `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
+| `worker-sigkill` | SIGKILL the worker during a hold | the client gets an error, not success |
+| `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
+
+It takes the same `--cli`, `--dependency-root` and `--verbose` options as the smoke
+test. A failing scenario keeps its artifact directory and stops the run.
+
+## When to run them
+
+Run both after system updates (KWin, libei, PyGObject, Python), after rebuilding
+kdotool, and before merging changes to input, capture, windows or lifecycle code.
+If `doctor` warns about an untested version and both pass, update `TESTED_KWIN_VERSION` in `prerequisites.py` or `TESTED_VERSION`
 in `libei_binding.py`.

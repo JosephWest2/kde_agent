@@ -26,7 +26,7 @@ VALID = {
     "launch": ["--", "/not/executed", "--help"], "windows": [],
     "focus": ["--window", REF], "wait": ["--for", "window", "--app", APP],
     "key": ["--window", REF, "CTRL+A"], "type": ["--window", REF, "hello"],
-    "click": ["--window", REF, "--x", "0", "--y", "2"], "input.reset": [],
+    "click": ["--window", REF, "--x", "0", "--y", "2"],
     "screenshot": [], "logs": [], "close": ["--window", REF], "kill": ["--app", APP],
 }
 
@@ -69,7 +69,7 @@ class CLITests(unittest.TestCase):
                 self.assertEqual(result["session"], None if operation == "doctor" else {"name": "default", "generation": None})
 
     def test_readable_default_help_version_and_error(self):
-        for options in (["--help"], ["session", "--help"], ["input", "reset", "--help"]):
+        for options in (["--help"], ["session", "--help"], ["click", "--help"]):
             result = self.run_cli(*options)
             self.assertEqual(result.returncode, 0)
             self.assertTrue(result.stdout.startswith("usage:"))
@@ -82,9 +82,9 @@ class CLITests(unittest.TestCase):
         self.assertIn("prerequisite_missing", failure.stderr)
 
     def test_json_help_version_and_nested_mode_placement(self):
-        for options in (["--help"], ["session", "--help"], ["launch", "--help"], ["input", "reset", "--help"], ["--version"]):
+        for options in (["--help"], ["session", "--help"], ["launch", "--help"], ["click", "--help"], ["--version"]):
             self.assertTrue(self.json_cli(*options, status=0)["ok"])
-        for options in (["session", "--json", "status"], ["session", "status", "--json"], ["input", "--json", "reset"]):
+        for options in (["session", "--json", "status"], ["session", "status", "--json"], ["--json", "session", "status"]):
             result = self.run_cli(*options)
             self.assertEqual(result.returncode, 4)
             self.assertEqual(json.loads(result.stdout)["error"]["code"], "session_not_found")

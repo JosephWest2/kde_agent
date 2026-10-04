@@ -102,7 +102,7 @@ Terminology:
 | REQ-028 | Cancellation **MUST** remain serviceable during an active action. CLI interruption/disconnection and worker-enforced timeout must cancel the corresponding unfinished ordinary action. Input emission must stop and release must be attempted within a documented cancellation bound, without waiting for the normal action queue. Required session cleanup must continue independently of the client. |
 | REQ-029 | The toolkit **MUST** track the keys and buttons it presses and attempt their release on completion, cancellation, target loss, and failure. If connection loss prevents confirming release, it must report uncertainty and block further input until the connection is safely reset or the session is stopped. |
 | REQ-030 | The input backend **MUST** wait for usable, resumed devices and continue processing device pause, removal, and connection-loss events throughout the session. Input on an unusable device must fail explicitly. |
-| REQ-031 | An input-reset operation **MUST** release tracked input or replace the private input connection, reporting readiness only after the resulting connection is usable. Failed reset must leave input unavailable. |
+| REQ-031 | After an unconfirmed release, further input **MUST** stay blocked (`input_uncertain`) and `session stop` **MUST** still work; recovery is a new session. Amended in #67 (originally an input-reset operation): a replacement connection cannot release another connection's keys, and KWin 6.7.5 crashes when a client disconnects while holding keys (docs/INPUT.md). |
 
 ### Observation, results, and artifacts
 

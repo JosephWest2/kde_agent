@@ -14,7 +14,7 @@ import time
 
 from .contracts import ContractError, dispatch
 
-CONTROL_OPERATIONS = frozenset({"input.reset", "session.stop"})
+CONTROL_OPERATIONS = frozenset({"session.stop"})
 MAX_ORDINARY = 32
 
 
@@ -81,7 +81,6 @@ class Scheduler:
         self.pending_stop = None
         self.stopping = False
         self.unavailable = False
-        self.input_available = True
         self._observing = False
 
     def _guard(self):
@@ -122,9 +121,6 @@ class Scheduler:
             return
         if self.stopping or self.unavailable:
             admission.complete(error=ContractError("session_unavailable", "Session is unavailable."))
-            return
-        if request.operation in {"key", "type", "click"} and not self.input_available:
-            admission.complete(error=ContractError("input_unavailable", "Input requires successful reset."))
             return
         if len(self.live) >= MAX_ORDINARY:
             admission.complete(error=ContractError("session_unavailable", "Ordinary queue is full.",
@@ -170,7 +166,6 @@ class Scheduler:
 
     def _fail_closed(self, work):
         self.unavailable = True
-        self.input_available = False
         work.outcome = "unknown"
         try:
             self.escalate("cleanup_unconfirmed")
@@ -216,16 +211,12 @@ class Scheduler:
         if self.clock() >= work.admission.deadline:
             work.admission.complete(error=ContractError("timeout", "Control deadline expired."))
             return
-        if op == "input.reset" and (self.stopping or self.unavailable):
-            work.admission.complete(error=ContractError("session_unavailable", "Session is unavailable."))
-            return
         existing = self.pending_stop if op == "session.stop" and self.pending_stop is not None else self.lifecycle
         joining = existing is not None and existing.request.operation == op
         if joining and len(self.waiters) >= 32:
             work.admission.complete(error=ContractError("session_unavailable", "Control waiters are full."))
             return
         owner_deadline = existing.admission.deadline if joining else work.admission.deadline
-        self.input_available = False
         if op == "session.stop":
             self.stopping = True
             for queued in tuple(self.queue):
@@ -319,7 +310,6 @@ class Scheduler:
         """Cancel emission before recording, with a capped cleanup allowance."""
         self._guard()
         self.stopping = True
-        self.input_available = False
         works = [*self.queue, self.active, self.lifecycle, self.pending_stop, *self.waiters]
         seen = set()
         for work in works:
@@ -371,17 +361,11 @@ class Scheduler:
                 self._advance(owner)
             if owner.terminal:
                 self._finish_waiters(owner)
-                if owner.request.operation == "input.reset":
-                    self.input_available = owner.error is None and not owner.observing_failed and not self.stopping
                 self.lifecycle, self.pending_stop = self.pending_stop, None
             return
         if self.active is None and not self.stopping and not self.unavailable and self.queue:
             self.active = self.queue.popleft()
-            if self.active.request.operation in {"key", "type", "click"} and not self.input_available:
-                self.active.error = ContractError("input_unavailable", "Input requires successful reset.")
-                self._finish(self.active)
-            else:
-                self._advance(self.active)
+            self._advance(self.active)
         if self.unavailable:
             for work in tuple(self.queue):
                 if not work.terminal:

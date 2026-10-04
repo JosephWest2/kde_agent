@@ -259,7 +259,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 records.attach(request, admission)
                 # Test-only raw handlers bypass scheduler admission. Gate ordinary
                 # test effects, while controls still run before best-effort records.
-                if handler is not None and request.operation not in {"input.reset", "session.stop"}:
+                if handler is not None and request.operation != "session.stop":
                     try:
                         records._ensure(records.live[request.request_id])
                     except Exception:

@@ -62,7 +62,7 @@ class Smoke:
         self.pids = []
         self.screenshots = []
 
-    def run_cli(self, step, *args, timeout=40, expect_ok=True):
+    def run_cli(self, step, *args, timeout=40, expect_ok=True, quiet=False):
         started = time.monotonic()
         argv = [self.cli, '--json', *args]
         process = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout)
@@ -74,7 +74,8 @@ class Smoke:
         if expect_ok and not payload['ok']:
             error = payload['error']
             raise SmokeFailure(step, f"{error['code']}: {error['message']} {json.dumps(error['context'])[:300]}", payload)
-        print(f'  ok  {step:<34} {elapsed:5.2f}s')
+        if not quiet:
+            print(f'  ok  {step:<34} {elapsed:5.2f}s')
         if self.verbose:
             print('      ' + json.dumps(payload.get('result') or payload.get('error'))[:400])
         return payload
@@ -97,14 +98,20 @@ class Smoke:
         if missing:
             raise SmokeFailure('session start', f'operations not supported: {sorted(missing)}')
 
-    def launch(self, label, *argv):
+    def launch(self, label, *argv, windows=1):
         payload = self.desktop(f'{label}: launch', 'launch', '--wait-window', '--', *argv)
         result = payload['result']
         self.pids.append(result['process']['pid'])
         app = result['application']['ref']
-        windows = self.desktop(f'{label}: windows', 'windows', '--app', app)['result']['windows']
-        if len(windows) != 1:
-            raise SmokeFailure(f'{label}: windows', f'expected one window, saw {len(windows)}')
+        expected, windows = windows, []
+        deadline = time.monotonic() + 5
+        while len(windows) < expected and time.monotonic() < deadline:
+            windows = self.desktop(f'{label}: windows', 'windows', '--app', app)['result']['windows']
+        if len(windows) != expected:
+            raise SmokeFailure(f'{label}: windows', f'expected {expected} window(s), saw {len(windows)}')
+        if expected > 1:  # The largest window is the primary one.
+            windows.sort(key=lambda row: -row['client']['width'])
+        self.windows = windows
         return app, windows[0]['window']['ref'], result['logs']
 
     def screenshot(self, label, *args):

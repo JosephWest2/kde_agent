@@ -18,10 +18,12 @@ Supported today:
 - full-screen or single-window screenshots;
 - graceful close and explicit kill.
 
-Input reset and logs are next (#67, #68). JSON results give
+Losing focus during a hold or long `type` releases and stops the input. Logs are
+next (#68). JSON results give
 every application and window a ready-to-use `ref` string for `--app` and
 `--window`. [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke
-test (`python tests/integration/smoke.py`). See [application ownership](docs/APPLICATIONS.md),
+test (`python tests/integration/smoke.py`), and failure-path tests
+(`python tests/integration/failures.py`). See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.
 

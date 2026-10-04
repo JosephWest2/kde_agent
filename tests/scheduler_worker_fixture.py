@@ -25,7 +25,7 @@ class Task:
         self.child = None
         self.mode = request.arguments.get("text", "quick")
         self.duration = .02 if self.mode == "quick" else 2
-        if request.operation in {"input.reset", "session.stop"}:
+        if request.operation == "session.stop":
             self.duration = .08
         self.released = False
 
@@ -70,4 +70,4 @@ def observe(record):
 
 
 run(sys.argv[1], sys.argv[2], factory=Task,
-    capabilities={"input.reset", "session.stop"}, observer=observe)
+    capabilities={"session.stop"}, observer=observe)

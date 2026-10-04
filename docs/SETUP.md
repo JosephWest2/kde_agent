@@ -73,13 +73,25 @@ kdotool build.
 
 ## Rerunning
 
-Rerunning is safe and is a no-op when nothing changed (about a second): the build
-receipt is verified, not rebuilt, and pip is skipped while the installed copy
-matches the sources (a hash of `pyproject.toml` and `src/`, kept in
-`venv/.agent-desktop-install.sha256`). After pulling new code, rerun it to
-reinstall. It refuses to reinstall while an `agent-desktop-*` session service is
-running, because a live session's stop hooks run the installed code; stop the
-sessions first.
+Rerunning is safe and is a no-op when nothing changed (about a second). The build
+receipt is verified, not rebuilt. pip is skipped only while the stamp in
+`venv/.agent-desktop-install.sha256` matches (a hash of `pyproject.toml` and
+`src/`, plus the venv interpreter's version and path) and the package still
+imports from the venv. After pulling new code, rerun it to reinstall. After an
+Arch Python upgrade, it recreates just the venv (never the kdotool build) and
+reinstalls.
+
+pip runs with every `PIP_*` setting and pip config file ignored, so nothing can
+redirect the install, and setup checks afterwards that `agent_desktop` imports from
+the venv.
+
+Setup refuses to reinstall or recreate the venv while an `agent-desktop-*` session
+service is running, because a live session's stop hooks run the installed code.
+Stop the sessions first. It asks the same user manager the session code uses
+(`/run/user/UID/bus`) and also refuses if that query fails. Nothing locks setup
+against a `session start` during the install itself. Setup checks again
+afterwards, and if a session appeared, it exits 1 and asks you to stop it and
+rerun, so don't start sessions while setup runs.
 
 To start over, delete `.local/dependencies` and rerun.
 

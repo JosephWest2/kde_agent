@@ -11,8 +11,9 @@
 #
 # Never runs sudo or installs system packages: a missing prerequisite is printed
 # with the command to install it, and the script exits 1. Rerunning is a quick no-op.
-# AGENT_DESKTOP_SETUP_PACMAN overrides /usr/bin/pacman, for testing the
-# missing-prerequisite messages.
+# Test hooks: AGENT_DESKTOP_SETUP_PACMAN replaces /usr/bin/pacman and
+# AGENT_DESKTOP_SETUP_USER_RUNTIME replaces /run/user/UID (the user manager's
+# runtime directory), to exercise the failure messages.
 set -euo pipefail
 
 PROJECT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
@@ -23,15 +24,58 @@ STAMP="$VENV/.agent-desktop-install.sha256"
 PYTHON=/usr/bin/python
 PACMAN=${AGENT_DESKTOP_SETUP_PACMAN:-/usr/bin/pacman}
 RUSTUP=/usr/bin/rustup
+USER_RUNTIME=${AGENT_DESKTOP_SETUP_USER_RUNTIME:-/run/user/$(id -u)}
 
 case "${1:-}" in
     "") ;;
-    -h|--help) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "usage: tools/setup.sh" >&2; exit 2 ;;
 esac
 
 say() { printf 'setup: %s\n' "$*"; }
 fail() { printf 'setup: FAILED: %s\n' "$*" >&2; exit 1; }
+
+# Running agent-desktop session services, from the same user manager that the
+# lifecycle code addresses (src/agent_desktop/lifecycle.py). Fails closed: a
+# failed query never counts as "no sessions".
+live_sessions() {
+    local out
+    if ! out=$(env -i PATH=/usr/bin:/bin LANG=C.UTF-8 XDG_RUNTIME_DIR="$USER_RUNTIME" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=$USER_RUNTIME/bus" \
+            /usr/bin/systemctl --user --no-ask-password list-units --plain --no-legend \
+            'agent-desktop-*.service' 2>&1); then
+        fail "cannot query the systemd user manager at unix:path=$USER_RUNTIME/bus:
+$out
+Setup only changes the installed package after confirming no session is running.
+Run it from a normal login session with a running user manager and retry."
+    fi
+    cut -d' ' -f1 <<<"$out" | sed '/^$/d'
+}
+
+refuse_if_live() {  # $1: what would change
+    local live
+    live=$(live_sessions) || exit 1
+    if [[ -n $live ]]; then
+        fail "agent-desktop sessions are running and $1:
+$live
+Their stop hooks run the installed code. Stop them first
+(agent-desktop session stop --session NAME), then rerun tools/setup.sh."
+    fi
+}
+
+# Interpreter identity of the venv: full version and the resolved executable.
+venv_identity() {
+    "$VENV/bin/python" -I -c 'import os, sys; print(sys.version.replace("\n", " "), os.path.realpath(sys.executable))' 2>/dev/null
+}
+
+# Health check: the package imports from inside the venv. Prints its location.
+venv_health() {
+    local file
+    file=$(cd / && "$VENV/bin/python" -I -c 'import os, agent_desktop; print(os.path.realpath(agent_desktop.__file__))' 2>/dev/null) \
+        || return 1
+    [[ $file == "$(realpath "$VENV")"/* ]] || return 1
+    printf '%s\n' "$file"
+}
 
 # --- Host prerequisites (read-only checks) -----------------------------------
 [[ -x $PACMAN ]] || fail "$PACMAN not found. agent-desktop supports Arch Linux with KDE Plasma 6 only."
@@ -57,6 +101,18 @@ then rerun tools/setup.sh."
 fi
 
 # --- Pinned dependencies and venv --------------------------------------------
+# A venv whose interpreter no longer runs, or now runs a different Python minor
+# version than it was created for (an Arch Python upgrade), cannot be repaired by
+# pip. Recreate only the venv; the kdotool build next to it is kept.
+if [[ -e $VENV ]]; then
+    created=$(sed -n 's/^version *= *\([0-9]*\.[0-9]*\).*/\1/p' "$VENV/pyvenv.cfg" 2>/dev/null || true)
+    actual=$("$VENV/bin/python" -I -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true)
+    if [[ -z $actual || $created != "$actual" ]]; then
+        refuse_if_live "the venv must be recreated"
+        say "recreating $VENV (created for Python ${created:-unknown}, interpreter is ${actual:-not runnable})"
+        rm -rf -- "$VENV"
+    fi
+fi
 if [[ -f $ROOT/build.json ]]; then
     say "verifying pinned dependencies in $ROOT"
 else
@@ -84,22 +140,35 @@ fi
 source_hash=$(cd "$PROJECT" && find pyproject.toml src -type f \
         ! -path '*/__pycache__/*' ! -path '*.egg-info/*' ! -name '*.pyc' -print0 \
     | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
-if [[ -x $CLI && -f $STAMP && $(<"$STAMP") == "$source_hash" ]]; then
+identity=$(venv_identity) || fail "the venv interpreter $VENV/bin/python does not run.
+Delete $VENV and rerun tools/setup.sh."
+expected="$source_hash $identity"
+if [[ -x $CLI && -f $STAMP && $(<"$STAMP") == "$expected" ]] && venv_health >/dev/null; then
     say "agent-desktop already installed from these sources"
 else
-    # Hooks of a live session run the installed code (docs/APPLICATIONS.md).
-    live=$(systemctl --user list-units --plain --no-legend 'agent-desktop-*.service' 2>/dev/null \
-        | cut -d' ' -f1 || true)
-    if [[ -n $live ]]; then
-        fail "agent-desktop sessions are running and the installed package would change:
-$live
-Stop them first (agent-desktop session stop --session NAME), then rerun tools/setup.sh."
-    fi
+    refuse_if_live "the installed package would change"
     say "installing agent-desktop into $VENV"
     rm -f "$STAMP"
-    "$VENV/bin/python" -I -m pip install --quiet --disable-pip-version-check --no-input "$PROJECT" \
+    # -I does not isolate pip: drop every PIP_* setting and all pip config files
+    # so nothing can redirect the install (--target, --prefix, --user, --root).
+    pip_unset=()
+    while IFS= read -r name; do pip_unset+=(-u "$name"); done < <(compgen -e | grep '^PIP_' || true)
+    env "${pip_unset[@]}" PIP_CONFIG_FILE=/dev/null \
+        "$VENV/bin/python" -I -m pip install --isolated --no-user --quiet \
+        --disable-pip-version-check --no-input "$PROJECT" \
         || fail "pip install failed (it needs network access for the setuptools build backend)."
-    printf '%s\n' "$source_hash" >"$STAMP"
+    location=$(venv_health) || fail "the installed package does not import from $VENV.
+Delete $VENV and rerun tools/setup.sh."
+    say "installed: $location"
+    # A session that started during the install may be running a mix of old and
+    # new code; there is no lock between setup and session start.
+    late=$(live_sessions) || exit 1
+    if [[ -n $late ]]; then
+        fail "agent-desktop sessions started while the package was being installed:
+$late
+Stop them (agent-desktop session stop --session NAME) and rerun tools/setup.sh."
+    fi
+    printf '%s\n' "$expected" >"$STAMP"
 fi
 
 # --- Diagnose -----------------------------------------------------------------

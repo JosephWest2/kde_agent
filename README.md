@@ -71,8 +71,9 @@ modal dialogs, client versus screen coordinates, and recovering from
 `completion_unknown` and `input_uncertain`.
 
 [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke
-test (`python tests/integration/smoke.py`), and failure-path tests
-(`python tests/integration/failures.py`). See [application ownership](docs/APPLICATIONS.md),
+test and failure-path tests (`python tests/integration/smoke.py` and
+`failures.py`, each with `--cli .local/dependencies/venv/bin/agent-desktop`
+unless that directory is on PATH). See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.
 

@@ -108,8 +108,8 @@ Options:
 ## Failure-path tests
 
 ```sh
-python tests/integration/failures.py               # all scenarios, about 20 seconds
-python tests/integration/failures.py focus-loss cancel-hold --loop 3
+python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop   # all scenarios, about 20 seconds
+python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop focus-loss cancel-hold --loop 3
 ```
 
 Each scenario starts its own session with the native fixture, breaks something on

@@ -30,9 +30,18 @@ $D type --window WIN_REF 'hello'
 ```
 
 Focus again after anything that can move focus: opening or closing a dialog,
-launching an app, or a click on another window. If focus is lost during a hold or
-a long `type`, the input is released and stopped with `target_lost`; focus and send
-the rest again. `click` without `--window` uses screen coordinates and checks
+launching an app, or a click on another window.
+
+If focus is lost during a hold or a long `type`, everything held is released and
+the request fails with `target_lost`, reporting `strokes_sent`, `strokes_total`,
+`key_held` and `focus_rechecks`. Detection is not instant: the window is rechecked
+about every 250ms, so typically 0.25–0.35s (at worst about 0.75s) of input,
+release included, can reach whatever took focus ([INPUT.md](INPUT.md)). Some of
+the `strokes_sent` may have landed in the other window, and an interrupted held
+key may already have taken effect. Treat it like `completion_unknown`: before
+deciding what to resend, inspect the target (screenshot, title, app state), the
+window that took focus, and the reported progress. Don't just refocus and send
+the rest. `click` without `--window` uses screen coordinates and checks
 nothing about focus. `screenshot --window` doesn't need focus.
 
 ## Modal dialogs

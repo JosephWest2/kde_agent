@@ -396,8 +396,8 @@ The user approved a packaged M1 provisional readiness provider and immutable
 `session start --dependency-root` configuration; no plugin framework or runtime
 checkout import is introduced. The existing GLib owner uses cancellable Gio
 asynchronous private bus/EIS setup, the audited libei owner and a killable capture
-child. Runtime readiness is explicit about provisional support and replacement
-by M7.1/#35. The user also approved systemd watchdog termination after 5s without
+child. Runtime readiness originally reported provisional support pending
+M7.1/#35; #63 retired those fields and #64 replaces the adapters. The user also approved systemd watchdog termination after 5s without
 GLib heartbeats, with explicit 3s abort escalation, healthy-start heartbeats every 1s,
 and independent bus/KWin observations sharing a 1s round. These policies implement
 REQ-009/011 without background heartbeats or automatic restart. See the detailed
@@ -409,7 +409,7 @@ REQ-009/011 without background heartbeats or automatic restart. See the detailed
 Generation-specific `ExecStop` and `ExecStopPost` commands now provide independent
 shutdown and finalization. The owner orders cancellation, bounded tracked-release
 and normal-close hooks before service escalation; production release/close adapters
-remain explicitly unconnected until #35. Stop-post authenticates its own cgroup,
+remain explicitly unconnected (now tracked by #64). Stop-post authenticates its own cgroup,
 uses pidfds to terminate remaining verified ordinary descendants, then removes
 only owned disposable settings/sockets. This active survivor step is necessary:
 on systemd 261.3 the post command can run before a resistant grandchild is killed.

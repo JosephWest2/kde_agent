@@ -242,7 +242,7 @@ class Manager:
         # the reservation rather than allowing a replacement to race that start.
         return data['submission'] != 'uncertain' and settled(info)
 
-    def _retire(self, runtime, data, *, failed=False):
+    def _retire(self, runtime, data, deadline, *, failed=False):
         # Unit quiescence was observed before entry; never wait with this lock.
         from .ownership import generation_lock
         from .service_cleanup import finalize
@@ -253,7 +253,7 @@ class Manager:
         reset = getattr(self.systemd, 'reset_failed', None)
         if reset is not None:
             try:
-                reset(data, time.monotonic() + 1)
+                reset(data, min(deadline, time.monotonic() + 1))
             except (ContractError, OSError):
                 pass
         return preserved
@@ -301,7 +301,7 @@ class Manager:
                 self.systemd.stop(data, deadline)
                 stop_submitted = True
             time.sleep(min(.02, remaining(deadline)))
-        preserved = self._retire(runtime, data, failed=failed)
+        preserved = self._retire(runtime, data, deadline, failed=failed)
         return preserved and not bookkeeping_uncertain
 
     def _ping(self, request, generation, deadline):
@@ -375,7 +375,7 @@ class Manager:
                         time.sleep(min(.02, remaining(deadline)))
                 if request.expected_generation is not None:
                     raise ContractError('session_unavailable', 'Expected session generation has stopped.')
-                self._retire(runtime, data, failed=data['state'] != 'stopped')
+                self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
             previous = data
             generation = uuid.uuid4().hex
             unit = unit_name(generation)
@@ -479,7 +479,7 @@ class Manager:
             else:
                 info = self._observe(runtime, data, deadline)
                 if self._quiescent(data, info):
-                    self._retire(runtime, data, failed=data['state'] != 'stopped')
+                    self._retire(runtime, data, deadline, failed=data['state'] != 'stopped')
                     return self._result(request, generation,
                                         {'state': data['state'], 'desktop_ready': False, 'cleanup': 'complete',
                                          'failure': retained_failure(data) if data['state'] == 'failed' else None})

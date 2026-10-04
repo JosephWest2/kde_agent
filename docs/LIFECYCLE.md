@@ -199,8 +199,8 @@ fixed `env -i -S` bootstrap expansion; no caller text enters that expansion and
 application/adapter environments never receive these values. Source fixtures can
 exercise this policy while still reporting starting, without claiming readiness.
 
-M7.1/#35 must replace/qualify the provisional provider and connect production
-adapters before release qualification. The ordered graceful action shutdown and autonomous terminal record/runtime
+#64 replaces the provisional readiness adapters with the production input and
+capture adapters. The ordered graceful action shutdown and autonomous terminal record/runtime
 cleanup hook are implemented by #21 below.
 
 
@@ -216,7 +216,7 @@ can prevent later hook attempts; the manager then terminates it and records
 uncertainty. Cleanup continues when the initiating client disconnects.
 
 Release and application-close adapters are **not connected in M3**. Their default
-receipts say `not_connected`, `confirmed: false`, and identify #35. Internal
+receipts say `not_connected` and `confirmed: false`; #64 connects input release. Internal
 fixtures prove orchestration order; they do not qualify production input release
 or application window closure. Provisional readiness resources close after the
 ordered hooks, before direct-child disposal.
@@ -282,5 +282,5 @@ The hook cannot acquire another request budget, retry close, signal applications
 or interact with confirmations. It returns pending or an idempotent terminal
 result including uncertainty and cleanup confirmation. Unresolved adapter ownership
 prevents competing dispatch. Production release-before-close integration, shutdown
-selection/fan-out policy and owner pumping remain #35; the existing production
+selection/fan-out policy and owner pumping remain open (#64, #67); the existing production
 `not_connected` hook/qualification status is unchanged by this primitive.

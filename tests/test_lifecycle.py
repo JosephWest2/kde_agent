@@ -74,6 +74,23 @@ class LifecycleTests(unittest.TestCase):
     def start(self):
         return self.manager.start(self.request())['session']['generation']
 
+    def test_retired_generation_resets_its_unit_best_effort(self):
+        resets = []
+        self.services.reset_failed = lambda data, deadline: resets.append((data['unit'], deadline))
+        generation = self.start()
+        stop = time.monotonic()
+        self.manager.handle(self.request("session.stop", generation=generation))
+        self.assertEqual([unit for unit, _ in resets], [unit_name(generation)])
+        self.assertLessEqual(resets[0][1], stop + 1 + .5)
+
+    def test_reset_failed_errors_never_fail_stop(self):
+        def broken(data, deadline):
+            raise ContractError('session_unavailable', 'Unit not loaded.')
+        self.services.reset_failed = broken
+        generation = self.start()
+        result = self.manager.handle(self.request("session.stop", generation=generation))
+        self.assertEqual(result['result']['cleanup'], 'complete')
+
     def test_ready_status_requires_fresh_complete_correlated_health(self):
         self.ping.stop()
         from copy import deepcopy
@@ -167,7 +184,7 @@ class LifecycleTests(unittest.TestCase):
                 (self.manager.start if operation == 'session.start' else self.manager.handle)(request)
             self.assertEqual(caught.exception.code, 'generation_mismatch')
         with self.assertRaises(ContractError):
-            self.manager._retire(runtime, data)
+            self.manager._retire(runtime, data, time.monotonic() + 1)
         self.assertEqual(before, self.services.calls)
         self.assertEqual(runtime.read('default'), new)
         self.assertTrue(self.services.active[unit_name(new)])

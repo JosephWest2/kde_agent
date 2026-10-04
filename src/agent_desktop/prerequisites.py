@@ -360,7 +360,7 @@ def check(root, deadline):
             report['warnings'].append({'code': 'untested_kwin_version', 'observed': observed.get('kwin_version'),
                                        'tested': TESTED_KWIN_VERSION,
                                        'advice': 'Run the end-to-end smoke test (docs/TESTING.md) on this KWin version.'})
-        if item['name'] == 'libei' and observed.get('version') not in (None, observed.get('tested_version')):
+        if item['name'] == 'libei' and item['status'] == 'passed' and observed.get('version') != observed.get('tested_version'):
             report['warnings'].append({'code': 'untested_libei_version', 'observed': observed.get('version'),
                                        'tested': observed.get('tested_version'),
                                        'advice': 'Run the end-to-end smoke test (docs/TESTING.md) on this libei version.'})

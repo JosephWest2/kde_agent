@@ -20,6 +20,14 @@ MAX_KEYS = 32
 EPOCHS = itertools.count(1)
 
 
+
+def _identity(fd):
+    try:
+        info = os.fstat(fd)
+    except OSError:
+        return None
+    return info.st_dev, info.st_ino
+
 class Failure(ContractError):
     def __init__(self, code, message, **kwargs):
         if code in ('input_setup', 'input_protocol'):
@@ -146,13 +154,17 @@ class Input:
             os.set_blocking(fd, False)
             os.set_inheritable(fd, False)
             self.lib.ei_configure_name(self.context, self.name.encode())
+            identity = _identity(fd)
             result = self.lib.ei_setup_backend_fd(self.context, fd)
             if result < 0:
-                # Whether libei closed the descriptor on failure varies by
-                # version. Never close it here: a leaked FD is harmless because
-                # failed setup makes the connection unusable, while a double
-                # close could hit an unrelated reused descriptor.
+                # libei 1.6.0 leaves the descriptor caller-owned on failure, but
+                # that is not an API promise. Close it only if the number still
+                # refers to the same open file: on this single-threaded owner,
+                # nothing else can have reused the number since the call
+                # started, so a match means libei did not close it.
                 owned = False
+                if _identity(fd) == identity:
+                    os.close(fd)
                 raise Failure('input_setup', f'libei setup errno {-result}.')
             owned = False  # Only libei closes successful setup descriptors.
             epoch, context = self.epoch, self.context

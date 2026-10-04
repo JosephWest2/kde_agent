@@ -230,6 +230,15 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertTrue(report['ok'])
         self.assertEqual([warning['code'] for warning in report['warnings']], ['untested_kwin_version'])
 
+    def test_unknown_libei_version_warns(self):
+        executables = {'kwin_version': 'kwin 6.7.5', 'kwin_matches_tested': True}
+        with patch.object(pre, '_runtime_probe', return_value={'worker': True, 'libei': {'version': None, 'tested_version': '1.6.0'}}), \
+                patch.object(pre, '_bindings', return_value={}), patch.object(pre, '_kdotool', return_value={}), \
+                patch.object(pre, '_executables', return_value=executables), patch.object(pre, '_manager', return_value={}):
+            report = pre.check(self.root, time.monotonic() + 2)
+        self.assertTrue(report['ok'])
+        self.assertEqual([warning['code'] for warning in report['warnings']], ['untested_libei_version'])
+
     def test_expired_deadline_launches_no_helper(self):
         with patch.object(pre, '_run') as run:
             with self.assertRaises(ContractError) as caught:

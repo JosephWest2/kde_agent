@@ -54,17 +54,21 @@ handle. A `ref` inside an object must match its fields.
 
 ## Install and inspect
 
-Use a project virtual environment; no global installation is needed:
+`tools/setup.sh` installs the CLI into the project venv
+`.local/dependencies/venv` (with `--system-site-packages`) after building the
+pinned dependencies; see [setup](SETUP.md). No global installation is needed:
 
 ```sh
-python -m venv --system-site-packages .local/cli-venv
-.local/cli-venv/bin/python -m pip install .
-.local/cli-venv/bin/agent-desktop --help
-.local/cli-venv/bin/agent-desktop --json session start --help
-.local/cli-venv/bin/python -m agent_desktop --version
+tools/setup.sh
+.local/dependencies/venv/bin/agent-desktop --help
+.local/dependencies/venv/bin/agent-desktop --json session start --help
+.local/dependencies/venv/bin/python -m agent_desktop --version
 ```
 
-Packaging uses setuptools, requires Python >=3.11, and has no pip runtime
+The session service runs the worker with the interpreter the CLI was installed
+into (`python -I -m agent_desktop.worker`), so a `pip install .` into any other
+venv must also give it the distribution bindings (`--system-site-packages`), and
+must be repeated after code changes. Packaging uses setuptools, requires Python >=3.11, and has no pip runtime
 dependencies. The Python floor does not claim native adapter support on all those
 interpreters. Platform native bindings remain governed by [setup](SETUP.md).
 Installing or inspecting the CLI does not import native desktop adapters or run
@@ -81,8 +85,8 @@ anything or certify capability execution or release support.
 
 Output is readable by default. `--json` emits exactly one JSON object and newline
 on stdout for success, help, version, parser failures, unsupported commands and
-operation failures. Diagnostics use stderr; application/desktop output will use
-separate logs. Default errors use stderr and leave stdout empty. Parser failures
+operation failures. Diagnostics use stderr; application and desktop output go to
+separate logs (see [Logs](#logs)). Default errors use stderr and leave stdout empty. Parser failures
 use controlled messages without repeating offending values. `--help` is readable
 by default; in JSON its text is `result.help`. `--version` likewise produces
 readable output or `result.version`.
@@ -131,7 +135,7 @@ agent-desktop --json session stop --session work
 
 Dependency root participates in duplicate-start compatibility. Omitting it from a
 different cwd selects a different default root and can produce a configuration
-conflict. The wheel includes provisional Python/JS probe code; the worker never
+conflict. The wheel includes its own Python and KWin script (`window_query.js`) code; the worker never
 imports the checkout's tools/evidence or uses caller PYTHONPATH. Runtime setup does
 not require Rust/compiler tools once the pinned build is prepared.
 
@@ -223,11 +227,11 @@ The shared Request contains `schema_version: 1`, a fresh `request_id`, operation
 ordinary data; the worker additionally enforces strict wire types, framing/version
 and immutable live worker identity independently of the CLI.
 
-An actual current scaffold failure from `agent-desktop --json session start`
-has this shape (request IDs vary):
+For example, `agent-desktop --json session status --session nosuch` fails with
+this shape (request IDs vary):
 
 ```json
-{"schema_version":1,"request_id":"11111111111111111111111111111111","operation":"session.start","ok":false,"session":{"name":"default","generation":null},"result":null,"error":{"code":"unsupported_operation","message":"Operation is not implemented yet.","context":{"implementation_issue":18,"expected_generation":null},"outcome":"not_started","partial_result":null}}
+{"schema_version":1,"request_id":"8262d4ac689e412faf5b548d6ab7aab7","operation":"session.status","ok":false,"session":{"name":"nosuch","generation":null},"result":null,"error":{"code":"session_not_found","message":"Session does not exist.","context":{},"outcome":"not_started","partial_result":null}}
 ```
 
 Success has a result object and `error: null`; failure has `result: null` and an
@@ -271,17 +275,10 @@ Representative launch and window candidate shapes (full discovery also returns o
 {"windows":[{"window":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","window_id":"2a63a414-1509-460a-bff9-b7c1103ba8d5"},"pid":1234,"title":null,"class":null,"client":{"x":0,"y":0,"width":640,"height":480},"frame":null,"active":true,"app":null,"association":{"reason":"unverified_process","verified_at":null,"process":null}}]}
 ```
 
-```json
-{"dispatched":true,"application_acknowledged":false}
-```
-
-Input dispatch does not promise application acknowledgment, a rendered frame or
-UI readiness. Screenshot success must report a fresh complete PNG's path,
-dimensions, capture timestamp, backend and generation, for example:
-
-```json
-{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","path":"/artifacts/capture-1.png","width":1280,"height":720,"captured_at":"2026-09-19T12:00:00Z","backend":"kwin-screenshot2"}
-```
+Input results report `dispatched: true` (see [INPUT.md](INPUT.md) for the full
+fields). Input dispatch does not promise application acknowledgment, a rendered
+frame or UI readiness. Screenshot success reports the fresh complete PNG's path
+and the other fields listed under [Screenshots](#screenshots).
 
 A launch/window-wait failure retains its handle, for example this illustrative
 error object within the common failure envelope:
@@ -342,8 +339,9 @@ M1 provisional targets include input cancellation dispatch within 100ms,
 fixture-observed release within 500ms under recorded conditions, focus checks no
 more frequently than 100ms between starts, query work at most 500ms, and holds at
 most 2s. They require renewed production validation; they are not real-time
-promises. Required cleanup continues after caller departure. Cancellation, reset
-and stop bypass ordinary queued work and signal its owning execution context.
+promises; the failure-path tests ([TESTING.md](TESTING.md)) check the real release
+timing. Required cleanup continues after caller departure. Cancellation and stop
+bypass ordinary queued work and signal its owning execution context.
 See [scheduler semantics](SCHEDULING.md) and [M1 evidence and limitations](M1_DECISION.md).
 
 ## Verification
@@ -354,7 +352,6 @@ python -m unittest discover -s tests -v
 
 CLI tests cover every command, readable/JSON help and errors, exact application
 argv boundaries, wrapped KWin identities, finite values, stale expectations,
-partial/unknown outcomes and secret-free parser diagnostics. #14 also verifies a
-built wheel in an isolated disposable venv outside the checkout. No real private
-desktop is needed for these contract checks; later milestones own the real
-workflow and twenty-run support qualification.
+partial/unknown outcomes and secret-free parser diagnostics. No real private
+desktop is needed for these contract checks; the end-to-end smoke and failure-path
+tests drive the installed package through the real workflow ([TESTING.md](TESTING.md)).

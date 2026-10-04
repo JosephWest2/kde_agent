@@ -59,9 +59,9 @@ tests. CI never runs the smoke or failure-path tests below.
 ## End-to-end smoke test
 
 ```sh
-pip install .                       # the session service runs the installed package
-python tests/integration/smoke.py   # about 5 seconds
-python tests/integration/smoke.py --loop 5
+tools/setup.sh                      # installs the package; the session service runs it
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 6 seconds
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop --loop 5
 ```
 
 The smoke test drives the installed `agent-desktop` through separate CLI
@@ -98,7 +98,8 @@ error payload and the kept artifact directory.
 Passing runs delete their artifacts unless you pass `--keep-artifacts`.
 
 Options:
-- `--cli PATH`: an `agent-desktop` that isn't on PATH, such as a venv.
+- `--cli PATH`: an `agent-desktop` that isn't on PATH, such as the one
+  `tools/setup.sh` installs (default: `agent-desktop` on PATH).
 - `--dependency-root PATH`: defaults to `.local/dependencies`.
 - `--no-fixture`: skip the native fixture (it needs gcc, wayland-protocols and xkbcommon headers).
 - `--no-editor`: skip gnome-text-editor.

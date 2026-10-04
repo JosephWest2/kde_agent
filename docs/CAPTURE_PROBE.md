@@ -1,5 +1,9 @@
 # M1 ScreenShot2 and responsive integration probe (#13)
 
+> **Historical.** This records the Milestone 1 feasibility work. The supported
+> product is the `agent-desktop` CLI: see the [README](../README.md),
+> [CLI.md](CLI.md) and [validation history](VALIDATION.md).
+
 `tools/capture_probe.py` exercises fresh whole-output screenshots on the existing
 private KWin fixture. A separate process owns each capture's D-Bus connection,
 raw pipe, Pillow decoding and PNG writing. The existing #12 GLib owner continues

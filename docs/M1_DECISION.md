@@ -1,5 +1,9 @@
 # M1 platform adapter decision record
 
+> **Historical.** This records the Milestone 1 feasibility work. The supported
+> product is the `agent-desktop` CLI: see the [README](../README.md),
+> [CLI.md](CLI.md) and [validation history](VALIDATION.md).
+
 The proposed integration retains pinned kdotool for windows/focus, one Python
 ctypes/GLib owner for libei input and cancellation, and an individual process
 for each ScreenShot2 capture. The user approved the capture process boundary

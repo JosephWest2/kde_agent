@@ -1,10 +1,13 @@
 # Worker scheduling and cancellation
 
-The scheduler supplies infrastructure for the later desktop adapters. The packaged
-worker still returns `unsupported_operation` for every desktop command, including
-reset/stop; unsupported controls do not cancel another request. Tests inject tasks
-through an internal Python launcher only. Nothing here certifies desktop readiness,
-input delivery, compositor cleanup or actual service shutdown.
+The scheduler is the single owner that runs every desktop command in the session
+worker; all commands in [CLI.md](CLI.md) go through it. A standalone transport
+worker (not started by `session start`, see [TRANSPORT.md](TRANSPORT.md)) has no
+desktop and answers desktop commands with `unsupported_operation`; unsupported
+controls do not cancel another request. Tests also inject tasks through an internal
+Python launcher. This page covers queueing, deadlines and cancellation; desktop
+readiness, input delivery and service shutdown are in [LIFECYCLE.md](LIFECYCLE.md)
+and [INPUT.md](INPUT.md).
 
 ## One owner, finite work
 
@@ -41,7 +44,8 @@ not a hard real-time host or protection from unlimited hostile same-UID traffic.
 ## Correlated controls and caller departure
 
 Each generation has a separate owner-private `priority.sock`, published alongside
-`control.sock`. Reset and stop use priority; ordinary requests use control. Both
+`control.sock`. Cancellation (`request.cancel`) and stop use priority; ordinary
+requests use control. Both
 endpoints enforce name/generation and peer UID. Wrong endpoint or malformed controls
 produce `protocol_error`; stale generation cannot affect another request.
 
@@ -71,10 +75,15 @@ cancellation, timeout and lost callers. No launch or input is replayed automatic
 The provisional target is cancellation dispatch and release **attempt** within
 100ms of admitted valid control/detected EOF. End-to-end CLI delivery is measured
 separately. M1's 500ms fixture-observed release target is distinct; neither target
-proves arbitrary application acknowledgment. M5/M7 own renewed real-adapter timing
-and failure validation. The process tests here use task doubles, not real input.
+proves arbitrary application acknowledgment. The process tests here use task
+doubles, not real input; the failure-path tests ([TESTING.md](TESTING.md)) check
+real release timing.
 
 ## Reset, stop and cleanup budgets
+
+No public operation resets input today: there is no `input reset`, and recovery
+from `input_uncertain` is `session stop` then `session start` ([INPUT.md](INPUT.md)).
+The reset rules below describe the scheduler's generic lifecycle slot.
 
 Supported task implementations gate input immediately on reset, signal the active
 owner, wait for its cleanup, then reset under one admission-based budget <=3s.
@@ -95,9 +104,9 @@ stop owner's original deadline. Repeated stops do not grant a second shutdown ph
 Future automatic capture-failure escalation must reuse an existing shutdown owner;
 without one, its one <=15s phase follows the <=1s local abort. This infrastructure
 provides the escalation callback, and a task-double regression demonstrates an
-automatic abort callback creating or joining exactly one shutdown owner. #33 owns
-real capture-abort routing and compositor uncertainty; #21 owns systemd/cgroup
-shutdown integration and renewed shared-budget verification. No successful cleanup is fabricated here.
+automatic abort callback creating or joining exactly one shutdown owner. Real
+capture-abort routing (#33) and systemd/cgroup shutdown (#21) are described in
+[LIFECYCLE.md](LIFECYCLE.md). No successful cleanup is fabricated here.
 
 `Children` retains each directly spawned child independently of request lifetime.
 `Popen.poll` is its only reaper; output uses private files or DEVNULL, never undrained
@@ -122,9 +131,10 @@ transport validates/encodes the complete envelope and applies bounded serializat
 fallback before setting `Admission.final_payload` and calling `on_terminal(payload)`.
 That notification also happens for disconnected callers and contains the exact
 accepted result, including timeout or `completion_unknown` conversion. The terminal
-notification cannot veto or rewrite acceptance; its exception is contained. #17
-must keep a pending/uncertain record if final publication fails, rather than write
-a contradictory success before acceptance. Its durable implementation may use
+notification cannot veto or rewrite acceptance; its exception is contained. The
+durable record keeps a pending/uncertain state if final publication fails, rather
+than write a contradictory success before acceptance ([ARTIFACTS.md](ARTIFACTS.md)).
+Its durable implementation may use
 bounded queues or measured small writes under the normal-storage assumption; no
 hung-filesystem immunity or durable exactly-once execution is promised.
 

@@ -7,9 +7,9 @@ the caller directory. Normalization is lexical; it neither requires destinations
 to exist nor expands `~`, variables or globs. Symlinks have normal filesystem
 meaning for application paths. The worker rejects relative/noncanonical wire path
 fields and omitted launch cwd rather than interpreting them against worker cwd.
-An omitted screenshot output remains unset for the future capture allocator.
-Explicit screenshot output is a future export destination, not a replacement for
-its generation-owned diagnostic record. Capture publication/export policy is #33.
+Every screenshot is stored in the generation's `screenshots/` directory; an explicit
+`screenshot --output` is an additional copy, not a replacement for that record
+([CLI.md](CLI.md#screenshots)).
 
 Argv crosses transport unchanged. The executable policy helper resolves a name
 containing `/` from normalized application cwd, and searches a bare name only in
@@ -17,8 +17,7 @@ the final application PATH. Relative and empty PATH entries mean application cwd
 an explicitly empty PATH has one such entry. Missing PATH uses `os.defpath`,
 installed as a default, not the worker's ambient PATH. The selected executable
 must be an executable regular file. The internal desktop launcher passes that
-selected absolute path as Popen executable while preserving argv and cwd. The
-public application launch/identity producer remains #22.
+selected absolute path as Popen executable while preserving argv and cwd.
 
 The production desktop owner uses a clean base (`PATH=/usr/bin:/bin`,
 `LANG=C.UTF-8`, `LC_ALL=C.UTF-8`), independent of controller, worker or user-manager
@@ -70,7 +69,7 @@ ROOT/generations/GENERATION/
   logs/{worker,compositor,bus}.log
   requests/REQUEST_ID/ATTEMPT_ID/
     record.json
-    launch.json                  # dedicated future launch producer
+    launch.json                  # exact argv/cwd of a launch
     ALLOCATION_ID.{stdout,stderr}.log   # application output; name never changes
     ALLOCATION_ID.json
   startup-failure.json             # first owner failure (any time, despite the name)
@@ -100,9 +99,9 @@ becomes `complete` once the application's cgroup is empty.
 | Dependency versions (`dependencies.inventory`: kwin, systemd, libei, kdotool, GLib, gi, dbus, PIL) | `session start`, from its prerequisite check |
 | Worker PID and Linux start ticks | Actual worker; managed workers include their generation-derived service unit |
 | Admission, start, effects, cancellation, finalizing and accepted terminal result | Scheduler bridge and transport acceptance callback |
-| Exact argv/cwd, application handle/process birth identity, selected executable, log paths and window refs | Dedicated Store APIs; M4 launcher/window producers |
-| Allocated/partial/complete/failed artifact state and dimensions | Allocation API; M6 capture producer |
-| Sticky session failure, cleanup state and final outcome | Store transitions; M3 authoritative supervisor/cleanup hook |
+| Exact argv/cwd, application handle/process birth identity, selected executable, log paths and window refs | Dedicated Store APIs; launch and window discovery |
+| Allocated/partial/complete/failed artifact state and dimensions | Allocation API; screenshot capture |
+| Sticky session failure, cleanup state and final outcome | Store transitions; service manager and stop/cleanup hooks |
 | First failure's cause (`failure`: code, message, component, return code) | Worker when it fails, else the finalizer from `startup-failure.json` |
 | Application summary (`applications`: argv up to 1024 characters, cwd, state, exit code, log paths, record links, `ended_by_session_stop`; newest 16, `applications_omitted` counts the rest) | Finalizer, once the generation's cgroup is verified empty |
 
@@ -115,7 +114,7 @@ while the session is shutting down and after.
 Absent real observations are explicitly `not_collected`; copied M1 dependency
 versions are never presented as observations. Infrastructure loop exit records
 cleanup `uncertain`, not proof of production descendant/service cleanup. A stored
-PID is diagnostic identity, not authority to signal a future process. The M3.1
+PID is diagnostic identity, not authority to signal a future process. The service
 manager marks cleanup complete only after observing generation service/cgroup
 quiescence; artifact-write failures cannot block its fallback stop. See
 [service lifecycle](LIFECYCLE.md).

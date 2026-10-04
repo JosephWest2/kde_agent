@@ -7,7 +7,7 @@ small local toolkit that runs a trusted graphical application in a separate
 KWin desktop and exposes launch, window control, input, screenshots, and cleanup
 through a CLI.
 
-Status: implemented through window control and the persistent input connection (M1–M4, #27); input actions and screenshots are in progress per [the revised plan](planning/REVISED_PLAN.md).
+Status: implemented. Every command in [docs/CLI.md](docs/CLI.md) works end to end, including input and screenshots; [the revised plan](planning/REVISED_PLAN.md) is the historical plan, and open work is tracked in GitHub issues.
 The requirements are the
 product contract; dependency choices here can change when evidence justifies it.
 

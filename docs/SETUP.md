@@ -1,56 +1,130 @@
-# Milestone 1 dependency setup
+# Setup
 
-This utility records prerequisites for the first Arch Linux / KDE 6 target. A
-successful report does **not** establish private-desktop compatibility or product
-support. Real harness, window, input and screenshot evidence belongs to issues
-#10–#13. It never starts KWin or connects to a desktop.
+One command prepares a checkout: `tools/setup.sh`. It builds the pinned
+dependencies, installs `agent-desktop` into a project venv and runs
+`agent-desktop doctor`. It never uses sudo or installs system packages.
 
-From the checkout, run:
+## Supported host
+
+- Arch Linux, x86_64.
+- KDE Plasma 6: KWin 6.x. KWin 6.7.5 and libei 1.6.0 are the tested versions;
+  `doctor` warns on others, and then you should run the smoke test
+  ([TESTING.md](TESTING.md)).
+- A systemd user session with cgroup v2 (a normal Plasma login provides it).
+  Sessions run as transient user services; your own desktop is never touched.
+
+## Prerequisites
+
+The Arch packages are listed in [dependencies.json](../dependencies.json)
+(`arch_packages`):
 
 ```sh
-/usr/bin/python -I tools/dependencies.py setup
-/usr/bin/python -I tools/dependencies.py report > environment.json
-/usr/bin/python -I tools/dependencies.py check-kdotool
-/usr/bin/python -m unittest discover -s tests -v
+sudo pacman -S --needed kwin plasma-workspace systemd dbus libei python \
+  python-gobject python-dbus python-pillow glib2 gobject-introspection-runtime \
+  libffi libjpeg-turbo zlib wayland wayland-protocols libxkbcommon gcc pkgconf \
+  git rustup
 ```
 
-Setup installs only into `.local/dependencies`, creates a Python venv with
-`--system-site-packages`, fetches the exact source revision in
-[dependencies.json](../dependencies.json), and builds kdotool with Cargo's locked
-resolution. It does not change global packages. `--root PATH` selects an alternate
-work directory, resolved from the caller's working directory. For example, from
-another directory use an absolute path to the utility and an explicit absolute
-`--root`. Missing/incompatible prerequisites yield repair instructions in JSON.
+kdotool is built with rustup's stable toolchain, which must support Rust
+edition 2024:
 
-Each operation returns one JSON object on stdout, including failure. Exit status
-is 0 for successful prerequisite evaluation, 1 for failed/missing prerequisites,
-and 2 for invalid arguments. `--help` displays usage. No network is needed for
-reporting a completed build; initial setup needs public upstream Git and crates.io
-access. Run Python with `-I` as shown to exclude caller Python startup settings.
+```sh
+rustup toolchain install stable
+```
 
-The required Arch package names are in `dependencies.json`. The recorded target
-already provided them; if a report identifies a missing package, install it using
-your normal Arch package workflow and rerun setup. The tool does not invoke sudo,
-update a rolling distribution, or choose a different Rust toolchain for you.
-The `rustup` stable toolchain must already be installed and support the pinned
-candidate (Rust edition 2024). Its actual compiler and Cargo releases are recorded.
+The first run needs network access: it fetches the pinned kdotool source and its
+crates, and pip fetches the setuptools build backend. The smoke test also uses
+`gnome-text-editor` (or pass `--no-editor`).
 
-Python, PyGObject, dbus-python and Pillow come from the distribution. The isolated
-venv has deliberate access to system site packages; no pip runtime packages are
-installed. Reports include the complete visible Python name/version inventory,
-actual binding versions and distribution-origin checks, GLib's loaded version,
-and libei's loaded SONAME/file. Names and versions of all installed native
-packages are included as an **inventory**, not as a claim that every installed
-package is a toolkit dependency. Selected pkg-config versions and the explicit
-required package set identify the relevant platform dependencies. Installed
-unrelated packages are never invoked as dependencies by this utility.
+## Run it
 
-Arch mirrors move. The evidence records exact package versions; recreating that
-historical native environment requires matching cached packages or the
-[Arch Linux Archive](https://archive.archlinux.org/), not installing today's latest
-packages and assuming compatibility. Maintain the machine through normal Arch
-upgrade practices. This utility is a source/build lock and version recorder, not
-a filesystem image or a promise of byte-identical native packages/toolchains.
+From the checkout:
+
+```sh
+tools/setup.sh
+```
+
+It does four things, in order:
+
+1. **Checks prerequisites.** It runs `pacman -T` on the package list and checks
+   the rustup stable toolchain.
+2. **Builds or verifies the pinned dependencies.** It runs
+   `tools/dependencies.py setup`, which works only in `.local/dependencies/`:
+   - creates `venv/` with `--system-site-packages`, so PyGObject, dbus-python and
+     Pillow come from the distribution;
+   - fetches kdotool at the pinned revision and builds it with Cargo's locked
+     resolution into `bin/kdotool`, recording a build receipt (`build.json`);
+   - on later runs, verifies that receipt instead of rebuilding.
+3. **Installs the package** into that venv with `pip install`. The session
+   service runs the installed package, using the interpreter it was installed
+   into, so this is what makes `session start` work.
+4. **Runs `agent-desktop doctor`** and prints any untested-version warnings.
+
+On success it ends with `setup: OK: agent-desktop is installed and doctor passed.`
+and the next commands to run. The CLI is
+`.local/dependencies/venv/bin/agent-desktop`; put `.local/dependencies/venv/bin`
+on your PATH to call it as `agent-desktop`. `doctor` and `session start` look for
+`.local/dependencies` relative to the current directory, so from anywhere else
+pass `--dependency-root /path/to/checkout/.local/dependencies`
+([CLI.md](CLI.md#commands-flags-and-defaults)).
+
+The first run takes about half a minute on a typical machine, mostly the
+kdotool build.
+
+## Rerunning
+
+Rerunning is safe and is a no-op when nothing changed (about a second): the build
+receipt is verified, not rebuilt, and pip is skipped while the installed copy
+matches the sources (a hash of `pyproject.toml` and `src/`, kept in
+`venv/.agent-desktop-install.sha256`). After pulling new code, rerun it to
+reinstall. It refuses to reinstall while an `agent-desktop-*` session service is
+running, because a live session's stop hooks run the installed code; stop the
+sessions first.
+
+To start over, delete `.local/dependencies` and rerun.
+
+## When a prerequisite is missing
+
+Setup prints what is missing and exactly what to install, then exits 1 without
+changing anything outside `.local/`. For example:
+
+```text
+setup: FAILED: missing Arch packages: libei python-pillow
+Install them with:
+    sudo pacman -S --needed libei python-pillow
+then rerun tools/setup.sh.
+```
+
+A missing rustup toolchain prints `rustup toolchain install stable`. A failed
+dependency build or `doctor` check prints each failed item with its repair hint.
+Exit status is 0 on success, 1 for a missing or broken prerequisite, and 2 for
+bad arguments. `AGENT_DESKTOP_SETUP_PACMAN` replaces `/usr/bin/pacman` for the
+package check, which is only useful to test these messages.
+
+## The dependency tool
+
+`tools/setup.sh` drives `tools/dependencies.py`, which you can also run directly.
+It prints one JSON object on stdout for every outcome, including failure:
+
+```sh
+/usr/bin/python -I tools/dependencies.py setup           # venv + pinned kdotool build
+/usr/bin/python -I tools/dependencies.py report          # versions and checks, as JSON
+/usr/bin/python -I tools/dependencies.py check-kdotool   # receipt + script-generation check
+```
+
+`--root PATH` selects another work directory instead of `.local/dependencies`.
+Run Python with `-I` as shown to exclude caller Python startup settings. Exit
+status is 0 for success, 1 for failed or missing prerequisites and 2 for invalid
+arguments. No network is needed for reporting a completed build.
+
+The report records the required Arch package versions, the complete installed
+package inventory (as an inventory, not a dependency claim), selected
+pkg-config versions, the Python binding versions and their distribution origin,
+libei's loaded SONAME/file and the Rust toolchain. The tool does not update the
+system or choose a different Rust toolchain for you. Arch mirrors move:
+recreating an exact recorded environment needs matching cached packages or the
+[Arch Linux Archive](https://archive.archlinux.org/), and this tool is a
+source/build lock and version recorder, not a filesystem image.
 
 ## Build provenance and configuration
 
@@ -101,8 +175,8 @@ allowance. Children write to temporary files so a descendant retaining stdout or
 stderr cannot prevent completion. Each returned stream is limited to 8 MiB;
 failed-command diagnostics contain only its last 2,000 stderr characters.
 The runner kills remaining group members even after the main command exits.
-Timing evidence below is prerequisite timing only; desktop action/cancellation
-bounds will be measured separately.
+These are prerequisite-tool bounds only; desktop command bounds are in
+[CLI.md](CLI.md#commands-flags-and-defaults).
 
 ## When dependencies change
 
@@ -116,10 +190,12 @@ The machine-readable rerun policy is in `dependencies.json`:
 | libei, headers or native compiler | Environment; #12 ABI/header, readiness, events, input and cancellation; #13 responsiveness. |
 | Pillow or image libraries | Environment and #13 metadata, PNG and pixel checks. |
 
-Combined milestone checks must run again before milestone acceptance. Later
-production acceptance additionally requires REQ-037–REQ-039, including twenty
-consecutive complete workflows. No package-version check replaces that evidence.
+The issue numbers name the original validation areas (#10 private harness, #11
+windows, #12 input, #13 capture). Today the end-to-end smoke test and the
+failure-path tests cover them: after any of these changes, rerun `tools/setup.sh`,
+the unit tests and both integration suites ([TESTING.md](TESTING.md)). No
+package-version check replaces running them.
 
 `ydotool` and `kwin-mcp` are excluded from build and runtime dependencies: do not
 install, invoke, vendor or patch them for this project. No MCP SDK is added.
-See [recorded prerequisite evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-9/README.md).
+See the [recorded prerequisite evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-9/README.md).

@@ -112,7 +112,7 @@ The regression forces actual EPERM with a regular FD, verifies immediate close,
 reuses its integer before context disposal, and verifies the reused/unrelated FDs
 survive. Eight iterations preserve the FD count; a nonblocking socketpair verifies
 successful setup still transfers ownership exactly once. These finite native
-checks need no compositor. See the [review-fix evidence](../evidence/issue-12/fd-ownership-fix/README.md).
+checks need no compositor. See the [review-fix evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-12/fd-ownership-fix/README.md).
 
 The capability API is variadic. Only its fixed pointer argument is declared in
 ctypes; capabilities and zero sentinel are explicitly promoted c_int values.
@@ -178,4 +178,4 @@ neutral-state checking available in the instrumented fixture. Production must
 preserve the conservative uncertainty/reset contract without promising generic
 application acknowledgment. Full mappings, pointer support, client protocol,
 production interruption handling and session readiness remain later work.
-See [recorded evidence and measurements](../evidence/issue-12/README.md).
+See [recorded evidence and measurements](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-12/README.md).

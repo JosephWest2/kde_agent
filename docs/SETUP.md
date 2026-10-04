@@ -122,4 +122,4 @@ consecutive complete workflows. No package-version check replaces that evidence.
 
 `ydotool` and `kwin-mcp` are excluded from build and runtime dependencies: do not
 install, invoke, vendor or patch them for this project. No MCP SDK is added.
-See [recorded prerequisite evidence](../evidence/issue-9/README.md).
+See [recorded prerequisite evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-9/README.md).

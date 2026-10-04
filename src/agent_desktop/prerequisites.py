@@ -24,7 +24,7 @@ from .contracts import ContractError, OPERATIONS
 KDOTool_REVISION = 'be03ce90c09350898556436bac74ed35fe928617'
 KDOTool_LOCK_SHA256 = 'd6beea15d1a9254586d71ac1c5c55d088d9dc3c9a8e980c6af7c2d8ee8f25edc'
 # M1 historical build plus the same pinned-source rebuild qualified by #20.
-# Both have actual private query/cleanup evidence; see evidence/issue-20.
+# Both passed real private query/cleanup runs; see docs/VALIDATION.md (#20).
 KDOTool_BINARY_SHA256S = frozenset({
     '62e7ee53096d933ec29e8e5d439b895590f851a40f0dcd87b87db9a6dc4749de',
     'b7a300d5a2f0b95a21d71dca5757328382bb6dd887e4ac975fffb59e2351bd21',

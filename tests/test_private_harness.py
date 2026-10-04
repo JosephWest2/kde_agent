@@ -1,4 +1,4 @@
-"""Boundary tests; real KWin compatibility is recorded separately in evidence."""
+"""Boundary tests; real KWin compatibility is recorded in docs/VALIDATION.md."""
 import importlib.util
 import io
 import json

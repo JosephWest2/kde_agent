@@ -9,13 +9,13 @@ generation ownership and service cleanup boundary.
 
 **GO for M1 feasibility and dependent production design**, with mandatory
 session stop after unconfirmed capture cleanup and continued gating of uncertain
-input. The [#13 evidence](../evidence/issue-13/README.md) completes the adapter
+input. The [#13 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/README.md) completes the adapter
 matrix: eleven selected generations, 32 complete PNGs, 1,080 exact pixel checks
 across thirty captures, responsive cancellation/control and observed cleanup.
 Six deliberately aborted captures remain failed operations followed by private
 session stop; their expected failure is not counted as screenshot success.
 The known InvalidScreen rejection separately verifies safe recovery. The
-[summary](../evidence/issue-13/summary.json) and [run index](../evidence/issue-13/runs.json)
+[summary](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/summary.json) and [run index](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/runs.json)
 preserve all selected samples, actual source hashes and outcomes.
 
 This record concerns feasibility for subsequent production design. Application
@@ -26,15 +26,15 @@ acknowledgment and twenty production workflow runs remain separate requirements.
 
 | Adapter | Evidence and reproduction | Decision and practical limit |
 | --- | --- | --- |
-| Dependencies (#9) | [Environment and build evidence](../evidence/issue-9/README.md), [setup](SETUP.md) | Keep the locked unpatched kdotool source and distribution native bindings. A dependency inventory alone establishes no desktop support. |
-| Private desktop (#10) | [Harness evidence](../evidence/issue-10/README.md), [commands](PRIVATE_HARNESS.md) | Keep private D-Bus/Wayland, one 1280x720 scale-1 output, native fixture and owned systemd service. Independent cgroup/runtime observation covers descendants and crash cleanup. `foundation_ready` remains narrower than REQ-009. |
-| Windows/focus (#11) | [Window transport and timings](../evidence/issue-11/README.md), [commands](PRIVATE_HARNESS.md#structured-windowfocus-feasibility-probe-11) | Keep unchanged pinned kdotool; observe its worker asynchronously from GLib. Validate metadata and actual active UUID; successful activation exit alone proves no focus. |
-| Input (#12) | [Lifecycle evidence](../evidence/issue-12/README.md), [ownership correction](../evidence/issue-12/fd-ownership-fix/README.md), [commands](LIBEI_PROBE.md) | Keep the audited 24-symbol ctypes surface and one GLib owner. Resumed-device gating, explicit release frames, bounded cancellation and uncertainty/reset remain mandatory. |
-| Capture/integration (#13) | [Probe commands and contract](CAPTURE_PROBE.md), [capture evidence](../evidence/issue-13/README.md) | Keep one killable child per request owning bus, pipe and image work. Actual raw pixels, EOF and timely complete PNG publication passed; stopping the session after unconfirmed aborted-server cleanup is mandatory. |
+| Dependencies (#9) | [Environment and build evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-9/README.md), [setup](SETUP.md) | Keep the locked unpatched kdotool source and distribution native bindings. A dependency inventory alone establishes no desktop support. |
+| Private desktop (#10) | [Harness evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-10/README.md), [commands](PRIVATE_HARNESS.md) | Keep private D-Bus/Wayland, one 1280x720 scale-1 output, native fixture and owned systemd service. Independent cgroup/runtime observation covers descendants and crash cleanup. `foundation_ready` remains narrower than REQ-009. |
+| Windows/focus (#11) | [Window transport and timings](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-11/README.md), [commands](PRIVATE_HARNESS.md#structured-windowfocus-feasibility-probe-11) | Keep unchanged pinned kdotool; observe its worker asynchronously from GLib. Validate metadata and actual active UUID; successful activation exit alone proves no focus. |
+| Input (#12) | [Lifecycle evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-12/README.md), [ownership correction](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-12/fd-ownership-fix/README.md), [commands](LIBEI_PROBE.md) | Keep the audited 24-symbol ctypes surface and one GLib owner. Resumed-device gating, explicit release frames, bounded cancellation and uncertainty/reset remain mandatory. |
+| Capture/integration (#13) | [Probe commands and contract](CAPTURE_PROBE.md), [capture evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/README.md) | Keep one killable child per request owning bus, pipe and image work. Actual raw pixels, EOF and timely complete PNG publication passed; stopping the session after unconfirmed aborted-server cleanup is mandatory. |
 
 ## Acceptance deadline correction from fresh review
 
-The [separate correction evidence](../evidence/issue-13/acceptance-deadline-fix/README.md)
+The [separate correction evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/acceptance-deadline-fix/README.md)
 fixes a stale acceptance timestamp taken before process/publication checks. The
 supervisor now samples the clock after those checks and rejects expiry immediately
 at acceptance. Two reproducing regressions and all **60 tests** pass. Three
@@ -71,7 +71,7 @@ to the corrected implementation or use them as failed-native-setup coverage.
 | Failed capture through session cleanup | Up to 19s = 3s + 1s + 15s | #13 six failed-session samples: max 3.318368s; no reusable-session recovery claim. |
 | Aggregate foundation plus adapter sequence | Compared with proposed shared 30s startup budget | #13 three samples: max 1.764696s, conservatively including ten captures and acknowledged input. |
 
-The [#13 summary](../evidence/issue-13/summary.json) records timeout detection up
+The [#13 summary](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-13/summary.json) records timeout detection up
 to 3.003762s because the supervisor polls on a 5ms timer. Its acceptance check
 still rejects every success at or after 3s; detection latency does not widen the
 success deadline.
@@ -148,7 +148,7 @@ normal-storage feasibility behavior, not guarantees under a hung filesystem.
 
 ## Exact dependency baseline
 
-The [#9 inventory](../evidence/issue-9/environment.json), #12 audit/plugin receipts
+The [#9 inventory](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-9/environment.json), #12 audit/plugin receipts
 and each run manifest provide complete native/Python/Cargo provenance. The
 recorded Arch x86_64 baseline is:
 

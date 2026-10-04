@@ -42,7 +42,7 @@ issue #31's reset implementation. Callback/protocol errors remain sticky and
 are checked before ordinary work and worker heartbeats. The aggregate readiness
 provider remains provisional pending issue #35.
 
-The [issue #27 evidence](../evidence/issue-27/README.md) records installed production
+The [issue #27 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-27/README.md) records installed production
 async negotiation and real compositor lifecycle faults. The test harness uses
 the existing strictly private pause plugin and its `issue12` name selector;
 production uses the `agent-desktop` prefix. Fault control is not a product API.

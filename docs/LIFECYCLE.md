@@ -107,7 +107,7 @@ pending jobs, remaining descendants, unsafe metadata, artifact lock failure,
 short status budgets, actual worker death, and missing-socket stop of a frozen
 worker that ignores SIGTERM. No private or personal desktop is started by #18.
 
-[evidence/issue-18](../evidence/issue-18/README.md) separately records the installed
+[evidence/issue-18](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-18/README.md) separately records the installed
 wheel worker, independent installed CLI processes, ordinary child/grandchild
 cgroup membership, duplicate-start identity, stale requests and bounded fallback
 termination. It is service evidence with `desktop_ready: false`, not release
@@ -142,7 +142,7 @@ reconciliation waits for full service quiescence before retrying that disposal. 
 lifecycle metadata and all durable artifacts. Root symlinks/unsafe ownership are
 rejected and nested links are not followed. Disposal failure returns uncertain
 cleanup and later lifecycle calls retry. With a functioning post hook, crash
-settings cleanup finishes automatically without a later stop/status/start call. [Issue #19 evidence](../evidence/issue-19/README.md) records real installed
+settings cleanup finishes automatically without a later stop/status/start call. [Issue #19 evidence](https://github.com/JosephWest2/kde_agent/blob/d1efe95b/evidence/issue-19/README.md) records real installed
 bus/KWin output, project access and environment isolation with readiness false.
 
 ## Capability readiness and live health (#20)

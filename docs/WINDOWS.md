@@ -157,7 +157,7 @@ The native fixture adds `--resize-after-ms LABEL:MS:WIDTH:HEIGHT` and
 fixture start. Scheduled receipts include actual elapsed time and whether the
 surface existed. Configure receipts include labeled activated state. Client
 resize does not claim control over global placement. Installed evidence and
-its measured bounds are recorded under `evidence/issue-24`; they do not qualify
+its measured bounds are summarized in [validation history](VALIDATION.md) (#24); they do not qualify
 representative applications, held input, capture or release readiness.
 
 ## Graceful selected-window close

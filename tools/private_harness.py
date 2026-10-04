@@ -515,7 +515,7 @@ def run(args):
             "requested_output": {"count": 1, "width": 1280, "height": 720, "scale": 1},
             "phase": "building", "outcome": "pending", "started_monotonic_ns": time.monotonic_ns(),
             "dependency_policy_sha256": digest(PROJECT / "dependencies.json"),
-            "issue9_report_sha256": digest(PROJECT / "evidence/issue-9/environment.json"),
+            "issue9_report_sha256": digest(PROJECT / "tests/data/issue9-environment.json"),
             "python_version": sys.version.split()[0], "harness_source_sha256": digest(SCRIPT)}
     atomic(manifest, data)
     launched = False

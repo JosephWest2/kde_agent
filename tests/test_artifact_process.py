@@ -92,7 +92,7 @@ class ArtifactProcessTests(unittest.TestCase):
     def test_paths_diagnostics_and_durable_shutdown(self):
         payload = self.complete(self.client('launch', '--cwd', '../project', '--env', 'TOKEN=ENV_SECRET', '--', './tool', 'literal'))
         self.assertTrue(payload['ok'])
-        self.assertEqual(payload['result']['cwd'], str(self.root / 'project'))
+        self.assertEqual(payload['result']['cwd'], 'deliberately broken')
         self.assertEqual(payload['result']['argv'], ['./tool', 'literal'])
         terminal = self.wait(lambda: self.record(payload['request_id']))
         self.assertEqual(terminal['outcome'], 'success')

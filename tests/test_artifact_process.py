@@ -78,6 +78,13 @@ class ArtifactProcessTests(unittest.TestCase):
         except (FileNotFoundError, json.JSONDecodeError):
             return []
 
+    def phases_of(self, request_id):
+        try:
+            return [value['phase'] for line in (self.generation / 'events.jsonl').read_text().splitlines()
+                    if (value := json.loads(line))['request_id'] == request_id]
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
     def record(self, request_id):
         paths = list((self.generation / 'requests' / request_id).glob('*/record.json'))
         return json.loads(paths[0].read_text()) if paths else None
@@ -107,6 +114,9 @@ class ArtifactProcessTests(unittest.TestCase):
     def test_contended_store_cannot_prevent_stop_release_cleanup(self):
         active = self.client('type', '--window', WINDOW, 'TEXT_SECRET')
         effect = self.wait(lambda: self.markers_of('effect'))[0]
+        # The effect marker precedes context.effects()'s record and event writes;
+        # holding the lock before both finish fails the effect itself, not the stop.
+        self.wait(lambda: 'effects' in self.phases_of(effect['request_id']))
         lock = os.open(self.generation / 'record.lock', os.O_RDWR)
         try:
             def acquire():
@@ -115,7 +125,6 @@ class ArtifactProcessTests(unittest.TestCase):
                     return True
                 except BlockingIOError:
                     return False
-            # The effect marker precedes context.effects()'s record update.
             # Establish deliberate contention before timing the stop request.
             self.wait(acquire)
             before = time.monotonic()

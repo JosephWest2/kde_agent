@@ -1,0 +1,52 @@
+# Portable unit tests. Host tests skip themselves with a reason (tests/host_facilities.py);
+# see docs/TESTING.md for the categories and the exclusions.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    # Pinned rather than ubuntu-latest: the Python version comes from this image.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      # The system Python 3.12 (pyproject requires >= 3.11) with the distribution's
+      # PyGObject, dbus-python and Pillow, as the tool runs on a desktop host.
+      # python-is-python3 and git supply /usr/bin/python and /usr/bin/git, which
+      # tools/ and their tests invoke by absolute path.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 python-is-python3 git \
+            python3-gi gir1.2-glib-2.0 python3-dbus python3-pil dbus-daemon
+          /usr/bin/python3 --version
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -v 2>&1 | tee unittest.log
+
+      # Only the known host-test modules may skip; any other skip fails the job.
+      - name: Test count
+        if: always()
+        env:
+          HOST_MODULES: test_input_connection test_libei_probe test_lifecycle_process
+        run: |
+          ran=$(grep -E '^Ran [0-9]+ tests? ' unittest.log | grep -oE '[0-9]+' | head -1)
+          skipped=$(grep -c ' \.\.\. skipped ' unittest.log || true)
+          echo "Tests run: $ran, skipped: $skipped, executed: $((ran - skipped))" | tee -a "$GITHUB_STEP_SUMMARY"
+          grep ' \.\.\. skipped ' unittest.log | tee -a "$GITHUB_STEP_SUMMARY" || true
+          unexpected=$(grep ' \.\.\. skipped ' unittest.log | grep -vE "\(($(echo $HOST_MODULES | tr ' ' '|'))\." || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected skips outside the host-test modules:"
+            echo "$unexpected"
+            exit 1
+          fi

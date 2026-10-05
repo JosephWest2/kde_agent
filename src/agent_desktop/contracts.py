@@ -217,8 +217,8 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         if condition == "title":
             if "match" not in args:
                 invalid("match")
-            from .title_match import compile_match
-            compile_match(args["match"], args["regex"])
+            from .title_regex import validate
+            validate(args["match"], args["regex"])
         elif "match" in args or args["regex"]:
             invalid("match")
         else:

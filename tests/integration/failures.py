@@ -288,6 +288,11 @@ class Scenario(smoke.Smoke):
                               '--regex', '--match', r'^KDE \w+ Native Fixture retitled$')['result']
         if result['polls'] != 1:
             raise SmokeFailure('title-gone', f'an initial match must return on the first poll: {result["polls"]}')
+        error = self.expect_error('wait --for title --regex (runaway)', 'invalid_arguments', 'wait', '--for', 'title',
+                                  '--window', primary, '--regex', '--match', '(.*.*)*!')
+        if error['context'].get('reason') != 'pattern_too_slow':
+            raise SmokeFailure('title-gone', f'expected pattern_too_slow: {error}')
+        ok('wait --for title --regex (runaway)', 'pattern_too_slow; helper killed by its CPU timer')
         payload = self.wait_with_step('wait --for title (window lost)', fixture_pid, 'wait', '--for', 'title',
                                       '--window', sibling, '--match', 'never this title')
         if payload['ok'] or payload['error']['code'] != 'target_lost':

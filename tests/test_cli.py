@@ -122,7 +122,6 @@ class CLITests(unittest.TestCase):
                  ["wait", "--for", "title", "--window", REF, "--match", ""],
                  ["wait", "--for", "title", "--window", REF, "--match", "x" * 257],
                  ["wait", "--for", "title", "--window", REF, "--regex", "--match", "(a"],
-                 ["wait", "--for", "title", "--window", REF, "--regex", "--match", "a*"],
                  ["wait", "--for", "gone", "--app", APP], ["wait", "--for", "gone", "--window", REF, "--match", "x"],
                  ["wait", "--for", "focus", "--window", REF, "--match", "x"],
                  ["wait", "--for", "window", "--app", APP, "--regex"], ["wait", "--for", "titles", "--window", REF]]

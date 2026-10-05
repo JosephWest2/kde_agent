@@ -68,20 +68,25 @@ of W's current title. `--match` is 1–256 characters and only valid with `title
   `frame`, `focused`, `active_window`, query times), plus `title` (the matched
   title), `row` (the full window row), `match` (`{text, regex}`) and `polls`.
 
-With `--regex`, `--match` is a pattern with `re.search` semantics in a small
-subset of Python syntax that is matched in linear time (no backtracking):
-literals, `.`, `[...]` and `[^...]` classes with ranges, `\d \D \w \W \s \S`,
-escaped punctuation, `\t \n \r \f \v`, `( )` and `(?: )` groups, `|`, and `* + ?`.
-`^` may only start and `$` only end the pattern, and an anchored pattern needs
-explicit grouping around alternatives (`^(?:Save|Open)`, not `^Save|Open`).
-Counted repetition (`{m,n}`), lazy quantifiers, backreferences, lookaround, `\b`,
-inline flags and other escapes are refused, not reinterpreted, as is a pattern
-that matches the empty string (it would match every title). Anything refused is
-`invalid_arguments` with `context.field: match` and a `reason` such as
-`unbalanced_parenthesis`, `unsupported_quantifier`, `unsupported_escape`,
-`matches_empty`, `anchor_with_alternation` or `too_long`, plus the character
-`position`; the pattern itself is never echoed. Patterns are checked when the
-request is validated, before anything reaches the session.
+With `--regex`, `--match` is a Python `re` pattern (full syntax, inline flags
+such as `(?i)` included) searched with `re.search` semantics. It is compiled when
+the request is validated: a compile error is `invalid_arguments` with
+`context.field: match`, `reason: invalid_regex` and the error `position`; the
+pattern is never echoed. A pattern that can match the empty string (`a*`)
+matches every non-empty title, so it succeeds on the first poll. It isn't
+rejected, because deciding that means running the pattern, which validation
+never does.
+
+Because `re` can backtrack exponentially, the search never runs in the worker's
+event loop. Each new title is searched in a short-lived helper process
+(`python -I`, empty environment, no inherited descriptors), started only when
+the title changes. It costs about 15ms. The helper may use at most 100ms of
+CPU time for the search; a real search of a title (at most 4096 characters) takes
+well under 1ms. A pattern that exceeds it ends the wait with `invalid_arguments`,
+`reason: pattern_too_slow` (exit 2), and the helper is killed and reaped. It is
+never retried. Cancellation, timeout and `session stop` kill a running helper
+too. A helper that crashes, or doesn't answer within 2s, gives `internal_error`
+(`reason: regex_helper_failed` or `regex_helper_unresponsive`).
 
 **`wait --for gone --window W`** succeeds on the first observation that doesn't
 list W. Closing a dialog or one of several windows can be confirmed this way;

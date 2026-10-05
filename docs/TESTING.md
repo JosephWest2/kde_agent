@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 538 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 543 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 8 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 550 of the 558
+have a user systemd manager, so `test_lifecycle_process` runs there: 555 of the 563
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
@@ -133,7 +133,7 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
 | `worker-sigkill` | SIGKILL the worker once the fixture sees the held key | the client gets `completion_unknown` |
 | `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
-| `title-gone` | a fixture with a sibling and a dialog whose `--on-sigusr1` steps retitle the primary, close the sibling, then close the dialog; each signal is sent only after the running wait's first observation artifact appears, so no step depends on launch timing (`AGENT_DESKTOP_TEST_SLOW=SECONDS` adds setup delay to prove it) | `wait --for title` times out (context: phase `title_wait`, window, last query) on a title that never appears, matches the retitle on a later poll, matches a `--regex` on the first poll, and fails with `target_lost` when the sibling closes mid-wait; `wait --for gone` on the dialog succeeds (`already_gone: false`) while the primary stays listed, then reports `already_gone`; a title wait on the gone dialog is `target_not_found` and a stale ref `generation_mismatch` |
+| `title-gone` | a fixture with a sibling and a dialog whose `--on-sigusr1` steps retitle the primary, close the sibling, then close the dialog; each signal is sent only after the running wait's first observation artifact appears, so no step depends on launch timing (`AGENT_DESKTOP_TEST_SLOW=SECONDS` adds setup delay to prove it) | `wait --for title` times out (context: phase `title_wait`, window, last query) on a title that never appears, matches the retitle on a later poll, matches a `--regex` on the first poll, ends a runaway `--regex` with `pattern_too_slow`, and fails with `target_lost` when the sibling closes mid-wait; `wait --for gone` on the dialog succeeds (`already_gone: false`) while the primary stays listed, then reports `already_gone`; a title wait on the gone dialog is `target_not_found` and a stale ref `generation_mismatch` |
 
 It takes the same `--cli`, `--dependency-root` and `--verbose` options as the smoke
 test. A failing scenario keeps its artifact directory and stops the run.

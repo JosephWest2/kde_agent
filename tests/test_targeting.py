@@ -1,5 +1,7 @@
 """Effects, exact identity and deadline/cleanup boundaries of composed targeting."""
 import copy
+import os
+import signal
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import Mock, patch
@@ -361,23 +363,83 @@ class TitleAndGoneWaitTests(Harness):
         self.assertEqual(self.step(task, .35)['polls'], 4)
         self.assertEqual(self.adapter.starts, [0, .1, .2, .35])
 
-    def test_regex_title_search_spans_steps_without_starting_queries(self):
-        long_title = 'x' * 4000 + ' Saved'
-        task = self.title_task([titled(long_title)], match='.*' * 100 + 'Saved$', regex=True)
-        steps = 1
-        result = self.step(task)
-        while result is None:
-            steps += 1
-            result = self.step(task, .01 * steps)
-        self.assertGreater(steps, 1)
-        self.assertEqual(len(self.adapter.starts), 1)
-        self.assertEqual(result['match'], {'text': '.*' * 100 + 'Saved$', 'regex': True})
-        self.assertEqual(result['title'], long_title)
+    def regex_task(self, values, match):
+        from agent_desktop.children import Children
+        self.children = Children()
+        self.addCleanup(self.children.close)
+        task = self.title_task(values, match=match, regex=True)
+        self.adapter.desktop = NS(children=self.children)
+        return task
+
+    def until_answer(self, task, limit=5):
+        """Step with the real clock paused, reaping like the worker's tick."""
+        import time as real
+        end = real.monotonic() + limit
+        while real.monotonic() < end:
+            self.children.poll()
+            result = self.step(task)
+            if result is not None or task.search is None:
+                return result
+            real.sleep(.005)
+        self.fail('regex child did not answer')
+
+    def test_regex_title_runs_in_a_reaped_child_and_unchanged_titles_are_not_searched_again(self):
+        task = self.regex_task([titled('Report'), titled('Report'), titled('New Document 2')], r'^New Document \d$')
+        self.assertIsNone(self.until_answer(task))
+        self.assertIsNone(self.step(task, .1))
+        self.assertIsNone(task.search)  # unchanged title: no second child
+        self.step(task, .2)
+        result = self.until_answer(task)
+        self.assertEqual((result['title'], result['polls']), ('New Document 2', 3))
+        self.assertEqual(result['match'], {'text': r'^New Document \d$', 'regex': True})
+        self.children.poll()
+        self.assertEqual(self.children.owned, set())
+
+    def test_catastrophic_regex_fails_with_pattern_too_slow_and_the_child_is_reaped(self):
+        task = self.regex_task([titled('a' * 64 + 'b')], '(a+)+$')
+        child = None
+        with self.assertRaises(ContractError) as caught:
+            import time as real
+            end = real.monotonic() + 5
+            while real.monotonic() < end:
+                self.children.poll()
+                self.step(task)
+                child = child or task.search.child
+                real.sleep(.005)
+        error = caught.exception
+        self.assertEqual((error.code, error.context['reason'], error.context['field']),
+                         ('invalid_arguments', 'pattern_too_slow', 'match'))
+        self.assertEqual(error.context['phase'], 'title_wait')
+        self.assertEqual(child.returncode, -signal.SIGPROF)
+        self.assertEqual(self.children.owned, set())
+
+    def test_cancel_mid_match_kills_and_reaps_the_child_before_cleanup_completes(self):
+        task = self.regex_task([titled('a' * 64 + 'b')], '(a+)+$')
+        self.assertIsNone(self.step(task))
+        child = task.search.child
+        task.request_cancel('cancelled')
+        import time as real
+        end = real.monotonic() + 5
+        while not task.cleanup(0) and real.monotonic() < end:
+            self.children.poll()
+            real.sleep(.005)
+        self.assertTrue(task.cleanup(0))
+        self.assertEqual(child.returncode, -signal.SIGKILL)
+        self.assertEqual(self.children.owned, set())
+
+    def test_regex_children_leak_no_descriptors(self):
+        before = len(os.listdir('/proc/self/fd'))
+        for title in ('x', 'y', 'Saved'):
+            task = self.regex_task([titled(title)], 'Saved$')
+            self.until_answer(task)
+            self.children.poll()
+        self.assertEqual(len(os.listdir('/proc/self/fd')), before)
 
     def test_regex_no_match_resumes_polling(self):
-        task = self.title_task([titled('a'), titled('ab')], match='^ab$', regex=True)
-        self.assertIsNone(self.step(task))
-        self.assertTrue(self.step(task, .1)['satisfied'])
+        task = self.regex_task([titled('a'), titled('ab')], '^ab$')
+        self.assertIsNone(self.until_answer(task))
+        self.step(task, .1)
+        self.assertTrue(self.until_answer(task)['satisfied'])
 
     def test_title_timeout_reports_the_last_observation(self):
         task = self.title_task([titled('Report')] * 3)

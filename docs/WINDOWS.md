@@ -181,12 +181,13 @@ Window/app-focus waits report `application_exited` on known complete app exit.
 focus` (`window` rows only; `target_not_found` on the first observation,
 `target_lost` once seen) and succeeds on a fresh observation whose title matches.
 Titles are matched, never used to pick a window. Null and empty titles never
-match. `--regex` patterns use a linear-time subset (see [CLI.md](CLI.md#waits)):
-Python's `re` can backtrack exponentially inside a single C call that cannot be
-interrupted, which would stall the owner. The pattern is compiled into a position
-automaton when the request is validated, and a search spends a fixed work budget
-per scheduler step (about 1ms), so even a 256-character pattern against a
-4096-character title takes a few steps and no new query starts until it finishes.
+match. `--regex` uses Python's `re`, which can backtrack exponentially inside a
+single uninterruptible C call, so it never runs on the owner. Each new title is
+searched in a helper child started through the worker's `Children`, the same way
+as the kdotool query children: it is polled by return code, aborted on cancel and
+reaped by the owner's tick, and cleanup holds the slot until it is reaped. A
+100ms CPU timer inside the helper ends a runaway search (`pattern_too_slow`). No
+new query starts while a search is pending ([CLI.md](CLI.md#waits)).
 `wait --for gone --window WIN` succeeds on the first fresh observation without
 WIN, whatever its kind, and reports `already_gone` when the first observation
 already lacked it; neither title nor gone waits look at the application's

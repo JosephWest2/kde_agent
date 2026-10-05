@@ -70,7 +70,7 @@ def parser():
     leaves["wait"].add_argument("--for", dest="condition", required=True, metavar="window|focus|exit|title|gone",
                                 help="window/exit take --app; focus/title/gone take --window")
     leaves["wait"].add_argument("--match", metavar="TEXT", help="title wait: case-sensitive substring (at most 256 characters)")
-    leaves["wait"].add_argument("--regex", action="store_true", help="title wait: --match is a pattern in the documented linear-time subset")
+    leaves["wait"].add_argument("--regex", action="store_true", help="title wait: --match is a Python re pattern (searched in a helper, at most 100ms CPU)")
     leaves["key"].add_argument("chord", metavar="CHORD")
     leaves["key"].add_argument("--hold", default=.05, metavar="SECONDS")
     leaves["type"].add_argument("text", metavar="TEXT")

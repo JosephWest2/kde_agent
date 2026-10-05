@@ -30,7 +30,8 @@ is done. Waits use nonblocking observations or state checked on later steps.
 A wait (`wait --for ...`, `launch --wait-window`, `focus`) holds the ordinary
 execution slot for its whole duration, up to its 60s maximum; requests behind it
 queue, and their queue time counts against their own deadlines. A regex title
-wait splits its matching across steps under a fixed work budget. No
+wait searches in a helper child polled by later steps (a 100ms CPU timer bounds
+it), never in a step. No
 nested event loops, blocking process waits, sleeps, desktop calls or unbounded file
 operations belong inside steps. Cleanup retains the ordinary execution slot until
 confirmed or exhausted. Unconfirmed cleanup leaves the session/input unavailable

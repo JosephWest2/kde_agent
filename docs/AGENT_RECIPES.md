@@ -94,10 +94,11 @@ $D wait --for gone --window DIALOG_REF                         # dialog closed, 
 - `gone` succeeds immediately with `already_gone: true` if the window was already
   absent, which a mistyped ref would also give. It accepts popups and the window
   menu too, so you can wait for a tooltip or menu to close.
-- `--regex` takes a small linear-time subset of Python syntax (no `{m,n}`,
-  backreferences or lookaround; anchored alternatives need a group:
-  `^(?:Save|Open)`). An unsupported pattern is `invalid_arguments` before anything
-  is sent; see [Waits](CLI.md#waits).
+- `--regex` takes a Python `re` pattern. An invalid pattern is
+  `invalid_arguments` before anything is sent. A pattern that backtracks for more
+  than 100ms of CPU on a title ends the wait with `invalid_arguments`, reason
+  `pattern_too_slow`; simplify it rather than retrying. A pattern that can match
+  an empty string (`a*`) matches every title. See [Waits](CLI.md#waits).
 - A wait occupies the session while it runs: your other commands to that session
   queue behind it. Use screenshots for changes that don't show in titles or
   windows (content, colors, layout).

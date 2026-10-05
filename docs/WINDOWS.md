@@ -26,8 +26,8 @@ an acquisition cutoff for its current app. Only a matching live pidfd retained
 before that cutoff can qualify. Current process birth and app-subtree membership
 are verified with live-pidfd checks on both sides. Unknown, exited, moved, reused,
 newly acquired or uncertain identities remain unassociated. These queries never
-signal, focus, select or close windows. UUID native arguments for future focus/
-close callers must be brace-wrapped at the kdotool boundary.
+signal, focus, select or close windows. UUID native arguments for focus and close
+are brace-wrapped at the kdotool boundary.
 
 Each associated row records `association.verified_at` from its final bounded
 verification. Rows are sampled across turns; `accepted_at` does not assert that
@@ -136,10 +136,11 @@ establish a total ordering of unseen real-world events or a freshness lease.
 
 Focus returns current `client`/`frame`, exact `window`, `active_window`, `focused`,
 association verification and query observation/acceptance times. `client` may be
-null. The read-only `current_target`/`TargetTask(condition='observe')` seam permits
-future input to demand focus and client geometry; missing geometry explicitly
-fails with `client_geometry_unavailable` and never substitutes frame geometry.
-No input is emitted and input/click qualification is unchanged.
+null. Input (`key`, `type`, `click --window`) uses the read-only
+`current_target`/`TargetTask(condition='observe')` check to demand focus and, for
+`click`, client geometry; missing geometry explicitly fails with
+`client_geometry_unavailable` and never substitutes frame geometry. Focus itself
+emits no input.
 
 Cancellation and disconnect keep the current native operation owned through its
 single cleanup reserve; no following action starts until cleanup is confirmed.

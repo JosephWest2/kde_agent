@@ -1,5 +1,9 @@
 # M1 libei compatibility probe (#12)
 
+> **Historical.** This records the Milestone 1 feasibility work. The supported
+> product is the `agent-desktop` CLI: see the [README](../README.md),
+> [CLI.md](CLI.md) and [validation history](VALIDATION.md).
+
 `tools/libei_probe.py` proves the project-owned Python/libei sender on the existing
 private KWin harness. It is feasibility tooling, not the production session CLI.
 Actual Wayland fixture receipts distinguish application acknowledgment from input

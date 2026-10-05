@@ -1,17 +1,19 @@
 # Generation-bound worker transport
 
-The packaged foreground worker establishes private routing and protocol validation.
-It does **not** establish a desktop, a ready session, production health, successful
-input, capture or lifecycle cleanup. `session start` and `doctor` remain locally
-unsupported. Established-session commands can contact this worker and receive
-`unsupported_operation` with verified session identity. Managed lifecycle status/stop
-use the [generation-owned service manager](LIFECYCLE.md); an absent stop succeeds.
+This page covers the worker's private routing and protocol validation. The
+managed worker that `session start` runs serves every command in [CLI.md](CLI.md)
+over this transport. `doctor` and `session start` run in the CLI and are never sent
+to a worker. A standalone foreground worker (below) uses the same transport without
+a desktop: its desktop commands return `unsupported_operation` with verified
+session identity. Managed lifecycle status/stop use the
+[generation-owned service manager](LIFECYCLE.md); an absent stop succeeds.
 If there is no routing record other commands return `session_not_found`; an unreachable recorded worker returns
-`session_unavailable`. Real lifecycle/adapters follow in M3 onward.
+`session_unavailable`.
 
 ## Worker and ownership
 
-The internal supervisor entrypoint is:
+The internal standalone entrypoint (the session service adds internal `--managed`
+options) is:
 
 ```sh
 python -m agent_desktop.worker --session NAME --generation GENERATION --artifacts /absolute/durable/root
@@ -21,8 +23,8 @@ Run with the distribution Python/PyGObject selected in the M1 decision, or an
 installation that exposes those system bindings. CLI parsing, help, version and
 the client do not import gi. The entrypoint stays in the foreground and never
 launches an adapter or service. The manager's internal managed invocation attaches
-an already reserved generation and durable store; it provides only live control
-status with `desktop_ready: false`. SIGTERM/SIGINT stops this transport process and
+an already reserved generation and durable store, then builds the private desktop
+([LIFECYCLE.md](LIFECYCLE.md)). SIGTERM/SIGINT stops a standalone process and
 removes its owned endpoint; it does not pretend to implement session stop.
 Worker stdout/stderr are separate from the socket; only framed replies cross it.
 The explicit absolute artifact root must be outside disposable runtime. The worker
@@ -154,7 +156,8 @@ Disconnect leaves the active ID owned until terminal completion and notifies the
 corresponding unfinished admission once. The [scheduler](SCHEDULING.md) implements
 the serialized queue, separately reserved priority endpoint, bounded task stepping
 and cleanup continuation. Its 100ms provisional dispatch target is tested with
-process doubles; actual production adapters still require M5/M7 timing validation.
+process doubles; the failure-path tests ([TESTING.md](TESTING.md)) check real
+release timing.
 
 ## Verification boundary
 

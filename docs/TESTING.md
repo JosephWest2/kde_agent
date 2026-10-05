@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 511 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 516 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 8 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,15 +53,15 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 515 of the 523
+have a user systemd manager, so `test_lifecycle_process` runs there: 520 of the 528
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
 
 ```sh
-pip install .                       # the session service runs the installed package
-python tests/integration/smoke.py   # about 5 seconds
-python tests/integration/smoke.py --loop 5
+tools/setup.sh                      # installs the package; the session service runs it
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 6 seconds
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop --loop 5
 ```
 
 The smoke test drives the installed `agent-desktop` through separate CLI
@@ -98,7 +98,8 @@ error payload and the kept artifact directory.
 Passing runs delete their artifacts unless you pass `--keep-artifacts`.
 
 Options:
-- `--cli PATH`: an `agent-desktop` that isn't on PATH, such as a venv.
+- `--cli PATH`: an `agent-desktop` that isn't on PATH, such as the one
+  `tools/setup.sh` installs (default: `agent-desktop` on PATH).
 - `--dependency-root PATH`: defaults to `.local/dependencies`.
 - `--no-fixture`: skip the native fixture (it needs gcc, wayland-protocols and xkbcommon headers).
 - `--no-editor`: skip gnome-text-editor.
@@ -107,8 +108,8 @@ Options:
 ## Failure-path tests
 
 ```sh
-python tests/integration/failures.py               # all scenarios, about 20 seconds
-python tests/integration/failures.py focus-loss cancel-hold --loop 3
+python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop   # all scenarios, about 20 seconds
+python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop focus-loss cancel-hold --loop 3
 ```
 
 Each scenario starts its own session with the native fixture, breaks something on

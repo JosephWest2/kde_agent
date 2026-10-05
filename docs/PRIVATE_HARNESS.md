@@ -1,5 +1,9 @@
 # M1 private-desktop feasibility harness
 
+> **Historical.** This records the Milestone 1 feasibility work. The supported
+> product is the `agent-desktop` CLI: see the [README](../README.md),
+> [CLI.md](CLI.md) and [validation history](VALIDATION.md).
+
 `tools/private_harness.py` runs a bounded development probe inside a private KWin
 service, then removes that service's processes and disposable settings. It is
 **feasibility tooling**, not the supported `agent-desktop` session CLI. Its

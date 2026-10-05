@@ -23,17 +23,21 @@ Losing focus during a hold or long `type` releases and stops the input.
 
 ## Quickstart for coding agents
 
-Install once with `pip install .` (the session service runs the installed
-package) and check the host with `agent-desktop doctor`. Then:
+Set up once with `tools/setup.sh` ([setup](docs/SETUP.md): Arch packages, rustup,
+what it does). It builds the pinned dependencies, installs the CLI into
+`.local/dependencies/venv/bin/agent-desktop` (the session service runs the
+installed package) and runs `agent-desktop doctor`. Rerun it after pulling changes.
+Then, from the checkout:
 
 ```sh
+export PATH="$PWD/.local/dependencies/venv/bin:$PATH"
 D="agent-desktop --json"
 $D session start                                 # about 1s; reuses a running session
 $D launch --wait-window -- gnome-text-editor     # → result.application.ref, result.windows[].window.ref
 $D windows --app APP_REF                         # client/frame geometry, title, active
 $D focus --window WIN_REF                        # input requires a focused window
 $D type --window WIN_REF 'Hello'
-$D key --window WIN_REF ctrl+s
+$D key --window WIN_REF ctrl+a                    # chords; ctrl+s would open a modal Save dialog
 $D click --window WIN_REF --x 107 --y 23         # client-area pixels, as in a window screenshot
 $D screenshot --window WIN_REF                   # → result.path (PNG of the client area)
 $D logs --app APP_REF --tail 50                  # app stdout/stderr tails and paths
@@ -62,14 +66,19 @@ $D session stop
   cause and the apps that ran) stay under `.agent-desktop/artifacts/generations/GEN/`
   after the session stops ([layout](docs/ARTIFACTS.md)).
 
+[Agent recipes](docs/AGENT_RECIPES.md) cover stale refs, focus before input,
+modal dialogs, client versus screen coordinates, and recovering from
+`completion_unknown` and `input_uncertain`.
+
 [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke
-test (`python tests/integration/smoke.py`), and failure-path tests
-(`python tests/integration/failures.py`). See [application ownership](docs/APPLICATIONS.md),
+test and failure-path tests (`python tests/integration/smoke.py` and
+`failures.py`, each with `--cli .local/dependencies/venv/bin/agent-desktop`
+unless that directory is on PATH). See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.
 
 See [CLI installation and commands](docs/CLI.md), [service lifecycle](docs/LIFECYCLE.md),
 [requirements](REQUIREMENTS.md), and [architecture](ARCHITECTURE.md).
-[Prerequisite setup](docs/SETUP.md) prepares the pinned local dependency build;
-[the M1 decision](docs/M1_DECISION.md) records the source adapter evidence. [Validation history](docs/VALIDATION.md) summarizes completed work; [the revised plan](planning/REVISED_PLAN.md) tracks what remains.
+[Setup](docs/SETUP.md) covers the host, prerequisites and `tools/setup.sh`;
+[the M1 decision](docs/M1_DECISION.md) records the original adapter evidence. [Validation history](docs/VALIDATION.md) summarizes completed work; [the revised plan](planning/REVISED_PLAN.md) is the historical plan, and open work is tracked in GitHub issues.
 No command controls the personal desktop.

@@ -1,7 +1,9 @@
 """Generation-owned service lifecycle, live readiness and bounded fallback cleanup."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import replace
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -17,6 +19,7 @@ from .runtime import Runtime, check_directory, check_file
 from .transport import exchange
 
 STOP_SECONDS = 15.0
+INSTALL_LOCK_RETRY = .05
 SYSTEMD_STOP_SECONDS = 3
 
 
@@ -204,13 +207,60 @@ def retained_failure(data):
     return None
 
 
+def install_lock_path():
+    """Fixed per-user path that tools/setup.sh also computes (docs/SETUP.md).
+
+    It sits beside the user manager's bus, independent of XDG_RUNTIME_DIR, so
+    setup and every CLI agree on it whatever their environment.
+    """
+    return Path('/run/user') / str(os.getuid()) / 'agent-desktop' / 'install.lock'
+
+
+@contextmanager
+def install_lock(path, deadline):
+    """Hold the install lock shared while a new service is launched.
+
+    tools/setup.sh holds it exclusively while it changes the installed package,
+    so a starting worker never imports a half-installed package.
+    """
+    path = Path(path)
+    try:
+        try:
+            path.parent.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        check_directory(path.parent)
+        fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+    except FileNotFoundError:
+        raise ContractError('prerequisite_missing', 'The user service manager is unavailable.',
+                            context={'lock': str(path)}) from None
+    except OSError:
+        raise ContractError('transport_error', 'Session runtime is unavailable or unsafe.',
+                            context={'lock': str(path)}) from None
+    try:
+        check_file(fd)
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise ContractError('session_conflict', 'agent-desktop setup is installing; retry when it finishes.',
+                                        context={'lock': str(path), 'reason': 'install_in_progress'}) from None
+                time.sleep(min(INSTALL_LOCK_RETRY, max(0, deadline - time.monotonic())))
+        yield
+    finally:
+        os.close(fd)
+
+
 def settled(info):
     return (info['ActiveState'] in ('inactive', 'failed') and not info['Job'] and info['empty'])
 
 
 class Manager:
-    def __init__(self, *, systemd=None, worker_command=None):
+    def __init__(self, *, systemd=None, worker_command=None, install_lock=None):
         self.systemd = systemd or Systemd()
+        self.install_lock = install_lock or install_lock_path()
         # Internal Python injection supports process fixtures, never CLI/plugin loading.
         self.worker_command = worker_command
 
@@ -352,10 +402,18 @@ class Manager:
 
     def start(self, request):
         """Wait for real capability readiness and correlated live control."""
-        from .artifacts import Store
         from .paths import normalize
         request = normalize(request)
         deadline = time.monotonic() + request.timeout_seconds
+        # Shared for the whole start: tools/setup.sh changes the installed package
+        # under the exclusive lock, and every step here can depend on it (the
+        # prerequisite check imports the worker; a new worker imports lazily
+        # during readiness).
+        with install_lock(self.install_lock, deadline):
+            return self._start(request, deadline)
+
+    def _start(self, request, deadline):
+        from .artifacts import Store
         configuration = dict(mode=request.arguments['mode'], artifacts=request.arguments['artifacts'],
                              dependency_root=request.arguments['dependency_root'],
                              output=dict(width=1280, height=720, scale=1))

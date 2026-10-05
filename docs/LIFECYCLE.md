@@ -1,8 +1,8 @@
 # Generation-owned service lifecycle
 
-M3.1/M3.2 provide generation-owned services and private desktop construction.
-M3.3 enables public start after real capability probes and adds live essential
-health monitoring. A correlated control response and every required probe must
+Each session is a generation-owned systemd user service that builds a private
+desktop. `session start` returns only after real capability probes, and live
+essential health monitoring follows. A correlated control response and every required probe must
 pass before start returns `state: ready, desktop_ready: true`. Once ready,
 `session status` lists the available desktop operations in `supported_operations`.
 After a failed generation is reconciled, the toolkit runs
@@ -26,7 +26,14 @@ configuration participates in compatible-start comparison: headless mode, normal
 absolute artifact root, normalized dependency root, and the fixed 1280×720 scale-1 output. Timeouts, request IDs
 and the caller cwd itself are not persistent configuration. A live compatible
 start returns the same identity only after correlated control and current readiness;
-a conflict fails. A name-only start after positive old-service quiescence creates
+a conflict fails. Every start holds the per-user install lock
+`/run/user/UID/agent-desktop/install.lock` shared for the whole call, from before
+the prerequisite check (which imports the installed worker) until it returns.
+`tools/setup.sh` holds it exclusively while it changes the installed package
+([SETUP.md](SETUP.md#rerunning)), so a worker never imports a half-installed
+package. If the lock stays exclusive past the start deadline, start fails with
+`session_conflict`, reason `install_in_progress`, before anything is reserved.
+A name-only start after positive old-service quiescence creates
 a fresh token. An expected-generation start never creates a replacement lifetime.
 
 Runtime storage adds `g/TOKEN/lifecycle.json` to the existing private layout. It
@@ -43,7 +50,8 @@ stop, only positively quiescent generation socket residue is removed; the curren
 pointer remains as a terminal tombstone until the next name-only start replaces it.
 Late cleanup checks the original generation before updating runtime state. A
 replacement service has a different unit name, so old stop requests cannot target
-it. No runtime or artifact directory is recursively removed by this milestone.
+it. Apart from the disposable `desktop/` settings subtree removed by the stop hook
+(below), no runtime or artifact directory is recursively removed.
 
 A timed-out submission may have reached systemd. Such ownership remains uncertain
 until the exact unit is observed. An absent unit cannot prove that a delayed
@@ -280,6 +288,6 @@ observation between bounded calls, and owns any subsequent service cleanup.
 The hook cannot acquire another request budget, retry close, signal applications,
 or interact with confirmations. It returns pending or an idempotent terminal
 result including uncertainty and cleanup confirmation. Unresolved adapter ownership
-prevents competing dispatch. Production release-before-close integration, shutdown
-selection/fan-out policy and owner pumping remain open (#64, #67); the existing production
-`not_connected` hook/qualification status is unchanged by this primitive.
+prevents competing dispatch. Production shutdown connects the release hook but not
+this close hook: its `close` stage still reports `not_connected`, and session stop
+ends applications by terminating the service (see the shutdown section above).

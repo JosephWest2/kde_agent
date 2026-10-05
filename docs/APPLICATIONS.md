@@ -144,5 +144,4 @@ Pidfds prevent PID-reuse retargeting. Membership observations do not atomically
 prevent hostile same-user migration after the last check; an unobserved process
 deliberately moved away before acquisition is outside cooperative containment.
 No raw PID, process-group, `cgroup.kill`, or systemd app-kill fallback is used.
-Launch, wait and close never construct termination authority. Production shutdown
-integration and pointer input remain separate work (#66, #67).
+Launch, wait and close never construct termination authority.

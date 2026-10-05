@@ -146,8 +146,8 @@ FD replies cannot attach to a replacement. The numeric primitive validates a com
 most 32 distinct evdev codes (BTN_LEFT/RIGHT/MIDDLE for the pointer device)
 before emission and records attempted presses before native calls. Absolute
 motion must fall inside one of the pointer device's regions, and nothing may be
-held on any device when a press or motion starts. It is internal: later action scheduling must enforce finite
-holds and focus checks. Release uses explicit release events and a frame.
+held on any device when a press or motion starts. It is internal: the public
+`key`/`type`/`click` tasks enforce finite holds and focus checks. Release uses explicit release events and a frame.
 
 Held state becomes uncertain after lifecycle loss or an emission failure.
 RESUMED does not clear uncertainty, and disposal preserves uncertain held

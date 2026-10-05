@@ -55,7 +55,9 @@ class LifecycleTests(unittest.TestCase):
         self.env = patch.dict(os.environ, XDG_RUNTIME_DIR=str(self.runtime))
         self.env.start()
         self.services = Services()
-        self.manager = Manager(systemd=self.services, worker_command=lambda data: ['/fixture'])
+        self.lock_path = self.runtime / 'agent-desktop' / 'install.lock'
+        self.manager = Manager(systemd=self.services, worker_command=lambda data: ['/fixture'],
+                               install_lock=self.lock_path)
         self.ping = patch.object(self.manager, '_ping', return_value={'state': 'starting', 'desktop_ready': False})
         self.ping.start()
 
@@ -73,6 +75,67 @@ class LifecycleTests(unittest.TestCase):
 
     def start(self):
         return self.manager.start(self.request())['session']['generation']
+
+    def hold_install_lock(self, mode):
+        self.lock_path.parent.mkdir(mode=0o700, exist_ok=True)
+        fd = os.open(self.lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        self.addCleanup(os.close, fd)
+        fcntl.flock(fd, mode | fcntl.LOCK_NB)
+
+    def test_start_waits_for_exclusive_install_lock_then_conflicts(self):
+        self.hold_install_lock(fcntl.LOCK_EX)
+        started = time.monotonic()
+        with self.assertRaises(ContractError) as caught:
+            self.manager.start(self.request(timeout=.3))
+        self.assertGreaterEqual(time.monotonic() - started, .3)
+        self.assertEqual(caught.exception.code, 'session_conflict')
+        self.assertIn('setup is installing', caught.exception.message)
+        self.assertEqual(caught.exception.context['lock'], str(self.lock_path))
+        self.assertEqual(self.services.calls, [])  # nothing launched or reserved
+        with self.assertRaises(ContractError) as missing:
+            Runtime().read('default')
+        self.assertEqual(missing.exception.code, 'session_not_found')
+
+    def test_prerequisite_check_runs_under_the_install_lock(self):
+        manager = Manager(systemd=self.services, install_lock=self.lock_path)
+        observed = []
+
+        def check(root, deadline):
+            probe = os.open(self.lock_path, os.O_RDWR)
+            try:
+                fcntl.flock(probe, fcntl.LOCK_SH | fcntl.LOCK_NB)  # shared holders coexist
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                os.close(probe)
+            observed.append(root)
+            raise ContractError('prerequisite_missing', 'Stub stops start here.')
+        with patch('agent_desktop.prerequisites.check', check), self.assertRaises(ContractError) as caught:
+            manager.start(self.request())
+        self.assertEqual(caught.exception.code, 'prerequisite_missing')
+        self.assertEqual(len(observed), 1)
+        self.hold_install_lock(fcntl.LOCK_EX)  # released after the failure
+
+    def test_exclusive_install_lock_precedes_the_prerequisite_check(self):
+        manager = Manager(systemd=self.services, install_lock=self.lock_path)
+        self.hold_install_lock(fcntl.LOCK_EX)
+        calls = []
+        with patch('agent_desktop.prerequisites.check', lambda *args: calls.append(args)), \
+                self.assertRaises(ContractError) as caught:
+            manager.start(self.request(timeout=.2))
+        self.assertEqual(caught.exception.code, 'session_conflict')
+        self.assertEqual(calls, [])
+
+    def test_start_with_free_install_lock_releases_it(self):
+        generation = self.start()
+        self.assertIn(('start', unit_name(generation)), self.services.calls)
+        self.assertEqual(os.stat(self.lock_path).st_mode & 0o777, 0o600)
+        self.hold_install_lock(fcntl.LOCK_EX)  # start released its shared hold
+
+    def test_start_succeeds_while_install_lock_is_held_shared(self):
+        self.hold_install_lock(fcntl.LOCK_SH)  # another session start
+        generation = self.start()
+        self.assertIn(('start', unit_name(generation)), self.services.calls)
 
     def test_retired_generation_resets_its_unit_best_effort(self):
         resets = []

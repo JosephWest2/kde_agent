@@ -1,4 +1,4 @@
-"""Limited production libei sender ABI (keyboard, absolute pointer, buttons), checked by soname, version and symbols."""
+"""Limited production libei sender ABI (keyboard, absolute pointer, buttons, wheel), checked by soname, version and symbols."""
 from __future__ import annotations
 
 import ctypes as C
@@ -14,7 +14,7 @@ TYPES = {
     "opaque": ("void *", C.c_void_p), "string": ("const char *", C.c_char_p),
     "int": ("int", C.c_int), "cap": ("enum ei_device_capability", C.c_int),
     "event_type": ("enum ei_event_type", C.c_int), "bool": ("bool", C.c_bool),
-    "u32": ("uint32_t", C.c_uint32), "u64": ("uint64_t", C.c_uint64),
+    "i32": ("int32_t", C.c_int32), "u32": ("uint32_t", C.c_uint32), "u64": ("uint64_t", C.c_uint64),
     "double": ("double", C.c_double), "size": ("size_t", C.c_size_t),
     "region": ("struct ei_region *", C.c_void_p),
     "void": ("void", None),
@@ -40,6 +40,9 @@ DECLARATIONS = {
     "ei_device_frame": ("void", ["device", "u64"]),
     "ei_device_pointer_motion_absolute": ("void", ["device", "double", "double"]),
     "ei_device_button_button": ("void", ["device", "u32", "bool"]),
+    # Wheel steps in 120ths of a notch. Never ei_device_scroll_stop: KWin turns
+    # it into wl_pointer.axis_stop, which a physical wheel never sends.
+    "ei_device_scroll_discrete": ("void", ["device", "i32", "i32"]),
     # Borrowed region pointers; valid while the device is referenced.
     "ei_device_get_region": ("region", ["device", "size"]),
     "ei_region_get_x": ("u32", ["region"]), "ei_region_get_y": ("u32", ["region"]),
@@ -50,7 +53,7 @@ CONSTANTS = {"EI_EVENT_CONNECT": 1, "EI_EVENT_DISCONNECT": 2,
              "EI_EVENT_DEVICE_ADDED": 5, "EI_EVENT_DEVICE_REMOVED": 6,
              "EI_EVENT_DEVICE_PAUSED": 7, "EI_EVENT_DEVICE_RESUMED": 8,
              "EI_DEVICE_CAP_POINTER_ABSOLUTE": 2, "EI_DEVICE_CAP_KEYBOARD": 4,
-             "EI_DEVICE_CAP_BUTTON": 32}
+             "EI_DEVICE_CAP_SCROLL": 16, "EI_DEVICE_CAP_BUTTON": 32}
 
 # The soname major version is libei's ABI promise. Any 1.x build that exports
 # every declared symbol is accepted; the input code never depends on

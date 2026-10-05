@@ -114,6 +114,94 @@ same guarantees and `input_uncertain` behavior. Results give `x`, `y`,
 and the query artifact. `dispatched: true` means the events reached the
 compositor, not that the application acted on them.
 
+## Public `move`
+
+```sh
+agent-desktop --json move --window REF --x 107 --y 23
+agent-desktop --json move --x 640 --y 360    # screen coordinates, no window checks
+```
+
+Moves the pointer to one point and presses nothing: hover. The coordinates and
+every check are the same as for `click`. With `--window`, the point is in client
+coordinates and must be inside the client area and on screen, and the window must
+be active and free of KWin surfaces (`target_lost`, reason `focus_lost` or
+`compositor_surface_open`; outcome `not_started`). Hover needs focus for the same
+reason as a click: pointer events go to whatever surface is under the pointer, and
+only the active window is on top, so this is what makes sure the hover lands on the
+window you named. Without `--window`, nothing about windows is checked.
+
+The pointer stays at the point, `screen_x`, `screen_y` in the result, until the
+next `click`, `move` or `scroll`. A new session's pointer starts at the screen
+center (640, 360). Toolkits show hover highlights at once and tooltips after their
+own delay (often 0.5–1s), so wait before taking the screenshot. A tooltip is listed
+by `windows` as a `popup` row of the app. A move to the point the pointer is already
+at reaches the application as an empty pointer frame with no motion, so it does not
+restart a tooltip delay; move away and back for that.
+
+The result has click's fields without `button` and `count`: `window`, `focused`,
+`dispatched`, `query_artifact`, `client`, `x`, `y`, `screen_x`, `screen_y`,
+`focus_rechecks` and timing. A failure after the motion was attempted has outcome
+`unknown` and `pointer_moved` in its context. The motion opens a libei emulation
+sequence that is closed before the result, so nothing stays in progress.
+
+## Public `scroll`
+
+```sh
+agent-desktop --json scroll --window REF --x 350 --y 300 --dy 3     # 3 wheel notches down
+agent-desktop --json scroll --window REF --x 350 --y 300 --dy -3    # 3 notches up
+agent-desktop --json scroll --x 640 --y 360 --dx 2                  # screen point, 2 notches right
+```
+
+**Steps and signs.** `--dy` and `--dx` are mouse-wheel notches: integers from -50
+to 50, default 0, and not both 0 (`invalid_arguments`, reason `zero_scroll`).
+Positive `--dy` scrolls down, toward the end of a document, so the content moves up.
+Negative `--dy` scrolls up. Positive `--dx` scrolls right and negative `--dx` left.
+This is a wheel without "natural scrolling", and Wayland's own sign. It was checked
+live: `--dy 3` moved gnome-text-editor's text up and `--dy -3` brought it back,
+and the fixture receives positive values for down and right. How far a notch goes
+is up to the application. GTK 4 scrolls page height^(2/3) pixels, about 60px or
+2.5 lines in a 520px-tall gnome-text-editor. Other toolkits use their own amounts.
+
+**Where it goes.** The pointer first moves to the point, with the same coordinate
+and window rules as `click` and `move`, because a wheel scrolls whatever is under
+the pointer, not the focused widget. Then one notch goes out every 20ms, a brisk
+wheel spin. A diagonal scroll steps both axes together until the shorter one is
+done, so `--dx 1 --dy 3` sends (1, 1), (0, 1) and (0, 1).
+
+**What is sent.** Each step is one libei discrete scroll of 120 units per notch,
+followed by a frame. KWin passes it on as one wheel event of `wl_pointer.axis_value120`
+±120, `axis` ±15 and `frame`, with no `axis_source`; horizontal comes first when
+there are both. Clients bound below wl_seat version 8 get `axis_discrete` ±1 instead
+of value120. No scroll stop is ever sent. A physical wheel sends none, and KWin
+would deliver it as `axis_stop`, which toolkits treat as the end of a touchpad
+fling. Nothing is held between steps, so an interrupted scroll leaves nothing in
+progress. The emulation sequence the motion opened is closed after the last step,
+and at once on any failure, Ctrl-C, timeout or `session stop`. The shutdown backstop
+closes it too.
+
+**Focus rechecks and progress.** As for `type`, a `--window` scroll queries the
+window again every 250ms while steps remain. A lost focus or an opened KWin surface
+stops it between steps with `target_lost`, outcome `unknown`, and the progress so
+far: `steps_sent`, `steps_total`, `dx_sent`, `dy_sent`, `pointer_moved` and
+`focus_rechecks`. Any other failure after the first emission reports the same fields.
+`steps_sent` counts the steps that were sent, which the failure test checks against
+the fixture's receipts. Detection has the same delay as for typing: typically
+0.25–0.35s of steps (10–15), at worst about 0.75s, can reach whatever is under the
+pointer after focus moves. In the failure test, 11 steps reached the window that
+took focus, which KWin had raised under the pointer.
+Ctrl-C gives the CLI's own `cancelled` result, which carries no progress.
+
+**Budget.** The estimate is 30ms per step plus the motion, so 50 steps (about 1.3s
+to send) fit the default and maximum 3s. A scroll that does not fit fails with
+`timeout`, phase `budget`, and sends nothing. For longer scrolls, send several
+requests.
+
+**Results.** Click's fields without `button` and `count`, plus `dx`, `dy` and
+`steps`, the number of wheel events: the larger of |dx| and |dy|. The pointer stays
+at `screen_x`, `screen_y`. `dispatched: true` means the steps reached the compositor.
+Scrolling over something that does not scroll, or over no surface at all in screen
+coordinates, still succeeds, so check with a screenshot.
+
 # Private input connection
 
 The worker owns one persistent `input_connection.Input` on its GLib thread. Its
@@ -121,18 +209,21 @@ asynchronous EIS negotiation uses the explicitly created private D-Bus connectio
 that bus remains retained for the connection lifetime. Host endpoint discovery
 and fallback are absent. It asks KWin for keyboard and pointer devices (EIS
 request flags 3) and binds the keyboard, absolute-pointer and button
-capabilities. KWin then offers a keyboard device and a separate absolute device
-(absolute motion, button, scroll) with one region per output; relative-pointer
-and touch devices are never bound or referenced. The startup gate requires CONNECT
-and one resumed keyboard, within the existing shared startup deadline and a
-three-second input limit. The pointer device is checked when `click` uses it
-(`input_unavailable` if it is missing). Public `key`, `type` and `click` use this
-same connection (above). It is never replaced within a session; see recovery above.
+capabilities, plus scroll when the seat offers it. KWin then offers a keyboard
+device and a separate absolute device (absolute motion, button, scroll) with one
+region per output; relative-pointer and touch devices are never bound or
+referenced. The startup gate requires CONNECT and one resumed keyboard, within
+the existing shared startup deadline and a three-second input limit. The pointer
+device is checked when `click`, `move` or `scroll` uses it (`input_unavailable` if
+it is missing, or for `scroll` if it lacks the scroll capability). Public `key`,
+`type`, `click`, `move` and `scroll` use this same connection (above). It is never replaced within a session; see recovery above.
 
 The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
 1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
 version, and `doctor` warns on others. The M1 compiler audit checked this table
-against the installed headers, including void dispatch and variadic promoted enums.
+against the installed headers, including void dispatch and variadic promoted enums,
+and `tests/test_libei_probe.py` repeats that check for the current table, including
+`ei_device_scroll_discrete(device, int32_t, int32_t)`, when the headers are installed.
 Gio owns original received descriptors. The duplicated descriptor is owned by
 setup until it is handed to `ei_setup_backend_fd`. If that call fails, libei
 1.6.0 leaves the descriptor caller-owned, but the API does not promise this.
@@ -155,8 +246,11 @@ FD replies cannot attach to a replacement. The numeric primitive validates a com
 most 32 distinct evdev codes (BTN_LEFT/RIGHT/MIDDLE for the pointer device)
 before emission and records attempted presses before native calls. Absolute
 motion must fall inside one of the pointer device's regions, and nothing may be
-held on any device when a press or motion starts. It is internal: the public
-`key`/`type`/`click` tasks enforce finite holds and focus checks. Release uses explicit release events and a frame.
+held on any device when a press, motion or wheel step starts. A wheel step is one
+notch (-1, 0 or 1) per axis, sent as `ei_device_scroll_discrete` with 120 units
+per notch and a frame; it holds nothing. It is internal: the public
+`key`/`type`/`click`/`move`/`scroll` tasks enforce finite holds and focus checks. Release uses explicit release events and a frame,
+and a motion or wheel step with nothing held is closed with `stop_emulating`.
 
 Held state becomes uncertain after lifecycle loss or an emission failure.
 RESUMED does not clear uncertainty, and disposal preserves uncertain held

@@ -99,7 +99,22 @@ mode, and increasing per-surface `request_count`. `close_refused`,
 `confirmation_opened`, and `confirmation_pending` describe the response.
 `confirmation_accepted` identifies its selected `target` and input `source`.
 Key, button, motion, and axis receipts carry the actual input `surface` and
-`role`, or null when there is no known input surface. `close` precedes protocol
+`role`, or null when there is no known input surface.
+
+The fixture binds `wl_seat` at version 9, or lower if the compositor offers less,
+and every pointer event through version 9 has a receipt. `pointer_enter` and
+`motion` record surface-local `x`/`y`. `button` records the pointer position at
+the press. `pointer_frame` closes each group of events and records the current
+`x`/`y`. The wheel receipts keep the protocol's numbers. `axis` has `axis` (0
+vertical, 1 horizontal; positive is down or right) and the continuous `value`.
+`axis_value120` has `value120`, ±120 per wheel notch, from version 8. `axis_discrete`
+has `discrete` notches and is sent only to version 5–7 clients. `axis_source`
+(0 wheel, 1 finger, 2 continuous, 3 wheel tilt), `axis_stop` and
+`axis_relative_direction` (0 identical, 1 inverted; version 9) complete the set.
+KWin 6.7.5 passes on an EIS discrete scroll as `axis_relative_direction`,
+`axis_value120` and `axis` (±15 per notch) per axis, horizontal first, then one
+`pointer_frame`. It sends no `axis_source` and, unless the sender stops the
+scroll, no `axis_stop`. `close` precedes protocol
 object destruction; `destroy` follows it with the same source. Additional
 destruction sources are `scheduled`, `delayed_compositor`, and `confirmation`.
 `fixture_exit` records normal fixture-main completion after Wayland disconnect;

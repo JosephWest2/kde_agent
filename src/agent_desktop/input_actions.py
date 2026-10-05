@@ -1,4 +1,4 @@
-"""Public key, type and click: verify the focused target, then emit worker-timed strokes.
+"""Public key, type, click, move and scroll: verify the focused target, then emit worker-timed input.
 
 The worker owns every press-to-release interval. Client disconnect, cancellation,
 timeout and shutdown all reach ``request_cancel``, which releases immediately on
@@ -22,6 +22,8 @@ RECHECK = .25         # Focus recheck interval during long holds and typing.
 RECHECK_QUERY = .5    # A window query caps itself at .5s; input may end with one in flight.
 CLICK_HOLD = .02      # Button press-to-release.
 CLICK_GAP = .06       # Between the clicks of a multi-click; far inside toolkit double-click times.
+SCROLL_GAP = .02      # Between wheel steps, and from the motion to the first step: a brisk wheel spin.
+SCROLL_ESTIMATE = .03  # Per-step budget.
 BUTTONS = {'left': 0x110, 'right': 0x111, 'middle': 0x112}
 
 
@@ -38,6 +40,7 @@ class InputTask:
     cleanup_seconds = 1.5
     kind = 'keyboard'
     gap = TYPE_GAP
+    budget_hint = 'Raise --timeout (max 30) or split the text.'
 
     def __init__(self, request, context, adapter, input_owner, registry, healthy):
         self.request, self.context, self.healthy = request, context, healthy
@@ -160,17 +163,22 @@ class InputTask:
                 raise ContractError('timeout', 'Not enough time left to send this input; nothing was sent.',
                                     context={'phase': 'budget', 'estimated_seconds': round(needed, 3),
                                              'remaining_seconds': round(max(remaining, 0), 3),
-                                             'hint': 'Raise --timeout (max 30) or split the text.'})
+                                             'hint': self.budget_hint})
             self.owner()
             # Durable intent before the first native emission.
-            self.context.effects({'window': self.focus and self.focus['window'], 'phase': 'emitting',
-                                  'strokes_total': len(self.strokes)}, uncertain=True)
+            self.context.effects(self.intent(), uncertain=True)
             self.phase = 'emit'
             self.started_at = time.monotonic()
             self.next_recheck = self.started_at + RECHECK
         if time.monotonic() >= self.deadline:
             raise ContractError('timeout', 'Input deadline expired.')
-        owner = self.owner()
+        return self.emit(self.owner())
+
+    def intent(self):
+        return {'window': self.focus and self.focus['window'], 'phase': 'emitting', 'strokes_total': len(self.strokes)}
+
+    def emit(self, owner):
+        """One emission step: press, hold and release one stroke at a time."""
         if self.index == len(self.strokes):
             return self.result() if self.watch_focus(finishing=True) else None
         self.watch_focus()
@@ -248,22 +256,25 @@ class InputTask:
         return released and rechecked and (self.target is None or self.target.cleanup(now))
 
 
-class ClickTask(InputTask):
-    """Absolute motion to one point, then COUNT clicks of one button there.
+class PointTask(InputTask):
+    """Pointer input at one point, shared by click, move and scroll.
 
     With --window, x/y are client-area coordinates (a GTK header bar is client
-    content; a KWin title bar is not), the window must be active, and the point
-    must be inside the client area and on screen. Without --window they are
-    screen coordinates and nothing about windows is checked.
+    content; a KWin title bar is not), the window must be active with no KWin
+    surface open, and the point must be inside the client area and on screen.
+    Pointer events go to the surface under the pointer, not to the keyboard
+    focus; requiring the window to be active is what makes sure that surface is
+    the window's own (the active window is on top, except for windows KWin keeps
+    above it). Without --window they are screen coordinates and nothing about
+    windows is checked.
     """
     kind = 'pointer'
-    gap = CLICK_GAP
+    budget_hint = 'Raise --timeout (max 3).'
 
     def __init__(self, request, context, adapter, input_owner, registry, healthy):
-        arguments = request.arguments
-        self.x, self.y = arguments['x'], arguments['y']
-        self.button, self.count = arguments['button'], arguments['count']
+        self.x, self.y = request.arguments['x'], request.arguments['y']
         self.point = None
+        self.moved = False
         super().__init__(request, context, adapter, input_owner, registry, healthy)
 
     def make_target(self, request, context, adapter, registry, healthy):
@@ -271,13 +282,6 @@ class ClickTask(InputTask):
             return None
         return TargetTask(request, context, adapter, registry, healthy, condition='observe',
                           require_focus=True, require_client=True)
-
-    def parse(self, request, input_owner):
-        self.strokes = [[BUTTONS[self.button]]] * self.count
-        self.hold = CLICK_HOLD
-
-    def emission(self):
-        return self.count * (CLICK_HOLD + CLICK_GAP + STROKE_ESTIMATE)
 
     def locate(self):
         if self.focus is None:
@@ -295,13 +299,128 @@ class ClickTask(InputTask):
                                          'screen': [WIDTH, HEIGHT]})
         self.point = (x, y)
 
-    def prepare(self, owner):
-        owner.move(*self.point)
-
-    def result(self):
+    def pointed(self):
+        """Result fields shared by every pointer command; the pointer stays at screen_x, screen_y."""
         return {'window': self.focus and self.focus['window'], 'focused': self.focus is not None or None,
                 'dispatched': True, 'query_artifact': self.focus and self.focus['query_artifact'],
                 'client': self.focus and self.focus['client'],
                 'x': self.x, 'y': self.y, 'screen_x': self.point[0], 'screen_y': self.point[1],
-                'button': self.button, 'count': self.count, 'focus_rechecks': self.rechecks,
+                'focus_rechecks': self.rechecks,
                 'started_at': self.started_at, 'finished_at': self.finished_at or time.monotonic()}
+
+
+class ClickTask(PointTask):
+    """Absolute motion to one point, then COUNT clicks of one button there."""
+    gap = CLICK_GAP
+
+    def __init__(self, request, context, adapter, input_owner, registry, healthy):
+        self.button, self.count = request.arguments['button'], request.arguments['count']
+        super().__init__(request, context, adapter, input_owner, registry, healthy)
+
+    def parse(self, request, input_owner):
+        self.strokes = [[BUTTONS[self.button]]] * self.count
+        self.hold = CLICK_HOLD
+
+    def emission(self):
+        return self.count * (CLICK_HOLD + CLICK_GAP + STROKE_ESTIMATE)
+
+    def prepare(self, owner):
+        owner.move(*self.point)
+        self.moved = True
+
+    def result(self):
+        return self.pointed() | {'button': self.button, 'count': self.count}
+
+
+class MoveTask(PointTask):
+    """Absolute motion to one point and nothing else: hover. Nothing is pressed."""
+
+    def parse(self, request, input_owner):
+        self.strokes, self.hold = [], 0
+
+    def emission(self):
+        return STROKE_ESTIMATE
+
+    def intent(self):
+        return {'window': self.focus and self.focus['window'], 'phase': 'emitting', 'motion': list(self.point)}
+
+    def progress(self):
+        return {'window': self.request.arguments.get('window'), 'pointer_moved': self.moved}
+
+    def emit(self, owner):
+        self.healthy()
+        if time.monotonic() >= self.deadline:
+            raise ContractError('timeout', 'Input deadline expired.')
+        owner.move(*self.point)
+        self.moved = True
+        # Close the emulation the motion opened; the pointer stays where it is.
+        self.release(strict=True)
+        self.finished_at = time.monotonic()
+        return self.result()
+
+    def result(self):
+        return self.pointed()
+
+
+class ScrollTask(PointTask):
+    """Absolute motion to one point, then discrete wheel steps there, SCROLL_GAP apart.
+
+    Each step is one notch on every axis that still has steps left, so
+    --dx 1 --dy 3 sends (dx, dy) = (1, 1), (0, 1), (0, 1). Positive dy is down
+    and positive dx is right, as for a wheel turned toward the user without
+    natural scrolling. A step and its frame are one native batch, nothing is
+    held between steps, and the emulation the motion opened is closed after the
+    last step or on any failure, so an interrupted scroll leaves nothing open.
+    Long scrolls get the same focus rechecks as typing.
+    """
+    gap = SCROLL_GAP
+    budget_hint = 'Raise --timeout (max 3) or scroll fewer steps per request.'
+
+    def parse(self, request, input_owner):
+        dx, dy = request.arguments['dx'], request.arguments['dy']
+        sign = lambda value: (value > 0) - (value < 0)
+        self.strokes = [(sign(dx) if step < abs(dx) else 0, sign(dy) if step < abs(dy) else 0)
+                        for step in range(max(abs(dx), abs(dy)))]
+        self.hold = 0
+        self.sent = [0, 0]
+
+    def emission(self):
+        return STROKE_ESTIMATE + len(self.strokes) * SCROLL_ESTIMATE
+
+    def intent(self):
+        return {'window': self.focus and self.focus['window'], 'phase': 'emitting', 'motion': list(self.point),
+                'steps_total': len(self.strokes)}
+
+    def progress(self):
+        return {'window': self.request.arguments.get('window'), 'pointer_moved': self.moved,
+                'steps_sent': self.index, 'steps_total': len(self.strokes),
+                'dx_sent': self.sent[0], 'dy_sent': self.sent[1], 'focus_rechecks': self.rechecks}
+
+    def emit(self, owner):
+        if self.index == len(self.strokes):
+            return self.result() if self.watch_focus(finishing=True) else None
+        self.watch_focus()
+        if time.monotonic() < self.next_at:
+            return None
+        self.healthy()
+        if time.monotonic() >= self.deadline:
+            raise ContractError('timeout', 'Input deadline expired.')
+        if not self.moved:
+            owner.move(*self.point)  # The wheel goes to the surface under the pointer.
+            self.moved = True
+        else:
+            dx, dy = self.strokes[self.index]
+            owner.scroll(dx, dy)
+            self.index += 1
+            self.sent[0] += dx
+            self.sent[1] += dy
+        self.next_at = time.monotonic() + self.gap
+        if self.index < len(self.strokes):
+            return None
+        self.finished_at = time.monotonic()
+        self.release(strict=True)
+        return self.result() if self.watch_focus(finishing=True) else None
+
+    def result(self):
+        return self.pointed() | {'dx': self.request.arguments['dx'], 'dy': self.request.arguments['dy'],
+                                 'steps': len(self.strokes)}

@@ -110,7 +110,7 @@ def request_from_wire(value):
     for key in ("app", "window"):
         if key in args and not isinstance(args[key], dict):
             malformed()
-    for key in ("x", "y"):
+    for key in ("x", "y", "dx", "dy"):
         if key in args and type(args[key]) is not int:
             malformed()
     if "hold" in args and type(args["hold"]) not in (int, float):

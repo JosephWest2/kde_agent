@@ -27,19 +27,21 @@ OPERATIONS = {
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),
     "key": (3, 3, 64), "type": (3, 30, 64), "click": (3, 3, 66),
+    "move": (3, 3, 79), "scroll": (3, 3, 79),
     "screenshot": (3, 3, 64),
     "logs": (3, 3, 68), "close": (5, 60, 25), "kill": (5, 15, 26),
 }
 # Operations that are implemented end to end. Everything else returns
 # unsupported_operation. --help, doctor and session status all read this.
 SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
-                        "launch", "windows", "focus", "wait", "key", "type", "click", "screenshot",
-                        "logs", "close", "kill")
+                        "launch", "windows", "focus", "wait", "key", "type", "click", "move", "scroll",
+                        "screenshot", "logs", "close", "kill")
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
                            if op not in ("doctor", "session.start", "session.status", "session.stop"))
 WAIT_CONDITIONS = ("window", "focus", "exit", "title", "gone")
 LOG_SOURCES = ("all", "application", "worker", "compositor", "bus")
+MAX_SCROLL_STEPS = 50  # Wheel notches per axis per scroll request.
 MAX_TAIL = 200
 GENERATION = re.compile(r"[0-9a-f]{32}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
@@ -160,6 +162,7 @@ ARGUMENTS = {
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window", "match", "regex"}, "key": {"window", "chord", "hold"},
     "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
+    "move": {"window", "x", "y"}, "scroll": {"window", "x", "y", "dx", "dy"},
     "screenshot": {"output", "window"}, "logs": {"app", "source", "tail"},
     "close": {"app", "window"}, "kill": {"app"},
 }
@@ -251,7 +254,7 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         args["hold"] = finite_seconds(args.get("hold", .05), "hold", 2)
     if operation == "type":
         args["text"] = text(args.get("text"), "text", empty=True)
-    if operation == "click":
+    if operation in ("click", "move", "scroll"):
         for axis in ("x", "y"):
             value = args.get(axis)
             if isinstance(value, bool) or not isinstance(value, (str, int)):
@@ -265,6 +268,21 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
             if value < 0:
                 invalid(axis)
             args[axis] = value
+    if operation == "scroll":
+        # Wheel notches; positive dy scrolls down and positive dx right, as a
+        # wheel turned toward the user (or tilted right) does without natural scrolling.
+        for axis in ("dx", "dy"):
+            value = args.get(axis)
+            value = 0 if value is None else value
+            if isinstance(value, str) and re.fullmatch(r"[+-]?[0-9]{1,3}", value):
+                value = int(value)
+            if type(value) is not int or not -MAX_SCROLL_STEPS <= value <= MAX_SCROLL_STEPS:
+                invalid(axis)
+            args[axis] = value
+        if args["dx"] == args["dy"] == 0:
+            raise ContractError("invalid_arguments", "Scroll needs a nonzero --dy or --dx.",
+                                context={"field": "dy", "reason": "zero_scroll"})
+    if operation == "click":
         args.setdefault("button", "left")
         if args["button"] not in ("left", "middle", "right"):
             invalid("button")

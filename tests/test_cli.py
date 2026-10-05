@@ -27,6 +27,8 @@ VALID = {
     "focus": ["--window", REF], "wait": ["--for", "window", "--app", APP],
     "key": ["--window", REF, "CTRL+A"], "type": ["--window", REF, "hello"],
     "click": ["--window", REF, "--x", "0", "--y", "2"],
+    "move": ["--window", REF, "--x", "0", "--y", "2"],
+    "scroll": ["--window", REF, "--x", "0", "--y", "2", "--dy", "-1"],
     "screenshot": [], "logs": [], "close": ["--window", REF], "kill": ["--app", APP],
 }
 
@@ -118,6 +120,11 @@ class CLITests(unittest.TestCase):
                  ["focus", "--app", APP, "--window", REF],
                  ["doctor", "--generation", GEN], ["type", "--window", REF],
                  ["click", "--window", REF, "--x", "-1", "--y", "0"],
+                 ["move", "--window", REF, "--x", "1"], ["move", "--x", "1", "--y", "1", "--dy", "1"],
+                 ["move", "--x", "1", "--y", "1", "--button", "left"],
+                 ["scroll", "--x", "1", "--y", "1"], ["scroll", "--x", "1", "--y", "1", "--dy", "0", "--dx", "0"],
+                 ["scroll", "--x", "1", "--y", "1", "--dy", "51"], ["scroll", "--x", "1", "--y", "1", "--dx", "-51"],
+                 ["scroll", "--x", "1", "--y", "1", "--dy", "1.5"], ["scroll", "--y", "1", "--dy", "1"],
                  ["wait", "--for", "title", "--window", REF], ["wait", "--for", "title", "--app", APP, "--match", "x"],
                  ["wait", "--for", "title", "--window", REF, "--match", ""],
                  ["wait", "--for", "title", "--window", REF, "--match", "x" * 257],
@@ -207,7 +214,8 @@ class ContractTests(unittest.TestCase):
 
     def test_wrapped_and_unwrapped_kwin_identity_roundtrips(self):
         for identity in (WINDOW, WINDOW[1:-1]):
-            for operation, extra in (("focus", {}), ("key", {"chord": "W"}), ("type", {"text": ""}), ("click", {"x": 0, "y": 0}), ("close", {})):
+            for operation, extra in (("focus", {}), ("key", {"chord": "W"}), ("type", {"text": ""}), ("click", {"x": 0, "y": 0}),
+                                     ("move", {"x": 0, "y": 0}), ("scroll", {"x": 0, "y": 0, "dy": 1}), ("close", {})):
                 with self.subTest(operation=operation, identity=identity):
                     request = self.request(operation, dict(window=GEN + ":" + identity, **extra))
                     self.assertEqual(request.arguments["window"], {"generation": GEN, "window_id": identity})
@@ -217,6 +225,25 @@ class ContractTests(unittest.TestCase):
         for identity in (WINDOW[:-1], WINDOW[1:], "arbitrary-name"):
             with self.assertRaises(ContractError):
                 self.request("focus", {"window": GEN + ":" + identity})
+
+    def test_scroll_steps_are_signed_bounded_integers_and_not_both_zero(self):
+        request = cli.parse_request(["scroll", "--x", "3", "--y", "4", "--dy", "-50"], GEN, "/")[0]
+        self.assertEqual(request.arguments, {"x": 3, "y": 4, "dx": 0, "dy": -50})
+        request = cli.parse_request(["scroll", "--x", "3", "--y", "4", "--dx=+50", "--dy", "2"], GEN, "/")[0]
+        self.assertEqual((request.arguments["dx"], request.arguments["dy"]), (50, 2))
+        self.assertEqual(self.request("scroll", {"x": 0, "y": 0, "dx": -1}).arguments["dy"], 0)
+        for bad in ({}, {"dy": 0}, {"dx": 0, "dy": 0}, {"dy": 51}, {"dy": -51}, {"dx": "1000"}, {"dy": "1.0"},
+                    {"dy": " 1"}, {"dy": True}, {"dy": 1.0}, {"dy": "0x1"}, {"dy": "1e1"}):
+            with self.subTest(bad=bad), self.assertRaises(ContractError) as caught:
+                self.request("scroll", {"x": 0, "y": 0, **bad})
+            self.assertEqual(caught.exception.code, "invalid_arguments")
+        with self.assertRaises(ContractError) as caught:
+            self.request("scroll", {"x": 0, "y": 0})
+        self.assertEqual(caught.exception.context, {"field": "dy", "reason": "zero_scroll"})
+        for operation in ("move", "scroll"):
+            for bad in ({"x": -1}, {"y": "1.5"}, {"x": True}, {"y": None}):
+                with self.subTest(operation=operation, bad=bad), self.assertRaises(ContractError):
+                    self.request(operation, {"x": 1, "y": 1, "dy": 1, **bad} if operation == "scroll" else {"x": 1, "y": 1, **bad})
 
     def test_finite_budgets_are_pure_shared_validation(self):
         for value in ("nan", "inf", "-inf", 0, -1, "1e9999", True, [], {}, 4):

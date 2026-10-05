@@ -6,7 +6,7 @@ import tempfile
 import time
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 from gi.repository import GLib
 from agent_desktop.input_connection import Input, Device, Failure
 from agent_desktop import libei_binding
@@ -127,9 +127,11 @@ class InputTests(unittest.TestCase):
         return value.devices[11]
 
     def test_seat_binds_pointer_capabilities_only_when_offered(self):
-        for offered, expected in (({4, 2, 32}, ['EI_DEVICE_CAP_KEYBOARD', 'EI_DEVICE_CAP_POINTER_ABSOLUTE',
-                                                  'EI_DEVICE_CAP_BUTTON']),
-                                  ({4, 2}, ['EI_DEVICE_CAP_KEYBOARD'])):
+        pointer = ['EI_DEVICE_CAP_POINTER_ABSOLUTE', 'EI_DEVICE_CAP_BUTTON']
+        for offered, expected in (({4, 2, 16, 32}, ['EI_DEVICE_CAP_KEYBOARD', *pointer, 'EI_DEVICE_CAP_SCROLL']),
+                                  ({4, 2, 32}, ['EI_DEVICE_CAP_KEYBOARD', *pointer]),
+                                  ({4, 2}, ['EI_DEVICE_CAP_KEYBOARD']),
+                                  ({4, 16}, ['EI_DEVICE_CAP_KEYBOARD'])):
             with self.subTest(offered=offered):
                 value = self.make()
                 value.seats = set()
@@ -140,13 +142,16 @@ class InputTests(unittest.TestCase):
                 self.assertEqual(bind.call_args.args[2], expected)
 
     def test_device_kinds_keyboard_pointer_and_ignored(self):
-        for caps, kind in (({4}, 'keyboard'), ({2, 16, 32}, 'pointer'), ({1, 16, 32}, None), ({2}, None)):
+        for caps, kind, scroll in (({4}, 'keyboard', False), ({4, 16}, 'keyboard', False),
+                                   ({2, 16, 32}, 'pointer', True), ({2, 32}, 'pointer', False),
+                                   ({1, 16, 32}, None, None), ({2}, None, None)):
             with self.subTest(caps=caps):
                 value = self.make()
                 self.lib.ei_device_has_capability.side_effect = lambda device, cap: cap in caps
                 self.lib.ei_event_get_device.return_value = 10
                 self.events([5]); value.drain()
                 self.assertEqual(value.devices[10].kind if 10 in value.devices else None, kind)
+                self.assertEqual(value.devices[10].scroll if 10 in value.devices else None, scroll)
 
     def test_keyboard_and_pointer_are_ready_independently(self):
         value = self.make()
@@ -176,6 +181,42 @@ class InputTests(unittest.TestCase):
         self.lib.ei_device_button_button.assert_called_with(11, 0x110, False)
         self.lib.ei_device_stop_emulating.assert_called_once_with(11)
         self.assertEqual(value.devices[11].held, [])
+
+    def test_scroll_step_is_one_discrete_batch_and_frame_on_a_scroll_capable_pointer(self):
+        value = self.make(); device = self.pointer(value)
+        for bad in ((0, 0), (2, 0), (0, -2), (True, 0), (0, 1.0), (0, '1'), (None, 1)):
+            with self.subTest(bad=bad), self.assertRaises(Failure) as caught: value.scroll(*bad)
+            self.assertEqual(caught.exception.code, 'unsupported_input')
+        with self.assertRaises(Failure) as caught: value.scroll(0, 1)
+        self.assertEqual(caught.exception.code, 'input_unavailable')
+        self.assertFalse(caught.exception.context['devices'][1]['scroll'])
+        self.lib.ei_device_start_emulating.assert_not_called()
+        device.scroll = True
+        value.move(5, 5)
+        value.scroll(0, 1); value.scroll(-1, -1); value.scroll(1, 0)
+        self.assertEqual(self.lib.ei_device_start_emulating.call_count, 1)
+        self.assertEqual(self.lib.ei_device_scroll_discrete.call_args_list,
+                         [call(11, 0, 120), call(11, -120, -120), call(11, 120, 0)])
+        native = [c[0] for c in self.lib.mock_calls if c[0] in ('ei_device_scroll_discrete', 'ei_device_frame')]
+        self.assertEqual(native, ['ei_device_frame'] + ['ei_device_scroll_discrete', 'ei_device_frame'] * 3)
+        self.assertEqual(device.held, [])
+        value.release()
+        self.lib.ei_device_stop_emulating.assert_called_once_with(11)
+        self.assertFalse(device.emulating)
+        self.lib.ei_device_scroll_stop.assert_not_called()
+        self.lib.ei_device_scroll_cancel.assert_not_called()
+
+    def test_scroll_never_runs_while_anything_is_held_and_a_native_failure_is_uncertain(self):
+        value = self.make(); device = self.pointer(value); device.scroll = True
+        value.press([42])
+        with self.assertRaises(Failure) as caught: value.scroll(0, 1)
+        self.assertEqual(caught.exception.code, 'input_unavailable')
+        value.release()
+        self.lib.ei_device_scroll_discrete.assert_not_called()
+        self.lib.ei_device_scroll_discrete.side_effect = RuntimeError('native')
+        with self.assertRaises(RuntimeError): value.scroll(0, -1)
+        self.assertTrue(value.uncertain)
+        self.assertFalse(value.ready('pointer'))
 
     def test_pointer_press_accepts_only_buttons_and_never_while_keys_are_held(self):
         value = self.make(); self.pointer(value)

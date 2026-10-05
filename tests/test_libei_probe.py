@@ -70,6 +70,30 @@ class InputSafetyTests(unittest.TestCase):
         self.assertTrue(receipt["dispatch_restype_is_void"])
         self.assertEqual(len(receipt["declarations"]), 24)
 
+    def test_production_binding_matches_the_installed_header(self):
+        # The production table (src/agent_desktop/libei_binding.py) gets the same
+        # compile-time signature, enum and size checks as the probe's own table.
+        host_facilities.require(self, host_facilities.libei_headers(probe.binding))
+        import ctypes
+        from agent_desktop import libei_binding as production
+        lines = ["#include <libei.h>", "#include <stdint.h>", "#include <stdbool.h>", "#include <stddef.h>"]
+        for name, (result, args) in production.DECLARATIONS.items():
+            argtypes = ", ".join("..." if arg == "..." else production.TYPES[arg][0] for arg in args)
+            lines.append(f'_Static_assert(__builtin_types_compatible_p(__typeof__(&{name}), '
+                         f'{production.TYPES[result][0]} (*)({argtypes})), "{name}");')
+        lines += [f'_Static_assert({name} == {value}, "{name}");' for name, value in production.CONSTANTS.items()]
+        lines += [f'_Static_assert(sizeof({c_name}) == {ctypes.sizeof(ctype)}, "sizeof {key}");'
+                  for key, (c_name, ctype) in production.TYPES.items() if ctype]
+        flags = probe.binding.command(["/usr/bin/pkg-config", "--cflags", "libei-1.0"])
+        flags.check_returncode()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "production-audit.c"
+            source.write_text("\n".join(lines) + "\n")
+            result = probe.binding.command(["/usr/bin/cc", "-std=c11", "-Wall", "-Werror", "-fsyntax-only",
+                                            str(source), *flags.stdout.split()], seconds=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ei_device_scroll_discrete", production.DECLARATIONS)
+
     def test_unknown_native_build_rejected_before_loading(self):
         host_facilities.require(self, host_facilities.libei_file(probe.binding))
         with patch.object(probe.binding, "SUPPORTED_LIBRARY_SHA256", "0" * 64):

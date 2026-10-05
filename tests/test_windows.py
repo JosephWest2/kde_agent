@@ -50,6 +50,8 @@ class TypesTests(unittest.TestCase):
         self.assertEqual(result.windows[0].wire(GEN)['title'], '')
 
     def test_invalid_fields_and_active_consistency(self):
+        # pid 0 is rejected only by the decoder: window_query.js maps KWin's pid 0
+        # (X11, unknown process) to null before it gets here, see the test below.
         cases = [payload([None]), payload([row(), row(uuid='{' + UID.upper() + '}')]),
                  payload(schema_version=True), payload(active_uuid=UID), payload([row(pid=True)]),
                  payload([row(pid=-2)]), payload([row(pid=0)]), payload([row(title=3)]), payload([row(title='x' * 4097)]),
@@ -82,6 +84,12 @@ class TypesTests(unittest.TestCase):
         # A compositor surface may also be the active window; it stays consistent.
         self.assertEqual(decoded(payload([row(pid=-1, popup=False, active=True)], active_uuid=UID)).windows[0].kind,
                          'compositor')
+
+    def test_query_maps_unknown_pid_zero_to_null_but_passes_compositor_minus_one(self):
+        source = Path(windows.__file__).with_name('window_query.js').read_text()
+        self.assertIn('pid:w.pid == null || w.pid === 0 ? null : w.pid,', source)
+        # Such a row decodes as an ordinary window with no pid (no association).
+        self.assertEqual(decoded(payload([row(pid=None, popup=False)])).windows[0].wire(GEN)['kind'], 'window')
 
     def test_unidentified_rows_still_fail_closed(self):
         # Only pid -1 identifies a compositor surface, and only KWin's own boolean

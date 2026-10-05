@@ -36,9 +36,12 @@ so a compositor row is positively identified. Its `pid` is reported as null, its
 `app` is null (`association.reason` `missing_pid`), and empty KWin titles/classes
 stay empty. A popup keeps the owning process's `pid` and can be associated with
 the app. Every row is still fully validated: the query must carry KWin's boolean
-`popupWindow` flag for every row, and any other negative or zero `pid`, malformed
+`popupWindow` flag for every row, and any other negative `pid`, malformed
 identity, geometry, text or active flag still fails the whole observation with
-`window_query_failed`.
+`window_query_failed`. One existing exception is unchanged: `window_query.js`
+maps a KWin `pid` of 0 (an X11 window whose process is unknown) to null, so that
+row stays an ordinary `window` with `pid: null`, `app: null` and
+`association.reason` `missing_pid`. It can only be targeted by explicit `--window`.
 
 Popups and compositor surfaces are listed (so the menu or tooltip is visible) but
 never targeted:
@@ -49,9 +52,17 @@ never targeted:
 - An explicit `--window` naming a popup or compositor row fails before any action
   with `unsupported_operation`, reason `popup_surface` or `compositor_surface`.
   A full `screenshot` still shows them.
-- Window input (`key`, `type`, `click --window`) fails with `target_lost`, reason
-  `compositor_surface_open` (context `blocking_windows`), and sends nothing while
-  any compositor row is listed, including at each focus recheck. KWin keeps the
+- Window input (`key`, `type`, `click --window`) is refused while a compositor
+  row is listed: `target_lost`, reason `compositor_surface_open` (context
+  `blocking_windows`). Found by the check before the first stroke, the refusal
+  sends nothing and has outcome `not_started`. A menu that opens during a long
+  `type` or hold is found only by the next focus recheck ([INPUT.md](INPUT.md)),
+  after some strokes may have reached the menu; input continues while that
+  asynchronous recheck runs. That failure releases what is held, reports
+  `strokes_sent`, `strokes_total`, `key_held` and `focus_rechecks` in its context,
+  and has outcome `unknown` (the effect record was marked uncertain before the
+  first stroke). Don't resend the input wholesale: inspect the window first, as
+  for `focus_lost`. KWin keeps the
   client active while its window menu is open, but the menu takes the keyboard:
   in a live test `down` moved through the menu and `x` triggered its Maximize
   accelerator (`c` is Close). Closing the menu takes a screen click

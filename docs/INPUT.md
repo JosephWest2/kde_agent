@@ -14,6 +14,8 @@ require it to exist and be focused. Otherwise they fail with `target_lost` (reas
 window menu is open, even though the window is still active: that menu takes the
 keyboard and its accelerators would act on the window. Close it with a screen
 click outside it ([row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces)).
+Both refusals before the first stroke send nothing (outcome `not_started`). If
+either is found by a recheck instead, it is reported as below.
 
 **Focus rechecks.** While a hold or a sequence is still being sent, the window is
 queried again every 250ms. If it is gone or no longer focused, everything held is

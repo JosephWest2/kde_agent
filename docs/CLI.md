@@ -295,7 +295,9 @@ Each window row has a `kind`: `window`, `popup` (tooltips, menus, popovers) or
 selected by `--app` or accepted by `--window`; an explicit popup or compositor row
 gives `unsupported_operation` with reason `popup_surface` or `compositor_surface`.
 While a compositor row is listed, `key`, `type` and `click --window` fail with
-`target_lost`, reason `compositor_surface_open`. See [row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces).
+`target_lost`, reason `compositor_surface_open`: outcome `not_started` when found
+before the first stroke, or outcome `unknown` with input progress when a focus
+recheck finds it mid-input. See [row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces).
 Ambiguity returns `target_ambiguous` with `context.candidates` containing full
 window handles. Uncertain release returns `input_uncertain`, `outcome: unknown`,
 and context describing the uncertainty; further input is blocked until the

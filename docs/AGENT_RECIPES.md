@@ -87,8 +87,12 @@ What follows from that:
   has `pid: null` and `app: null`. The app window stays active, but the menu has
   the keyboard and its accelerators act on the window (`c` closes it). So while
   the menu is open, `key`, `type` and `click --window` fail with `target_lost`,
-  reason `compositor_surface_open`, and send nothing. `focus` succeeds but
-  doesn't close the menu.
+  reason `compositor_surface_open`. If the menu was already open, nothing is sent
+  (outcome `not_started`). If it opened during a long `type` or hold, the failure
+  comes from a focus recheck after some strokes went out (outcome `unknown`,
+  with `strokes_sent` and the rest of the progress). Handle that like
+  [focus loss](#focus-before-input): inspect before resending anything. `focus`
+  succeeds but doesn't close the menu.
 
 To close the window menu, click a screen point outside the menu, without
 `--window`. The menu takes that click, so it doesn't reach the window under it.

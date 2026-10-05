@@ -423,6 +423,28 @@ class FocusRecheckTests(unittest.TestCase):
         self.assertLess(sent, 100)
         self.assertEqual(self.owner.device.held, [])
 
+    def test_compositor_surface_mid_typing_reports_progress_after_uncertain_effects(self):
+        # KWin's window menu opening during `type` is caught by a recheck, not
+        # before the first stroke: progress is kept and effects were already
+        # marked uncertain, so the scheduler reports outcome "unknown".
+        blocked = ContractError('target_lost', 'A compositor surface (such as the window menu) has input.',
+                                context={'reason': 'compositor_surface_open', 'blocking_windows': []})
+        task = self.make('type', [{'error': blocked}], text='a' * 100)
+        effects = []
+        task.context.effects = lambda partial, uncertain=False: effects.append((dict(partial), uncertain))
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        context = caught.exception.context
+        self.assertEqual((caught.exception.code, context['reason']), ('target_lost', 'compositor_surface_open'))
+        self.assertTrue(0 < context['strokes_sent'] < 100)
+        self.assertEqual(context['strokes_total'], 100)
+        # The error leaves the outcome to the scheduler, which keeps the "unknown"
+        # that the uncertain effect record set before the first stroke.
+        self.assertEqual(caught.exception.outcome, 'not_started')
+        self.assertEqual([(partial['phase'], partial['strokes_total'], uncertain) for partial, uncertain in effects],
+                         [('emitting', 100, True)])
+        self.assertEqual(self.owner.device.held, [])
+
     def test_short_input_needs_no_recheck(self):
         result = self.run_task(self.make('key', [], chord='a', hold=.01))
         self.assertEqual(result['focus_rechecks'], 0)

@@ -14,10 +14,19 @@ IDS = ['12345678-1234-1234-1234-123456789ab' + str(n) for n in range(3)]
 HANDLES = [{'generation': GEN, 'window_id': ident} for ident in IDS]
 
 
+def transient(observation, index, kind, app=None):
+    """Mark one row as a popup or compositor surface (pid null), as the decoder does."""
+    row = observation['windows'][index]
+    row['kind'] = kind
+    if kind == 'compositor':
+        row.update(pid=None, app=None, association={'reason': 'missing_pid', 'verified_at': None, 'process': None})
+    return observation
+
+
 def snapshot(count=1, active=None, app=APP, client=None):
     return {'generation': GEN, 'query_id': 'c' * 32, 'query_artifact': 'window-observations/' + 'c'*32 + '.json',
             'observed_at': .01, 'accepted_at': .02, 'active_window': HANDLES[active] if active is not None else None,
-            'windows': [{'window': HANDLES[i], 'app': app, 'pid': 42, 'title': 'same', 'class': 'same',
+            'windows': [{'window': HANDLES[i], 'kind': 'window', 'app': app, 'pid': 42, 'title': 'same', 'class': 'same',
                          'active': i == active, 'client': client, 'frame': {'x': 9},
                          'association': {'reason': 'verified_process', 'verified_at': .02, 'process': None}}
                         for i in range(count)]}
@@ -243,6 +252,61 @@ class TargetTests(unittest.TestCase):
         with self.assertRaises(ContractError) as caught:
             current_target(observation, observation['windows'][0], require_client=True)
         self.assertEqual(caught.exception.context['reason'], 'client_geometry_unavailable')
+    def test_app_selection_ignores_tooltips_and_popups(self):
+        app = GEN + ':' + APP['application_id']
+        # Window 0 plus an associated tooltip (1): focus --app still has one candidate.
+        tooltip = transient(snapshot(2), 1, 'popup')
+        task = self.task([tooltip, transient(snapshot(2, active=0), 1, 'popup')], arguments={'app': app})
+        self.assertIsNone(self.step(task))
+        self.assertEqual(self.adapter.actions, [HANDLES[0]])
+        self.assertIsNone(self.step(task, .03))
+        self.assertIsNone(self.step(task, .09))
+        self.assertTrue(self.step(task, .1)['focused'])
+        # Two real windows stay ambiguous; candidates never list the popup.
+        error = self.error(self.task([transient(snapshot(3), 2, 'popup')], arguments={'app': app}), 'target_ambiguous')
+        self.assertEqual(error.context['candidates'], HANDLES[:2])
+        # Only popups: nothing to select.
+        self.error(self.task([transient(snapshot(1), 0, 'popup')], arguments={'app': app}), 'target_not_found')
+        observation = transient(snapshot(2), 1, 'popup')
+        self.assertEqual(resolve(observation, application=APP)['window'], HANDLES[0])
+
+    def test_explicit_transient_surfaces_are_refused_before_any_action(self):
+        for kind in ('popup', 'compositor'):
+            observation = transient(snapshot(2, active=0), 1, kind)
+            with self.subTest(kind=kind), self.assertRaises(ContractError) as caught:
+                resolve(observation, window=HANDLES[1])
+            self.assertEqual(caught.exception.code, 'unsupported_operation')
+            self.assertEqual(caught.exception.context['reason'], kind + '_surface')
+            task = self.task([observation], arguments={'window': GEN + ':' + IDS[1]})
+            self.error(task, 'unsupported_operation')
+            self.assertEqual(self.adapter.actions, [])
+            self.context.effects.assert_not_called()
+
+    def test_window_wait_is_not_satisfied_by_a_popup_alone(self):
+        task = self.task([transient(snapshot(1), 0, 'popup'), snapshot(1)], operation='wait',
+                         arguments={'condition': 'window', 'app': GEN + ':' + APP['application_id']})
+        self.assertIsNone(self.step(task))
+        self.assertEqual(len(self.step(task, .1)['windows']), 1)
+
+    def test_compositor_surface_blocks_input_to_the_focused_window(self):
+        # KWin's window menu leaves the client active, but takes keyboard input.
+        observation = transient(snapshot(2, active=0), 1, 'compositor')
+        with self.assertRaises(ContractError) as caught:
+            current_target(observation, observation['windows'][0], require_focus=True)
+        self.assertEqual(caught.exception.code, 'target_lost')
+        self.assertEqual(caught.exception.context, {'reason': 'compositor_surface_open', 'blocking_windows': [HANDLES[1]]})
+        # Reading the target (focus, screenshot) is unaffected, and so are the app's own popups.
+        self.assertTrue(current_target(observation, observation['windows'][0])['focused'])
+        observation = transient(snapshot(2, active=0), 1, 'popup')
+        self.assertTrue(current_target(observation, observation['windows'][0], require_focus=True)['focused'])
+        # An input task checks before sending anything.
+        request = make_request('key', caller_cwd='/tmp', expected_generation=GEN,
+                               arguments={'window': GEN + ':' + IDS[0], 'chord': 'a', 'hold': .05})
+        self.adapter = Adapter([transient(snapshot(2, active=0), 1, 'compositor')], self.clock)
+        task = TargetTask(request, self.context, self.adapter, self.registry, self.health,
+                          condition='observe', require_focus=True)
+        self.assertEqual(self.error(task, 'target_lost').context['reason'], 'compositor_surface_open')
+
     def test_selected_recheck_uses_original_uuid_pair_and_final_association(self):
         query = object.__new__(Query)
         identity = {'application': APP, 'pid': 42}

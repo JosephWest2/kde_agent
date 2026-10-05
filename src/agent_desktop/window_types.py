@@ -52,6 +52,12 @@ class Bounds:
         return cls(**value)
 
 
+# KWin's base Window::pid() returns -1 and only InternalWindow (the compositor's
+# own surfaces, such as the window menu) does not override it; Wayland clients
+# report their socket credentials and X11 windows 0 when unknown.
+COMPOSITOR_PID = -1
+
+
 @dataclass(frozen=True)
 class Window:
     uuid: str
@@ -61,23 +67,33 @@ class Window:
     client: Bounds | None
     frame: Bounds | None
     active: bool
+    kind: str = 'window'
 
     @classmethod
     def parse(cls, row, active):
-        if not isinstance(row, dict) or set(row) != {'uuid', 'pid', 'title', 'class', 'client', 'frame', 'active'}:
+        if not isinstance(row, dict) or set(row) != {'uuid', 'pid', 'popup', 'title', 'class', 'client', 'frame', 'active'}:
             invalid()
         ident = window_id(row['uuid'])
-        if row['pid'] is not None and (type(row['pid']) is not int or not 0 < row['pid'] < 2**31):
+        pid = row['pid']
+        if pid is not None and (type(pid) is not int or not (0 < pid < 2**31 or pid == COMPOSITOR_PID)):
+            invalid()
+        # Every row must carry KWin's popupWindow flag; nothing is guessed from titles or sizes.
+        if type(row['popup']) is not bool:
             invalid()
         for key in ('title', 'class'):
             if row[key] is not None and (not isinstance(row[key], str) or len(row[key]) > 4096):
                 invalid()
         if type(row['active']) is not bool or row['active'] != (active == ident):
             invalid()
-        return cls(ident, row['pid'], row['title'], row['class'], Bounds.parse(row['client']), Bounds.parse(row['frame']), row['active'])
+        if pid == COMPOSITOR_PID:
+            kind, pid = 'compositor', None
+        else:
+            kind = 'popup' if row['popup'] else 'window'
+        return cls(ident, pid, row['title'], row['class'], Bounds.parse(row['client']), Bounds.parse(row['frame']),
+                   row['active'], kind)
 
     def wire(self, generation):
-        return {'window': {'generation': generation, 'window_id': self.uuid}, 'pid': self.pid,
+        return {'window': {'generation': generation, 'window_id': self.uuid}, 'kind': self.kind, 'pid': self.pid,
                 'title': self.title, 'class': self.resource_class,
                 'client': None if self.client is None else asdict(self.client),
                 'frame': None if self.frame is None else asdict(self.frame), 'active': self.active}

@@ -23,7 +23,7 @@ UID = '12345678-1234-1234-1234-123456789abc'
 
 
 def row(**changes):
-    return {'uuid': UID, 'pid': None, 'title': None, 'class': None, 'client': None,
+    return {'uuid': UID, 'pid': None, 'popup': False, 'title': None, 'class': None, 'client': None,
             'frame': None, 'active': False} | changes
 
 
@@ -52,7 +52,7 @@ class TypesTests(unittest.TestCase):
     def test_invalid_fields_and_active_consistency(self):
         cases = [payload([None]), payload([row(), row(uuid='{' + UID.upper() + '}')]),
                  payload(schema_version=True), payload(active_uuid=UID), payload([row(pid=True)]),
-                 payload([row(pid=-1)]), payload([row(title=3)]), payload([row(title='x' * 4097)]),
+                 payload([row(pid=-2)]), payload([row(pid=0)]), payload([row(title=3)]), payload([row(title='x' * 4097)]),
                  payload([row(uuid=None)]), payload([row(active=True)]), payload([row(client={})]),
                  payload([row(client={'x':0, 'y':0, 'width':True, 'height':3})]),
                  payload([row(client={'x':10**300, 'y':0, 'width':3, 'height':3})]),
@@ -62,6 +62,42 @@ class TypesTests(unittest.TestCase):
             with self.subTest(value=str(value)[:100]), self.assertRaises(ContractError) as caught:
                 decoded(value)
             self.assertEqual(caught.exception.code, 'window_query_failed')
+
+    def test_kwin_row_classification(self):
+        # Captured from KWin 6.7.5: the header-bar window menu (InternalWindow, pid -1)
+        # and a GTK tooltip (xdg_popup of the editor).
+        menu = row(uuid='ec393468-0268-481e-bd6c-56092c6badcf', pid=-1, popup=True, title='', **{'class': ''},
+                   client={'x': 640, 'y': 123, 'width': 260, 'height': 127},
+                   frame={'x': 640, 'y': 123, 'width': 260, 'height': 127})
+        tooltip = row(uuid='fb3ae9b6-1993-41d4-adcc-7d94310ff76e', pid=695345, popup=True, title='',
+                      **{'class': 'gnome-text-editor'}, client={'x': 355, 'y': 144, 'width': 84, 'height': 32})
+        editor = row(pid=695345, title='New Document', active=True)
+        result = decoded(payload([menu, tooltip, editor], active_uuid=UID))
+        kinds = {w.uuid: w.wire(GEN) for w in result.windows}
+        self.assertEqual(kinds[menu['uuid']]['kind'], 'compositor')
+        self.assertIsNone(kinds[menu['uuid']]['pid'])
+        self.assertEqual(kinds[tooltip['uuid']]['kind'], 'popup')
+        self.assertEqual(kinds[tooltip['uuid']]['pid'], 695345)
+        self.assertEqual(kinds[UID]['kind'], 'window')
+        # A compositor surface may also be the active window; it stays consistent.
+        self.assertEqual(decoded(payload([row(pid=-1, popup=False, active=True)], active_uuid=UID)).windows[0].kind,
+                         'compositor')
+
+    def test_unidentified_rows_still_fail_closed(self):
+        # Only pid -1 identifies a compositor surface, and only KWin's own boolean
+        # popupWindow flag a popup; every other field keeps its strict checks.
+        cases = [row(popup=None), row(popup=1), row(popup='true'), {k: v for k, v in row().items() if k != 'popup'},
+                 row(pid=-1, popup=None), row(pid=-1, popup=True, title=3), row(pid=-1, popup=True, uuid=None),
+                 row(pid=-1, popup=True, client={'x': 0, 'y': 0, 'width': 0, 'height': 1}),
+                 row(pid=-1, popup=True, active=True), row(pid=-1.0, popup=True), row(pid=True, popup=True),
+                 row(popup=True, active=True), row(kind='window'), row(pid=-3, popup=True)]
+        for value in cases:
+            with self.subTest(value=value), self.assertRaises(ContractError) as caught:
+                decoded(payload([value]))
+            self.assertEqual(caught.exception.code, 'window_query_failed')
+        # One malformed row still rejects the whole observation, beside a valid menu.
+        with self.assertRaises(ContractError):
+            decoded(payload([row(uuid=str(uuid.uuid4()), pid=-1, popup=True), row(popup=None)]))
 
     def test_strict_json_and_size(self):
         for raw in (b'{}{}', b'{"a":1,"a":2}', b'\xff', b'{"x":NaN}', b'[' * 1000,

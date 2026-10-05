@@ -15,8 +15,11 @@ if (activeId !== null) activeId = String(activeId);
 output_result(JSON.stringify({schema_version:1, request_id:request.request_id,
     active_uuid:activeId,
     outputs:workspace.screens.map(o => ({name:o.name, width:o.geometry.width, height:o.geometry.height, scale:nullable(o.scale)})),
+    // KWin reports pid -1 only for its own internal windows (Window::pid() is not
+    // overridden by InternalWindow); the decoder classifies them, so pass it raw.
     windows:workspace.windowList().map(w => ({uuid:w.internalId == null ? null : String(w.internalId),
         pid:w.pid == null || w.pid === 0 ? null : w.pid,
+        popup:typeof w.popupWindow === 'boolean' ? w.popupWindow : null,
         title:nullable(w.caption), class:nullable(w.resourceClass),
         client:rectangle(w.clientGeometry), frame:rectangle(w.frameGeometry),
         active:activeId !== null && String(w.internalId) === activeId}))}));

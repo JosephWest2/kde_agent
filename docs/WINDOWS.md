@@ -11,13 +11,53 @@ KWin output scale is explicitly null when its scripting wrapper omits it; fixed
 The result contains `generation`, `request_id`, `query_id`, `observed_at`,
 `accepted_at`, `observation_state`, `active_window`, `windows`, `query_artifact`
 and cleanup confirmation. Each window carries a canonical bare UUID under
-`window: {generation, window_id}`, compositor `pid`, `title`, `class`, `client`
-and `frame` rectangles, `active`, optional `app`, and `association` metadata.
+`window: {generation, window_id}`, `kind`, compositor `pid`, `title`, `class`,
+`client` and `frame` rectangles, `active`, optional `app`, and `association`
+metadata.
 Unavailable metadata is null; empty strings remain empty. Client geometry never
 falls back to frame geometry. Negative/fractional coordinates are preserved.
 Repeated titles/classes/PIDs remain distinct candidates. Filtered discovery
 includes only positively associated rows; a known exited app may return empty.
 The global `active_window` still describes the compositor even with an app filter.
+
+## Row kinds: windows, popups and compositor surfaces
+
+Every row has a `kind`, read from KWin rather than guessed from titles or sizes:
+
+| `kind` | KWin source | Examples |
+| --- | --- | --- |
+| `window` | everything else (toplevels, dialogs) | the editor, a file chooser |
+| `popup` | `popupWindow` is true (an `xdg_popup`, or an X11 menu/tooltip/combo type) | GTK tooltips, popover menus, dropdowns |
+| `compositor` | `pid` is -1: only KWin's own `InternalWindow` reports it | the window menu from a header-bar right-click |
+
+KWin 6's base `Window::pid()` returns -1 and only internal windows do not override
+it (Wayland clients report their socket credentials, X11 windows 0 when unknown),
+so a compositor row is positively identified. Its `pid` is reported as null, its
+`app` is null (`association.reason` `missing_pid`), and empty KWin titles/classes
+stay empty. A popup keeps the owning process's `pid` and can be associated with
+the app. Every row is still fully validated: the query must carry KWin's boolean
+`popupWindow` flag for every row, and any other negative or zero `pid`, malformed
+identity, geometry, text or active flag still fails the whole observation with
+`window_query_failed`.
+
+Popups and compositor surfaces are listed (so the menu or tooltip is visible) but
+never targeted:
+
+- `--app` selection (`focus`, `close`) counts only `window` rows, so a tooltip
+  never makes it ambiguous or gets picked. `wait --for window --app` needs at
+  least one `window` row; all rows are still returned.
+- An explicit `--window` naming a popup or compositor row fails before any action
+  with `unsupported_operation`, reason `popup_surface` or `compositor_surface`.
+  A full `screenshot` still shows them.
+- Window input (`key`, `type`, `click --window`) fails with `target_lost`, reason
+  `compositor_surface_open` (context `blocking_windows`), and sends nothing while
+  any compositor row is listed, including at each focus recheck. KWin keeps the
+  client active while its window menu is open, but the menu takes the keyboard:
+  in a live test `down` moved through the menu and `x` triggered its Maximize
+  accelerator (`c` is Close). Closing the menu takes a screen click
+  (`click --x X --y Y`) outside it, which the menu consumes; `focus` alone
+  succeeds but leaves the menu open. An app's own popups (a GTK popover) do not
+  block input: they belong to the target, which handles the keys itself.
 
 ## Ownership and sampling
 
@@ -98,9 +138,9 @@ reserve; a late cleanup observation remains a fail-closed result.
 
 `focus --window GENERATION:UUID` resolves that exact current UUID. Braces and
 uppercase are accepted and normalized; native kdotool receives a brace-wrapped
-canonical UUID. Explicit identity can target an unassociated surface. `focus
---app GENERATION:APPLICATION_ID` requires exactly one currently associated
-window: no candidates gives `target_not_found`, multiple candidates gives
+canonical UUID. Explicit identity can target an unassociated `window` row (not a
+popup or compositor surface). `focus --app GENERATION:APPLICATION_ID` requires
+exactly one currently associated `window` row: no candidates gives `target_not_found`, multiple candidates gives
 `target_ambiguous` with every candidate handle. Titles, PID alone, active status,
 window size and dialog parenting never break a tie. Selection occurs when the
 queued task executes, using current geometry and associations.
@@ -115,7 +155,7 @@ selection, or `target_not_found` on the initial observation. The compositor race
 between query and action remains observable, not atomic.
 
 `wait --for window --app APP` is passive and existential: any nonempty set of
-positively associated windows satisfies it, and all rows are returned. Subsequent
+positively associated `window`-kind rows satisfies it, and all rows are returned. Subsequent
 `focus --app APP` still requires a unique candidate. `wait --for focus --window
 WIN` never activates; it succeeds only on a fresh focused observation, errors on
 absence/loss, and times out while the window remains unfocused. `wait --for exit

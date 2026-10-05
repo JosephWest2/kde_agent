@@ -15,8 +15,14 @@ def resolve(observation, *, window=None, application=None, seen=False):
             raise ContractError('generation_mismatch', 'Window belongs to another generation.')
         ident = window_id(window['window_id'])
         candidates = [r for r in observation['windows'] if r['window']['window_id'] == ident]
+        if candidates and candidates[0]['kind'] != 'window':
+            # Popups and compositor surfaces are listed but never targeted.
+            raise ContractError('unsupported_operation', 'Window is a transient surface, not a targetable window.',
+                                context={'reason': candidates[0]['kind'] + '_surface', 'kind': candidates[0]['kind'],
+                                         'query_artifact': observation['query_artifact']})
     else:
-        candidates = sorted((r for r in observation['windows'] if r['app'] == application),
+        # App selection never counts popups (tooltips, menus, popovers) as candidates.
+        candidates = sorted((r for r in observation['windows'] if r['app'] == application and r['kind'] == 'window'),
                             key=lambda r: r['window']['window_id'])
     if not candidates:
         raise ContractError('target_lost' if seen else 'target_not_found', 'Window is not present in the current observation.')
@@ -32,6 +38,12 @@ def current_target(observation, row, *, require_focus=False, require_client=Fals
     focused = row['active'] and observation['active_window'] == row['window']
     if require_focus and not focused:
         raise ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+    blocking = [r['window'] for r in observation['windows'] if r['kind'] == 'compositor']
+    if require_focus and blocking:
+        # A KWin surface such as the window menu takes keyboard and pointer input
+        # while the client keeps its active flag; input would reach the menu.
+        raise ContractError('target_lost', 'A compositor surface (such as the window menu) has input.',
+                            context={'reason': 'compositor_surface_open', 'blocking_windows': blocking})
     if require_client and row['client'] is None:
         raise ContractError('unsupported_operation', 'Current client geometry is unavailable.',
                             context={'reason': 'client_geometry_unavailable'})
@@ -165,7 +177,8 @@ class TargetTask:
         self.retain()
         self.check()
         if self.condition == 'window':
-            if not result['windows']:
+            # A popup alone (e.g. a tooltip) never satisfies a window wait.
+            if not any(r['kind'] == 'window' for r in result['windows']):
                 return None
             self.check()
             return result | {'condition': 'window', 'satisfied': True, 'application': self.app_snapshot, 'polls': self.polls}

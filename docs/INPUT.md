@@ -9,7 +9,11 @@ agent-desktop --json type --window REF 'Hello, World!' [--timeout 30]
 
 **Focus first.** Both commands query the window before the first stroke and
 require it to exist and be focused. Otherwise they fail with `target_lost` (reason
-`focus_lost`) and send nothing. Use `focus` first.
+`focus_lost`) and send nothing. Use `focus` first. They also fail with
+`target_lost`, reason `compositor_surface_open`, while a KWin surface such as the
+window menu is open, even though the window is still active: that menu takes the
+keyboard and its accelerators would act on the window. Close it with a screen
+click outside it ([row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces)).
 
 **Focus rechecks.** While a hold or a sequence is still being sent, the window is
 queried again every 250ms. If it is gone or no longer focused, everything held is
@@ -92,12 +96,15 @@ nothing about windows or focus is checked: whatever is at that point gets the cl
 
 **Focus first.** With `--window`, the window must be active, as for `key`. Use
 `focus` first. A click there can't land on a window that is covering the target,
-except for windows KWin keeps above the active one.
+except for windows KWin keeps above the active one. While KWin's window menu (a
+`compositor` row) is open, `click --window` fails with reason
+`compositor_surface_open`, as `key` does.
 
 **Clicks.** The pointer moves to the point once, then each click is a 20ms press
 and release, with 60ms between the clicks of a double or triple click (well
 inside toolkit double-click times). The pointer stays there afterwards, so a
-later screenshot may show hover effects or a tooltip.
+later screenshot may show hover effects or a tooltip. A tooltip is listed by
+`windows` as a `popup` row of the app; `--app` selection ignores it.
 
 **Release and results.** Buttons are in the same release ledger as keys, with the
 same guarantees and `input_uncertain` behavior. Results give `x`, `y`,

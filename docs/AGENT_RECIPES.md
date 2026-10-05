@@ -22,7 +22,8 @@ Refs are `GENERATION:ID` strings copied from results (`result.application.ref`,
 
 `key`, `type` and `click --window` only send input to the active window. If the
 window isn't active they fail with `target_lost` (reason `focus_lost`) and send
-nothing.
+nothing. Reason `compositor_surface_open` means KWin's window menu is open; see
+[below](#tooltips-popovers-and-the-window-menu).
 
 ```sh
 $D focus --window WIN_REF            # verified: waits until KWin reports it active
@@ -71,12 +72,37 @@ What follows from that:
   by any existing window, so it can't wait for a dialog to appear. Poll `windows`
   instead.
 
-Other popups can also appear as windows. A GTK tooltip showed up as an untitled,
-inactive window of the app, and that alone makes `--app` selection ambiguous.
-Right-clicking a client-side-decorated header bar opens KWin's own window menu.
-While that menu is open, `windows` and window-targeted input fail with
-`window_query_failed`. A full `screenshot` still works. To close the menu, click
-a screen point outside the menu and the windows, without `--window`.
+## Tooltips, popovers and the window menu
+
+`windows` also lists popups, marked by `kind` ([WINDOWS.md](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces)):
+
+- `kind: "popup"`: GTK tooltips, popover menus and dropdowns. A tooltip shows up
+  as an untitled, inactive row of the app, for example after a click leaves the
+  pointer resting on a button. `--app` selection ignores popups, so it stays
+  unambiguous. They can't be targeted with `--window` (`unsupported_operation`,
+  reason `popup_surface`). Input to the main window works and goes to the app as
+  usual: `key --window MAIN_REF escape` closes its open popover.
+- `kind: "compositor"`: KWin's own surfaces, such as the window menu that opens
+  when you right-click empty space in a client-side-decorated header bar. The row
+  has `pid: null` and `app: null`. The app window stays active, but the menu has
+  the keyboard and its accelerators act on the window (`c` closes it). So while
+  the menu is open, `key`, `type` and `click --window` fail with `target_lost`,
+  reason `compositor_surface_open`. If the menu was already open, nothing is sent
+  (outcome `not_started`). If it opened during a long `type` or hold, the failure
+  comes from a focus recheck after some strokes went out (outcome `unknown`,
+  with `strokes_sent` and the rest of the progress). Handle that like
+  [focus loss](#focus-before-input): inspect before resending anything. `focus`
+  succeeds but doesn't close the menu.
+
+To close the window menu, click a screen point outside the menu, without
+`--window`. The menu takes that click, so it doesn't reach the window under it.
+Then check that the `compositor` row is gone:
+
+```sh
+$D click --x 5 --y 715                       # pick a point outside the menu
+$D windows                                   # no row with kind "compositor"
+$D key --window WIN_REF ctrl+a               # input works again
+```
 
 ## Client vs screen coordinates
 

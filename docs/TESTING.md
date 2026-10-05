@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 520 of the 528
+have a user systemd manager, so `test_lifecycle_process` runs there: 528 of the 536
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
@@ -82,7 +82,11 @@ invocations, the way an agent would:
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
    query until the title contains the typed text. A click on the header bar's
    "New Tab" button must switch the same window to a "New Document", and
-   `ctrl+page_up` must bring the typed document back.
+   `ctrl+page_up` must bring the typed document back. Before that, a right-click on
+   empty header-bar space opens KWin's window menu: the full `windows` query must
+   list it as a `compositor` row while the editor stays active, `key --window`
+   must fail with `target_lost` (reason `compositor_surface_open`, outcome
+   `not_started`), and a screen click outside both must close it again.
    Then `key ctrl+a`, a full and a
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.

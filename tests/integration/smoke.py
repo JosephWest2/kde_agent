@@ -5,7 +5,8 @@ Drives the real CLI through separate invocations against the native Wayland
 fixture (exact key acknowledgements) and gnome-text-editor (a real GTK app):
 
     doctor, session start, launch, windows, focus, key, type, click,
-    screenshot, wait, close, kill, session stop
+    screenshot, wait, close, kill, session stop, and input while KWin's
+    window menu is open
 
 After stop it checks that no process remains in the generation's cgroup, the
 systemd unit is gone and the artifacts survived. Run it after system updates:
@@ -43,6 +44,8 @@ MODIFIER_KEYS = {29, 42}
 EXPECTED_BUTTONS = [(272, 1, 100, 50), (272, 0, 100, 50)] + [(273, 1, 20, 30), (273, 0, 20, 30)] * 2
 # gnome-text-editor's "New Tab" header-bar button, in client coordinates.
 EDITOR_NEW_TAB = (107, 23)
+# Empty header-bar space; a right-click there opens KWin's window menu.
+EDITOR_HEADER_GAP = (350, 23)
 
 
 class SmokeFailure(Exception):
@@ -191,7 +194,9 @@ class Smoke:
                 raise SmokeFailure('editor: new tab check', f'title still shows the typed text: '
                                    f'{[r["title"] for r in rows]}')
             time.sleep(.2)
-        # Switching back to the first tab must show the typed document again.
+        self.window_menu(window)
+        # Switching back to the first tab must show the typed document again,
+        # which also proves input works once the window menu is dismissed.
         self.desktop('editor: key ctrl+page_up', 'key', '--window', window, 'ctrl+page_up')
         deadline = time.monotonic() + 5
         while True:
@@ -207,6 +212,46 @@ class Smoke:
         result = self.desktop('editor: kill', 'kill', '--app', app)['result']
         if result.get('exited') is not True:
             raise SmokeFailure('editor: kill', f'application did not exit: {json.dumps(result)[:300]}')
+
+    def compositor_rows(self, step, *, present, timeout=3):
+        """Poll the full `windows` (it must keep succeeding) until a compositor row is (not) listed."""
+        deadline = time.monotonic() + timeout
+        while True:
+            rows = self.desktop(step, 'windows', quiet=True)['result']['windows']
+            menus = [row for row in rows if row['kind'] == 'compositor']
+            if bool(menus) == present:
+                print(f'  ok  {step:<34}       {len(menus)} compositor row(s)')
+                return rows, menus
+            if time.monotonic() >= deadline:
+                raise SmokeFailure(step, f'kinds {[row["kind"] for row in rows]}')
+            time.sleep(.1)
+
+    def window_menu(self, window):
+        """KWin's window menu is listed, blocks window input, and a screen click dismisses it."""
+        x, y = EDITOR_HEADER_GAP
+        self.desktop('editor: right-click header bar', 'click', '--window', window, '--button', 'right',
+                     '--x', str(x), '--y', str(y))
+        rows, menus = self.compositor_rows('editor: windows (menu open)', present=True)
+        menu = menus[0]
+        if menu['pid'] is not None or menu['app'] is not None or not menu['client']:
+            raise SmokeFailure('editor: menu row', f'unexpected compositor row {json.dumps(menu)[:300]}')
+        editor = next(row for row in rows if row['window']['ref'] == window)
+        if not editor['active'] or editor['kind'] != 'window':
+            raise SmokeFailure('editor: menu row', 'the editor should stay the active window')
+        # The menu has keyboard accelerators ("c" is Close), so input must not be sent.
+        error = self.desktop('editor: key while menu open', 'key', '--window', window, 'escape',
+                             expect_ok=False)['error']
+        if (error is None or error['code'] != 'target_lost' or error['outcome'] != 'not_started'
+                or error['context'].get('reason') != 'compositor_surface_open'
+                or error['context'].get('blocking_windows') != [menu['window']]):
+            raise SmokeFailure('editor: key while menu open', f'expected compositor_surface_open, got {error}')
+        # Dismiss with a screen click outside the menu and the editor; the menu consumes it.
+        rects = [r['frame'] or r['client'] for r in rows if r['frame'] or r['client']]
+        point = next(p for p in ((5, 715), (1275, 715), (5, 5), (1275, 5))
+                     if not any(b['x'] <= p[0] < b['x'] + b['width'] and b['y'] <= p[1] < b['y'] + b['height']
+                                for b in rects))
+        self.desktop('editor: click outside the menu', 'click', '--x', str(point[0]), '--y', str(point[1]))
+        self.compositor_rows('editor: windows (menu closed)', present=False)
 
     def stop(self):
         # Stop by name: it works even if start's response was lost before the

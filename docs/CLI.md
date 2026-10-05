@@ -275,7 +275,7 @@ Representative launch and window candidate shapes (full discovery also returns o
 ```
 
 ```json
-{"windows":[{"window":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","window_id":"2a63a414-1509-460a-bff9-b7c1103ba8d5"},"pid":1234,"title":null,"class":null,"client":{"x":0,"y":0,"width":640,"height":480},"frame":null,"active":true,"app":null,"association":{"reason":"unverified_process","verified_at":null,"process":null}}]}
+{"windows":[{"window":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","window_id":"2a63a414-1509-460a-bff9-b7c1103ba8d5"},"kind":"window","pid":1234,"title":null,"class":null,"client":{"x":0,"y":0,"width":640,"height":480},"frame":null,"active":true,"app":null,"association":{"reason":"unverified_process","verified_at":null,"process":null}}]}
 ```
 
 Input results report `dispatched: true` (see [INPUT.md](INPUT.md) for the full
@@ -290,6 +290,14 @@ error object within the common failure envelope:
 {"code":"timeout","message":"Window wait expired.","context":{"phase":"window_wait"},"outcome":"partial","partial_result":{"application":{"generation":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","application_id":"app-1"},"process":{"pid":1234,"start_time_ticks":5678},"logs":{"stderr":"/artifacts/app-1.stderr.log"},"windows":[]}}
 ```
 
+Each window row has a `kind`: `window`, `popup` (tooltips, menus, popovers) or
+`compositor` (KWin's own surfaces, such as the window menu). Only `window` rows are
+selected by `--app` or accepted by `--window`; an explicit popup or compositor row
+gives `unsupported_operation` with reason `popup_surface` or `compositor_surface`.
+While a compositor row is listed, `key`, `type` and `click --window` fail with
+`target_lost`, reason `compositor_surface_open`: outcome `not_started` when found
+before the first stroke, or outcome `unknown` with input progress when a focus
+recheck finds it mid-input. See [row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces).
 Ambiguity returns `target_ambiguous` with `context.candidates` containing full
 window handles. Uncertain release returns `input_uncertain`, `outcome: unknown`,
 and context describing the uncertainty; further input is blocked until the

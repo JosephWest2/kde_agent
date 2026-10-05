@@ -60,8 +60,10 @@ of W's current title. `--match` is 1–256 characters and only valid with `title
   later gives `target_lost` (`context.phase: title_wait`), as for `wait --for focus`.
 - A `popup` or `compositor` row gives `unsupported_operation` with reason
   `popup_surface` or `compositor_surface`, as for any other `--window` command.
-- A timeout's context has `phase: title_wait`, the `window` and the
-  `last_query_artifact` (the last observation, with the title it saw).
+- A timeout's context has `phase: title_wait`, the `window` and, once a query
+  has completed, `last_query_artifact` (the last observation, with the title it
+  saw). `focus` and `wait --for focus|gone` timeouts carry the same fields
+  (phases `focus_wait`, `gone_wait`); cancellation keeps them too.
 - The result has the focus-style target fields (`window`, `app`, `client`,
   `frame`, `focused`, `active_window`, query times), plus `title` (the matched
   title), `row` (the full window row), `match` (`{text, regex}`) and `polls`.

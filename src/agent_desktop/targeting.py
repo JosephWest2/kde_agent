@@ -127,19 +127,25 @@ class TargetTask:
             raise ContractError('target_lost', 'Selected application association changed.')
         self.activated = True
 
+    def refs(self):
+        refs = {'phase': self.phase}
+        if self.application is not None:
+            refs['application'] = self.application
+        if self.selected is not None:
+            refs['window'] = self.selected
+        elif self.condition == 'gone':
+            # Gone never selects a row; report the awaited window in canonical spelling.
+            refs['window'] = {'generation': self.window['generation'], 'window_id': window_id(self.window['window_id'])}
+        if self.last is not None:
+            refs['last_query_artifact'] = self.last['query_artifact']
+        return refs
+
     def step(self, now):
         try:
             return self.advance()
         except ContractError as error:
             if self.error is None:
-                refs = {'phase': self.phase}
-                if self.application is not None:
-                    refs['application'] = self.application
-                if self.selected is not None:
-                    refs['window'] = self.selected
-                if self.last is not None:
-                    refs['last_query_artifact'] = self.last['query_artifact']
-                self.error = ContractError(error.code, error.message, context=refs | error.context)
+                self.error = ContractError(error.code, error.message, context=self.refs() | error.context)
             if self.operation is not None:
                 self.operation.cancel(self.error)
             self.retain(failing=True)
@@ -246,11 +252,15 @@ class TargetTask:
             self.error = ContractError(reason, 'Target condition did not complete.', context={'phase': self.phase})
         if self.operation is not None:
             self.operation.cancel(self.error)
-        # Scheduler cancellation may happen before step sees the deadline/EOF.
-        # Add controlled phase information without replacing its original cause.
+        # Scheduler cancellation (deadline, EOF) usually happens before step sees
+        # it. Add controlled phase information without replacing its original
+        # cause; a standalone focus/wait also keeps its observation references,
+        # as when step itself fails. Composite tasks own their context.
         error = getattr(self.context.work, 'error', None)
         if error is not None:
-            error.context.setdefault('phase', self.phase)
+            refs = self.refs() if self.request.operation in ('focus', 'wait') else {'phase': self.phase}
+            for key, value in refs.items():
+                error.context.setdefault(key, value)
 
     def cleanup(self, now):
         return self.operation is None or self.operation.cleanup(self.context.work.cleanup_deadline)

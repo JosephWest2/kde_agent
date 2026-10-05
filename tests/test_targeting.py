@@ -449,3 +449,42 @@ class TitleAndGoneWaitTests(Harness):
         self.adapter.generation = 'c' * 32
         self.error(task, 'generation_mismatch')
         self.assertEqual(self.adapter.starts, [])
+
+
+class SchedulerTimeoutContextTests(Harness):
+    """Production expiry cancels through the scheduler before TargetTask.step sees it."""
+
+    def run_until_timeout(self, arguments, values):
+        from agent_desktop.scheduler import Scheduler
+        request = make_request('wait', caller_cwd='/tmp', expected_generation=GEN, arguments=arguments,
+                               timeout_seconds=2)
+        self.adapter = Adapter(values, self.clock)
+        owner = Scheduler(clock=lambda: self.clock[0], factory=lambda req, context: TargetTask(
+            req, context, self.adapter, self.registry, self.health))
+        admission = NS(request=request, admitted_at=0, deadline=2, disconnected=False, on_disconnect=None,
+                       results=[])
+        admission.complete = lambda **result: admission.results.append(result)
+        owner.submit(request, admission)
+        for at in (0, .1, .2, 2, 2.01):
+            self.clock[0] = at
+            owner.tick()
+        self.assertEqual(len(admission.results), 1)
+        return admission.results[0]['error']
+
+    def test_title_and_focus_timeouts_keep_observation_references(self):
+        cases = (({'condition': 'title', 'window': GEN + ':' + IDS[0], 'match': 'Saved', 'regex': False},
+                  titled('Report'), 'title_wait'),
+                 ({'condition': 'focus', 'window': GEN + ':' + IDS[0]}, snapshot(), 'focus_wait'))
+        for arguments, observation, phase in cases:
+            with self.subTest(condition=arguments['condition']):
+                self.clock[0] = 0
+                error = self.run_until_timeout(arguments, [observation] * 3)
+                self.assertEqual(error.code, 'timeout')
+                self.assertEqual(error.context, {'phase': phase, 'window': HANDLES[0],
+                                                 'last_query_artifact': observation['query_artifact']})
+
+    def test_gone_timeout_keeps_phase_and_last_query(self):
+        error = self.run_until_timeout({'condition': 'gone', 'window': GEN + ':' + IDS[0]}, [snapshot()] * 3)
+        self.assertEqual(error.code, 'timeout')
+        self.assertEqual(error.context, {'phase': 'gone_wait', 'window': HANDLES[0],
+                                         'last_query_artifact': snapshot()['query_artifact']})

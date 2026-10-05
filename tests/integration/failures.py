@@ -15,6 +15,7 @@ generation's cgroup and no systemd unit:
     worker-stopped   SIGSTOP the worker, then `session stop`
     title-gone       `wait --for title|gone`: retitle, timeout, a window lost
                      mid-wait, and a dialog closing while the app keeps running
+                     (AGENT_DESKTOP_TEST_SLOW=SECONDS adds setup delay)
 
     python tests/integration/failures.py [SCENARIO ...] [--loop N]
 
@@ -41,6 +42,8 @@ from smoke import ROOT, SmokeFailure, cgroup_members, log_events, read  # noqa: 
 
 KDOTOOL = 'bin/kdotool'  # Relative to the dependency root.
 W = 17  # evdev KEY_W
+# Extra seconds of setup delay in title-gone, to show its checks don't depend on timing.
+SLOW = float(os.environ.get('AGENT_DESKTOP_TEST_SLOW', '0'))
 
 
 class Scenario(smoke.Smoke):
@@ -233,43 +236,75 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure(step, f'expected {code}: {json.dumps(payload)[:400]}', payload)
         return payload['error']
 
+    def observations(self):
+        directory = self.artifacts / 'generations' / self.generation / 'window-observations'
+        return set(directory.iterdir()) if directory.is_dir() else set()
+
+    def wait_with_step(self, step, fixture_pid, *args):
+        """Run a wait and apply the fixture's next SIGUSR1 step after the wait's first observation.
+
+        Waits hold the session's only ordinary slot, so nothing else queries meanwhile:
+        the first new observation artifact is this wait's first poll, taken before the
+        change. However slow setup was, the change always happens mid-wait.
+        """
+        before = self.observations()
+        started = time.monotonic()
+        process = self.background_cli(*args, '--session', self.session)
+        fresh = smoke_wait(lambda: self.observations() - before, bool, timeout=5)
+        if not fresh or process.poll() is not None:
+            process.kill()
+            out, _ = process.communicate(timeout=10)
+            raise SmokeFailure(step, f'no first observation while waiting: {out[:300]}')
+        os.kill(fixture_pid, signal.SIGUSR1)
+        out, _ = process.communicate(timeout=30)
+        print(f'  ok  {step:<34} {time.monotonic() - started:5.2f}s')
+        return json.loads(out)
+
     def title_gone_waits(self):
-        # Timers count from fixture start: retitle the primary at 3s, close the
-        # sibling at 4.5s and the dialog at 6s. The fixture keeps running.
+        # Each SIGUSR1 applies the fixture's next step: retitle the primary, close
+        # the sibling, close the dialog. The fixture keeps running throughout.
         app, primary, logs = self.launch('fixture', str(self.fixture), '--autonomous', '--exit-after-ms', '60000',
-                                         '--sibling', '--dialog', '--retitle-after-ms', 'primary:3000',
-                                         '--destroy-after-ms', 'sibling:4500', '--destroy-after-ms', 'dialog:6000',
-                                         windows=3)
+                                         '--sibling', '--dialog',
+                                         '--on-sigusr1', 'retitle:primary,close:sibling,close:dialog', windows=3)
+        fixture_pid = self.pids[-1]
         sibling, dialog = (row['window']['ref'] for row in self.windows[1:])
-        original = self.windows[0]['title']
-        if original != 'KDE Agent Native Fixture':
-            raise SmokeFailure('title-gone', f'primary already retitled ({original!r}); launch was too slow')
+        if self.windows[0]['title'] != 'KDE Agent Native Fixture':
+            raise SmokeFailure('title-gone', f'unexpected primary title {self.windows[0]["title"]!r}')
+        if SLOW:
+            time.sleep(SLOW)  # Robustness check: nothing below depends on launch timing.
         error = self.expect_error('wait --for title (timeout)', 'timeout', 'wait', '--for', 'title',
                                   '--window', primary, '--match', 'never this title', '--timeout', '1')
-        if error['context'].get('phase') != 'title_wait':
-            raise SmokeFailure('title-gone', f'timeout without title_wait phase: {error}')
-        ok('wait --for title (timeout)', 'timeout, phase title_wait')
-        result = self.desktop('wait --for title (retitled)', 'wait', '--for', 'title', '--window', primary,
-                              '--match', 'retitled')['result']
-        if result['title'] != 'KDE Agent Native Fixture retitled' or result['polls'] < 2:
-            raise SmokeFailure('title-gone', f'unexpected title result {json.dumps(result)[:300]}')
-        if not log_events(Path(logs['stdout']), {'scheduled_retitle'}):
-            raise SmokeFailure('title-gone', 'fixture never logged its retitle')
+        if (error['context'].get('phase') != 'title_wait' or error['context'].get('window', {}).get('ref') != primary
+                or not error['context'].get('last_query_artifact')):
+            raise SmokeFailure('title-gone', f'timeout context lacks phase/window/last query: {error}')
+        ok('wait --for title (timeout)', 'timeout; context has phase, window and last_query_artifact')
+        payload = self.wait_with_step('wait --for title (retitled)', fixture_pid, 'wait', '--for', 'title',
+                                      '--window', primary, '--match', 'retitled')
+        result = payload['result'] or {}
+        if not payload['ok'] or result.get('title') != 'KDE Agent Native Fixture retitled' or result['polls'] < 2:
+            raise SmokeFailure('title-gone', f'unexpected title result {json.dumps(payload)[:300]}')
         ok('wait --for title (retitled)', f'{result["title"]!r} after {result["polls"]} polls')
         result = self.desktop('wait --for title --regex (initial)', 'wait', '--for', 'title', '--window', primary,
                               '--regex', '--match', r'^KDE \w+ Native Fixture retitled$')['result']
         if result['polls'] != 1:
             raise SmokeFailure('title-gone', f'an initial match must return on the first poll: {result["polls"]}')
-        error = self.expect_error('wait --for title (window lost)', 'target_lost', 'wait', '--for', 'title',
-                                  '--window', sibling, '--match', 'never this title')
-        ok('wait --for title (window lost)', f'target_lost in phase {error["context"].get("phase")}')
-        result = self.desktop('wait --for gone (dialog)', 'wait', '--for', 'gone', '--window', dialog)['result']
-        if result['already_gone'] or result['last_seen']['window']['ref'] != dialog:
-            raise SmokeFailure('title-gone', f'unexpected gone result {json.dumps(result)[:300]}')
+        payload = self.wait_with_step('wait --for title (window lost)', fixture_pid, 'wait', '--for', 'title',
+                                      '--window', sibling, '--match', 'never this title')
+        if payload['ok'] or payload['error']['code'] != 'target_lost':
+            raise SmokeFailure('title-gone', f'expected target_lost: {json.dumps(payload)[:300]}')
+        ok('wait --for title (window lost)', f'target_lost in phase {payload["error"]["context"].get("phase")}')
+        payload = self.wait_with_step('wait --for gone (dialog)', fixture_pid, 'wait', '--for', 'gone',
+                                      '--window', dialog)
+        result = payload['result'] or {}
+        if not payload['ok'] or result['already_gone'] or result['last_seen']['window']['ref'] != dialog:
+            raise SmokeFailure('title-gone', f'unexpected gone result {json.dumps(payload)[:300]}')
         rows = self.desktop('windows (app still running)', 'windows', '--app', app)['result']['windows']
         if [row['window']['ref'] for row in rows] != [primary]:
             raise SmokeFailure('title-gone', f'expected only the primary window: {[r["title"] for r in rows]}')
         ok('wait --for gone (dialog)', f'after {result["polls"]} polls; primary still listed')
+        steps = log_events(Path(logs['stdout']), {'signal_step'})
+        if [(e.get('action'), e.get('applied')) for e in steps] != [('retitle', True), ('close', True), ('close', True)]:
+            raise SmokeFailure('title-gone', f'fixture signal steps: {steps}')
         result = self.desktop('wait --for gone (already gone)', 'wait', '--for', 'gone', '--window', dialog)['result']
         if not result['already_gone'] or result['polls'] != 1:
             raise SmokeFailure('title-gone', f'expected already_gone: {json.dumps(result)[:300]}')

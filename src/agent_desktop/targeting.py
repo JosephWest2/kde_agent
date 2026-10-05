@@ -74,6 +74,11 @@ class TargetTask:
         self.started_at = None
         self.activated = False
         self.initial_exit_check = True
+        self.search = self.matched = self.last_seen = None
+        if self.condition == 'title':
+            from .title_match import compile_match
+            # Validated at admission; recompiling the same <=256 characters is bounded.
+            self.matcher = compile_match(request.arguments['match'], request.arguments['regex'])
 
     def check(self):
         if self.error is not None:
@@ -156,6 +161,11 @@ class TargetTask:
             return {'condition': 'exit', 'satisfied': True, 'exited': True,
                     'root_returncode': self.app_snapshot['exit_code'],
                     'descendant_exit_codes': None, 'application': self.app_snapshot}
+        if self.search is not None:
+            # A regex search spans several short steps; no query starts meanwhile.
+            matched = self.advance_search()
+            if matched is not None or self.search is not None:
+                return matched
         if self.operation is None:
             if time.monotonic() < self.next_poll:
                 return None
@@ -182,6 +192,8 @@ class TargetTask:
                 return None
             self.check()
             return result | {'condition': 'window', 'satisfied': True, 'application': self.app_snapshot, 'polls': self.polls}
+        if self.condition == 'gone':
+            return self.gone(result)
         row = resolve(result, window=self.selected or self.window,
                       application=self.application, seen=self.selected is not None)
         target = current_target(result, row, require_focus=self.require_focus, require_client=self.require_client)
@@ -193,11 +205,41 @@ class TargetTask:
                                                    self.selected, self.activation_guard)
             return None
         self.selected = row['window']
+        if self.condition == 'title':
+            # A null or empty title never matches; the window keeps being polled.
+            self.search = self.matcher.search(row['title'])
+            self.matched = target | {'condition': 'title', 'satisfied': True, 'polls': self.polls,
+                                     'title': row['title'], 'row': row,
+                                     'match': {'text': self.matcher.text, 'regex': self.matcher.regex}}
+            return self.advance_search()
         if self.condition == 'observe' or target['focused']:
             self.check()
             return target | {'condition': 'focus' if self.condition == 'activate' else self.condition,
                              'satisfied': True, 'polls': self.polls}
         return None
+
+    def advance_search(self):
+        found = self.search.step()
+        if found is None:
+            return None
+        self.search = None
+        if not found:
+            self.matched = None
+            return None
+        self.check()
+        return self.matched
+
+    def gone(self, result):
+        """Passive: any row kind may be awaited; the app may keep running."""
+        ident = window_id(self.window['window_id'])
+        rows = [r for r in result['windows'] if r['window']['window_id'] == ident]
+        if rows:
+            self.last_seen = rows[0]
+            return None
+        self.check()
+        return {k: result[k] for k in ('generation', 'query_id', 'query_artifact', 'observed_at', 'accepted_at')} | {
+            'condition': 'gone', 'satisfied': True, 'window': {'generation': result['generation'], 'window_id': ident},
+            'already_gone': self.last_seen is None, 'last_seen': self.last_seen, 'polls': self.polls}
 
     def request_cancel(self, reason):
         if self.error is None:

@@ -38,6 +38,8 @@ $D windows --app APP_REF                         # client/frame geometry, title,
 $D focus --window WIN_REF                        # input requires a focused window
 $D type --window WIN_REF 'Hello'
 $D key --window WIN_REF ctrl+a                    # chords; ctrl+s would open a modal Save dialog
+$D wait --for title --window WIN_REF --match 'Hello'   # did the app react? (or --regex '^Hello')
+$D wait --for gone --window DIALOG_REF            # a dialog closed; the app keeps running
 $D click --window WIN_REF --x 107 --y 23         # client-area pixels, as in a window screenshot
 $D screenshot --window WIN_REF                   # → result.path (PNG of the client area)
 $D logs --app APP_REF --tail 50                  # app stdout/stderr tails and paths
@@ -58,8 +60,9 @@ $D session stop
   `session_unavailable` or `session_failed` (`session status` says why; stop and
   start a new session), and `input_uncertain` (stop and start).
 - **`dispatched: true`** means the input reached the compositor for the focused
-  window. It does not mean the application handled it. Confirm with a screenshot,
-  `windows` (for example the title) or the app's logs.
+  window. It does not mean the application handled it. Confirm with
+  `wait --for title` or `wait --for gone` when the title or a window changes,
+  otherwise with a screenshot or the app's logs.
 - **Nothing is retried.** If a response is lost (`completion_unknown`), the action
   may or may not have happened; look before repeating it.
 - **Artifacts** (screenshots, logs, `manifest.json` with versions, the failure
@@ -67,7 +70,8 @@ $D session stop
   after the session stops ([layout](docs/ARTIFACTS.md)).
 
 [Agent recipes](docs/AGENT_RECIPES.md) cover stale refs, focus before input,
-modal dialogs, client versus screen coordinates, and recovering from
+modal dialogs, waiting for the app to react (`wait --for title|gone`), client
+versus screen coordinates, and recovering from
 `completion_unknown` and `input_uncertain`.
 
 [docs/TESTING.md](docs/TESTING.md) covers the unit tests and the end-to-end smoke

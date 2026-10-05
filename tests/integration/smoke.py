@@ -174,44 +174,55 @@ class Smoke:
         self.desktop('editor: wait --for focus', 'wait', '--for', 'focus', '--window', window)
         text = 'agent desktop smoke ' + uuid.uuid4().hex[:6]
         self.desktop('editor: type', 'type', '--window', window, text)
-        deadline = time.monotonic() + 5
-        while True:
-            rows = self.desktop('editor: windows (title check)', 'windows', '--app', app)['result']['windows']
-            if any(text in (row['title'] or '') for row in rows):
-                break
-            if time.monotonic() >= deadline:
-                raise SmokeFailure('editor: title check', f'typed text not in title: {[r["title"] for r in rows]}')
-            time.sleep(.2)
+        self.wait_title('editor: wait --for title (typed)', window, text)
         x, y = EDITOR_NEW_TAB
         self.desktop('editor: click New Tab', 'click', '--window', window, '--x', str(x), '--y', str(y))
-        deadline = time.monotonic() + 5
-        while True:  # The new empty document becomes current: same window, "New Document" title.
-            rows = self.desktop('editor: windows (new tab check)', 'windows', '--app', app)['result']['windows']
-            titles = [row['title'] or '' for row in rows if row['window']['ref'] == window]
-            if titles and titles[0].startswith('New Document') and text not in titles[0]:
-                break
-            if time.monotonic() >= deadline:
-                raise SmokeFailure('editor: new tab check', f'title still shows the typed text: '
-                                   f'{[r["title"] for r in rows]}')
-            time.sleep(.2)
+        # The new empty document becomes current: same window, "New Document" title.
+        title = self.wait_title('editor: wait --for title (new tab)', window, '^New Document', '--regex')
+        if text in title:
+            raise SmokeFailure('editor: new tab check', f'title still shows the typed text: {title}')
         self.window_menu(window)
         # Switching back to the first tab must show the typed document again,
         # which also proves input works once the window menu is dismissed.
         self.desktop('editor: key ctrl+page_up', 'key', '--window', window, 'ctrl+page_up')
-        deadline = time.monotonic() + 5
-        while True:
-            rows = self.desktop('editor: windows (first tab check)', 'windows', '--app', app)['result']['windows']
-            if any(text in (row['title'] or '') for row in rows if row['window']['ref'] == window):
-                break
-            if time.monotonic() >= deadline:
-                raise SmokeFailure('editor: first tab check', f'typed document not back: {[r["title"] for r in rows]}')
-            time.sleep(.2)
+        self.wait_title('editor: wait --for title (first tab)', window, text)
+        self.file_dialog(app, window)
         self.desktop('editor: key ctrl+a', 'key', '--window', window, 'ctrl+a')
         self.screenshot('editor')
         self.screenshot('editor', '--window', window)
         result = self.desktop('editor: kill', 'kill', '--app', app)['result']
         if result.get('exited') is not True:
             raise SmokeFailure('editor: kill', f'application did not exit: {json.dumps(result)[:300]}')
+
+    def wait_title(self, step, window, match, *flags):
+        result = self.desktop(step, 'wait', '--for', 'title', '--window', window, '--match', match, *flags,
+                              '--timeout', '5')['result']
+        if result['window']['ref'] != window or result['row']['title'] != result['title']:
+            raise SmokeFailure(step, f'unexpected result {json.dumps(result)[:300]}')
+        return result['title']
+
+    def file_dialog(self, app, window):
+        """A modal dialog closes while the editor keeps running: `wait --for gone` confirms it."""
+        self.desktop('editor: key ctrl+o', 'key', '--window', window, 'ctrl+o')
+        deadline = time.monotonic() + 5
+        while True:
+            rows = self.desktop('editor: windows (dialog open)', 'windows', '--app', app, quiet=True)['result']['windows']
+            dialogs = [row for row in rows if row['kind'] == 'window' and row['window']['ref'] != window]
+            if dialogs:
+                break
+            if time.monotonic() >= deadline:
+                raise SmokeFailure('editor: dialog', f'no dialog window: {[r["title"] for r in rows]}')
+            time.sleep(.1)
+        dialog = dialogs[0]['window']['ref']
+        print(f'  ok  {"editor: windows (dialog open)":<34}       {dialogs[0]["title"]!r}')
+        self.desktop('editor: focus dialog', 'focus', '--window', dialog)
+        self.desktop('editor: key escape (dialog)', 'key', '--window', dialog, 'escape')
+        result = self.desktop('editor: wait --for gone (dialog)', 'wait', '--for', 'gone', '--window', dialog,
+                              '--timeout', '5')['result']
+        rows = self.desktop('editor: windows (dialog closed)', 'windows', '--app', app)['result']['windows']
+        if result['window']['ref'] != dialog or [r['window']['ref'] for r in rows if r['kind'] == 'window'] != [window]:
+            raise SmokeFailure('editor: dialog closed', f'{json.dumps(result)[:200]}; rows {[r["title"] for r in rows]}')
+        self.desktop('editor: focus', 'focus', '--window', window)
 
     def compositor_rows(self, step, *, present, timeout=3):
         """Poll the full `windows` (it must keep succeeding) until a compositor row is (not) listed."""

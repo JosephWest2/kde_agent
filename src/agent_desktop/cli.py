@@ -67,7 +67,10 @@ def parser():
     launch.add_argument("--cwd")
     launch.add_argument("--env", action="append", default=[], metavar="KEY=VALUE")
     launch.add_argument("--wait-window", action="store_true")
-    leaves["wait"].add_argument("--for", dest="condition", required=True, metavar="window|focus|exit")
+    leaves["wait"].add_argument("--for", dest="condition", required=True, metavar="window|focus|exit|title|gone",
+                                help="window/exit take --app; focus/title/gone take --window")
+    leaves["wait"].add_argument("--match", metavar="TEXT", help="title wait: case-sensitive substring (at most 256 characters)")
+    leaves["wait"].add_argument("--regex", action="store_true", help="title wait: --match is a pattern in the documented linear-time subset")
     leaves["key"].add_argument("chord", metavar="CHORD")
     leaves["key"].add_argument("--hold", default=.05, metavar="SECONDS")
     leaves["type"].add_argument("text", metavar="TEXT")

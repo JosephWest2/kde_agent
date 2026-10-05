@@ -36,6 +36,70 @@ failed screenshot fails only that request, not the session. See [application own
 [window discovery](WINDOWS.md), [lifecycle](LIFECYCLE.md) and
 [transport](TRANSPORT.md).
 
+## Waits
+
+`wait` polls the window observation (at most every 100ms, one query at a time)
+until its condition holds or its deadline (default 10s, at most 60s, queue time
+included) expires with `timeout`. It never sends input or changes focus. A wait
+holds the ordinary execution slot while it runs, so other requests to the same
+session queue behind it ([scheduling](SCHEDULING.md)).
+
+| Condition | Target | Satisfied when |
+| --- | --- | --- |
+| `window` | `--app` | the app has at least one `window`-kind row |
+| `focus` | `--window` | that window is observed active |
+| `exit` | `--app` | the app and all its descendants have exited |
+| `title` | `--window`, `--match TEXT [--regex]` | that window's title matches |
+| `gone` | `--window` | that window is no longer listed; the app may keep running |
+
+**`wait --for title --window W --match TEXT`** matches a case-sensitive substring
+of W's current title. `--match` is 1–256 characters and only valid with `title`.
+- An initial match returns on the first poll (`polls: 1`).
+- A null or empty title never matches; the wait keeps polling.
+- W absent on the first observation gives `target_not_found`; W disappearing
+  later gives `target_lost` (`context.phase: title_wait`), as for `wait --for focus`.
+- A `popup` or `compositor` row gives `unsupported_operation` with reason
+  `popup_surface` or `compositor_surface`, as for any other `--window` command.
+- A timeout's context has `phase: title_wait`, the `window` and the
+  `last_query_artifact` (the last observation, with the title it saw).
+- The result has the focus-style target fields (`window`, `app`, `client`,
+  `frame`, `focused`, `active_window`, query times), plus `title` (the matched
+  title), `row` (the full window row), `match` (`{text, regex}`) and `polls`.
+
+With `--regex`, `--match` is a pattern with `re.search` semantics in a small
+subset of Python syntax that is matched in linear time (no backtracking):
+literals, `.`, `[...]` and `[^...]` classes with ranges, `\d \D \w \W \s \S`,
+escaped punctuation, `\t \n \r \f \v`, `( )` and `(?: )` groups, `|`, and `* + ?`.
+`^` may only start and `$` only end the pattern, and an anchored pattern needs
+explicit grouping around alternatives (`^(?:Save|Open)`, not `^Save|Open`).
+Counted repetition (`{m,n}`), lazy quantifiers, backreferences, lookaround, `\b`,
+inline flags and other escapes are refused, not reinterpreted, as is a pattern
+that matches the empty string (it would match every title). Anything refused is
+`invalid_arguments` with `context.field: match` and a `reason` such as
+`unbalanced_parenthesis`, `unsupported_quantifier`, `unsupported_escape`,
+`matches_empty`, `anchor_with_alternation` or `too_long`, plus the character
+`position`; the pattern itself is never echoed. Patterns are checked when the
+request is validated, before anything reaches the session.
+
+**`wait --for gone --window W`** succeeds on the first observation that doesn't
+list W. Closing a dialog or one of several windows can be confirmed this way;
+`close` and `wait --for exit` need the whole app to exit.
+- If W is already absent on the first observation, the wait succeeds at once
+  with `already_gone: true` (and `last_seen: null`). A typo in the UUID looks
+  the same, so check `already_gone` when you expect the window to have existed.
+- Otherwise `already_gone` is false and `last_seen` is W's last row (title,
+  kind, geometry).
+- Any row kind may be awaited, so `gone` also works for a tooltip, popover
+  (`popup`) or KWin's window menu (`compositor`).
+- The ref's generation must be the session's: a stale ref is
+  `generation_mismatch`, never "gone".
+- The result has `condition`, `satisfied`, `window`, `already_gone`, `last_seen`,
+  `polls`, and the observation's `generation`, `query_id`, `query_artifact`,
+  `observed_at` and `accepted_at`.
+
+Query faults (`window_query_failed`), session failure and generation changes end
+any wait with that error rather than being treated as "not yet".
+
 ## References
 
 Applications and windows are addressed by generation-scoped references. In JSON
@@ -113,7 +177,7 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `launch` | `--cwd PATH`, repeated `--env KEY=VALUE`, `--wait-window`; required `-- PROGRAM [ARG ...]` | 10 / 60 |
 | `windows` | optional `--app APP_REF` | 0.5 / 0.5 |
 | `focus` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 2 / 2 |
-| `wait` | `--for window\|focus\|exit`; window/exit require `--app`, focus requires `--window` | 10 / 60 |
+| `wait` | `--for window\|focus\|exit\|title\|gone`; window/exit require `--app`, focus/title/gone require `--window`; title requires `--match TEXT` (optional `--regex`). See [Waits](#waits) | 10 / 60 |
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
 | `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |

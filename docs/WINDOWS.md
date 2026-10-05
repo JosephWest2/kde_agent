@@ -51,7 +51,9 @@ never targeted:
   least one `window` row; all rows are still returned.
 - An explicit `--window` naming a popup or compositor row fails before any action
   with `unsupported_operation`, reason `popup_surface` or `compositor_surface`.
-  A full `screenshot` still shows them.
+  A full `screenshot` still shows them. The one exception is the passive
+  `wait --for gone --window`, which accepts any row kind, so an agent can wait
+  for a tooltip, popover or the window menu to disappear.
 - Window input (`key`, `type`, `click --window`) is refused while a compositor
   row is listed: `target_lost`, reason `compositor_surface_open` (context
   `blocking_windows`). Found by the check before the first stroke, the refusal
@@ -174,6 +176,21 @@ absence/loss, and times out while the window remains unfocused. `wait --for exit
 root return code alone cannot satisfy it. Known completed records remain readable
 without reopening process authority. A live `launch-failed` app is not complete.
 Window/app-focus waits report `application_exited` on known complete app exit.
+
+`wait --for title --window WIN --match TEXT` resolves WIN exactly like `wait --for
+focus` (`window` rows only; `target_not_found` on the first observation,
+`target_lost` once seen) and succeeds on a fresh observation whose title matches.
+Titles are matched, never used to pick a window. Null and empty titles never
+match. `--regex` patterns use a linear-time subset (see [CLI.md](CLI.md#waits)):
+Python's `re` can backtrack exponentially inside a single C call that cannot be
+interrupted, which would stall the owner. The pattern is compiled into a position
+automaton when the request is validated, and a search spends a fixed work budget
+per scheduler step (about 1ms), so even a 256-character pattern against a
+4096-character title takes a few steps and no new query starts until it finishes.
+`wait --for gone --window WIN` succeeds on the first fresh observation without
+WIN, whatever its kind, and reports `already_gone` when the first observation
+already lacked it; neither title nor gone waits look at the application's
+process state.
 Unknown apps give `target_not_found`; uncertain ownership fails the session.
 
 All composite work shares the admission deadline, including queue time. Each

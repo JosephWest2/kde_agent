@@ -71,7 +71,7 @@ class Adapter:
         return operation
 
 
-class TargetTests(unittest.TestCase):
+class Harness(unittest.TestCase):
     def setUp(self):
         self.clock = [0.0]
         self.timer = patch('agent_desktop.targeting.time.monotonic', side_effect=lambda: self.clock[0])
@@ -95,6 +95,9 @@ class TargetTests(unittest.TestCase):
             self.step(task, at)
         self.assertEqual(caught.exception.code, code)
         return caught.exception
+
+
+class TargetTests(Harness):
     def test_app_ambiguity_reports_every_uuid_before_activation(self):
         task = self.task([snapshot(3)], arguments={'app': GEN + ':' + APP['application_id']})
         error = self.error(task, 'target_ambiguous')
@@ -322,3 +325,127 @@ class TargetTests(unittest.TestCase):
         query.registry.window_identity.assert_called_once_with(query.bracket, 42)
         query.result['windows'][0]['app'] = None
         self.assertFalse(query.recheck_selected(HANDLES[1], APP))
+
+
+def titled(title, *, count=1, active=None):
+    observation = snapshot(count, active=active)
+    observation['windows'][0]['title'] = title
+    return observation
+
+
+class TitleAndGoneWaitTests(Harness):
+    def title_task(self, values, match='Saved', regex=False, window=0):
+        return self.task(values, operation='wait', arguments={'condition': 'title', 'window': GEN + ':' + IDS[window],
+                                                              'match': match, 'regex': regex})
+
+    def gone_task(self, values, window=0):
+        return self.task(values, operation='wait', arguments={'condition': 'gone', 'window': GEN + ':' + IDS[window]})
+
+    def test_title_initial_match_returns_on_the_first_poll_with_row_and_title(self):
+        task = self.title_task([titled('Report - Saved')])
+        result = self.step(task)
+        self.assertEqual((result['condition'], result['satisfied'], result['polls']), ('title', True, 1))
+        self.assertEqual(result['title'], 'Report - Saved')
+        self.assertEqual(result['row']['window'], HANDLES[0])
+        self.assertEqual(result['window'], HANDLES[0])
+        self.assertEqual(result['match'], {'text': 'Saved', 'regex': False})
+        self.assertFalse(result['focused'])  # A title wait never needs or changes focus.
+        self.assertEqual(self.adapter.actions, [])
+        self.context.effects.assert_not_called()
+
+    def test_title_keeps_polling_through_null_empty_and_other_titles(self):
+        task = self.title_task([titled(None), titled(''), titled('Report'), titled('Report - Saved')])
+        self.assertIsNone(self.step(task))
+        self.assertIsNone(self.step(task, .1))
+        self.assertIsNone(self.step(task, .2))
+        self.assertEqual(self.step(task, .35)['polls'], 4)
+        self.assertEqual(self.adapter.starts, [0, .1, .2, .35])
+
+    def test_regex_title_search_spans_steps_without_starting_queries(self):
+        long_title = 'x' * 4000 + ' Saved'
+        task = self.title_task([titled(long_title)], match='.*' * 100 + 'Saved$', regex=True)
+        steps = 1
+        result = self.step(task)
+        while result is None:
+            steps += 1
+            result = self.step(task, .01 * steps)
+        self.assertGreater(steps, 1)
+        self.assertEqual(len(self.adapter.starts), 1)
+        self.assertEqual(result['match'], {'text': '.*' * 100 + 'Saved$', 'regex': True})
+        self.assertEqual(result['title'], long_title)
+
+    def test_regex_no_match_resumes_polling(self):
+        task = self.title_task([titled('a'), titled('ab')], match='^ab$', regex=True)
+        self.assertIsNone(self.step(task))
+        self.assertTrue(self.step(task, .1)['satisfied'])
+
+    def test_title_timeout_reports_the_last_observation(self):
+        task = self.title_task([titled('Report')] * 3)
+        self.step(task)
+        self.step(task, .1)
+        self.step(task, .2)
+        error = self.error(task, 'timeout', 2)
+        self.assertEqual(error.context['phase'], 'title_wait')
+        self.assertEqual(error.context['window'], HANDLES[0])
+        self.assertIn('last_query_artifact', error.context)
+
+    def test_title_window_absent_vanished_or_transient(self):
+        self.error(self.title_task([snapshot(0)]), 'target_not_found')
+        task = self.title_task([titled('Report'), snapshot(0)])
+        self.step(task)
+        error = self.error(task, 'target_lost', .1)
+        self.assertEqual(error.context['phase'], 'title_wait')
+        for kind in ('popup', 'compositor'):
+            error = self.error(self.title_task([transient(titled('Saved', count=2), 1, kind)], window=1),
+                               'unsupported_operation')
+            self.assertEqual(error.context['reason'], kind + '_surface')
+
+    def test_title_generation_change_fails(self):
+        task = self.title_task([titled('Report'), titled('Saved')])
+        self.step(task)
+        self.adapter.generation = 'c' * 32
+        self.error(task, 'generation_mismatch', .1)
+
+    def test_gone_succeeds_when_the_window_leaves_while_others_stay(self):
+        # A dialog (1) closes; the main window (0) and the app keep running.
+        remaining = snapshot(2)
+        remaining['windows'].pop(1)
+        task = self.gone_task([snapshot(2), snapshot(2), remaining], window=1)
+        self.assertIsNone(self.step(task))
+        self.assertIsNone(self.step(task, .1))
+        result = self.step(task, .2)
+        self.assertEqual((result['condition'], result['satisfied'], result['already_gone'], result['polls']),
+                         ('gone', True, False, 3))
+        self.assertEqual(result['window'], HANDLES[1])
+        self.assertEqual(result['last_seen']['window'], HANDLES[1])
+        self.assertEqual(result['query_artifact'], remaining['query_artifact'])
+        self.registry.observe_application_exit.assert_not_called()
+        self.assertEqual(self.adapter.actions, [])
+
+    def test_gone_already_gone_is_success_with_a_flag(self):
+        result = self.gone_task([snapshot(1)], window=2).step(0)
+        self.assertTrue(result['already_gone'])
+        self.assertIsNone(result['last_seen'])
+        self.assertEqual(result['polls'], 1)
+
+    def test_gone_normalizes_spelling_and_accepts_transient_rows(self):
+        request = make_request('wait', caller_cwd='/tmp', expected_generation=GEN,
+                               arguments={'condition': 'gone', 'window': GEN + ':{' + IDS[1].upper() + '}'})
+        tooltip = transient(snapshot(2), 1, 'popup')
+        self.adapter = Adapter([tooltip, snapshot(1)], self.clock)
+        task = TargetTask(request, self.context, self.adapter, self.registry, self.health)
+        self.assertIsNone(self.step(task))
+        result = self.step(task, .1)
+        self.assertEqual(result['window'], HANDLES[1])
+        self.assertEqual(result['last_seen']['kind'], 'popup')
+
+    def test_gone_timeout_and_generation_mismatch(self):
+        task = self.gone_task([snapshot(1)] * 3)
+        self.step(task)
+        self.step(task, .1)
+        self.assertEqual(self.error(task, 'timeout', 2).context['phase'], 'gone_wait')
+        self.clock[0] = 0
+        task = self.gone_task([snapshot(1)])
+        self.adapter.generation = 'c' * 32
+        self.error(task, 'generation_mismatch')
+        self.assertEqual(self.adapter.starts, [])

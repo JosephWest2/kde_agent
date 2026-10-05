@@ -13,6 +13,8 @@ generation's cgroup and no systemd unit:
     bus-death        SIGKILL the private dbus-daemon
     worker-sigkill   SIGKILL the worker during a hold
     worker-stopped   SIGSTOP the worker, then `session stop`
+    title-gone       `wait --for title|gone`: retitle, timeout, a window lost
+                     mid-wait, and a dialog closing while the app keeps running
 
     python tests/integration/failures.py [SCENARIO ...] [--loop N]
 
@@ -225,6 +227,57 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure('worker-stopped', f'{elapsed:.1f}s: {json.dumps(payload)[:400]}')
         ok('worker-stopped', f'stop cleaned up in {elapsed:.1f}s')
 
+    def expect_error(self, step, code, *args):
+        payload = self.desktop(step, *args, expect_ok=False)
+        if payload['ok'] or payload['error']['code'] != code:
+            raise SmokeFailure(step, f'expected {code}: {json.dumps(payload)[:400]}', payload)
+        return payload['error']
+
+    def title_gone_waits(self):
+        # Timers count from fixture start: retitle the primary at 3s, close the
+        # sibling at 4.5s and the dialog at 6s. The fixture keeps running.
+        app, primary, logs = self.launch('fixture', str(self.fixture), '--autonomous', '--exit-after-ms', '60000',
+                                         '--sibling', '--dialog', '--retitle-after-ms', 'primary:3000',
+                                         '--destroy-after-ms', 'sibling:4500', '--destroy-after-ms', 'dialog:6000',
+                                         windows=3)
+        sibling, dialog = (row['window']['ref'] for row in self.windows[1:])
+        original = self.windows[0]['title']
+        if original != 'KDE Agent Native Fixture':
+            raise SmokeFailure('title-gone', f'primary already retitled ({original!r}); launch was too slow')
+        error = self.expect_error('wait --for title (timeout)', 'timeout', 'wait', '--for', 'title',
+                                  '--window', primary, '--match', 'never this title', '--timeout', '1')
+        if error['context'].get('phase') != 'title_wait':
+            raise SmokeFailure('title-gone', f'timeout without title_wait phase: {error}')
+        ok('wait --for title (timeout)', 'timeout, phase title_wait')
+        result = self.desktop('wait --for title (retitled)', 'wait', '--for', 'title', '--window', primary,
+                              '--match', 'retitled')['result']
+        if result['title'] != 'KDE Agent Native Fixture retitled' or result['polls'] < 2:
+            raise SmokeFailure('title-gone', f'unexpected title result {json.dumps(result)[:300]}')
+        if not log_events(Path(logs['stdout']), {'scheduled_retitle'}):
+            raise SmokeFailure('title-gone', 'fixture never logged its retitle')
+        ok('wait --for title (retitled)', f'{result["title"]!r} after {result["polls"]} polls')
+        result = self.desktop('wait --for title --regex (initial)', 'wait', '--for', 'title', '--window', primary,
+                              '--regex', '--match', r'^KDE \w+ Native Fixture retitled$')['result']
+        if result['polls'] != 1:
+            raise SmokeFailure('title-gone', f'an initial match must return on the first poll: {result["polls"]}')
+        error = self.expect_error('wait --for title (window lost)', 'target_lost', 'wait', '--for', 'title',
+                                  '--window', sibling, '--match', 'never this title')
+        ok('wait --for title (window lost)', f'target_lost in phase {error["context"].get("phase")}')
+        result = self.desktop('wait --for gone (dialog)', 'wait', '--for', 'gone', '--window', dialog)['result']
+        if result['already_gone'] or result['last_seen']['window']['ref'] != dialog:
+            raise SmokeFailure('title-gone', f'unexpected gone result {json.dumps(result)[:300]}')
+        rows = self.desktop('windows (app still running)', 'windows', '--app', app)['result']['windows']
+        if [row['window']['ref'] for row in rows] != [primary]:
+            raise SmokeFailure('title-gone', f'expected only the primary window: {[r["title"] for r in rows]}')
+        ok('wait --for gone (dialog)', f'after {result["polls"]} polls; primary still listed')
+        result = self.desktop('wait --for gone (already gone)', 'wait', '--for', 'gone', '--window', dialog)['result']
+        if not result['already_gone'] or result['polls'] != 1:
+            raise SmokeFailure('title-gone', f'expected already_gone: {json.dumps(result)[:300]}')
+        self.expect_error('wait --for title (gone window)', 'target_not_found', 'wait', '--for', 'title',
+                          '--window', dialog, '--match', 'x')
+        stale = uuid.uuid4().hex + ':' + dialog.split(':', 1)[1]
+        self.expect_error('wait --for gone (stale ref)', 'generation_mismatch', 'wait', '--for', 'gone', '--window', stale)
+
     # Driver ----------------------------------------------------------------
 
     def stop_session(self):
@@ -274,7 +327,7 @@ def ok(step, detail):
 
 SCENARIOS = {'focus-loss': 'focus_loss', 'cancel-hold': 'cancel_hold', 'cancel-type': 'cancel_type',
              'generation': 'generation_refusal', 'compositor-death': 'compositor_death', 'bus-death': 'bus_death',
-             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped'}
+             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'title-gone': 'title_gone_waits'}
 
 
 def main(argv=None):

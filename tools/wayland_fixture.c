@@ -32,8 +32,8 @@ struct fixture_surface {
     struct xdg_surface *xdg;
     struct xdg_toplevel *top;
     bool configured, pending, dirty, closed, mapped, activated;
-    bool resize_scheduled, destroy_scheduled, resize_done, destroy_done;
-    unsigned resize_after_ms, destroy_after_ms, resize_width, resize_height;
+    bool resize_scheduled, destroy_scheduled, resize_done, destroy_done, retitle_scheduled, retitle_done;
+    unsigned resize_after_ms, destroy_after_ms, retitle_after_ms, resize_width, resize_height;
     unsigned long revision, control_id;
     unsigned close_requests;
     unsigned long long close_due_ns;
@@ -356,12 +356,13 @@ static void usage(void) {
             "  [--sibling] [--dialog] [--child-window-ms N]\n"
             "  [--close-mode normal|refuse|delay|confirmation] [--close-delay-ms N]\n"
             "  [--resize-after-ms LABEL:MS:WIDTH:HEIGHT] [--destroy-after-ms LABEL:MS]\n"
+            "  [--retitle-after-ms LABEL:MS] (title becomes \"KDE Agent Native Fixture retitled\")\n"
             "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
             "--descendant-ms and --child-window-ms must be positive.\n"
             "Non-normal close modes require positive --exit-after-ms; delay requires positive\n"
             "--close-delay-ms. Confirmation reserves the dialog slot (no --dialog).\n"
-            "One resize and destroy per enabled primary/sibling/dialog; timers start at started.\n"
+            "One resize, destroy and retitle per enabled primary/sibling/dialog; timers start at started.\n"
             "Resize dimensions: 1..1280 by 1..720; schedule times must follow window delay.\n");
 }
 static unsigned option_number(const char *value, unsigned maximum) {
@@ -372,7 +373,9 @@ static unsigned option_number(const char *value, unsigned maximum) {
         errno || *end || number > maximum) { usage(); exit(2); }
     return (unsigned)number;
 }
-static void schedule_option(const char *value, bool resize) {
+enum schedule_kind { SCHEDULE_DESTROY, SCHEDULE_RESIZE, SCHEDULE_RETITLE };
+static void schedule_option(const char *value, enum schedule_kind kind) {
+    bool resize = kind == SCHEDULE_RESIZE;
     char copy[128], *parts[4];
     if (strlen(value) >= sizeof(copy)) { usage(); exit(2); }
     strcpy(copy, value);
@@ -386,9 +389,10 @@ static void schedule_option(const char *value, bool resize) {
     struct fixture_surface *s = NULL;
     for (unsigned i = 0; i < 3; ++i)
         if (!strcmp(parts[0], surfaces[i].label)) s = &surfaces[i];
-    if (!s || (resize ? s->resize_scheduled : s->destroy_scheduled)) { usage(); exit(2); }
+    if (!s || (resize ? s->resize_scheduled : kind == SCHEDULE_RETITLE ? s->retitle_scheduled : s->destroy_scheduled)) { usage(); exit(2); }
     unsigned after_ms = option_number(parts[1], 86400000);
-    if (resize) {
+    if (kind == SCHEDULE_RETITLE) { s->retitle_scheduled = true; s->retitle_after_ms = after_ms; }
+    else if (resize) {
         s->resize_scheduled = true; s->resize_after_ms = after_ms;
         s->resize_width = option_number(parts[2], 1280);
         s->resize_height = option_number(parts[3], 720);
@@ -419,6 +423,16 @@ static void run_surface_schedule(struct fixture_surface *s, unsigned long long e
             xdg_toplevel_set_max_size(s->top, s->width, s->height);
             s->source = "scheduled_resize"; s->control_id = 0; s->dirty = true;
             render(s);
+        }
+    }
+    if (s->retitle_scheduled && !s->retitle_done && elapsed_ms >= s->retitle_after_ms) {
+        s->retitle_done = true;
+        surface_event("scheduled_retitle", s);
+        printf(",\"after_ms\":%u,\"elapsed_ms\":%llu,\"applied\":%s}\n",
+               s->retitle_after_ms, elapsed_ms, s->wl && !s->closed ? "true" : "false");
+        if (s->wl && !s->closed) {
+            xdg_toplevel_set_title(s->top, "KDE Agent Native Fixture retitled");
+            wl_surface_commit(s->wl);
         }
     }
     if (s->destroy_scheduled && !s->destroy_done && elapsed_ms >= s->destroy_after_ms)
@@ -515,8 +529,9 @@ int main(int argc, char **argv) {
             if (strcmp(value, "normal") && strcmp(value, "refuse") && strcmp(value, "delay") && strcmp(value, "confirmation")) { usage(); return 2; }
             close_mode = value;
         }
-        else if (!strcmp(option, "--resize-after-ms")) schedule_option(value, true);
-        else if (!strcmp(option, "--destroy-after-ms")) schedule_option(value, false);
+        else if (!strcmp(option, "--resize-after-ms")) schedule_option(value, SCHEDULE_RESIZE);
+        else if (!strcmp(option, "--destroy-after-ms")) schedule_option(value, SCHEDULE_DESTROY);
+        else if (!strcmp(option, "--retitle-after-ms")) schedule_option(value, SCHEDULE_RETITLE);
         else if (!strcmp(option, "--title-mode") || !strcmp(option, "--app-id-mode")) {
             if (strcmp(value, "normal") && strcmp(value, "empty") && strcmp(value, "omitted")) { usage(); return 2; }
             if (!strcmp(option, "--title-mode")) title_mode = value; else app_id_mode = value;
@@ -528,10 +543,11 @@ int main(int argc, char **argv) {
         (!strcmp(close_mode, "confirmation") && dialog_window)) { usage(); return 2; }
     for (unsigned i = 0; i < 3; ++i) {
         struct fixture_surface *s = &surfaces[i];
-        if ((s->resize_scheduled || s->destroy_scheduled) &&
+        if ((s->resize_scheduled || s->destroy_scheduled || s->retitle_scheduled) &&
             (child_surface || (i == 1 && !sibling_window) || (i == 2 && !dialog_window))) { usage(); return 2; }
         if ((s->resize_scheduled && s->resize_after_ms < window_delay_ms) ||
-            (s->destroy_scheduled && s->destroy_after_ms < window_delay_ms)) { usage(); return 2; }
+            (s->destroy_scheduled && s->destroy_after_ms < window_delay_ms) ||
+            (s->retitle_scheduled && s->retitle_after_ms < window_delay_ms)) { usage(); return 2; }
     }
     if (child_surface) {
         if (!autonomous || !timed_exit || sibling_window || dialog_window || child_window_ms) { usage(); return 2; }
@@ -559,12 +575,14 @@ int main(int argc, char **argv) {
     }
     for (unsigned i = 0; i < 3; ++i) {
         struct fixture_surface *s = &surfaces[i];
-        if (s->resize_scheduled || s->destroy_scheduled) {
+        if (s->resize_scheduled || s->destroy_scheduled || s->retitle_scheduled) {
             surface_event("surface_schedule", s);
             printf(",\"started_ns\":%llu,\"resize_after_ms\":", started);
             if (s->resize_scheduled) printf("%u", s->resize_after_ms); else printf("null");
             printf(",\"destroy_after_ms\":");
             if (s->destroy_scheduled) printf("%u", s->destroy_after_ms); else printf("null");
+            printf(",\"retitle_after_ms\":");
+            if (s->retitle_scheduled) printf("%u", s->retitle_after_ms); else printf("null");
             puts("}");
         }
     }
@@ -606,6 +624,8 @@ int main(int argc, char **argv) {
                 timeout = (int)(s->resize_after_ms - elapsed_ms);
             if (s->destroy_scheduled && !s->destroy_done && s->destroy_after_ms - elapsed_ms < (unsigned)timeout)
                 timeout = (int)(s->destroy_after_ms - elapsed_ms);
+            if (s->retitle_scheduled && !s->retitle_done && s->retitle_after_ms - elapsed_ms < (unsigned)timeout)
+                timeout = (int)(s->retitle_after_ms - elapsed_ms);
             if (s->close_due_ns) {
                 unsigned long long remaining_ms = s->close_due_ns > now_ns ?
                     (s->close_due_ns - now_ns + 999999ULL) / 1000000ULL : 0;

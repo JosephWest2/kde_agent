@@ -117,7 +117,15 @@ class CLITests(unittest.TestCase):
                  ["wait", "--for", "focus", "--app", APP],
                  ["focus", "--app", APP, "--window", REF],
                  ["doctor", "--generation", GEN], ["type", "--window", REF],
-                 ["click", "--window", REF, "--x", "-1", "--y", "0"]]
+                 ["click", "--window", REF, "--x", "-1", "--y", "0"],
+                 ["wait", "--for", "title", "--window", REF], ["wait", "--for", "title", "--app", APP, "--match", "x"],
+                 ["wait", "--for", "title", "--window", REF, "--match", ""],
+                 ["wait", "--for", "title", "--window", REF, "--match", "x" * 257],
+                 ["wait", "--for", "title", "--window", REF, "--regex", "--match", "(a"],
+                 ["wait", "--for", "title", "--window", REF, "--regex", "--match", "a*"],
+                 ["wait", "--for", "gone", "--app", APP], ["wait", "--for", "gone", "--window", REF, "--match", "x"],
+                 ["wait", "--for", "focus", "--window", REF, "--match", "x"],
+                 ["wait", "--for", "window", "--app", APP, "--regex"], ["wait", "--for", "titles", "--window", REF]]
         for args in cases:
             with self.subTest(args=args):
                 self.assertEqual(self.json_cli(*args, status=2)["error"]["code"], "invalid_arguments")
@@ -128,7 +136,8 @@ class CLITests(unittest.TestCase):
                  ["windows", "--timeout", secret],
                  ["launch", "--env", secret, "--", "app"],
                  ["launch", "app", secret],
-                 ["click", "--window", REF, "--x", secret, "--y", "0"]]
+                 ["click", "--window", REF, "--x", secret, "--y", "0"],
+                 ["wait", "--for", "title", "--window", REF, "--regex", "--match", secret + "(?<x>"]]
         for mode in ([], ["--json"]):
             for args in cases:
                 with self.subTest(mode=mode, args=args):

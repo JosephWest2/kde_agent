@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 516 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 536 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 8 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,14 +53,14 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 528 of the 536
+have a user systemd manager, so `test_lifecycle_process` runs there: 548 of the 556
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
 
 ```sh
 tools/setup.sh                      # installs the package; the session service runs it
-python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 6 seconds
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 7 seconds
 python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop --loop 5
 ```
 
@@ -79,10 +79,13 @@ invocations, the way an agent would:
    about 200ms, and its button log must show each click's exact button and
    client position. `logs --app` must then report both logs complete, at the
    `.log` paths launch returned, with a tail matching the file.
-4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then a window
-   query until the title contains the typed text. A click on the header bar's
-   "New Tab" button must switch the same window to a "New Document", and
-   `ctrl+page_up` must bring the typed document back. Before that, a right-click on
+4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then
+   `wait --for title` until the title contains the typed text. A click on the header bar's
+   "New Tab" button must switch the same window to a "New Document"
+   (`wait --for title --regex '^New Document'`), and
+   `ctrl+page_up` must bring the typed document back (`wait --for title`).
+   `ctrl+o` opens the "Pick Files" dialog as a second window; `escape` closes it,
+   `wait --for gone` confirms that, and the editor must be the app's only window. Before that, a right-click on
    empty header-bar space opens KWin's window menu: the full `windows` query must
    list it as a `compositor` row while the editor stays active, `key --window`
    must fail with `target_lost` (reason `compositor_surface_open`, outcome
@@ -112,7 +115,7 @@ Options:
 ## Failure-path tests
 
 ```sh
-python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop   # all scenarios, about 20 seconds
+python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop   # all scenarios, about 30 seconds
 python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop focus-loss cancel-hold --loop 3
 ```
 
@@ -130,6 +133,7 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
 | `worker-sigkill` | SIGKILL the worker once the fixture sees the held key | the client gets `completion_unknown` |
 | `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
+| `title-gone` | a fixture with a sibling and a dialog retitles its primary at 3s (`--retitle-after-ms`), closes the sibling at 4.5s and the dialog at 6s | `wait --for title` times out (phase `title_wait`) on a title that never appears, matches the retitle after several polls, matches a `--regex` immediately, and fails with `target_lost` on the sibling; `wait --for gone` on the dialog succeeds while the primary stays listed, then reports `already_gone`; a title wait on the gone dialog is `target_not_found` and a stale ref `generation_mismatch` |
 
 It takes the same `--cli`, `--dependency-root` and `--verbose` options as the smoke
 test. A failing scenario keeps its artifact directory and stops the run.

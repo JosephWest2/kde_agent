@@ -66,11 +66,41 @@ What follows from that:
   `windows`, then use `--window`.
 - Work with the dialog through its own ref: `focus --window DIALOG_REF`, then
   `type`, `key` or `click`. For example, `key --window DIALOG_REF escape` cancels
-  it. After it closes, the main window was active again in our test, but check
-  with `windows` or `focus` before typing.
+  it. Confirm it closed with `wait --for gone --window DIALOG_REF`; the app keeps
+  running. After it closes, the main window was active again in our test, but
+  `focus --window MAIN_REF` before typing.
 - Use `wait --for window --app APP_REF` only for the first window. It is satisfied
   by any existing window, so it can't wait for a dialog to appear. Poll `windows`
   instead.
+
+## Did the app react?
+
+Prefer a bounded wait on something the app reports over taking screenshots in a
+loop. Titles often change on save, open, new tab and navigation:
+
+```sh
+$D type --window WIN_REF 'hello'
+$D wait --for title --window WIN_REF --match 'hello'          # substring, case-sensitive
+$D wait --for title --window WIN_REF --regex --match '^New Document'
+$D key --window DIALOG_REF escape
+$D wait --for gone --window DIALOG_REF                         # dialog closed, app still running
+```
+
+- Both return as soon as the condition holds, including on the first poll, and
+  time out after `--timeout` (default 10s, at most 60s) with `timeout`. The
+  timeout's `context.last_query_artifact` is the last observation it saw.
+- `title` fails with `target_lost` if the window disappears while waiting, and
+  `target_not_found` if it was already gone. Null or empty titles never match.
+- `gone` succeeds immediately with `already_gone: true` if the window was already
+  absent, which a mistyped ref would also give. It accepts popups and the window
+  menu too, so you can wait for a tooltip or menu to close.
+- `--regex` takes a small linear-time subset of Python syntax (no `{m,n}`,
+  backreferences or lookaround; anchored alternatives need a group:
+  `^(?:Save|Open)`). An unsupported pattern is `invalid_arguments` before anything
+  is sent; see [Waits](CLI.md#waits).
+- A wait occupies the session while it runs: your other commands to that session
+  queue behind it. Use screenshots for changes that don't show in titles or
+  windows (content, colors, layout).
 
 ## Tooltips, popovers and the window menu
 

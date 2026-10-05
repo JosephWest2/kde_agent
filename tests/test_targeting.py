@@ -1,5 +1,7 @@
 """Effects, exact identity and deadline/cleanup boundaries of composed targeting."""
 import copy
+import os
+import signal
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import Mock, patch
@@ -71,7 +73,7 @@ class Adapter:
         return operation
 
 
-class TargetTests(unittest.TestCase):
+class Harness(unittest.TestCase):
     def setUp(self):
         self.clock = [0.0]
         self.timer = patch('agent_desktop.targeting.time.monotonic', side_effect=lambda: self.clock[0])
@@ -95,6 +97,9 @@ class TargetTests(unittest.TestCase):
             self.step(task, at)
         self.assertEqual(caught.exception.code, code)
         return caught.exception
+
+
+class TargetTests(Harness):
     def test_app_ambiguity_reports_every_uuid_before_activation(self):
         task = self.task([snapshot(3)], arguments={'app': GEN + ':' + APP['application_id']})
         error = self.error(task, 'target_ambiguous')
@@ -322,3 +327,239 @@ class TargetTests(unittest.TestCase):
         query.registry.window_identity.assert_called_once_with(query.bracket, 42)
         query.result['windows'][0]['app'] = None
         self.assertFalse(query.recheck_selected(HANDLES[1], APP))
+
+
+def titled(title, *, count=1, active=None):
+    observation = snapshot(count, active=active)
+    observation['windows'][0]['title'] = title
+    return observation
+
+
+class TitleAndGoneWaitTests(Harness):
+    def title_task(self, values, match='Saved', regex=False, window=0):
+        return self.task(values, operation='wait', arguments={'condition': 'title', 'window': GEN + ':' + IDS[window],
+                                                              'match': match, 'regex': regex})
+
+    def gone_task(self, values, window=0):
+        return self.task(values, operation='wait', arguments={'condition': 'gone', 'window': GEN + ':' + IDS[window]})
+
+    def test_title_initial_match_returns_on_the_first_poll_with_row_and_title(self):
+        task = self.title_task([titled('Report - Saved')])
+        result = self.step(task)
+        self.assertEqual((result['condition'], result['satisfied'], result['polls']), ('title', True, 1))
+        self.assertEqual(result['title'], 'Report - Saved')
+        self.assertEqual(result['row']['window'], HANDLES[0])
+        self.assertEqual(result['window'], HANDLES[0])
+        self.assertEqual(result['match'], {'text': 'Saved', 'regex': False})
+        self.assertFalse(result['focused'])  # A title wait never needs or changes focus.
+        self.assertEqual(self.adapter.actions, [])
+        self.context.effects.assert_not_called()
+
+    def test_title_keeps_polling_through_null_empty_and_other_titles(self):
+        task = self.title_task([titled(None), titled(''), titled('Report'), titled('Report - Saved')])
+        self.assertIsNone(self.step(task))
+        self.assertIsNone(self.step(task, .1))
+        self.assertIsNone(self.step(task, .2))
+        self.assertEqual(self.step(task, .35)['polls'], 4)
+        self.assertEqual(self.adapter.starts, [0, .1, .2, .35])
+
+    def regex_task(self, values, match):
+        from agent_desktop.children import Children
+        self.children = Children()
+        self.addCleanup(self.children.close)
+        task = self.title_task(values, match=match, regex=True)
+        self.adapter.desktop = NS(children=self.children)
+        return task
+
+    def until_answer(self, task, limit=5):
+        """Step with the real clock paused, reaping like the worker's tick."""
+        import time as real
+        end = real.monotonic() + limit
+        while real.monotonic() < end:
+            self.children.poll()
+            result = self.step(task)
+            if result is not None or task.search is None:
+                return result
+            real.sleep(.005)
+        self.fail('regex child did not answer')
+
+    def test_regex_title_runs_in_a_reaped_child_and_unchanged_titles_are_not_searched_again(self):
+        task = self.regex_task([titled('Report'), titled('Report'), titled('New Document 2')], r'^New Document \d$')
+        self.assertIsNone(self.until_answer(task))
+        self.assertIsNone(self.step(task, .1))
+        self.assertIsNone(task.search)  # unchanged title: no second child
+        self.step(task, .2)
+        result = self.until_answer(task)
+        self.assertEqual((result['title'], result['polls']), ('New Document 2', 3))
+        self.assertEqual(result['match'], {'text': r'^New Document \d$', 'regex': True})
+        self.children.poll()
+        self.assertEqual(self.children.owned, set())
+
+    def test_catastrophic_regex_fails_with_pattern_too_slow_and_the_child_is_reaped(self):
+        task = self.regex_task([titled('a' * 64 + 'b')], '(a+)+$')
+        child = None
+        with self.assertRaises(ContractError) as caught:
+            import time as real
+            end = real.monotonic() + 5
+            while real.monotonic() < end:
+                self.children.poll()
+                self.step(task)
+                child = child or task.search.child
+                real.sleep(.005)
+        error = caught.exception
+        self.assertEqual((error.code, error.context['reason'], error.context['field']),
+                         ('invalid_arguments', 'pattern_too_slow', 'match'))
+        self.assertEqual(error.context['phase'], 'title_wait')
+        self.assertEqual(child.returncode, -signal.SIGPROF)
+        self.assertEqual(self.children.owned, set())
+
+    def test_invalid_pattern_from_a_non_cli_client_is_invalid_regex_from_the_child(self):
+        # Worker-side validation never compiles; the CLI's early check was skipped.
+        with patch('re.compile', side_effect=AssertionError('compiled on the owner')):
+            task = self.regex_task([titled('Report')], '(unclosed')
+            with self.assertRaises(ContractError) as caught:
+                self.until_answer(task)
+        error = caught.exception
+        self.assertEqual((error.code, error.context['field'], error.context['reason'], error.context['phase']),
+                         ('invalid_arguments', 'match', 'invalid_regex', 'title_wait'))
+        self.assertEqual(error.context['window'], HANDLES[0])
+        self.children.poll()
+        self.assertEqual(self.children.owned, set())
+
+    def test_cancel_mid_match_kills_and_reaps_the_child_before_cleanup_completes(self):
+        task = self.regex_task([titled('a' * 64 + 'b')], '(a+)+$')
+        self.assertIsNone(self.step(task))
+        child = task.search.child
+        task.request_cancel('cancelled')
+        import time as real
+        end = real.monotonic() + 5
+        while not task.cleanup(0) and real.monotonic() < end:
+            self.children.poll()
+            real.sleep(.005)
+        self.assertTrue(task.cleanup(0))
+        self.assertEqual(child.returncode, -signal.SIGKILL)
+        self.assertEqual(self.children.owned, set())
+
+    def test_regex_children_leak_no_descriptors(self):
+        before = len(os.listdir('/proc/self/fd'))
+        for title in ('x', 'y', 'Saved'):
+            task = self.regex_task([titled(title)], 'Saved$')
+            self.until_answer(task)
+            self.children.poll()
+        self.assertEqual(len(os.listdir('/proc/self/fd')), before)
+
+    def test_regex_no_match_resumes_polling(self):
+        task = self.regex_task([titled('a'), titled('ab')], '^ab$')
+        self.assertIsNone(self.until_answer(task))
+        self.step(task, .1)
+        self.assertTrue(self.until_answer(task)['satisfied'])
+
+    def test_title_timeout_reports_the_last_observation(self):
+        task = self.title_task([titled('Report')] * 3)
+        self.step(task)
+        self.step(task, .1)
+        self.step(task, .2)
+        error = self.error(task, 'timeout', 2)
+        self.assertEqual(error.context['phase'], 'title_wait')
+        self.assertEqual(error.context['window'], HANDLES[0])
+        self.assertIn('last_query_artifact', error.context)
+
+    def test_title_window_absent_vanished_or_transient(self):
+        self.error(self.title_task([snapshot(0)]), 'target_not_found')
+        task = self.title_task([titled('Report'), snapshot(0)])
+        self.step(task)
+        error = self.error(task, 'target_lost', .1)
+        self.assertEqual(error.context['phase'], 'title_wait')
+        for kind in ('popup', 'compositor'):
+            error = self.error(self.title_task([transient(titled('Saved', count=2), 1, kind)], window=1),
+                               'unsupported_operation')
+            self.assertEqual(error.context['reason'], kind + '_surface')
+
+    def test_title_generation_change_fails(self):
+        task = self.title_task([titled('Report'), titled('Saved')])
+        self.step(task)
+        self.adapter.generation = 'c' * 32
+        self.error(task, 'generation_mismatch', .1)
+
+    def test_gone_succeeds_when_the_window_leaves_while_others_stay(self):
+        # A dialog (1) closes; the main window (0) and the app keep running.
+        remaining = snapshot(2)
+        remaining['windows'].pop(1)
+        task = self.gone_task([snapshot(2), snapshot(2), remaining], window=1)
+        self.assertIsNone(self.step(task))
+        self.assertIsNone(self.step(task, .1))
+        result = self.step(task, .2)
+        self.assertEqual((result['condition'], result['satisfied'], result['already_gone'], result['polls']),
+                         ('gone', True, False, 3))
+        self.assertEqual(result['window'], HANDLES[1])
+        self.assertEqual(result['last_seen']['window'], HANDLES[1])
+        self.assertEqual(result['query_artifact'], remaining['query_artifact'])
+        self.registry.observe_application_exit.assert_not_called()
+        self.assertEqual(self.adapter.actions, [])
+
+    def test_gone_already_gone_is_success_with_a_flag(self):
+        result = self.gone_task([snapshot(1)], window=2).step(0)
+        self.assertTrue(result['already_gone'])
+        self.assertIsNone(result['last_seen'])
+        self.assertEqual(result['polls'], 1)
+
+    def test_gone_normalizes_spelling_and_accepts_transient_rows(self):
+        request = make_request('wait', caller_cwd='/tmp', expected_generation=GEN,
+                               arguments={'condition': 'gone', 'window': GEN + ':{' + IDS[1].upper() + '}'})
+        tooltip = transient(snapshot(2), 1, 'popup')
+        self.adapter = Adapter([tooltip, snapshot(1)], self.clock)
+        task = TargetTask(request, self.context, self.adapter, self.registry, self.health)
+        self.assertIsNone(self.step(task))
+        result = self.step(task, .1)
+        self.assertEqual(result['window'], HANDLES[1])
+        self.assertEqual(result['last_seen']['kind'], 'popup')
+
+    def test_gone_timeout_and_generation_mismatch(self):
+        task = self.gone_task([snapshot(1)] * 3)
+        self.step(task)
+        self.step(task, .1)
+        self.assertEqual(self.error(task, 'timeout', 2).context['phase'], 'gone_wait')
+        self.clock[0] = 0
+        task = self.gone_task([snapshot(1)])
+        self.adapter.generation = 'c' * 32
+        self.error(task, 'generation_mismatch')
+        self.assertEqual(self.adapter.starts, [])
+
+
+class SchedulerTimeoutContextTests(Harness):
+    """Production expiry cancels through the scheduler before TargetTask.step sees it."""
+
+    def run_until_timeout(self, arguments, values):
+        from agent_desktop.scheduler import Scheduler
+        request = make_request('wait', caller_cwd='/tmp', expected_generation=GEN, arguments=arguments,
+                               timeout_seconds=2)
+        self.adapter = Adapter(values, self.clock)
+        owner = Scheduler(clock=lambda: self.clock[0], factory=lambda req, context: TargetTask(
+            req, context, self.adapter, self.registry, self.health))
+        admission = NS(request=request, admitted_at=0, deadline=2, disconnected=False, on_disconnect=None,
+                       results=[])
+        admission.complete = lambda **result: admission.results.append(result)
+        owner.submit(request, admission)
+        for at in (0, .1, .2, 2, 2.01):
+            self.clock[0] = at
+            owner.tick()
+        self.assertEqual(len(admission.results), 1)
+        return admission.results[0]['error']
+
+    def test_title_and_focus_timeouts_keep_observation_references(self):
+        cases = (({'condition': 'title', 'window': GEN + ':' + IDS[0], 'match': 'Saved', 'regex': False},
+                  titled('Report'), 'title_wait'),
+                 ({'condition': 'focus', 'window': GEN + ':' + IDS[0]}, snapshot(), 'focus_wait'))
+        for arguments, observation, phase in cases:
+            with self.subTest(condition=arguments['condition']):
+                self.clock[0] = 0
+                error = self.run_until_timeout(arguments, [observation] * 3)
+                self.assertEqual(error.code, 'timeout')
+                self.assertEqual(error.context, {'phase': phase, 'window': HANDLES[0],
+                                                 'last_query_artifact': observation['query_artifact']})
+
+    def test_gone_timeout_keeps_phase_and_last_query(self):
+        error = self.run_until_timeout({'condition': 'gone', 'window': GEN + ':' + IDS[0]}, [snapshot()] * 3)
+        self.assertEqual(error.code, 'timeout')
+        self.assertEqual(error.context, {'phase': 'gone_wait', 'window': HANDLES[0],
+                                         'last_query_artifact': snapshot()['query_artifact']})

@@ -74,6 +74,8 @@ class TargetTask:
         self.started_at = None
         self.activated = False
         self.initial_exit_check = True
+        self.search = self.matched = self.last_seen = None
+        self.searched_title = self.unmatched_title = None
 
     def check(self):
         if self.error is not None:
@@ -122,21 +124,29 @@ class TargetTask:
             raise ContractError('target_lost', 'Selected application association changed.')
         self.activated = True
 
+    def refs(self):
+        refs = {'phase': self.phase}
+        if self.application is not None:
+            refs['application'] = self.application
+        if self.selected is not None:
+            refs['window'] = self.selected
+        elif self.condition == 'gone':
+            # Gone never selects a row; report the awaited window in canonical spelling.
+            refs['window'] = {'generation': self.window['generation'], 'window_id': window_id(self.window['window_id'])}
+        if self.last is not None:
+            refs['last_query_artifact'] = self.last['query_artifact']
+        return refs
+
     def step(self, now):
         try:
             return self.advance()
         except ContractError as error:
             if self.error is None:
-                refs = {'phase': self.phase}
-                if self.application is not None:
-                    refs['application'] = self.application
-                if self.selected is not None:
-                    refs['window'] = self.selected
-                if self.last is not None:
-                    refs['last_query_artifact'] = self.last['query_artifact']
-                self.error = ContractError(error.code, error.message, context=refs | error.context)
+                self.error = ContractError(error.code, error.message, context=self.refs() | error.context)
             if self.operation is not None:
                 self.operation.cancel(self.error)
+            if self.search is not None:
+                self.search.abort()
             self.retain(failing=True)
             raise self.error
 
@@ -156,6 +166,11 @@ class TargetTask:
             return {'condition': 'exit', 'satisfied': True, 'exited': True,
                     'root_returncode': self.app_snapshot['exit_code'],
                     'descendant_exit_codes': None, 'application': self.app_snapshot}
+        if self.search is not None:
+            # A regex search runs in a child; no query starts until it answers.
+            matched = self.advance_search()
+            if matched is not None or self.search is not None:
+                return matched
         if self.operation is None:
             if time.monotonic() < self.next_poll:
                 return None
@@ -182,6 +197,8 @@ class TargetTask:
                 return None
             self.check()
             return result | {'condition': 'window', 'satisfied': True, 'application': self.app_snapshot, 'polls': self.polls}
+        if self.condition == 'gone':
+            return self.gone(result)
         row = resolve(result, window=self.selected or self.window,
                       application=self.application, seen=self.selected is not None)
         target = current_target(result, row, require_focus=self.require_focus, require_client=self.require_client)
@@ -193,22 +210,68 @@ class TargetTask:
                                                    self.selected, self.activation_guard)
             return None
         self.selected = row['window']
+        if self.condition == 'title':
+            # A null or empty title never matches; the window keeps being polled.
+            # An unchanged title that did not match is not searched again.
+            if row['title'] == self.unmatched_title:
+                return None
+            from .title_regex import Search
+            text, regex = self.request.arguments['match'], self.request.arguments['regex']
+            self.search = Search(self.adapter.desktop.children if regex else None, text, regex, row['title'])
+            self.searched_title = row['title']
+            self.matched = target | {'condition': 'title', 'satisfied': True, 'polls': self.polls,
+                                     'title': row['title'], 'row': row, 'match': {'text': text, 'regex': regex}}
+            return self.advance_search()
         if self.condition == 'observe' or target['focused']:
             self.check()
             return target | {'condition': 'focus' if self.condition == 'activate' else self.condition,
                              'satisfied': True, 'polls': self.polls}
         return None
 
+    def advance_search(self):
+        found = self.search.step()
+        if found is None:
+            return None
+        self.search = None
+        if not found:
+            self.matched, self.unmatched_title = None, self.searched_title
+            return None
+        self.check()
+        return self.matched
+
+    def gone(self, result):
+        """Passive: any row kind may be awaited; the app may keep running."""
+        ident = window_id(self.window['window_id'])
+        rows = [r for r in result['windows'] if r['window']['window_id'] == ident]
+        if rows:
+            self.last_seen = rows[0]
+            return None
+        self.check()
+        return {k: result[k] for k in ('generation', 'query_id', 'query_artifact', 'observed_at', 'accepted_at')} | {
+            'condition': 'gone', 'satisfied': True, 'window': {'generation': result['generation'], 'window_id': ident},
+            'already_gone': self.last_seen is None, 'last_seen': self.last_seen, 'polls': self.polls}
+
     def request_cancel(self, reason):
         if self.error is None:
             self.error = ContractError(reason, 'Target condition did not complete.', context={'phase': self.phase})
         if self.operation is not None:
             self.operation.cancel(self.error)
-        # Scheduler cancellation may happen before step sees the deadline/EOF.
-        # Add controlled phase information without replacing its original cause.
+        if self.search is not None:
+            self.search.abort()
+        # Scheduler cancellation (deadline, EOF) usually happens before step sees
+        # it. Add controlled phase information without replacing its original
+        # cause; a standalone focus/wait also keeps its observation references,
+        # as when step itself fails. Composite tasks own their context.
         error = getattr(self.context.work, 'error', None)
         if error is not None:
-            error.context.setdefault('phase', self.phase)
+            refs = self.refs() if self.request.operation in ('focus', 'wait') else {'phase': self.phase}
+            for key, value in refs.items():
+                error.context.setdefault(key, value)
 
     def cleanup(self, now):
+        # A regex child is killed on cancel; the slot is held until Children reaps it.
+        if self.search is not None:
+            self.search.abort()
+            if not self.search.reaped():
+                return False
         return self.operation is None or self.operation.cleanup(self.context.work.cleanup_deadline)

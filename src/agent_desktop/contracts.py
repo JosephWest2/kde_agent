@@ -38,6 +38,7 @@ SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.st
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
                            if op not in ("doctor", "session.start", "session.status", "session.stop"))
+WAIT_CONDITIONS = ("window", "focus", "exit", "title", "gone")
 LOG_SOURCES = ("all", "application", "worker", "compositor", "bus")
 MAX_TAIL = 200
 GENERATION = re.compile(r"[0-9a-f]{32}\Z")
@@ -157,7 +158,7 @@ ARGUMENTS = {
     "session.status": set(), "session.stop": set(),
     "launch": {"cwd", "env", "wait_window", "argv"},
     "windows": {"app"}, "focus": {"app", "window"},
-    "wait": {"condition", "app", "window"}, "key": {"window", "chord", "hold"},
+    "wait": {"condition", "app", "window", "match", "regex"}, "key": {"window", "chord", "hold"},
     "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
     "screenshot": {"output", "window"}, "logs": {"app", "source", "tail"},
     "close": {"app", "window"}, "kill": {"app"},
@@ -202,11 +203,28 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         invalid("app")
     if operation == "wait":
         condition = args.get("condition")
-        if condition not in ("window", "focus", "exit"):
+        if condition not in WAIT_CONDITIONS:
             invalid("for")
-        target = "window" if condition == "focus" else "app"
+        target = "app" if condition in ("window", "exit") else "window"
         if target not in args or ("app" if target == "window" else "window") in args:
             invalid("target")
+        # --match/--regex belong to title waits only; absent and false are the defaults.
+        if args.get("match") is None:
+            args.pop("match", None)
+        args.setdefault("regex", False)
+        if type(args["regex"]) is not bool:
+            invalid("regex")
+        if condition == "title":
+            if "match" not in args:
+                invalid("match")
+            # Bounded checks only: the worker runs this on its owner thread.
+            # The CLI compiles a regex separately; the matching child is authoritative.
+            from .title_regex import validate
+            validate(args["match"])
+        elif "match" in args or args["regex"]:
+            invalid("match")
+        else:
+            del args["regex"]
     if operation == "doctor":
         args["dependency_root"] = text(args.get("dependency_root", ".local/dependencies"), "dependency-root")
     if operation == "session.start":

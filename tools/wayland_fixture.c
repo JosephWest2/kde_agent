@@ -70,6 +70,13 @@ static bool timed_exit;
 static int exit_code;
 static const char *close_mode = "normal";
 static unsigned close_delay_ms;
+/* SIGUSR1 steps: each signal applies the next listed action, so a test can change
+ * a window at a moment it chooses (e.g. after a wait's first observation). */
+#define MAX_SIGNAL_STEPS 8
+static struct { bool close; struct fixture_surface *surface; } signal_steps[MAX_SIGNAL_STEPS];
+static unsigned signal_step_count, signal_steps_done;
+static volatile sig_atomic_t usr1_received;
+static void on_usr1(int sig) { (void)sig; usr1_received = usr1_received + 1; }
 static struct fixture_surface *confirmation_target;
 
 static unsigned long long monotonic_ns(void) {
@@ -356,6 +363,8 @@ static void usage(void) {
             "  [--sibling] [--dialog] [--child-window-ms N]\n"
             "  [--close-mode normal|refuse|delay|confirmation] [--close-delay-ms N]\n"
             "  [--resize-after-ms LABEL:MS:WIDTH:HEIGHT] [--destroy-after-ms LABEL:MS]\n"
+            "  [--on-sigusr1 retitle|close:LABEL[,...]] (each SIGUSR1 applies the next step, at most 8;\n"
+            "   retitle sets \"KDE Agent Native Fixture retitled\")\n"
             "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
             "--descendant-ms and --child-window-ms must be positive.\n"
@@ -394,6 +403,43 @@ static void schedule_option(const char *value, bool resize) {
         s->resize_height = option_number(parts[3], 720);
         if (!s->resize_width || !s->resize_height) { usage(); exit(2); }
     } else { s->destroy_scheduled = true; s->destroy_after_ms = after_ms; }
+}
+static void retitle(struct fixture_surface *s) {
+    xdg_toplevel_set_title(s->top, "KDE Agent Native Fixture retitled");
+    wl_surface_commit(s->wl);
+}
+static void signal_option(const char *value) {
+    char copy[128];
+    if (strlen(value) >= sizeof(copy)) { usage(); exit(2); }
+    strcpy(copy, value);
+    char *next = copy, *step;
+    while ((step = strsep(&next, ","))) {
+        char *action = strsep(&step, ":");
+        if (!step || signal_step_count == MAX_SIGNAL_STEPS) { usage(); exit(2); }
+        bool close = !strcmp(action, "close");
+        if (!close && strcmp(action, "retitle")) { usage(); exit(2); }
+        struct fixture_surface *s = NULL;
+        for (unsigned i = 0; i < 3; ++i)
+            if (!strcmp(step, surfaces[i].label)) s = &surfaces[i];
+        if (!s) { usage(); exit(2); }
+        signal_steps[signal_step_count].close = close;
+        signal_steps[signal_step_count++].surface = s;
+    }
+}
+static void run_signal_step(void) {
+    unsigned index = signal_steps_done++;
+    if (index >= signal_step_count) {
+        event("signal_step"); printf(",\"index\":%u,\"applied\":false,\"reason\":\"exhausted\"}\n", index);
+        return;
+    }
+    struct fixture_surface *s = signal_steps[index].surface;
+    bool open = s->wl && !s->closed;
+    surface_event("signal_step", s);
+    printf(",\"index\":%u,\"action\":\"%s\",\"applied\":%s}\n", index,
+           signal_steps[index].close ? "close" : "retitle", open ? "true" : "false");
+    if (!open) return;
+    if (signal_steps[index].close) close_surface(s, "signal");
+    else retitle(s);
 }
 static void scheduled_destroy(struct fixture_surface *s, unsigned long long elapsed_ms) {
     s->destroy_done = true;
@@ -517,6 +563,7 @@ int main(int argc, char **argv) {
         }
         else if (!strcmp(option, "--resize-after-ms")) schedule_option(value, true);
         else if (!strcmp(option, "--destroy-after-ms")) schedule_option(value, false);
+        else if (!strcmp(option, "--on-sigusr1")) { if (signal_step_count) { usage(); return 2; } signal_option(value); }
         else if (!strcmp(option, "--title-mode") || !strcmp(option, "--app-id-mode")) {
             if (strcmp(value, "normal") && strcmp(value, "empty") && strcmp(value, "omitted")) { usage(); return 2; }
             if (!strcmp(option, "--title-mode")) title_mode = value; else app_id_mode = value;
@@ -533,6 +580,10 @@ int main(int argc, char **argv) {
         if ((s->resize_scheduled && s->resize_after_ms < window_delay_ms) ||
             (s->destroy_scheduled && s->destroy_after_ms < window_delay_ms)) { usage(); return 2; }
     }
+    for (unsigned i = 0; i < signal_step_count; ++i) {
+        struct fixture_surface *s = signal_steps[i].surface;
+        if (child_surface || (s == &surfaces[1] && !sibling_window) || (s == &surfaces[2] && !dialog_window)) { usage(); return 2; }
+    }
     if (child_surface) {
         if (!autonomous || !timed_exit || sibling_window || dialog_window || child_window_ms) { usage(); return 2; }
         surfaces[0].label = "child"; surfaces[0].role = "child"; surfaces[0].width = 400; surfaces[0].height = 240;
@@ -541,6 +592,12 @@ int main(int argc, char **argv) {
     if (!generation && autonomous) generation = "00000000000000000000000000000000";
     if (!generation || strlen(generation) != 32 || strspn(generation, "0123456789abcdef") != 32) return 2;
     setvbuf(stdout, NULL, _IOLBF, 0);
+    if (signal_step_count) {
+        /* No SA_RESTART: poll returns EINTR and the loop applies the step. */
+        struct sigaction action = {.sa_handler = on_usr1};
+        sigemptyset(&action.sa_mask);
+        if (sigaction(SIGUSR1, &action, NULL)) die("signal handler failed");
+    }
     if (!getenv("WAYLAND_DISPLAY") || !getenv("XDG_RUNTIME_DIR") || !getenv("DBUS_SESSION_BUS_ADDRESS")) die("missing private endpoints");
     display = wl_display_connect(getenv("WAYLAND_DISPLAY")); if (!display) die("private Wayland connection failed");
     xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS); if (!xkb_context) die("xkb context failed");
@@ -580,6 +637,8 @@ int main(int argc, char **argv) {
             if (dialog_window) create_window(&surfaces[2], &surfaces[0]);
             windows_created = true;
         }
+        while (windows_created && running && signal_steps_done < (unsigned)usr1_received) run_signal_step();
+        if (!running) break;
         for (unsigned i = 0; i < 3; ++i) run_surface_schedule(&surfaces[i], elapsed_ms);
         unsigned long long now_ns = monotonic_ns();
         for (unsigned i = 0; i < 3; ++i) {

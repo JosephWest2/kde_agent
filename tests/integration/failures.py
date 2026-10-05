@@ -13,6 +13,10 @@ generation's cgroup and no systemd unit:
     bus-death        SIGKILL the private dbus-daemon
     worker-sigkill   SIGKILL the worker during a hold
     worker-stopped   SIGSTOP the worker, then `session stop`
+    title-gone       `wait --for title|gone`: retitle, timeout, a window lost
+                     mid-wait, a dialog closing while the app keeps running, and
+                     a bad --regex sent straight over the transport
+                     (AGENT_DESKTOP_TEST_SLOW=SECONDS adds setup delay)
 
     python tests/integration/failures.py [SCENARIO ...] [--loop N]
 
@@ -39,6 +43,17 @@ from smoke import ROOT, SmokeFailure, cgroup_members, log_events, read  # noqa: 
 
 KDOTOOL = 'bin/kdotool'  # Relative to the dependency root.
 W = 17  # evdev KEY_W
+# Extra seconds of setup delay in title-gone, to show its checks don't depend on timing.
+SLOW = float(os.environ.get('AGENT_DESKTOP_TEST_SLOW', '0'))
+# A client other than the CLI: builds a request from this checkout's sources and sends
+# it with the transport directly, skipping the CLI's own checks. Spec on stdin.
+RAW_CLIENT = (
+    'import json,sys\n'
+    'from agent_desktop.contracts import make_request\n'
+    'from agent_desktop.transport import exchange\n'
+    'spec=json.load(sys.stdin)\n'
+    'print(json.dumps(exchange(make_request(spec.pop("operation"),caller_cwd="/",**spec))))\n'
+)
 
 
 class Scenario(smoke.Smoke):
@@ -225,6 +240,110 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure('worker-stopped', f'{elapsed:.1f}s: {json.dumps(payload)[:400]}')
         ok('worker-stopped', f'stop cleaned up in {elapsed:.1f}s')
 
+    def expect_error(self, step, code, *args):
+        payload = self.desktop(step, *args, expect_ok=False)
+        if payload['ok'] or payload['error']['code'] != code:
+            raise SmokeFailure(step, f'expected {code}: {json.dumps(payload)[:400]}', payload)
+        return payload['error']
+
+    def raw_request(self, step, operation, arguments):
+        spec = {'operation': operation, 'session': self.session, 'arguments': arguments, 'timeout_seconds': 10}
+        process = subprocess.run([sys.executable, '-c', RAW_CLIENT], input=json.dumps(spec), capture_output=True,
+                                 text=True, timeout=40, env=os.environ | {'PYTHONPATH': str(ROOT / 'src')})
+        if process.returncode:
+            raise SmokeFailure(step, f'raw client failed: {process.stderr[-300:]}')
+        return json.loads(process.stdout)
+
+    def observations(self):
+        directory = self.artifacts / 'generations' / self.generation / 'window-observations'
+        return set(directory.iterdir()) if directory.is_dir() else set()
+
+    def wait_with_step(self, step, fixture_pid, *args):
+        """Run a wait and apply the fixture's next SIGUSR1 step after the wait's first observation.
+
+        Waits hold the session's only ordinary slot, so nothing else queries meanwhile:
+        the first new observation artifact is this wait's first poll, taken before the
+        change. However slow setup was, the change always happens mid-wait.
+        """
+        before = self.observations()
+        started = time.monotonic()
+        process = self.background_cli(*args, '--session', self.session)
+        fresh = smoke_wait(lambda: self.observations() - before, bool, timeout=5)
+        if not fresh or process.poll() is not None:
+            process.kill()
+            out, _ = process.communicate(timeout=10)
+            raise SmokeFailure(step, f'no first observation while waiting: {out[:300]}')
+        os.kill(fixture_pid, signal.SIGUSR1)
+        out, _ = process.communicate(timeout=30)
+        print(f'  ok  {step:<34} {time.monotonic() - started:5.2f}s')
+        return json.loads(out)
+
+    def title_gone_waits(self):
+        # Each SIGUSR1 applies the fixture's next step: retitle the primary, close
+        # the sibling, close the dialog. The fixture keeps running throughout.
+        app, primary, logs = self.launch('fixture', str(self.fixture), '--autonomous', '--exit-after-ms', '60000',
+                                         '--sibling', '--dialog',
+                                         '--on-sigusr1', 'retitle:primary,close:sibling,close:dialog', windows=3)
+        fixture_pid = self.pids[-1]
+        sibling, dialog = (row['window']['ref'] for row in self.windows[1:])
+        if self.windows[0]['title'] != 'KDE Agent Native Fixture':
+            raise SmokeFailure('title-gone', f'unexpected primary title {self.windows[0]["title"]!r}')
+        if SLOW:
+            time.sleep(SLOW)  # Robustness check: nothing below depends on launch timing.
+        error = self.expect_error('wait --for title (timeout)', 'timeout', 'wait', '--for', 'title',
+                                  '--window', primary, '--match', 'never this title', '--timeout', '1')
+        if (error['context'].get('phase') != 'title_wait' or error['context'].get('window', {}).get('ref') != primary
+                or not error['context'].get('last_query_artifact')):
+            raise SmokeFailure('title-gone', f'timeout context lacks phase/window/last query: {error}')
+        ok('wait --for title (timeout)', 'timeout; context has phase, window and last_query_artifact')
+        payload = self.wait_with_step('wait --for title (retitled)', fixture_pid, 'wait', '--for', 'title',
+                                      '--window', primary, '--match', 'retitled')
+        result = payload['result'] or {}
+        if not payload['ok'] or result.get('title') != 'KDE Agent Native Fixture retitled' or result['polls'] < 2:
+            raise SmokeFailure('title-gone', f'unexpected title result {json.dumps(payload)[:300]}')
+        ok('wait --for title (retitled)', f'{result["title"]!r} after {result["polls"]} polls')
+        result = self.desktop('wait --for title --regex (initial)', 'wait', '--for', 'title', '--window', primary,
+                              '--regex', '--match', r'^KDE \w+ Native Fixture retitled$')['result']
+        if result['polls'] != 1:
+            raise SmokeFailure('title-gone', f'an initial match must return on the first poll: {result["polls"]}')
+        error = self.expect_error('wait --for title --regex (runaway)', 'invalid_arguments', 'wait', '--for', 'title',
+                                  '--window', primary, '--regex', '--match', '(.*.*)*!')
+        if error['context'].get('reason') != 'pattern_too_slow':
+            raise SmokeFailure('title-gone', f'expected pattern_too_slow: {error}')
+        ok('wait --for title --regex (runaway)', 'pattern_too_slow; helper killed by its CPU timer')
+        step = 'wait --for title --regex (raw)'
+        payload = self.raw_request(step, 'wait', {'condition': 'title', 'window': primary,
+                                                  'match': 'unclosed(group', 'regex': True})
+        context = {} if payload['ok'] else payload['error']['context']
+        if (payload['ok'] or payload['error']['code'] != 'invalid_arguments' or context.get('reason') != 'invalid_regex'
+                or context.get('phase') != 'title_wait' or 'unclosed(group' in json.dumps(payload)):
+            raise SmokeFailure('title-gone', f'expected invalid_regex from the helper: {json.dumps(payload)[:300]}')
+        ok(step, 'invalid_regex from the helper child; the worker never compiled it')
+        payload = self.wait_with_step('wait --for title (window lost)', fixture_pid, 'wait', '--for', 'title',
+                                      '--window', sibling, '--match', 'never this title')
+        if payload['ok'] or payload['error']['code'] != 'target_lost':
+            raise SmokeFailure('title-gone', f'expected target_lost: {json.dumps(payload)[:300]}')
+        ok('wait --for title (window lost)', f'target_lost in phase {payload["error"]["context"].get("phase")}')
+        payload = self.wait_with_step('wait --for gone (dialog)', fixture_pid, 'wait', '--for', 'gone',
+                                      '--window', dialog)
+        result = payload['result'] or {}
+        if not payload['ok'] or result['already_gone'] or result['last_seen']['window']['ref'] != dialog:
+            raise SmokeFailure('title-gone', f'unexpected gone result {json.dumps(payload)[:300]}')
+        rows = self.desktop('windows (app still running)', 'windows', '--app', app)['result']['windows']
+        if [row['window']['ref'] for row in rows] != [primary]:
+            raise SmokeFailure('title-gone', f'expected only the primary window: {[r["title"] for r in rows]}')
+        ok('wait --for gone (dialog)', f'after {result["polls"]} polls; primary still listed')
+        steps = log_events(Path(logs['stdout']), {'signal_step'})
+        if [(e.get('action'), e.get('applied')) for e in steps] != [('retitle', True), ('close', True), ('close', True)]:
+            raise SmokeFailure('title-gone', f'fixture signal steps: {steps}')
+        result = self.desktop('wait --for gone (already gone)', 'wait', '--for', 'gone', '--window', dialog)['result']
+        if not result['already_gone'] or result['polls'] != 1:
+            raise SmokeFailure('title-gone', f'expected already_gone: {json.dumps(result)[:300]}')
+        self.expect_error('wait --for title (gone window)', 'target_not_found', 'wait', '--for', 'title',
+                          '--window', dialog, '--match', 'x')
+        stale = uuid.uuid4().hex + ':' + dialog.split(':', 1)[1]
+        self.expect_error('wait --for gone (stale ref)', 'generation_mismatch', 'wait', '--for', 'gone', '--window', stale)
+
     # Driver ----------------------------------------------------------------
 
     def stop_session(self):
@@ -274,7 +393,7 @@ def ok(step, detail):
 
 SCENARIOS = {'focus-loss': 'focus_loss', 'cancel-hold': 'cancel_hold', 'cancel-type': 'cancel_type',
              'generation': 'generation_refusal', 'compositor-death': 'compositor_death', 'bus-death': 'bus_death',
-             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped'}
+             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'title-gone': 'title_gone_waits'}
 
 
 def main(argv=None):

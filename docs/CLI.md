@@ -69,24 +69,33 @@ of W's current title. `--match` is 1–256 characters and only valid with `title
   title), `row` (the full window row), `match` (`{text, regex}`) and `polls`.
 
 With `--regex`, `--match` is a Python `re` pattern (full syntax, inline flags
-such as `(?i)` included) searched with `re.search` semantics. It is compiled when
-the request is validated: a compile error is `invalid_arguments` with
+such as `(?i)` included) searched with `re.search` semantics. The CLI compiles
+it before sending the request: a compile error is `invalid_arguments` with
 `context.field: match`, `reason: invalid_regex` and the error `position`; the
-pattern is never echoed. A pattern that can match the empty string (`a*`)
-matches every non-empty title, so it succeeds on the first poll. It isn't
-rejected, because deciding that means running the pattern, which validation
-never does.
+pattern is never echoed. The worker checks only the pattern's type and length
+(at most 256 characters) and never compiles it, so a pattern sent directly over
+the transport by another client is fully validated only when matching starts:
+the helper's compile error ends the wait with `invalid_arguments`,
+`reason: invalid_regex` (exit 2) and `position: null`. A pattern that can match
+the empty string (`a*`) matches every non-empty title, so it succeeds on the
+first poll. It isn't rejected, because deciding that means running the pattern,
+which validation never does.
 
-Because `re` can backtrack exponentially, the search never runs in the worker's
-event loop. Each new title is searched in a short-lived helper process
-(`python -I`, empty environment, no inherited descriptors), started only when
-the title changes. It costs about 15ms. The helper may use at most 100ms of
-CPU time for the search; a real search of a title (at most 4096 characters) takes
-well under 1ms. A pattern that exceeds it ends the wait with `invalid_arguments`,
-`reason: pattern_too_slow` (exit 2), and the helper is killed and reaped. It is
-never retried. Cancellation, timeout and `session stop` kill a running helper
-too. A helper that crashes, or doesn't answer within 2s, gives `internal_error`
-(`reason: regex_helper_failed` or `regex_helper_unresponsive`).
+Because `re` can backtrack exponentially, and even compiling a 256-character
+pattern can take over 100ms (wide case-insensitive classes), neither runs in the
+worker's event loop. Each new title is checked in a short-lived helper process
+(`python -I`, empty environment, working directory `/`), started only when the
+title changes. It costs about 15ms. The pattern and title reach the helper on
+its standard input, a private in-memory file (memfd), never on its command line
+(`/proc/PID/cmdline` is readable by other processes); it inherits no other
+descriptors. The helper arms its CPU limit before reading them and may use at
+most 100ms of CPU time to compile and search; a real pattern and title (at most
+4096 characters) take well under 1ms. A pattern that exceeds it ends the wait
+with `invalid_arguments`, `reason: pattern_too_slow` (exit 2), and the helper is
+killed and reaped. It is never retried. Cancellation, timeout and
+`session stop` kill a running helper too. A helper that crashes, or doesn't
+answer within 2s, gives `internal_error` (`reason: regex_helper_failed` or
+`regex_helper_unresponsive`).
 
 **`wait --for gone --window W`** succeeds on the first observation that doesn't
 list W. Closing a dialog or one of several windows can be confirmed this way;

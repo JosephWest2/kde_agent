@@ -413,6 +413,19 @@ class TitleAndGoneWaitTests(Harness):
         self.assertEqual(child.returncode, -signal.SIGPROF)
         self.assertEqual(self.children.owned, set())
 
+    def test_invalid_pattern_from_a_non_cli_client_is_invalid_regex_from_the_child(self):
+        # Worker-side validation never compiles; the CLI's early check was skipped.
+        with patch('re.compile', side_effect=AssertionError('compiled on the owner')):
+            task = self.regex_task([titled('Report')], '(unclosed')
+            with self.assertRaises(ContractError) as caught:
+                self.until_answer(task)
+        error = caught.exception
+        self.assertEqual((error.code, error.context['field'], error.context['reason'], error.context['phase']),
+                         ('invalid_arguments', 'match', 'invalid_regex', 'title_wait'))
+        self.assertEqual(error.context['window'], HANDLES[0])
+        self.children.poll()
+        self.assertEqual(self.children.owned, set())
+
     def test_cancel_mid_match_kills_and_reaps_the_child_before_cleanup_completes(self):
         task = self.regex_task([titled('a' * 64 + 'b')], '(a+)+$')
         self.assertIsNone(self.step(task))

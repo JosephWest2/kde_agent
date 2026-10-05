@@ -70,7 +70,7 @@ def parser():
     leaves["wait"].add_argument("--for", dest="condition", required=True, metavar="window|focus|exit|title|gone",
                                 help="window/exit take --app; focus/title/gone take --window")
     leaves["wait"].add_argument("--match", metavar="TEXT", help="title wait: case-sensitive substring (at most 256 characters)")
-    leaves["wait"].add_argument("--regex", action="store_true", help="title wait: --match is a Python re pattern (searched in a helper, at most 100ms CPU)")
+    leaves["wait"].add_argument("--regex", action="store_true", help="title wait: --match is a Python re pattern (compiled and searched in a helper, at most 100ms CPU)")
     leaves["key"].add_argument("chord", metavar="CHORD")
     leaves["key"].add_argument("--hold", default=.05, metavar="SECONDS")
     leaves["type"].add_argument("text", metavar="TEXT")
@@ -117,6 +117,10 @@ def parse_request(argv, request_id, caller_cwd):
     request = make_request(operation, arguments=args, caller_cwd=caller_cwd,
                            session=values.get("session"), expected_generation=values.get("generation"),
                            timeout_seconds=values.get("timeout"), request_id=request_id)
+    if operation == "wait" and request.arguments.get("regex"):
+        # Early, friendly compile in the CLI process; the worker never compiles.
+        from .title_regex import compile_check
+        compile_check(request.arguments["match"])
     from .paths import normalize
     return normalize(request), None, operation, json_mode
 

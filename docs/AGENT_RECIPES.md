@@ -96,8 +96,8 @@ $D wait --for gone --window DIALOG_REF                         # dialog closed, 
   menu too, so you can wait for a tooltip or menu to close.
 - `--regex` takes a Python `re` pattern. An invalid pattern is
   `invalid_arguments` before anything is sent. A pattern that backtracks for more
-  than 100ms of CPU on a title ends the wait with `invalid_arguments`, reason
-  `pattern_too_slow`; simplify it rather than retrying. A pattern that can match
+  than 100ms of CPU (compiling included) on a title ends the wait with
+  `invalid_arguments`, reason `pattern_too_slow`; simplify it rather than retrying. A pattern that can match
   an empty string (`a*`) matches every title. See [Waits](CLI.md#waits).
 - A wait occupies the session while it runs: your other commands to that session
   queue behind it. Use screenshots for changes that don't show in titles or

@@ -14,7 +14,8 @@ generation's cgroup and no systemd unit:
     worker-sigkill   SIGKILL the worker during a hold
     worker-stopped   SIGSTOP the worker, then `session stop`
     title-gone       `wait --for title|gone`: retitle, timeout, a window lost
-                     mid-wait, and a dialog closing while the app keeps running
+                     mid-wait, a dialog closing while the app keeps running, and
+                     a bad --regex sent straight over the transport
                      (AGENT_DESKTOP_TEST_SLOW=SECONDS adds setup delay)
 
     python tests/integration/failures.py [SCENARIO ...] [--loop N]
@@ -44,6 +45,15 @@ KDOTOOL = 'bin/kdotool'  # Relative to the dependency root.
 W = 17  # evdev KEY_W
 # Extra seconds of setup delay in title-gone, to show its checks don't depend on timing.
 SLOW = float(os.environ.get('AGENT_DESKTOP_TEST_SLOW', '0'))
+# A client other than the CLI: builds a request from this checkout's sources and sends
+# it with the transport directly, skipping the CLI's own checks. Spec on stdin.
+RAW_CLIENT = (
+    'import json,sys\n'
+    'from agent_desktop.contracts import make_request\n'
+    'from agent_desktop.transport import exchange\n'
+    'spec=json.load(sys.stdin)\n'
+    'print(json.dumps(exchange(make_request(spec.pop("operation"),caller_cwd="/",**spec))))\n'
+)
 
 
 class Scenario(smoke.Smoke):
@@ -236,6 +246,14 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure(step, f'expected {code}: {json.dumps(payload)[:400]}', payload)
         return payload['error']
 
+    def raw_request(self, step, operation, arguments):
+        spec = {'operation': operation, 'session': self.session, 'arguments': arguments, 'timeout_seconds': 10}
+        process = subprocess.run([sys.executable, '-c', RAW_CLIENT], input=json.dumps(spec), capture_output=True,
+                                 text=True, timeout=40, env=os.environ | {'PYTHONPATH': str(ROOT / 'src')})
+        if process.returncode:
+            raise SmokeFailure(step, f'raw client failed: {process.stderr[-300:]}')
+        return json.loads(process.stdout)
+
     def observations(self):
         directory = self.artifacts / 'generations' / self.generation / 'window-observations'
         return set(directory.iterdir()) if directory.is_dir() else set()
@@ -293,6 +311,14 @@ class Scenario(smoke.Smoke):
         if error['context'].get('reason') != 'pattern_too_slow':
             raise SmokeFailure('title-gone', f'expected pattern_too_slow: {error}')
         ok('wait --for title --regex (runaway)', 'pattern_too_slow; helper killed by its CPU timer')
+        step = 'wait --for title --regex (raw)'
+        payload = self.raw_request(step, 'wait', {'condition': 'title', 'window': primary,
+                                                  'match': 'unclosed(group', 'regex': True})
+        context = {} if payload['ok'] else payload['error']['context']
+        if (payload['ok'] or payload['error']['code'] != 'invalid_arguments' or context.get('reason') != 'invalid_regex'
+                or context.get('phase') != 'title_wait' or 'unclosed(group' in json.dumps(payload)):
+            raise SmokeFailure('title-gone', f'expected invalid_regex from the helper: {json.dumps(payload)[:300]}')
+        ok(step, 'invalid_regex from the helper child; the worker never compiled it')
         payload = self.wait_with_step('wait --for title (window lost)', fixture_pid, 'wait', '--for', 'title',
                                       '--window', sibling, '--match', 'never this title')
         if payload['ok'] or payload['error']['code'] != 'target_lost':

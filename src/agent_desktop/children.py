@@ -14,11 +14,12 @@ class Children:
     def __init__(self):
         self.owned = set()
 
-    def start(self, argv, *, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=None, cwd=None,
-              executable=None, pass_fds=()):
-        if stdout == subprocess.PIPE or stderr == subprocess.PIPE:
+    def start(self, argv, *, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+              env=None, cwd=None, executable=None, pass_fds=()):
+        # stdin may be an already-filled file descriptor (e.g. a rewound memfd).
+        if subprocess.PIPE in (stdin, stdout, stderr):
             raise ValueError("Undrained child pipes are not supported")
-        child = Child(subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=stdout,
+        child = Child(subprocess.Popen(argv, stdin=stdin, stdout=stdout,
                                        stderr=stderr, env=env, cwd=cwd, executable=executable,
                                        close_fds=True, pass_fds=pass_fds))
         self.owned.add(child)

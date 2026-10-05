@@ -217,8 +217,10 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         if condition == "title":
             if "match" not in args:
                 invalid("match")
+            # Bounded checks only: the worker runs this on its owner thread.
+            # The CLI compiles a regex separately; the matching child is authoritative.
             from .title_regex import validate
-            validate(args["match"], args["regex"])
+            validate(args["match"])
         elif "match" in args or args["regex"]:
             invalid("match")
         else:

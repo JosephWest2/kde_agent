@@ -181,13 +181,17 @@ Window/app-focus waits report `application_exited` on known complete app exit.
 focus` (`window` rows only; `target_not_found` on the first observation,
 `target_lost` once seen) and succeeds on a fresh observation whose title matches.
 Titles are matched, never used to pick a window. Null and empty titles never
-match. `--regex` uses Python's `re`, which can backtrack exponentially inside a
-single uninterruptible C call, so it never runs on the owner. Each new title is
-searched in a helper child started through the worker's `Children`, the same way
-as the kdotool query children: it is polled by return code, aborted on cancel and
-reaped by the owner's tick, and cleanup holds the slot until it is reaped. A
-100ms CPU timer inside the helper ends a runaway search (`pattern_too_slow`). No
-new query starts while a search is pending ([CLI.md](CLI.md#waits)).
+match. `--regex` uses Python's `re`, whose compile and search can each run long
+inside a single uninterruptible C call, so neither runs on the owner: worker-side
+request validation checks only the pattern's type and length (the CLI compiles
+it early in its own process). Each new title is checked in a helper child
+started through the worker's `Children`, the same way as the kdotool query
+children: it is polled by return code, aborted on cancel and reaped by the
+owner's tick, and cleanup holds the slot until it is reaped. The pattern and
+title go to the helper on a memfd as its stdin, not argv. A 100ms CPU timer,
+armed in the helper before it compiles, ends a runaway compile or search
+(`pattern_too_slow`); a compile error is `invalid_regex`. No new query starts
+while a search is pending ([CLI.md](CLI.md#waits)).
 `wait --for gone --window WIN` succeeds on the first fresh observation without
 WIN, whatever its kind, and reports `already_gone` when the first observation
 already lacked it; neither title nor gone waits look at the application's

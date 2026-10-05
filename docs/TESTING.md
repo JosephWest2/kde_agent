@@ -23,17 +23,17 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 550 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 573 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
-| Needs native build | 8 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
+| Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
 Skipped outside the host (all other modules are portable):
 
 | Module | Skipped tests | Condition |
 | --- | --- | --- |
 | `test_lifecycle_process` | all 4 | No user service manager, user bus or `app.slice` cgroup: they start real `systemd-run --user` services |
-| `test_libei_probe` | 5 of 9 | No `/usr/lib/libei.so.1`, or not the SHA-256 that `tools/libei_binding.py` pins; the header audit also needs `/usr/bin/cc`, `/usr/bin/pkg-config`, a `libei-1.0` entry it resolves without `PKG_CONFIG_PATH`, and `/usr/include/libei-1.0/libei.h` |
-| `test_input_connection` | 3 of 31 | `agent_desktop.libei_binding.describe()` rejects or cannot find libei |
+| `test_libei_probe` | 6 of 10 | No `/usr/lib/libei.so.1`, or not the SHA-256 that `tools/libei_binding.py` pins; the two header audits (the probe's table and the production `agent_desktop.libei_binding` table) also need `/usr/bin/cc`, `/usr/bin/pkg-config`, a `libei-1.0` entry it resolves without `PKG_CONFIG_PATH`, and `/usr/include/libei-1.0/libei.h` |
+| `test_input_connection` | 3 of 33 | `agent_desktop.libei_binding.describe()` rejects or cannot find libei |
 
 `test_prerequisites` also checks the real libei only when `/usr/lib/libei.so.1`
 exists; the rest of that test always runs.
@@ -52,15 +52,15 @@ which prints how many tests ran, were skipped and were executed, with each skip'
 reason, to the log and the job summary. It checks skips by test id, not by output
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
-purpose. The runner has no libei at `/usr/lib`, so the 8 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 562 of the 570
+purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
+have a user systemd manager, so `test_lifecycle_process` runs there: 577 of the 586
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
 
 ```sh
 tools/setup.sh                      # installs the package; the session service runs it
-python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 7 seconds
+python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop   # about 11 seconds
 python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop --loop 5
 ```
 
@@ -72,12 +72,16 @@ invocations, the way an agent would:
 2. `session start`.
 3. **Native fixture** (built once into `.local/smoke/`, rebuilt when its source changes):
    launch, windows, focus, `key ctrl+shift+t`, `key --hold 0.2 w`, `type 'aB!'`,
-   `click --x 100 --y 50` and a right-button double click.
+   `click --x 100 --y 50`, a right-button double click, `move --x 200 --y 100`,
+   `scroll --x 210 --y 110 --dx -1 --dy 3` and a screen-coordinate `scroll --dy -2`.
    Then `screenshot --window` and graceful `close`. After the fixture exits, its
    complete Wayland key log must show the exact key order, the effective Ctrl/Shift
    state when each key went down (back to none at the end), the text and a hold of
    about 200ms, and its button log must show each click's exact button and
-   client position. `logs --app` must then report both logs complete, at the
+   client position. After the last click its pointer log must show exactly the
+   three motions and five wheel frames in order: each frame at the scroll point,
+   with `axis_value120` ±120 per notch (horizontal first in the diagonal step),
+   `axis` values of the same sign, and no `axis_stop`. `logs --app` must then report both logs complete, at the
    `.log` paths launch returned, with a tail matching the file.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then
    `wait --for title` until the title contains the typed text. A click on the header bar's
@@ -90,6 +94,13 @@ invocations, the way an agent would:
    list it as a `compositor` row while the editor stays active, `key --window`
    must fail with `target_lost` (reason `compositor_surface_open`, outcome
    `not_started`), and a screen click outside both must close it again.
+   After the dialog, `type` adds a marker line 12 lines down and enough blank
+   lines to overflow, and `ctrl+home` goes to the top. Window screenshots are
+   reduced to text bands, the tops of runs of rows with at least 3 non-background
+   pixels; this ignores the caret and crops the overlay scrollbar. After
+   `scroll --dy 3` the last band (the marker) must rise by more than 10px, and after
+   `scroll --dy -3` the bands must return to within 3px of where they started.
+   Each check polls screenshots until two in a row agree.
    Then `key ctrl+a`, a full and a
    window screenshot, and `kill`. It runs with the session's private HOME/XDG
    directories, so your own editor state is untouched.
@@ -128,6 +139,7 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `focus-loss` | `kdotool` activates a second fixture window 0.8s into `key --hold 2 w` | `target_lost`/`focus_lost` within 1.6s; the fixture sees the release |
 | `cancel-hold` | Ctrl-C on the client 0.6s into `key --hold 2 w` | `cancelled`, exit 130, release within 1s, and the next `key` works |
 | `cancel-type` | Ctrl-C 0.8s into typing 1500 characters | `cancelled`; no character arrives after the cancel |
+| `scroll-interrupted` | Ctrl-C once the fixture has 3 wheel steps of `scroll --dy 50`, then a `scroll --dy 1`, then `kdotool` activates a second fixture window once a second `scroll --dy 50` has 3 steps | `cancelled` (exit 130) and the wheel stops; the next scroll works; then `target_lost`/`focus_lost` (outcome `unknown`) whose `steps_sent`/`dy_sent` equal the steps the fixture received on either window; never an `axis_stop` |
 | `generation` | `--generation` and a window ref from another generation | `generation_mismatch` for both |
 | `compositor-death` | SIGKILL `kwin_wayland` | session `failed`, input refused with `session_unavailable`; `session status` and the manifest's `failure` name the compositor and SIGKILL; the app is `ended_by_session_stop` |
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |

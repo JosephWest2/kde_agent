@@ -74,10 +74,16 @@ def parser():
     leaves["key"].add_argument("chord", metavar="CHORD")
     leaves["key"].add_argument("--hold", default=.05, metavar="SECONDS")
     leaves["type"].add_argument("text", metavar="TEXT")
-    for axis in ("x", "y"):
-        leaves["click"].add_argument(f"--{axis}", required=True)
+    for operation in ("click", "move", "scroll"):
+        for axis in ("x", "y"):
+            leaves[operation].add_argument(f"--{axis}", required=True, metavar="INT",
+                                           help="client-area pixels with --window, else screen pixels")
     leaves["click"].add_argument("--button", default="left", metavar="left|right|middle")
     leaves["click"].add_argument("--count", default="1", metavar="1-3", help="2 = double click, 3 = triple click")
+    leaves["scroll"].add_argument("--dy", default=None, metavar="-50..50",
+                                  help="vertical wheel steps: positive scrolls down, negative up (default 0)")
+    leaves["scroll"].add_argument("--dx", default=None, metavar="-50..50",
+                                  help="horizontal wheel steps: positive scrolls right, negative left (default 0)")
     leaves["screenshot"].add_argument("--output")
     leaves["logs"].add_argument("--source", default="all", metavar="all|application|worker|compositor|bus")
     leaves["logs"].add_argument("--tail", default="20", metavar="0-200", help="last lines of each log to include")

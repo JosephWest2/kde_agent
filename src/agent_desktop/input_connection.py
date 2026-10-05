@@ -18,12 +18,13 @@ from .contracts import ContractError
 EVENTS = {v: k.removeprefix('EI_EVENT_') for k, v in binding.CONSTANTS.items() if k.startswith('EI_EVENT_')}
 BATCH = 256
 MAX_KEYS = 32
-KEYBOARD, POINTER_ABSOLUTE, BUTTON = 4, 2, 32
+KEYBOARD, POINTER_ABSOLUTE, SCROLL, BUTTON = 4, 2, 16, 32
+WHEEL_STEP = 120  # One wheel notch in libei's discrete scroll units.
 BUTTONS = frozenset({0x110, 0x111, 0x112})  # BTN_LEFT, BTN_RIGHT, BTN_MIDDLE
 MAX_REGIONS = 16
 # KWin's RemoteDesktop EIS request flags (not libei capabilities): 1 keyboard,
 # 2 pointer, 4 touch. KWin then offers a keyboard device and a separate
-# absolute-pointer device with buttons and one region per output.
+# absolute-pointer device with buttons, scrolling and one region per output.
 EIS_KEYBOARD_AND_POINTER = 3
 EPOCHS = itertools.count(1)
 
@@ -53,6 +54,7 @@ class Device:
     emulating: bool = False
     held: list[int] = field(default_factory=list)  # Key codes or button codes.
     kind: str = 'keyboard'  # 'keyboard' or 'pointer' (absolute motion + buttons)
+    scroll: bool = False  # A pointer that also has the scroll capability.
 
 
 class Input:
@@ -96,8 +98,9 @@ class Input:
         return dict(epoch=self.epoch, connected=self.connected, ready=self.ready(),
                     pointer_ready=self.ready('pointer'), backlog=self.backlog,
                     uncertain=self.uncertain, pending=self.pending,
-                    devices=[dict(identity=d.identity, kind=d.kind, resumed=d.resumed, held=list(d.held))
-                             for d in self.devices.values()], retired_held=list(self.retired_held))
+                    devices=[dict(identity=d.identity, kind=d.kind, resumed=d.resumed, held=list(d.held),
+                                  scroll=d.scroll) for d in self.devices.values()],
+                    retired_held=list(self.retired_held))
 
     def device(self, kind='keyboard'):
         self._owner()
@@ -293,6 +296,8 @@ class Input:
                         if (self.lib.ei_seat_has_capability(seat, POINTER_ABSOLUTE)
                                 and self.lib.ei_seat_has_capability(seat, BUTTON)):
                             caps += ['EI_DEVICE_CAP_POINTER_ABSOLUTE', 'EI_DEVICE_CAP_BUTTON']
+                            if self.lib.ei_seat_has_capability(seat, SCROLL):
+                                caps.append('EI_DEVICE_CAP_SCROLL')
                         binding.capabilities(self.lib.ei_seat_bind_capabilities, seat, caps)
                 elif kind == 5 and (device_kind := self._kind(pointer)) is not None:
                     parent = self.lib.ei_device_get_seat(pointer)
@@ -300,7 +305,9 @@ class Input:
                         raise Failure('input_protocol', 'Invalid or duplicate device.')
                     self.serial += 1
                     self.lib.ei_device_ref(pointer)
-                    self.devices[pointer] = Device(pointer, self.serial, parent, kind=device_kind)
+                    self.devices[pointer] = Device(pointer, self.serial, parent, kind=device_kind,
+                                                   scroll=device_kind == 'pointer' and bool(
+                                                       self.lib.ei_device_has_capability(pointer, SCROLL)))
                 elif kind == 8 and pointer in self.devices:
                     self.devices[pointer].resumed = True
                 elif kind == 7 and pointer in self.devices:
@@ -381,6 +388,31 @@ class Input:
         try:
             self._start(device)
             self.lib.ei_device_pointer_motion_absolute(device.pointer, float(x), float(y))
+            self.lib.ei_device_frame(device.pointer, self.lib.ei_now(context))
+        except Exception:
+            if self._current(epoch, context):
+                self.uncertain = True
+            raise
+
+    def scroll(self, dx, dy):
+        """One wheel notch per axis (-1, 0 or 1; positive is down/right), then a frame.
+
+        Like a physical wheel, a step is complete on its own: nothing is held and
+        no scroll stop follows, so an interrupted sequence leaves nothing open
+        except emulation, which release() closes.
+        """
+        self._owner()
+        if any(type(v) is not int or v not in (-1, 0, 1) for v in (dx, dy)) or dx == dy == 0:
+            raise Failure('unsupported_input', 'A wheel step is -1, 0 or 1 notch per axis, not both 0.')
+        device = self.device('pointer')
+        if not device.scroll:
+            raise Failure('input_unavailable', 'The pointer device cannot scroll.', context=self.snapshot())
+        if any(d.held for d in self.devices.values()) or self.retired_held:
+            raise Failure('input_unavailable', 'Previous input remains unresolved.')
+        epoch, context = self.epoch, self.context
+        try:
+            self._start(device)
+            self.lib.ei_device_scroll_discrete(device.pointer, dx * WHEEL_STEP, dy * WHEEL_STEP)
             self.lib.ei_device_frame(device.pointer, self.lib.ei_now(context))
         except Exception:
             if self._current(epoch, context):

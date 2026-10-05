@@ -11,9 +11,9 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 - `session status` lists the desktop operations available once the session is ready.
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
-`focus`, `wait`, `key`, `type`, `click`, `screenshot`, `close` and `kill`.
+`focus`, `wait`, `key`, `type`, `click`, `move`, `scroll`, `screenshot`, `close` and `kill`.
 Every command in the table below is supported. There is no `input reset`; recover
-from `input_uncertain` with `session stop` and `session start`. Key names, text limits, click coordinates and release guarantees are
+from `input_uncertain` with `session stop` and `session start`. Key names, text limits, pointer coordinates, scroll signs and release guarantees are
 in [keyboard and pointer input](INPUT.md).
 
 ## Screenshots
@@ -21,7 +21,7 @@ in [keyboard and pointer input](INPUT.md).
 `screenshot [--window REF] [--output PATH]` captures the 1280×720 output as PNG.
 With `--window`, the image is the window's client area, rounded outward and
 clipped to the screen; a fully offscreen window fails with `capture_failed`. This
-is the coordinate space of `click --window`: for a window that is fully on screen,
+is the coordinate space of `click`, `move` and `scroll` with `--window`: for a window that is fully on screen,
 a pixel at (x, y) in the image is `click --x x --y y`. If the window extends past
 a screen edge the image is clipped, so add `crop[0] - client.x` and
 `crop[1] - client.y` (or click the screen point `crop[0] + x`, `crop[1] + y`
@@ -197,6 +197,8 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
 | `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |
+| `move` | `--x INT --y INT`, as for `click`; moves the pointer (hover) and presses nothing | 3 / 3 |
+| `scroll` | `--x INT --y INT`, as for `click`; `--dy -50..50` (positive down) and `--dx -50..50` (positive right) wheel notches, default 0, not both 0 | 3 / 3 |
 | `screenshot` | optional `--window WINDOW_REF` (crop to its client area), optional `--output PATH` (file or existing directory) | 3 / 3 |
 | `logs` | optional `--app APP_REF`; `--source all\|application\|worker\|compositor\|bus` (default all); `--tail 0-200` (default 20) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
@@ -223,11 +225,11 @@ not require Rust/compiler tools once the pinned build is prepared.
 deadline; retry once setup finishes ([setup](SETUP.md#rerunning)).
 
 Timeout and hold values must be finite and strictly positive. No unbounded mode
-exists. Key and type targets always use a window; click uses one unless given
-screen coordinates. App selection for focus/close must resolve unambiguously.
-Titles are descriptive, never identities. Click coordinates are nonnegative
+exists. Key and type targets always use a window; click, move and scroll use one
+unless given screen coordinates. App selection for focus/close must resolve unambiguously.
+Titles are descriptive, never identities. Pointer coordinates are nonnegative
 integer pixels, bounds-checked against current geometry before dispatch. Key,
-text and click validation happens before anything is sent; see
+text, pointer and scroll-step validation happens before anything is sent; see
 [keyboard and pointer input](INPUT.md).
 
 `launch` recognizes the first literal `--` after the command as the end of toolkit
@@ -359,7 +361,13 @@ Representative launch and window candidate shapes (full discovery also returns o
 ```
 
 Input results report `dispatched: true` (see [INPUT.md](INPUT.md) for the full
-fields). Input dispatch does not promise application acknowledgment, a rendered
+fields). Pointer results (`click`, `move`, `scroll`) give the point as `x`, `y` and
+the screen point where the pointer now is as `screen_x`, `screen_y`; `scroll` adds
+`dx`, `dy` and `steps`. A `scroll` that fails after its first wheel step reports
+`steps_sent`, `steps_total`, `dx_sent` and `dy_sent` in the error context, as `type`
+reports `strokes_sent`. Exit codes are the ones in the table above: 2 for bad
+coordinates or steps (including `zero_scroll`), 6 for `target_lost`, 8 for a
+`timeout` (phase `budget` when nothing was sent), 9 for input errors. Input dispatch does not promise application acknowledgment, a rendered
 frame or UI readiness. Screenshot success reports the fresh complete PNG's path
 and the other fields listed under [Screenshots](#screenshots).
 
@@ -374,7 +382,7 @@ Each window row has a `kind`: `window`, `popup` (tooltips, menus, popovers) or
 `compositor` (KWin's own surfaces, such as the window menu). Only `window` rows are
 selected by `--app` or accepted by `--window`; an explicit popup or compositor row
 gives `unsupported_operation` with reason `popup_surface` or `compositor_surface`.
-While a compositor row is listed, `key`, `type` and `click --window` fail with
+While a compositor row is listed, `key`, `type`, and `click`, `move` or `scroll` with `--window`, fail with
 `target_lost`, reason `compositor_surface_open`: outcome `not_started` when found
 before the first stroke, or outcome `unknown` with input progress when a focus
 recheck finds it mid-input. See [row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces).

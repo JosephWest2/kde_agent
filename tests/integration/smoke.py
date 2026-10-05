@@ -4,9 +4,9 @@
 Drives the real CLI through separate invocations against the native Wayland
 fixture (exact key acknowledgements) and gnome-text-editor (a real GTK app):
 
-    doctor, session start, launch, windows, focus, key, type, click,
-    screenshot, wait, close, kill, session stop, and input while KWin's
-    window menu is open
+    doctor, session start, launch, windows, focus, key, type, click, move,
+    scroll, screenshot, wait, close, kill, session stop, and input while
+    KWin's window menu is open
 
 After stop it checks that no process remains in the generation's cgroup, the
 systemd unit is gone and the artifacts survived. Run it after system updates:
@@ -42,10 +42,19 @@ EXPECTED_MODIFIERS = {20: 5, 17: 0, 30: 0, 48: 1, 2: 1}
 MODIFIER_KEYS = {29, 42}
 # click --x 100 --y 50; click --x 20 --y 30 --button right --count 2 (button, state, x, y)
 EXPECTED_BUTTONS = [(272, 1, 100, 50), (272, 0, 100, 50)] + [(273, 1, 20, 30), (273, 0, 20, 30)] * 2
+# After the clicks: move --x 200 --y 100; scroll --x 210 --y 110 --dx -1 --dy 3;
+# a screen-coordinate scroll --dy -2 at client (50, 60). Motion is ('motion', x, y)
+# and each wheel frame is ('wheel', x, y, [(axis, value120), ...]) with axis 0
+# vertical, 1 horizontal and positive meaning down/right (KWin sends horizontal first).
+EXPECTED_POINTER = ([('motion', 200, 100), ('motion', 210, 110), ('wheel', 210, 110, [(1, -120), (0, 120)])]
+                    + [('wheel', 210, 110, [(0, 120)])] * 2
+                    + [('motion', 50, 60)] + [('wheel', 50, 60, [(0, -120)])] * 2)
 # gnome-text-editor's "New Tab" header-bar button, in client coordinates.
 EDITOR_NEW_TAB = (107, 23)
 # Empty header-bar space; a right-click there opens KWin's window menu.
 EDITOR_HEADER_GAP = (350, 23)
+# Window-screenshot rows below the header bar, and columns left of the overlay scrollbar.
+EDITOR_TEXT_TOP, EDITOR_SCROLLBAR = 48, 30
 
 
 class SmokeFailure(Exception):
@@ -98,7 +107,8 @@ class Smoke:
         self.generation = payload['session']['generation']
         self.pids.append(payload['result']['worker_pid'])
         supported = set(payload['result']['supported_operations'])
-        missing = {'launch', 'windows', 'focus', 'key', 'type', 'click', 'screenshot', 'close', 'kill'} - supported
+        missing = {'launch', 'windows', 'focus', 'key', 'type', 'click', 'move', 'scroll', 'screenshot', 'close',
+                   'kill'} - supported
         if missing:
             raise SmokeFailure('session start', f'operations not supported: {sorted(missing)}')
 
@@ -139,7 +149,19 @@ class Smoke:
         self.desktop('fixture: click 100,50', 'click', '--window', window, '--x', '100', '--y', '50')
         self.desktop('fixture: double right-click', 'click', '--window', window, '--x', '20', '--y', '30',
                      '--button', 'right', '--count', '2')
+        moved = self.desktop('fixture: move 200,100', 'move', '--window', window, '--x', '200', '--y', '100')['result']
+        client = moved['client']
+        if (moved['screen_x'], moved['screen_y']) != (client['x'] + 200, client['y'] + 100):
+            raise SmokeFailure('fixture: move 200,100', f'unexpected result {json.dumps(moved)[:300]}')
+        scrolled = self.desktop('fixture: scroll --dx -1 --dy 3', 'scroll', '--window', window, '--x', '210', '--y', '110',
+                                '--dx', '-1', '--dy', '3')['result']
+        if (scrolled['dx'], scrolled['dy'], scrolled['steps']) != (-1, 3, 3):
+            raise SmokeFailure('fixture: scroll', f'unexpected result {json.dumps(scrolled)[:300]}')
+        self.desktop('fixture: screen scroll --dy -2', 'scroll', '--x', str(client['x'] + 50),
+                     '--y', str(client['y'] + 60), '--dy', '-2')
         wait_for_keys(Path(logs['stdout']), len(EXPECTED_KEYS))
+        wait_for_keys(Path(logs['stdout']), sum(len(row[3]) for row in EXPECTED_POINTER if row[0] == 'wheel'),
+                      kinds={'axis_value120'})
         self.screenshot('fixture', '--window', window)
         result = self.desktop('fixture: close', 'close', '--app', app)['result']
         if result['exited'] is not True:
@@ -149,6 +171,8 @@ class Smoke:
         print(f'  ok  {"fixture: key acknowledgements":<34}       order, modifiers, text, hold {hold}ms')
         check_button_log(Path(logs['stdout']))
         print(f'  ok  {"fixture: button acknowledgements":<34}       position, button, count')
+        check_pointer_log(Path(logs['stdout']))
+        print(f'  ok  {"fixture: move/scroll acknowledgements":<34}       motion, wheel steps, signs, order')
         self.check_logs(app, logs)
 
     def check_logs(self, app, launched):
@@ -187,12 +211,55 @@ class Smoke:
         self.desktop('editor: key ctrl+page_up', 'key', '--window', window, 'ctrl+page_up')
         self.wait_title('editor: wait --for title (first tab)', window, text)
         self.file_dialog(app, window)
+        self.editor_scroll(window)
         self.desktop('editor: key ctrl+a', 'key', '--window', window, 'ctrl+a')
         self.screenshot('editor')
         self.screenshot('editor', '--window', window)
         result = self.desktop('editor: kill', 'kill', '--app', app)['result']
         if result.get('exited') is not True:
             raise SmokeFailure('editor: kill', f'application did not exit: {json.dumps(result)[:300]}')
+
+    def editor_scroll(self, window):
+        """The wheel scrolls a real GTK text view: down moves the text up, and up brings it back.
+
+        The document gets a marker line 12 lines below the first and enough
+        blank lines to overflow. Ink rows (at least 3 pixels unlike the
+        background) ignore the 1px caret, and the overlay scrollbar is cropped.
+        """
+        self.desktop('editor: type overflow lines', 'type', '--window', window,
+                     '\n' * 12 + 'smoke scroll marker' + '\n' * 30)
+        self.desktop('editor: key ctrl+home', 'key', '--window', window, 'ctrl+home')
+        top, path = self.text_bands('editor: screenshot (top)', window, lambda bands: True)
+        if not top:
+            raise SmokeFailure('editor: scroll', f'no text visible at the top: {path}')
+        width, height = png_size(path)
+        x, y = str(width // 2), str((EDITOR_TEXT_TOP + height) // 2)
+        self.desktop('editor: scroll --dy 3', 'scroll', '--window', window, '--x', x, '--y', y, '--dy', '3')
+        # Down moves every line up: the last band rises or leaves the view, and nothing new appears.
+        down, path = self.text_bands('editor: screenshot (scrolled down)', window,
+                                     lambda bands: bands != top and (not bands or bands[-1] < top[-1] - 10))
+        self.desktop('editor: scroll --dy -3', 'scroll', '--window', window, '--x', x, '--y', y, '--dy', '-3')
+        back, path = self.text_bands('editor: screenshot (scrolled up)', window,
+                                     lambda bands: len(bands) == len(top)
+                                     and all(abs(a - b) <= 3 for a, b in zip(bands, top)))
+        print(f'  ok  {"editor: scroll":<34}       text bands {top} -> {down} -> {back}')
+
+    def text_bands(self, step, window, done, timeout=3):
+        """Poll window screenshots until the text bands (tops of ink-row runs) satisfy DONE twice in a row."""
+        deadline = time.monotonic() + timeout
+        previous = None
+        while True:
+            result = self.desktop(step, 'screenshot', '--window', window, quiet=True)['result']
+            path = Path(result['path'])
+            bands = ink_bands(path)
+            if done(bands) and bands == previous:
+                self.screenshots.append(path)
+                print(f'  ok  {step:<34}       bands {bands}')
+                return bands, path
+            if time.monotonic() >= deadline:
+                raise SmokeFailure(step, f'text bands {bands} (previous {previous}); see {path}')
+            previous = bands
+            time.sleep(.05)
 
     def wait_title(self, step, window, match, *flags):
         result = self.desktop(step, 'wait', '--for', 'title', '--window', window, '--match', match, *flags,
@@ -378,10 +445,10 @@ def log_events(log, kinds):
     return events
 
 
-def wait_for_keys(log, count, timeout=3):
-    """Bounded wait until the fixture has logged at least COUNT key events."""
+def wait_for_keys(log, count, timeout=3, kinds=frozenset({'key'})):
+    """Bounded wait until the fixture has logged at least COUNT key (or KINDS) events."""
     deadline = time.monotonic() + timeout
-    while len(log_events(log, {'key'})) < count and time.monotonic() < deadline:
+    while len(log_events(log, kinds)) < count and time.monotonic() < deadline:
         time.sleep(.05)
 
 
@@ -390,6 +457,45 @@ def check_button_log(log):
     observed = [(row['button'], row['state'], row['x'], row['y']) for row in rows]
     if observed != EXPECTED_BUTTONS or any(row['surface'] != 'primary' for row in rows):
         raise SmokeFailure('fixture: button acknowledgements', f'expected {EXPECTED_BUTTONS}, saw {observed}')
+
+
+def check_pointer_log(log):
+    """Motion and wheel receipts after the last button: exact positions, steps, signs and order."""
+    step = 'fixture: move/scroll acknowledgements'
+    rows = log_events(log, {'button', 'motion', 'axis', 'axis_value120', 'axis_discrete', 'axis_stop', 'pointer_frame'})
+    buttons = [index for index, row in enumerate(rows) if row['event'] == 'button']
+    observed, wheel, continuous = [], [], []
+    for row in rows[buttons[-1] + 1 if buttons else 0:]:
+        if row['surface'] != 'primary' or row['event'] in ('axis_stop', 'axis_discrete'):
+            # axis_discrete is only sent below wl_seat v8; axis_stop is never expected
+            # because the toolkit never sends a scroll stop, as a physical wheel would not.
+            raise SmokeFailure(step, f'unexpected receipt {row}')
+        if row['event'] == 'motion':
+            observed.append(('motion', row['x'], row['y']))
+        elif row['event'] == 'axis_value120':
+            wheel.append((row['axis'], row['value120']))
+        elif row['event'] == 'axis':
+            continuous.append((row['axis'], row['value'] > 0))
+        elif row['event'] == 'pointer_frame' and (wheel or continuous):
+            if continuous != [(axis, value > 0) for axis, value in wheel]:
+                raise SmokeFailure(step, f'axis values {continuous} do not match value120 {wheel}')
+            observed.append(('wheel', row['x'], row['y'], wheel))
+            wheel, continuous = [], []
+    if observed != EXPECTED_POINTER or wheel or continuous:
+        raise SmokeFailure(step, f'expected {EXPECTED_POINTER}, saw {observed} (unframed {wheel})')
+
+
+def ink_bands(path):
+    """Tops of runs of text rows (>= 3 pixels unlike the background) in an editor window screenshot."""
+    from PIL import Image  # A prerequisite (python-pillow); only the editor check needs it.
+    with Image.open(path) as image:
+        gray = image.convert('L')
+    area = gray.crop((0, EDITOR_TEXT_TOP, gray.width - EDITOR_SCROLLBAR, gray.height - 8))
+    histogram = area.histogram()
+    background = histogram.index(max(histogram))
+    data = area.point(lambda value: 255 if abs(value - background) > 64 else 0).tobytes()
+    rows = [y for y in range(area.height) if data[y * area.width:(y + 1) * area.width].count(255) >= 3]
+    return [EDITOR_TEXT_TOP + y for index, y in enumerate(rows) if index == 0 or y - rows[index - 1] > 3]
 
 
 def check_key_log(log):

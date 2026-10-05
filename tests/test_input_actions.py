@@ -12,7 +12,8 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop import cli
 from agent_desktop.contracts import ContractError, make_request, response
-from agent_desktop.input_actions import CLICK_GAP, CLICK_HOLD, RECHECK, ClickTask, InputTask
+from agent_desktop.input_actions import (CLICK_GAP, CLICK_HOLD, RECHECK, SCROLL_GAP, ClickTask, InputTask, MoveTask,
+                                         ScrollTask)
 from agent_desktop.keymap import KEYS, SHIFT, parse_chord, text_strokes
 from agent_desktop.screenshots import crop_rect
 from agent_desktop.shutdown import release_input
@@ -81,6 +82,7 @@ class Owner:
         self.events = []
         self.fail_release = False
         self.fail_press_at = None
+        self.fail_scroll_at = None
 
     def press(self, codes, kind='keyboard'):
         assert not self.device.held
@@ -98,6 +100,14 @@ class Owner:
     def move(self, x, y):
         self.device.emulating = True  # Like Input.move: emulation opens before motion.
         self.events.append(('move', (x, y), time.monotonic()))
+
+    def scroll(self, dx, dy):
+        assert not self.device.held and (dx, dy) != (0, 0) and {dx, dy} <= {-1, 0, 1}
+        self.device.emulating = True
+        if self.fail_scroll_at == sum(event[0] == 'scroll' for event in self.events):
+            self.uncertain = True  # Like Input.scroll: a failed native call leaves the connection uncertain.
+            raise ContractError('input_failed', 'Native scroll failed.')
+        self.events.append(('scroll', (dx, dy), time.monotonic()))
 
     def release(self):
         if self.fail_release:
@@ -357,6 +367,166 @@ class ClickTaskTests(unittest.TestCase):
                     {'x': -1}, {'x': '1.5'}):
             with self.subTest(bad=bad), self.assertRaises(ContractError):
                 make_request('click', arguments={'x': 1, 'y': 1, **bad}, caller_cwd='/')
+
+
+class PointerMotionTests(unittest.TestCase):
+    """move and scroll: the point rules are click's; scroll adds paced wheel steps."""
+    CLIENT = {'x': 290, 'y': 100, 'width': 700, 'height': 520}
+    run_task = InputTaskTests.run_task
+
+    def make(self, operation, window=True, plan=(), timeout=None, **arguments):
+        if window:
+            arguments['window'] = WINDOW
+        request = make_request(operation, arguments=arguments, caller_cwd='/', timeout_seconds=timeout)
+        self.effects = []
+        work = SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + request.timeout_seconds),
+                               error=None)
+        context = SimpleNamespace(work=work, effects=lambda partial, uncertain=False: self.effects.append((dict(partial), uncertain)))
+        self.owner = Owner()
+        Recheck.created, Recheck.plan = [], list(plan)
+        self.patch = patch('agent_desktop.input_actions.TargetTask', Recheck)
+        self.patch.start()
+        self.addCleanup(self.patch.stop)
+        task = {'move': MoveTask, 'scroll': ScrollTask}[operation](request, context, None, lambda: self.owner,
+                                                                   None, lambda: None)
+        if task.target is not None:
+            task.target.result = dict(task.target.result, client=dict(self.CLIENT))
+        return task
+
+    def kinds(self):
+        return [event[:2] for event in self.owner.events]
+
+    def test_window_move_maps_client_coordinates_requires_focus_and_closes_emulation(self):
+        task = self.make('move', x=107, y=23)
+        self.assertEqual(task.target.kwargs, {'condition': 'observe', 'require_focus': True, 'require_client': True})
+        result = self.run_task(task)
+        self.assertEqual(self.kinds(), [('move', (397, 123)), ('stop_emulating', [])])
+        self.assertFalse(self.owner.device.emulating)
+        self.assertEqual({key: result[key] for key in ('x', 'y', 'screen_x', 'screen_y', 'focused', 'dispatched')},
+                         {'x': 107, 'y': 23, 'screen_x': 397, 'screen_y': 123, 'focused': True, 'dispatched': True})
+        self.assertEqual(result['client'], self.CLIENT)
+        self.assertNotIn('button', result)
+        self.assertEqual(self.effects, [({'window': WINDOW, 'phase': 'emitting', 'motion': [397, 123]}, True)])
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_screen_move_and_scroll_skip_targeting_and_check_screen_bounds(self):
+        for operation, extra in (('move', {}), ('scroll', {'dy': 1})):
+            with self.subTest(operation=operation):
+                task = self.make(operation, window=False, x=1279, y=0, **extra)
+                self.assertIsNone(task.target)
+                result = self.run_task(task)
+                self.assertEqual(self.owner.events[0][:2], ('move', (1279, 0)))
+                self.assertEqual((result['window'], result['focused'], result['client']), (None, None, None))
+                for x, y in ((1280, 0), (0, 720)):
+                    with self.assertRaises(ContractError) as caught:
+                        self.make(operation, window=False, x=x, y=y, **extra).step(time.monotonic())
+                    self.assertEqual(caught.exception.context['reason'], 'outside_screen')
+                    self.assertEqual(self.owner.events, [])
+
+    def test_points_outside_the_client_area_send_nothing(self):
+        for operation, extra in (('move', {}), ('scroll', {'dy': -2})):
+            for x, y in ((700, 0), (0, 520)):
+                with self.subTest(operation=operation, x=x, y=y):
+                    task = self.make(operation, x=x, y=y, **extra)
+                    with self.assertRaises(ContractError) as caught:
+                        task.step(time.monotonic())
+                    self.assertEqual(caught.exception.context['reason'], 'outside_window')
+                    self.assertEqual((self.owner.events, self.effects), ([], []))
+
+    def test_focus_and_compositor_surface_refusals_send_nothing(self):
+        refusals = (ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'}),
+                    ContractError('target_lost', 'A compositor surface has input.',
+                                  context={'reason': 'compositor_surface_open', 'blocking_windows': []}))
+        for operation, extra in (('move', {}), ('scroll', {'dy': 3})):
+            for refusal in refusals:
+                with self.subTest(operation=operation, reason=refusal.context['reason']):
+                    task = self.make(operation, x=5, y=5, **extra)
+                    task.target.error = refusal
+                    with self.assertRaises(ContractError) as caught:
+                        task.step(time.monotonic())
+                    self.assertIs(caught.exception, refusal)
+                    self.assertNotIn('steps_sent', caught.exception.context)
+                    self.assertEqual((self.owner.events, self.effects), ([], []))
+
+    def test_scroll_moves_first_then_sends_signed_single_notches_paced_apart(self):
+        task = self.make('scroll', x=10, y=20, dy=-3)
+        result = self.run_task(task)
+        self.assertEqual(self.kinds(), [('move', (300, 120))] + [('scroll', (0, -1))] * 3 + [('stop_emulating', [])])
+        times = [event[2] for event in self.owner.events[:4]]
+        self.assertTrue(all(b - a >= SCROLL_GAP for a, b in zip(times, times[1:])))
+        self.assertEqual((result['dx'], result['dy'], result['steps']), (0, -3, 3))
+        self.assertEqual((result['screen_x'], result['screen_y']), (300, 120))
+        self.assertEqual(self.effects, [({'window': WINDOW, 'phase': 'emitting', 'motion': [300, 120],
+                                          'steps_total': 3}, True)])
+        self.assertFalse(self.owner.device.emulating)
+
+    def test_diagonal_scroll_steps_both_axes_until_the_shorter_one_is_done(self):
+        self.run_task(self.make('scroll', window=False, x=1, y=1, dx=2, dy=-4))
+        self.assertEqual([event[1] for event in self.owner.events if event[0] == 'scroll'],
+                         [(1, -1), (1, -1), (0, -1), (0, -1)])
+        self.run_task(self.make('scroll', window=False, x=1, y=1, dx=-1))
+        self.assertEqual([event[1] for event in self.owner.events if event[0] == 'scroll'], [(-1, 0)])
+
+    def test_scroll_budget_covers_fifty_steps_inside_the_default_timeout(self):
+        task = self.make('scroll', x=1, y=1, dx=50, dy=-50)
+        self.assertEqual(len(task.strokes), 50)
+        self.assertLess(task.estimate() + .1, 3)
+        self.assertGreater(task.estimate(), 50 * SCROLL_GAP)
+        with self.assertRaises(ContractError) as caught:
+            self.make('scroll', x=1, y=1, dy=50, timeout=.5).step(time.monotonic())
+        self.assertEqual((caught.exception.code, caught.exception.context['phase']), ('timeout', 'budget'))
+        self.assertIn('fewer steps', caught.exception.context['hint'])
+        self.assertEqual(self.owner.events, [])
+
+    def test_native_failure_midway_reports_steps_sent_and_closes_emulation(self):
+        task = self.make('scroll', x=1, y=1, dx=-1, dy=5)
+        self.owner.fail_scroll_at = 2
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        context = caught.exception.context
+        self.assertEqual({key: context[key] for key in ('steps_sent', 'steps_total', 'dx_sent', 'dy_sent', 'pointer_moved')},
+                         {'steps_sent': 2, 'steps_total': 5, 'dx_sent': -1, 'dy_sent': 2, 'pointer_moved': True})
+        self.assertEqual(self.effects[0][1], True)  # Marked uncertain before the motion: outcome "unknown".
+        self.assertEqual(self.owner.events[-1][0], 'stop_emulating')
+        self.assertFalse(self.owner.device.emulating)
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_focus_loss_mid_scroll_stops_with_progress(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        task = self.make('scroll', plan=[{'error': lost}], x=1, y=1, dy=40)
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        context = caught.exception.context
+        self.assertEqual((caught.exception.code, context['reason']), ('target_lost', 'focus_lost'))
+        self.assertTrue(0 < context['steps_sent'] < 40)
+        self.assertEqual((context['dy_sent'], context['dx_sent'], context['focus_rechecks']),
+                         (context['steps_sent'], 0, 0))
+        self.assertEqual(self.owner.events[-1][0], 'stop_emulating')
+        self.assertFalse(self.owner.device.emulating)
+
+    def test_long_scroll_is_rechecked_and_succeeds_while_focus_holds(self):
+        result = self.run_task(self.make('scroll', plan=[{}] * 10, x=1, y=1, dy=30))
+        self.assertGreaterEqual(result['focus_rechecks'], 1)
+        self.assertEqual(sum(event[0] == 'scroll' for event in self.owner.events), 30)
+
+    def test_cancel_mid_scroll_stops_and_closes_emulation_with_progress(self):
+        task = self.make('scroll', window=False, x=1, y=1, dy=20)
+        task.context.work.error = ContractError('cancelled', 'Request interrupted.')
+        end = time.monotonic() + 5
+        while sum(event[0] == 'scroll' for event in self.owner.events) < 2 and time.monotonic() < end:
+            task.step(time.monotonic()); time.sleep(.001)
+        task.request_cancel('client_disconnected')
+        self.assertFalse(self.owner.device.emulating)
+        self.assertEqual(task.context.work.error.context['steps_sent'], 2)
+        self.assertEqual(task.context.work.error.context['dy_sent'], 2)
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_motion_failure_reports_that_nothing_was_scrolled(self):
+        task = self.make('scroll', x=1, y=1, dy=2)
+        self.owner.move = Mock(side_effect=ContractError('input_unavailable', 'Input changed during emission.'))
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual((caught.exception.context['steps_sent'], caught.exception.context['pointer_moved']), (0, False))
 
 
 class Recheck(Target):

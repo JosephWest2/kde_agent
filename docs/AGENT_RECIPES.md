@@ -20,7 +20,7 @@ Refs are `GENERATION:ID` strings copied from results (`result.application.ref`,
 
 ## Focus before input
 
-`key`, `type` and `click --window` only send input to the active window. If the
+`key`, `type`, and `click`, `move` or `scroll` with `--window`, only send input to the active window. If the
 window isn't active they fail with `target_lost` (reason `focus_lost`) and send
 nothing. Reason `compositor_surface_open` means KWin's window menu is open; see
 [below](#tooltips-popovers-and-the-window-menu).
@@ -35,14 +35,15 @@ launching an app, or a click on another window.
 
 If focus is lost during a hold or a long `type`, everything held is released and
 the request fails with `target_lost`, reporting `strokes_sent`, `strokes_total`,
-`key_held` and `focus_rechecks`. Detection is not instant: the window is rechecked
+`key_held` and `focus_rechecks` (a long `scroll` stops the same way and reports
+`steps_sent`, `steps_total`, `dx_sent` and `dy_sent`). Detection is not instant: the window is rechecked
 about every 250ms, so typically 0.25–0.35s (at worst about 0.75s) of input,
 release included, can reach whatever took focus ([INPUT.md](INPUT.md)). Some of
 the `strokes_sent` may have landed in the other window, and an interrupted held
 key may already have taken effect. Treat it like `completion_unknown`: before
 deciding what to resend, inspect the target (screenshot, title, app state), the
 window that took focus, and the reported progress. Don't just refocus and send
-the rest. `click` without `--window` uses screen coordinates and checks
+the rest. `click`, `move` and `scroll` without `--window` use screen coordinates and check
 nothing about focus. `screenshot --window` doesn't need focus.
 
 ## Modal dialogs
@@ -135,9 +136,53 @@ $D windows                                   # no row with kind "compositor"
 $D key --window WIN_REF ctrl+a               # input works again
 ```
 
+## Hover and scrolling
+
+`move` puts the pointer on a point and presses nothing. It has the same
+coordinates and focus rule as `click`. Use it to hover a button or menu item:
+
+```sh
+$D focus --window WIN_REF
+$D move --window WIN_REF --x 107 --y 23        # hover gnome-text-editor's "New Tab" button
+# hover effects show at once; tooltips after the toolkit's delay (often 0.5–1s)
+$D windows --app APP_REF                       # a tooltip is an untitled kind "popup" row
+$D screenshot --window WIN_REF
+```
+
+- The pointer stays where it is until the next `click`, `move` or `scroll`, so later
+  screenshots keep showing the hover. Move it to an empty spot to clear it.
+- A `move` to the point where the pointer already is does not restart a tooltip.
+  Move away and back.
+
+`scroll` turns the mouse wheel at a point. The wheel scrolls whatever is under the
+pointer, not the focused widget, so put the point over the list, document or
+canvas you want to scroll:
+
+```sh
+$D scroll --window WIN_REF --x 350 --y 300 --dy 5    # 5 notches down: the content moves up
+$D scroll --window WIN_REF --x 350 --y 300 --dy -5   # 5 notches up
+$D scroll --window WIN_REF --x 350 --y 300 --dx 3    # 3 notches right, where the view scrolls sideways
+$D screenshot --window WIN_REF                       # see where it ended up
+```
+
+- Positive `--dy` is down and negative is up. Positive `--dx` is right and
+  negative is left. A request takes at most 50 notches per axis, which fits the
+  3s budget; repeat the request for more.
+- How far a notch goes is up to the app: about 60px (2.5 lines) in
+  gnome-text-editor. Scroll in small requests and check with a screenshot rather
+  than overshooting. In documents, keys such as `ctrl+home`, `ctrl+end` and
+  `page_down` are often more precise.
+- Canvases and maps often zoom on the wheel instead of scrolling. Scrolling with
+  a key held (ctrl+wheel to zoom, shift+wheel to scroll sideways) is not supported.
+- Scrolling something that can't scroll, or a screen point with no window, still
+  succeeds with `dispatched: true`, so check the result in a screenshot.
+- A long `scroll` that loses focus stops with `target_lost` and reports
+  `steps_sent`; some steps may have gone to whatever was under the pointer.
+  Inspect before you scroll the rest, as for [focus loss](#focus-before-input).
+
 ## Client vs screen coordinates
 
-- `click --window REF --x X --y Y` takes **client-area** pixels, the same space
+- `click --window REF --x X --y Y` (and `move` or `scroll` with `--window`) takes **client-area** pixels, the same space
   as `screenshot --window REF`. A pixel at (x, y) in a window screenshot is the
   same `--x x --y y`, as long as the window is fully on screen (for clipped
   windows, see [Screenshots](CLI.md#screenshots)).
@@ -145,7 +190,7 @@ $D key --window WIN_REF ctrl+a               # input works again
   header bar**. gnome-text-editor's "New Tab" button is at about client (107, 23).
   Qt/KDE apps get a KWin title bar, which is outside the client area. You can't
   click it with `--window`, and it appears only in full-screen screenshots.
-- `click --x X --y Y` without `--window` takes **screen** pixels (0–1279, 0–719,
+- `click --x X --y Y` (and `move` or `scroll`) without `--window` takes **screen** pixels (0–1279, 0–719,
   as in a full screenshot). There is no window or focus check, so whatever is at
   that point gets the click. The screen point of a client pixel is
   `client.x + x`, `client.y + y`, using `client` from `windows`. With client
@@ -170,8 +215,8 @@ automatically.
 
 ## Recovering from `input_uncertain`
 
-The worker couldn't confirm that a key or button was released, so `key`, `type`
-and `click` are refused with `input_uncertain` (exit 9) for the rest of the
+The worker couldn't confirm that a key or button was released, so `key`, `type`,
+`click`, `move` and `scroll` are refused with `input_uncertain` (exit 9) for the rest of the
 session. There is no `input reset`.
 
 ```sh

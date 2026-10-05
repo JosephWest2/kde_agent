@@ -8,6 +8,8 @@ generation's cgroup and no systemd unit:
     focus-loss       focus moves to another window during `key --hold 2`
     cancel-hold      Ctrl-C on the client during `key --hold 2`
     cancel-type      Ctrl-C on the client during a long `type`
+    scroll-interrupted  Ctrl-C, then focus loss, during `scroll --dy 50`: the
+                     wheel stops and steps_sent matches what the fixture got
     generation       stale and mismatched generations are refused
     compositor-death SIGKILL kwin_wayland
     bus-death        SIGKILL the private dbus-daemon
@@ -167,6 +169,57 @@ class Scenario(smoke.Smoke):
             raise SmokeFailure('cancel-type', f'{typed} characters, then {later}; typing must stop at cancel')
         ok('cancel-type', f'typing stopped after {typed} of 1500 characters')
         self.expect_released('cancel-type: release', log)
+
+    def scroll_interrupted(self):
+        """A long scroll stops between wheel steps, and its progress counts exactly the steps sent."""
+        _, window, log = self.fixture_window('--sibling', windows=2)
+        sibling = self.windows[1]['window']
+        wheel = lambda: log_events(log, {'axis_value120', 'axis_stop'})
+        scroll = ('scroll', '--session', self.session, '--window', window, '--x', '100', '--y', '100', '--dy', '50')
+        process = self.background_cli(*scroll)
+        smoke_wait(wheel, lambda rows: len(rows) >= 3)
+        process.send_signal(signal.SIGINT)
+        out, _ = process.communicate(timeout=10)
+        payload = json.loads(out)
+        if payload['ok'] or payload['error']['code'] != 'cancelled' or process.returncode != 130:
+            raise SmokeFailure('scroll-interrupted: cancel', f'exit {process.returncode}: {json.dumps(payload)[:400]}')
+        # The interrupted CLI reports a local cancellation, so it has no worker progress to compare.
+        self.expect_wheel_stopped('scroll-interrupted: cancel', wheel, 0, payload['error'], progress=False)
+        cancelled = len(wheel())
+        self.desktop('scroll-interrupted: scroll afterwards', *scroll[:1], *scroll[3:-1], '1')
+        before = len(smoke_wait(wheel, lambda rows: len(rows) > cancelled))
+        if before != cancelled + 1:
+            raise SmokeFailure('scroll-interrupted: scroll afterwards', f'{before - cancelled} wheel steps received')
+
+        kdotool = str(Path(self.dependency_root) / KDOTOOL)
+        def steal():
+            smoke_wait(wheel, lambda rows: len(rows) >= before + 3)
+            subprocess.run([kdotool, 'windowactivate', '{' + sibling['window_id'] + '}'], env=self.private_env(),
+                           capture_output=True, timeout=5, stdin=subprocess.DEVNULL)
+        thief = threading.Thread(target=steal)
+        thief.start()
+        payload = self.desktop('scroll --dy 50 (focus stolen)', *scroll[:1], *scroll[3:], expect_ok=False)
+        thief.join()
+        error = payload['error'] or {}
+        if (error.get('code'), error.get('context', {}).get('reason')) != ('target_lost', 'focus_lost'):
+            raise SmokeFailure('scroll-interrupted: focus', f'expected target_lost/focus_lost, got {json.dumps(payload)[:400]}')
+        self.expect_wheel_stopped('scroll-interrupted: focus', wheel, before, error)
+
+    def expect_wheel_stopped(self, step, wheel, before, error, progress=True):
+        """The wheel stopped part way, with no scroll stop, and the error reports exactly the steps received."""
+        time.sleep(.3)
+        rows = wheel()[before:]
+        time.sleep(.3)
+        later = wheel()[before:]
+        context = error.get('context', {})
+        if (any(row['event'] == 'axis_stop' for row in rows) or len(later) != len(rows) or not 3 <= len(rows) < 50
+                or any(row['value120'] != 120 for row in rows) or error.get('outcome') != 'unknown'
+                or progress and (context.get('steps_sent'), context.get('dy_sent'), context.get('steps_total'))
+                != (len(rows), len(rows), 50)):
+            raise SmokeFailure(step, f'{len(rows)} then {len(later)} wheel steps received; error {json.dumps(error)[:400]}')
+        surfaces = sorted({str(row['surface']) for row in rows})
+        ok(step, f'{error["code"]} after {len(rows)} of 50 steps (on {", ".join(surfaces)}); '
+                 f'{"steps_sent matches, " * progress}no axis_stop')
 
     def generation_refusal(self):
         _, window, _ = self.fixture_window()
@@ -392,6 +445,7 @@ def ok(step, detail):
 
 
 SCENARIOS = {'focus-loss': 'focus_loss', 'cancel-hold': 'cancel_hold', 'cancel-type': 'cancel_type',
+             'scroll-interrupted': 'scroll_interrupted',
              'generation': 'generation_refusal', 'compositor-death': 'compositor_death', 'bus-death': 'bus_death',
              'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'title-gone': 'title_gone_waits'}
 

@@ -326,12 +326,17 @@ static void button(void *data, struct wl_pointer *p, uint32_t serial, uint32_t t
     ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
 static void axis(void *d, struct wl_pointer *p, uint32_t t, uint32_t a, wl_fixed_t v) { (void)d; (void)p; input_event("axis", pointer_surface); printf(",\"time_ms\":%u,\"axis\":%u,\"value\":%.3f}\n", t, a, wl_fixed_to_double(v)); }
-/* Bind pointer v5: all events through v5 have handlers. */
-static void pointer_frame(void *d, struct wl_pointer *p) { (void)d; (void)p; }
-static void axis_source(void *d, struct wl_pointer *p, uint32_t s) { (void)d; (void)p; (void)s; }
-static void axis_stop(void *d, struct wl_pointer *p, uint32_t t, uint32_t a) { (void)d; (void)p; (void)t; (void)a; }
-static void axis_discrete(void *d, struct wl_pointer *p, uint32_t a, int32_t s) { (void)d; (void)p; (void)a; (void)s; }
-static const struct wl_pointer_listener pointer_listener = { .enter = pointer_enter, .leave = pointer_leave, .motion = motion, .button = button, .axis = axis, .frame = pointer_frame, .axis_source = axis_source, .axis_stop = axis_stop, .axis_discrete = axis_discrete };
+/* Bind pointer v9: all events through v9 have handlers. Scroll receipts keep the
+ * protocol's own numbers: axis 0 vertical / 1 horizontal (positive is down/right),
+ * axis_source 0 wheel / 1 finger / 2 continuous / 3 wheel tilt, direction 0
+ * identical / 1 inverted. A frame closes each group of pointer events. */
+static void pointer_frame(void *d, struct wl_pointer *p) { (void)d; (void)p; input_event("pointer_frame", pointer_surface); printf(",\"x\":%.3f,\"y\":%.3f}\n", pointer_x, pointer_y); }
+static void axis_source(void *d, struct wl_pointer *p, uint32_t s) { (void)d; (void)p; input_event("axis_source", pointer_surface); printf(",\"axis_source\":%u}\n", s); }
+static void axis_stop(void *d, struct wl_pointer *p, uint32_t t, uint32_t a) { (void)d; (void)p; input_event("axis_stop", pointer_surface); printf(",\"time_ms\":%u,\"axis\":%u}\n", t, a); }
+static void axis_discrete(void *d, struct wl_pointer *p, uint32_t a, int32_t s) { (void)d; (void)p; input_event("axis_discrete", pointer_surface); printf(",\"axis\":%u,\"discrete\":%d}\n", a, s); }
+static void axis_value120(void *d, struct wl_pointer *p, uint32_t a, int32_t v) { (void)d; (void)p; input_event("axis_value120", pointer_surface); printf(",\"axis\":%u,\"value120\":%d}\n", a, v); }
+static void axis_relative_direction(void *d, struct wl_pointer *p, uint32_t a, uint32_t direction) { (void)d; (void)p; input_event("axis_relative_direction", pointer_surface); printf(",\"axis\":%u,\"direction\":%u}\n", a, direction); }
+static const struct wl_pointer_listener pointer_listener = { .enter = pointer_enter, .leave = pointer_leave, .motion = motion, .button = button, .axis = axis, .frame = pointer_frame, .axis_source = axis_source, .axis_stop = axis_stop, .axis_discrete = axis_discrete, .axis_value120 = axis_value120, .axis_relative_direction = axis_relative_direction };
 static void capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
     (void)data;
     if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !keyboard) { keyboard = wl_seat_get_keyboard(seat); wl_keyboard_add_listener(keyboard, &keyboard_listener, NULL); }
@@ -349,7 +354,7 @@ static void global(void *data, struct wl_registry *registry, uint32_t id, const 
     else if (!strcmp(interface, "xdg_wm_base")) { shell = wl_registry_bind(registry, id, &xdg_wm_base_interface, version < 4 ? version : 4); xdg_wm_base_add_listener(shell, &shell_listener, NULL); }
     else if (!strcmp(interface, "wp_presentation")) { presentation = wl_registry_bind(registry, id, &wp_presentation_interface, 1); wp_presentation_add_listener(presentation, &presentation_listener, NULL); }
     else if (!strcmp(interface, "wl_output")) { ++output_count; struct wl_output *o = wl_registry_bind(registry, id, &wl_output_interface, version < 4 ? version : 4); only_output = o; wl_output_add_listener(o, &output_listener, NULL); }
-    else if (!strcmp(interface, "wl_seat")) { struct wl_seat *seat = wl_registry_bind(registry, id, &wl_seat_interface, version < 5 ? version : 5); wl_seat_add_listener(seat, &seat_listener, NULL); }
+    else if (!strcmp(interface, "wl_seat")) { struct wl_seat *seat = wl_registry_bind(registry, id, &wl_seat_interface, version < 9 ? version : 9); wl_seat_add_listener(seat, &seat_listener, NULL); }
 }
 static void global_remove(void *data, struct wl_registry *registry, uint32_t id) { (void)data; (void)registry; event("global_remove"); printf(",\"id\":%u}\n", id); }
 static const struct wl_registry_listener registry_listener = { .global = global, .global_remove = global_remove };

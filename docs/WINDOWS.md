@@ -54,14 +54,15 @@ never targeted:
   A full `screenshot` still shows them. The one exception is the passive
   `wait --for gone --window`, which accepts any row kind, so an agent can wait
   for a tooltip, popover or the window menu to disappear.
-- Window input (`key`, `type`, `click --window`) is refused while a compositor
+- Window input (`key`, `type`, and `click`, `move` or `scroll` with `--window`) is refused while a compositor
   row is listed: `target_lost`, reason `compositor_surface_open` (context
   `blocking_windows`). Found by the check before the first stroke, the refusal
   sends nothing and has outcome `not_started`. A menu that opens during a long
-  `type` or hold is found only by the next focus recheck ([INPUT.md](INPUT.md)),
+  `type`, hold or `scroll` is found only by the next focus recheck ([INPUT.md](INPUT.md)),
   after some strokes may have reached the menu; input continues while that
   asynchronous recheck runs. That failure releases what is held, reports
-  `strokes_sent`, `strokes_total`, `key_held` and `focus_rechecks` in its context,
+  `strokes_sent`, `strokes_total`, `key_held` and `focus_rechecks` (for `scroll`:
+  `steps_sent`, `steps_total`, `dx_sent`, `dy_sent`) in its context,
   and has outcome `unknown` (the effect record was marked uncertain before the
   first stroke). Don't resend the input wholesale: inspect the window first, as
   for `focus_lost`. KWin keeps the
@@ -209,9 +210,9 @@ establish a total ordering of unseen real-world events or a freshness lease.
 
 Focus returns current `client`/`frame`, exact `window`, `active_window`, `focused`,
 association verification and query observation/acceptance times. `client` may be
-null. Input (`key`, `type`, `click --window`) uses the read-only
+null. Input (`key`, `type`, and `click`, `move` and `scroll` with `--window`) uses the read-only
 `current_target`/`TargetTask(condition='observe')` check to demand focus and, for
-`click`, client geometry; missing geometry explicitly fails with
+the pointer commands, client geometry; missing geometry explicitly fails with
 `client_geometry_unavailable` and never substitutes frame geometry. Focus itself
 emits no input.
 

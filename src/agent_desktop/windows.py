@@ -65,8 +65,11 @@ class Query:
 
     def __init__(self, owner, request_id, deadline, application):
         self.owner, self.desktop, self.registry = owner, owner.desktop, owner.registry
-        self.request_id, self.deadline, self.application = request_id, deadline, application
-        self.budget = None  # From the first step; self.deadline is then its value at the last check.
+        self.request_id, self.application = request_id, application
+        # The work budget runs from initiation, not the first step, so a stall in
+        # between still counts. self.deadline is its value at the last check.
+        self.budget = Budget(self.work_seconds, limit=deadline, clock=getattr(self.desktop, 'owner_clock', None))
+        self.deadline = self.budget.at()
         self.id = uuid.uuid4().hex
         self.name = 'agent-window-' + owner.generation + '-' + self.id
         self.phase = 'prepare'
@@ -98,12 +101,11 @@ class Query:
     def check(self):
         if self.error is not None:
             raise self.error
-        if self._expired(time.monotonic()):
+        if self._expired(self.budget.now()):
             raise ContractError('timeout', 'Window query deadline expired.')
 
     def _expired(self, now):
-        if self.budget is not None:
-            self.deadline = self.budget.at(now)
+        self.deadline = self.budget.at(now)
         return now >= self.deadline
 
     def _bus(self, deadline):
@@ -270,9 +272,6 @@ class Query:
     def step(self):
         self.check()
         if self.phase == 'prepare':
-            self.budget = Budget(self.work_seconds, limit=self.deadline,
-                                 clock=getattr(self.desktop, 'owner_clock', None))
-            self.deadline = self.budget.at()
             if self.application is not None:
                 self.registry.lookup(self.application)
             self.bracket = None if self.registry is None else self.registry.begin_window_observation()

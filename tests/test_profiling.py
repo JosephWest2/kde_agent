@@ -347,6 +347,25 @@ class ProfilingTests(unittest.TestCase):
         self.assertRegex(output.getvalue(), r'windows +abcd admitted +500 ms; owner late +205 ms of it, '
                                             r'worst late probe 400\.0 ms')
 
+    def test_hold_timing_runs_to_the_confirmed_release(self):
+        root = Path(self.store.root).parent / 'agent-desktop-smoke-abcd1234' / 'logs'
+        root.mkdir(parents=True)
+        event = {'kind': 'input', 'rid': 'abcd', 'active': 'click', 'path': None}
+        lines = [{'kind': 'start', 't': 10.0},
+                 event | {'ev': 'press', 't': 10.0, 'hold': .02, 'held_before': 0, 'held': 1},
+                 # The first attempt left the button held and input uncertain; the second released it.
+                 event | {'ev': 'release', 't': 10.05, 'held_before': 1, 'held': 1, 'uncertain': True},
+                 event | {'ev': 'release', 't': 10.22, 'held_before': 1, 'held': 0},
+                 {'kind': 'summary', 't': 11.0, 'final': True, 'probe': {'samples': 1, 'max_ms': 0.0,
+                  'hist': {'0.0': 1}}, 'roots': {}, 'paths': {}}]
+        (root / 'owner-profile.jsonl').write_text(''.join(json.dumps(line) + '\n' for line in lines))
+        output = io.StringIO()
+        with redirect_stdout(output):
+            owner_profile.main([str(root.parent.parent)])
+        report = output.getvalue()
+        self.assertRegex(report, r'click hold 20ms +n=1 +median +200\.0 +p99 +200\.0 +max +200\.0')
+        self.assertIn('releases that left input held or uncertain: 1', report)
+
     def test_bucket_resolution(self):
         self.assertEqual([profiling.bucket(v) for v in (0.04, 2.37, 12.9, 140.2)], [0.0, 2.3, 12.0, 140.0])
 

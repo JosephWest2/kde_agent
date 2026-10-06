@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 610 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 614 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 614 of the 623
+have a user systemd manager, so `test_lifecycle_process` runs there: 618 of the 627
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
@@ -219,9 +219,10 @@ Limits:
   `truncated` record. That is a few minutes of smoke-like activity.
 - A fault in the profiler turns it off with a `failed` record. The worker
   carries on, and the profiler still unwraps everything at exit.
-- The profile's own writes can block the owner like any other write. They are
-  charged to `profiler.write`. On btrfs that was 0.7–0.8% of owner time idle
-  and 0.1% under write load, and no single write took over 7ms
+- The profile's own writes are synchronous on the owner thread, so on a
+  throttled or saturated disk they can block the owner like any other write.
+  They are charged to `profiler.write`. On btrfs that was 0.7–0.8% of owner
+  time idle and 0.1% under write load, and no single write took over 7ms
   ([VALIDATION.md](VALIDATION.md#budgets-now-writer-thread-next)).
 
 ## When to run them

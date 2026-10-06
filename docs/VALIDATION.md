@@ -178,8 +178,9 @@ start of every owner tick. Owner stall time is the gaps between turns beyond
 10ms, plus the current turn's overrun. A `Budget` of `s` seconds starts with
 the deadline `start + s`. It moves that deadline later by the owner stall time
 since the start, but by no more than `s`, and never past its limit (the startup
-or request deadline). Without stalls it is the old deadline. Bounds for a hung
-KWin or bus:
+or request deadline). A window query's budget starts when the query is started,
+not at its first step. Without stalls the deadline is no later than before.
+Bounds for a hung KWin or bus, from when the wait starts:
 
 | Wait | Budget | Worst case before | Worst case now |
 | --- | --- | --- | --- |

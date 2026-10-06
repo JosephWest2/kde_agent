@@ -20,6 +20,14 @@ from agent_desktop.artifacts import Store, safe_projection
 from agent_desktop.app_processes import Registry, Application, birth
 
 GEN = 'a' * 32
+
+
+class FakeClock:
+    def __init__(self, now):
+        self.now = now
+
+    def __call__(self):
+        return self.now
 UID = '12345678-1234-1234-1234-123456789abc'
 
 
@@ -474,28 +482,69 @@ class QueryTests(unittest.TestCase):
         self.clean(query)
         self.assertFalse(path.exists())
 
-    def test_owner_stall_extends_the_query_budget_to_at_most_twice(self):
-        self.mode = 'hang'  # KWin never answers: only the budget ends the query.
-        for stalled, low, high in ((False, .45, .9), (True, .95, 1.45)):
-            with self.subTest(stalled=stalled):
-                owner = OwnerClock()
-                self.desktop.owner_clock = owner
-                query = self.adapter.start('request', time.monotonic() + 5)
+    def hung_query(self, now, deadline=110.0, start=None):
+        """A query whose KWin never answers, on an injected owner clock; its child is real."""
+        self.mode = 'hang'
+        owner = OwnerClock(now)
+        owner.turn()
+        self.desktop.owner_clock = owner  # self.desktop is new for each test.
+        query = (start or self.adapter.start)('request', deadline)
+        return owner, query
+
+    def advance(self, query, owner, now, until, *, stall=False):
+        """Owner turns to `until`: one turn if stalled, else every 5ms; the query steps after each."""
+        while now.now < until:
+            now.now = until if stall else min(until, now.now + .005)
+            owner.turn()
+            self.children.poll()
+            query.step()
+
+    def expire(self, query):
+        with self.assertRaises(ContractError) as caught:
+            query.step()
+        self.assertEqual(caught.exception.code, 'timeout')
+        query.cancel(caught.exception)
+        self.clean(query)
+
+    def test_query_work_budget_runs_from_initiation(self):
+        now = FakeClock(100.0)
+        owner, query = self.hung_query(now)
+        while now.now < 100.2:  # Regular owner turns, no stall, but the first step only comes now.
+            now.now = min(100.2, now.now + .005)
+            owner.turn()
+        query.step()
+        self.assertEqual(query.deadline, 100.5)  # Not 100.7: the budget began at initiation.
+        self.advance(query, owner, now, 100.495)
+        now.now = 100.5
+        owner.turn()
+        self.expire(query)
+
+    def test_owner_stall_before_and_during_the_query_counts_at_most_once_more(self):
+        for activation in (False, True):
+            with self.subTest(activation=activation):
+                now = FakeClock(100.0)
+                start = None
+                if activation:
+                    start = lambda request_id, deadline: self.adapter.activate(
+                        request_id, deadline, {'generation': GEN, 'window_id': UID}, lambda: None)
+                owner, query = self.hung_query(now, start=start)
+                self.advance(query, owner, now, 100.3, stall=True)  # Stalled before the first step.
+                self.assertAlmostEqual(query.deadline, 100.79)
+                self.advance(query, owner, now, 100.6, stall=True)  # And again during the query.
+                self.assertEqual(query.deadline, 101.0)  # Capped at twice the budget from initiation.
+                self.advance(query, owner, now, 100.995)
+                now.now = 101.0
                 owner.turn()
-                start = time.monotonic()
-                with self.assertRaises(ContractError) as caught:
-                    for _ in range(5000):
-                        if not stalled:
-                            owner.turn()  # Regular owner turns: nothing to discount.
-                        self.children.poll()
-                        query.step()
-                        time.sleep(.001)
-                elapsed = time.monotonic() - start
-                self.assertEqual(caught.exception.code, 'timeout')
-                self.assertTrue(low <= elapsed < high, elapsed)
-                query.cancel(caught.exception)
-                self.clean(query)
-        del self.desktop.owner_clock
+                self.expire(query)
+
+    def test_query_work_budget_never_passes_the_caller_deadline(self):
+        now = FakeClock(100.0)
+        owner, query = self.hung_query(now, deadline=100.5)  # A `windows` request: 0.5s in all.
+        self.advance(query, owner, now, 100.4, stall=True)
+        self.assertEqual(query.deadline, 100.5)
+        now.now = 100.5
+        owner.turn()
+        self.expire(query)
 
     def test_deadline_crossed_during_artifact_publication_keeps_observed_data_unaccepted(self):
         query = self.adapter.start('request', time.monotonic() + .5)

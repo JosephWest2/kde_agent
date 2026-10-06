@@ -109,6 +109,11 @@ def triggers(spans):
     return ' + '.join(sorted(names)) or '(root only)'
 
 
+def confirmed(release):
+    """A release that ended the hold: nothing held afterwards, input certain, the emission didn't raise."""
+    return release.get('held') == 0 and not release.get('uncertain') and not release.get('failed')
+
+
 def owner_lateness(late, start, end):
     """Owner lateness inside [start, end]: each late probe covers [t - ms - one interval, t].
 
@@ -256,6 +261,8 @@ def main(argv=None):
             name = event['ev']
             if event.get('failed'):
                 continue  # The emission raised; its time is not a release or press time.
+            if name == 'release' and not confirmed(event):
+                continue  # Input is still held or uncertain: the hold goes on to a confirmed release.
             if name == 'release' and previous and previous['ev'] == 'press' and 'hold' in previous:
                 over = (event['t'] - previous['t'] - previous['hold']) * 1000
                 kind = f'{event.get("active")} hold {previous["hold"] * 1000:g}ms'
@@ -314,7 +321,7 @@ def main(argv=None):
             if event['ev'] == 'press' and pressed is None and event.get('held_before') == 0 and event.get('held'):
                 pressed = event
             elif event['ev'] == 'release' and pressed is not None:
-                if event.get('held') == 0 and not event.get('uncertain') and not event.get('failed'):
+                if confirmed(event):
                     holds[file].append((pressed['t'], event['t']))
                     pressed = None
                 else:

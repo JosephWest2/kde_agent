@@ -7,7 +7,8 @@ deadline then blames KWin or the bus for the owner's delay. A Budget moves its
 deadline later by the owner stall time measured since it began, by at most the
 budget again. A hung peer is still detected within twice the budget, and never
 after the limit the Budget was given (a request's or startup's own deadline).
-Without an OwnerClock a Budget is a plain deadline.
+Without an OwnerClock a Budget is a plain deadline. A Budget reads the time from
+its OwnerClock unless it is given its own `now`.
 """
 from __future__ import annotations
 
@@ -46,7 +47,9 @@ class OwnerClock:
 class Budget:
     """seconds of time the owner was free to act, within at most 2 * seconds of wall time and before limit."""
 
-    def __init__(self, seconds, *, limit=None, clock=None, now=_monotonic):
+    def __init__(self, seconds, *, limit=None, clock=None, now=None):
+        if now is None:
+            now = clock.now if clock is not None else _monotonic
         self.clock, self.now = clock, now
         start = now()
         self.base = start + seconds

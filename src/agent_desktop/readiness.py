@@ -87,7 +87,8 @@ class Readiness:
     def _query_start(self):
         self.phase = 'window_query'
         self.query_id = 'readiness-' + self.generation
-        # The query applies its own work budget (windows.Query.work_seconds) within the startup deadline.
+        # The query's work budget (windows.Query.work_seconds) starts here, inside adapter.start,
+        # and is capped by the startup deadline.
         self.query_deadline = self.deadline
         self.query = self.adapter.start(self.query_id, self.query_deadline)
 

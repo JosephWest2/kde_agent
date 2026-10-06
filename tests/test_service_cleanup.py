@@ -277,6 +277,22 @@ class FinalizerTests(unittest.TestCase):
             self.assertIn('"/usr/bin/env" "-i"', value)
         self.assertEqual(unit_quote('/space $money %u "quote"'), '"/space $$money %%u \\"quote\\""')
 
+    def test_only_the_owner_profile_setting_reaches_the_worker(self):
+        runtime, data, root = self.setup_generation()
+        systemd = Systemd()
+        for value, passed in (('1', True), ('0', False), (None, False)):
+            environ = {} if value is None else {'AGENT_DESKTOP_PROFILE_OWNER': value}
+            with self.subTest(value=value), patch.dict(os.environ, environ), \
+                    patch.object(systemd, 'command') as command:
+                if value is None:
+                    os.environ.pop('AGENT_DESKTOP_PROFILE_OWNER', None)
+                systemd.start(data, runtime, ['/worker'], time.monotonic() + 2)
+                argv = command.call_args.args[0]
+                worker = argv[argv.index('--') + 1:]
+                self.assertEqual('AGENT_DESKTOP_PROFILE_OWNER=1' in worker, passed)
+                self.assertEqual(worker[-1], '/worker')
+                self.assertFalse(any('AGENT_DESKTOP_PROFILE_OWNER' in item for item in argv[:argv.index('--')]))
+
 
 class SurvivorTests(unittest.TestCase):
     def test_owned_pidfds_only_and_rescan_new_descendant(self):

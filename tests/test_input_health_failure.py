@@ -13,6 +13,7 @@ from gi.repository import GLib
 from agent_desktop.artifacts import Store
 from agent_desktop.contracts import ContractError
 from agent_desktop.input_connection import Input, Failure, Device
+from agent_desktop.owner_time import Budget
 from agent_desktop.readiness import Readiness
 from agent_desktop.runtime import Endpoint
 from agent_desktop.worker import run
@@ -79,7 +80,7 @@ class InputHealthFailure(unittest.TestCase):
             with self.subTest(first=first), tempfile.TemporaryDirectory(prefix='ihf-') as temporary:
                 provider = self.provider(Path(temporary))
                 provider.state = 'starting'
-                provider.round = {'deadline': time.monotonic() + 1, 'bus': True, 'compositor': True}
+                provider.round = {'deadline': Budget(1), 'bus': True, 'compositor': True}
                 original_round = provider.round
                 lib = Mock()
                 with patch('agent_desktop.input_connection.binding.load', return_value=lib):

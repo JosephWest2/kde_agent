@@ -122,6 +122,8 @@ class Systemd:
         # A clean worker environment avoids importing the user manager's desktop
         # endpoints or credentials. Desktop supplies its children private values.
         env = ['PATH=/usr/bin:/bin', 'LANG=C.UTF-8', 'XDG_RUNTIME_DIR=' + str(runtime.root.parent)]
+        # The opt-in owner profile (docs/TESTING.md) is the one caller setting passed to the worker.
+        profile = ['AGENT_DESKTOP_PROFILE_OWNER=1'] if os.environ.get('AGENT_DESKTOP_PROFILE_OWNER') == '1' else []
         log = str(Path(data['configuration']['artifacts']) / 'generations' / data['generation'] / 'logs' / 'worker.log').replace('%', '%%')
         helpers = []
         for operation, property_name in (('stop', 'ExecStop'), ('post', 'ExecStopPost')):
@@ -144,7 +146,7 @@ class Systemd:
                 '--property=StandardOutput=append:' + log, '--property=StandardError=append:' + log,
                 '--working-directory=/', '--expand-environment=no', '--', '/usr/bin/env', '-i', '-S',
                 'NOTIFY_SOCKET=${NOTIFY_SOCKET} WATCHDOG_USEC=${WATCHDOG_USEC} WATCHDOG_PID=${WATCHDOG_PID}',
-                *env, *command]
+                *env, *profile, *command]
         self.command(argv, deadline)
 
     def inspect(self, data, deadline):

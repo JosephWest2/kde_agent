@@ -67,6 +67,7 @@ ROOT/generations/GENERATION/
   record.lock
   events.jsonl
   logs/{worker,compositor,bus}.log
+  logs/owner-profile.jsonl        # only with AGENT_DESKTOP_PROFILE_OWNER=1 (TESTING.md)
   requests/REQUEST_ID/ATTEMPT_ID/
     record.json
     launch.json                  # exact argv/cwd of a launch

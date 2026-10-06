@@ -175,13 +175,13 @@ parent's acceptance deadline. Any unconfirmed capture abort fails the session an
 initiates owned-service cleanup; no host fallback or silent retry exists.
 
 Prerequisites, service submission, private construction and all readiness phases
-share the caller's maximum 30s startup budget. Query work is at most 0.5s, query
-cleanup at most a separate 1.5s, input connection/resumption at most 3s and capture
+share the caller's maximum 30s startup budget. Query work is 0.5s (at most 1s, below),
+query cleanup at most a separate 1.5s, input connection/resumption at most 3s and capture
 acceptance at most 3s, each also capped by the remaining startup budget. Failed
 startup has the existing independent maximum 15s cleanup reserve. Capability
 failures retain component-specific receipts/logs and startup error context.
 
-Bus and KWin health calls share one absolute 1s round every 1s, one round in flight
+Bus and KWin health calls share one 1s round every 1s, one round in flight
 with no catch-up bursts. The KWin probe calls its actual `supportInformation`
 method. Successful bus/compositor observations expire after 2s. Owner ticks and
 control replies cannot refresh those timestamps: a delayed owner fails before
@@ -191,6 +191,22 @@ KWin call identifies compositor unresponsiveness. Child exits are polled before
 scheduler effects and request admission. Status uses current manager/control and
 worker observations within its complete maximum 3s budget. A nonresponsive worker
 reports unavailable with cleanup pending; status does not wait a second 15s budget.
+
+Owner stalls don't use up the budgets of these observations (#80): the window query's
+0.5s, the KWin name check's 1s and the health round's 1s. When the owner thread is
+held up (a slow artifact fsync, a long turn), it can't dispatch a reply that has
+already arrived or start the next step. Each of these budgets therefore moves its
+deadline later by the owner stall time measured since it began: gaps between owner
+turns beyond 10ms, and the current turn's overrun. A window query's budget begins
+when the query is started (for readiness, when the KWin name check succeeds), not
+at its first step, so a stall in between counts too. A budget moves by at most
+itself again. A hung KWin or bus is still detected within 1s of the window query's
+start and within 2s of the name check's or health round's, and never after the
+startup or request deadline. The 2s expiry of successful observations is unchanged, so an owner
+delayed for more than that still fails as described above. Once the desktop is
+ready, that expiry comes about 1s after a round starts, so it rather than the
+round's extension usually ends a round the owner was too stalled to finish; the
+extension mostly helps the first round, during startup.
 
 The approved systemd policy is `WatchdogSec=5s`, `WatchdogSignal=SIGTERM`,
 `TimeoutAbortSec=3s`, `TimeoutStopSec=3s`, `FinalKillSignal=SIGKILL`,

@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 573 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 614 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 577 of the 586
+have a user systemd manager, so `test_lifecycle_process` runs there: 618 of the 627
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
@@ -147,8 +147,83 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
 | `title-gone` | a fixture with a sibling and a dialog whose `--on-sigusr1` steps retitle the primary, close the sibling, then close the dialog; each signal is sent only after the running wait's first observation artifact appears, so no step depends on launch timing (`AGENT_DESKTOP_TEST_SLOW=SECONDS` adds setup delay to prove it) | `wait --for title` times out (context: phase `title_wait`, window, last query) on a title that never appears, matches the retitle on a later poll, matches a `--regex` on the first poll, ends a runaway `--regex` with `pattern_too_slow`, gives `invalid_regex` from the helper for a bad pattern sent straight over the transport (skipping the CLI's compile), and fails with `target_lost` when the sibling closes mid-wait; `wait --for gone` on the dialog succeeds (`already_gone: false`) while the primary stays listed, then reports `already_gone`; a title wait on the gone dialog is `target_not_found` and a stale ref `generation_mismatch` |
 
-It takes the same `--cli`, `--dependency-root` and `--verbose` options as the smoke
-test. A failing scenario keeps its artifact directory and stops the run.
+It takes the same `--cli`, `--dependency-root`, `--keep-artifacts` and `--verbose`
+options as the smoke test. A failing scenario keeps its artifact directory and stops
+the run.
+
+## Owner-loop profile
+
+An opt-in measurement of how late the worker's owner loop runs and what held it
+up (#80; results in [VALIDATION.md](VALIDATION.md#80-owner-loop-stalls)). Set
+`AGENT_DESKTOP_PROFILE_OWNER=1` in the environment of `session start`. The CLI
+passes this one setting into the worker's otherwise clean environment, and each
+generation then writes `logs/owner-profile.jsonl`. Without it the worker doesn't
+import the profiler and nothing is wrapped.
+
+```sh
+mkdir -p ~/profile-runs        # the tests put artifacts in $TMPDIR
+AGENT_DESKTOP_PROFILE_OWNER=1 TMPDIR=~/profile-runs python tests/integration/smoke.py --cli .local/dependencies/venv/bin/agent-desktop --keep-artifacts --loop 5
+AGENT_DESKTOP_PROFILE_OWNER=1 TMPDIR=~/profile-runs python tests/integration/failures.py --cli .local/dependencies/venv/bin/agent-desktop --keep-artifacts --loop 2
+python tools/owner_profile.py ~/profile-runs
+```
+
+`/tmp` is often tmpfs, where fsync costs nothing. Point `TMPDIR` at the real disk
+to see what the default artifacts root (`.agent-desktop/artifacts` under the
+caller's directory) costs. Remove the directory afterwards.
+
+The profile records:
+- **Probe lateness.** A 5ms GLib timeout records how far past due each probe
+  ran. Probes 10ms or more late are written one by one, with the callbacks that
+  overlapped them.
+- **Callbacks.** Each owner callback (a `Server.service` turn, a D-Bus reply,
+  the EIS fd watch) is timed with the calls nested in it: request dispatch,
+  scheduler steps, Store methods with their calling `file:line`, `os.fsync` with
+  its caller, child spawns, private-bus calls, screenshot and window-query steps,
+  imports and garbage collection. Totals per call path are written every 5s.
+  Callbacks of 10ms or more are written one by one, with their spans of 0.5ms or
+  more.
+- **Input and responses.** Each press, release, scroll and move, with its
+  intended hold or gap, the held count before and after, and whether input
+  was left uncertain; focus recheck start (and when it was due) and end; and
+  each response's error code.
+- **Its own writes.** Profile lines are written on the owner thread too. Their
+  time is recorded as `profiler.write`, so a slow write shows up as its own
+  cause and isn't added to the next callback.
+
+`tools/owner_profile.py` takes artifact directories or profile files. It prints:
+- lateness per generation and overall (p50, p95, p99, max, and counts over 50,
+  100 and 250ms);
+- self time by category, and Store time split into fsync and the rest;
+- the top contributors by total and by worst single call, with their heaviest
+  path;
+- the worst late probes, with the spans behind them;
+- what triggered each stall of 50ms or more;
+- stalls during a held key or button. A hold ends only at a confirmed release
+  (nothing held afterwards and input not uncertain); otherwise it runs to the
+  end of the profile;
+- startup failures;
+- input timing against its intended hold, gap, scroll pace and recheck time;
+- timeouts, with the owner lateness that overlapped each one in the same
+  profile;
+- profiles that stopped early, at the byte budget or after a profiler fault.
+
+It leaves `worker-stopped` out of the totals (`--exclude`), because that
+scenario freezes the worker on purpose.
+
+The profile costs about 1µs per wrapped call, plus 2–3ms on the owner for the
+summary it writes every 5s. A smoke run took as long with it as without (about
+11s on tmpfs). A smoke generation's profile is about 1.2 MB.
+
+Limits:
+- Recording stops at 8 MiB per generation, after a final summary and a
+  `truncated` record. That is a few minutes of smoke-like activity.
+- A fault in the profiler turns it off with a `failed` record. The worker
+  carries on, and the profiler still unwraps everything at exit.
+- The profile's own writes are synchronous on the owner thread, so on a
+  throttled or saturated disk they can block the owner like any other write.
+  They are charged to `profiler.write`. On btrfs that was 0.7–0.8% of owner
+  time idle and 0.1% under write load, and no single write took over 7ms
+  ([VALIDATION.md](VALIDATION.md#budgets-now-writer-thread-next)).
 
 ## When to run them
 

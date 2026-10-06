@@ -62,13 +62,19 @@ def check_fd(fd, directory=False):
 
 
 
-def mkdir_durable(parent, name, *, exclusive=False):
-    """Persist the parent entry before any descendant can authorize effects."""
+def mkdir_durable(parent, name, *, exclusive=False, durable=False):
+    """Persist the parent entry before any descendant can authorize effects.
+
+    durable: this process already made the existing entry durable, so only a new
+    link needs the parent fsync.
+    """
     try:
         os.mkdir(name, mode=0o700, dir_fd=parent)
     except FileExistsError:
         if exclusive:
             raise
+        if durable:
+            return
     os.fsync(parent)
 
 
@@ -271,6 +277,7 @@ class Store:
         self.path = root / 'generations' / generation
         self.fd = None
         self.lock_identity = None
+        self.observations_durable = False
         self.disposable = tuple(Path(raw).resolve() for raw in disposable)
         try:
             with root_directory(root, create=create) as root_fd:
@@ -579,7 +586,6 @@ class Store:
                         continue
                 else:
                     fail('collision')
-                os.fsync(group)
             with self.directory('requests', request.request_id, attempt) as directory:
                 self._write(directory, 'record.json', {'schema_version': 1, 'revision': 0,
                     'session': self.session, 'generation': self.generation,
@@ -916,7 +922,11 @@ class Store:
         # Exclusive immutable publication; an existing name is never overwritten.
         raw = packed(value, 1024 * 1024)
         with self.lock():
-            mkdir_durable(self.fd, 'window-observations')
+            # The first publication fsyncs the generation directory; later ones only a recreated link.
+            # Cleared first: a recreation whose fsync fails leaves a link that is not yet durable.
+            durable, self.observations_durable = self.observations_durable, False
+            mkdir_durable(self.fd, 'window-observations', durable=durable)
+            self.observations_durable = True
             with self.directory('window-observations') as directory:
                 fd = os.open(query_id + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
                 with os.fdopen(fd, 'wb') as stream:

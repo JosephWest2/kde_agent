@@ -456,6 +456,7 @@ def main(argv=None):
     parser.add_argument('--cli', default=shutil.which('agent-desktop'))
     parser.add_argument('--dependency-root', default=str(ROOT / '.local' / 'dependencies'))
     parser.add_argument('--loop', type=int, default=1, metavar='N')
+    parser.add_argument('--keep-artifacts', action='store_true', help='keep artifacts after passing scenarios')
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args(argv)
     if not args.cli:
@@ -480,7 +481,10 @@ def main(argv=None):
                     print(json.dumps(payload, indent=2)[:3000])
                 print(f'artifacts kept at {artifacts}')
                 return 1
-            shutil.rmtree(artifacts, ignore_errors=True)
+            if args.keep_artifacts:
+                print(f'artifacts kept at {artifacts}')
+            else:
+                shutil.rmtree(artifacts, ignore_errors=True)
             results.append(elapsed)
             print(f'{name} passed in {elapsed:.1f}s')
     print(f'PASS {len(results)} scenario run(s)')

@@ -13,7 +13,16 @@ from unittest.mock import Mock
 from gi.repository import Gio, GLib
 
 from agent_desktop.contracts import ContractError
+from agent_desktop.owner_time import Budget, OwnerClock
 from agent_desktop.private_bus import PrivateBus
+
+
+class FakeClock:
+    def __init__(self, now):
+        self.now = now
+
+    def __call__(self):
+        return self.now
 
 
 class PrivateBusTests(unittest.TestCase):
@@ -71,6 +80,52 @@ class PrivateBusTests(unittest.TestCase):
         self.assertIsNone(fds)
         self.assertRegex(value.unpack()[0], r'^[0-9a-f]{32}$')
         self.assertNotIn('id', bus.pending)
+
+    def owner_time(self, bus):
+        """Owner time is injected; only the reply's arrival is real, bounded by Gio's timeout."""
+        now = FakeClock(100.0)
+        bus.now = now
+        owner = OwnerClock(now)
+        owner.turn()
+        return now, owner
+
+    def test_reply_dispatched_after_an_owner_stall_is_accepted(self):
+        bus = self.real_bus()
+        now, owner = self.owner_time(bus)
+        result = []
+        bus.call('id', 'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                 'GetId', None, '(s)', Budget(5, clock=owner),
+                 lambda value, fds, error: result.append((value, error)))
+        now.now = 106.0  # The owner was held up past the 5s budget before it dispatched anything.
+        owner.turn()
+        self.until(lambda: bool(result), seconds=8, step=bus.tick)
+        value, error = result[0]
+        self.assertIsNone(error)
+        self.assertRegex(value.unpack()[0], r'^[0-9a-f]{32}$')
+
+    def test_plain_deadline_fails_the_same_stall(self):
+        bus = self.real_bus()
+        now, owner = self.owner_time(bus)
+        bus.call('id', 'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                 'GetId', None, '(s)', 105.0, lambda *args: None)
+        now.now = 106.0
+        owner.turn()
+        with self.assertRaises(ContractError) as caught:
+            bus.tick()
+        self.assertEqual((caught.exception.code, caught.exception.context), ('timeout', {'component': 'id'}))
+
+    def test_gio_timeout_allows_the_latest_budget_deadline(self):
+        bus = self.real_bus()
+        connection, bus.connection = bus.connection, Mock()
+        self.addCleanup(setattr, bus, 'connection', connection)
+        now, owner = self.owner_time(bus)
+        for token, deadline, timeout in (('budget', Budget(.5, clock=owner), 1000), ('plain', 100.5, 500),
+                                         ('limited', Budget(.5, limit=100.7, clock=owner), 700)):
+            with self.subTest(token):
+                bus.call(token, 'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                         'GetId', None, '(s)', deadline, lambda *args: None)
+                self.assertEqual(bus.connection.call.call_args.args[7], timeout)
+        bus.pending.clear()
 
     def stalled_server(self, *, authenticate):
         listener = socket.socket(socket.AF_UNIX)

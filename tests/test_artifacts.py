@@ -254,6 +254,48 @@ class StoreTests(unittest.TestCase):
         self.assertIn(('fsync', self.root / 'new-parent'), calls)
         self.assertTrue(self.record(token))
 
+    def fsyncs(self, action):
+        """Paths fsynced while action runs; temporary files as 'file'."""
+        calls, original = [], os.fsync
+        def fsync(fd):
+            path = Path(os.readlink(f'/proc/self/fd/{fd}'))
+            calls.append(path if stat.S_ISDIR(os.fstat(fd).st_mode) else 'file')
+            original(fd)
+        with patch('agent_desktop.artifacts.os.fsync', side_effect=fsync):
+            result = action()
+        return calls, result
+
+    def test_request_fsyncs_each_new_link_once(self):
+        calls, token = self.fsyncs(self.token)
+        requests = self.store.path / 'requests'
+        self.assertEqual(calls, [requests, requests / token[0], 'file', requests / token[0] / token[1]])
+
+    def test_window_observations_link_is_fsynced_until_durable(self):
+        value = {'windows': []}
+        observations = self.store.path / 'window-observations'
+        first, _ = self.fsyncs(lambda: self.store.window_observation('a' * 32, value))
+        self.assertEqual(first, [self.store.path, 'file', observations])
+        again, _ = self.fsyncs(lambda: self.store.window_observation('b' * 32, value))
+        self.assertEqual(again, ['file', observations])
+        for child in observations.iterdir():
+            child.unlink()
+        observations.rmdir()
+        recreated, _ = self.fsyncs(lambda: self.store.window_observation('c' * 32, value))
+        self.assertEqual(recreated, [self.store.path, 'file', observations])
+
+    def test_failed_observations_link_fsync_is_retried(self):
+        value = {'windows': []}
+        observations = self.store.path / 'window-observations'
+        self.store.window_observation('a' * 32, value)
+        for child in observations.iterdir():
+            child.unlink()
+        observations.rmdir()
+        with patch('agent_desktop.artifacts.os.fsync', side_effect=OSError('injected')), self.assertRaises(Exception):
+            self.store.window_observation('b' * 32, value)
+        self.assertTrue(observations.is_dir())  # Recreated, but its entry was never made durable.
+        retried, _ = self.fsyncs(lambda: self.store.window_observation('c' * 32, value))
+        self.assertEqual(retried, [self.store.path, 'file', observations])
+
     def test_ancestor_swap_cannot_redirect_store(self):
         durable = self.root / 'race-root'
         disposable = self.root / 'runtime'

@@ -79,8 +79,15 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     quit_after = None
     from .watchdog import Watchdog
     watchdog = Watchdog()
+    from .owner_time import OwnerClock
+    owner_clock = OwnerClock()  # Owner stall time, which desktop observation budgets discount.
+    profiler = None
     try:
         from gi.repository import GLib
+        if store is not None and os.environ.get('AGENT_DESKTOP_PROFILE_OWNER') == '1':
+            # Opt-in diagnostic (docs/TESTING.md); by default it is not even imported.
+            from .profiling import install
+            profiler = install(store, GLib)
         endpoint = Endpoint(name, generation, managed=managed)
         children = Children()
         def observe(record):
@@ -95,6 +102,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 raise ContractError('invalid_arguments', 'Private desktop requires an owned service and artifacts.')
             from .desktop import Desktop
             foundation = Desktop(endpoint.path.parent, children, store)
+            foundation.owner_clock = owner_clock
             if startup_deadline is not None:
                 foundation.deadline = min(foundation.deadline, startup_deadline)
             if factory is UnsupportedTask:
@@ -208,6 +216,7 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
 
         def tick():
             nonlocal foundation_error, readiness, quit_after, applications, cause_deadline
+            owner_clock.turn()
             if shutdown is not None:
                 watch_cause()
                 if (shutdown.phase == 'cancel' and readiness is not None
@@ -347,6 +356,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if not managed:
                 store.generation_update(state="running")
     except BaseException:
+        if profiler is not None:
+            profiler.close()
         if server is not None:
             server.close()
         if children is not None:
@@ -392,6 +403,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         children.close()
         if applications is not None:
             applications.close()
+        if profiler is not None:
+            profiler.close()
         if store is not None:
             try:
                 # Infrastructure loop exit is not proof of production cgroup cleanup.

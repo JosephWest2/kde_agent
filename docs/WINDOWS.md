@@ -99,7 +99,8 @@ Failed partial annotation consumes no pins. A generation teardown clears pins.
 ## Bounds and cleanup
 
 Work acceptance, including resource cleanup and retention, must finish strictly
-before the original 500 ms deadline (including queue time). Failure latches one
+before the original 500 ms deadline (including queue time). That is the `windows`
+request's own deadline, so owner stalls still count against it. Failure latches one
 separate 1.5-second cleanup reserve, clipped by lifecycle shutdown. The owner
 supervises stdout/stderr concurrently: 256 KiB/64 KiB total, at most 16 KiB or
 2 ms drained per turn. At most 256 rows and 4096 characters per title/class are
@@ -200,7 +201,9 @@ process state.
 Unknown apps give `target_not_found`; uncertain ownership fails the session.
 
 All composite work shares the admission deadline, including queue time. Each
-query or activation is capped at 500 ms within that deadline. Query poll starts
+query or activation is capped at 500 ms within that deadline. That cap doesn't count
+time the worker's owner thread was stalled, so it ends at most 1 s after the query
+began ([LIFECYCLE.md](LIFECYCLE.md#capability-readiness-and-live-health-20)). Query poll starts
 are at least 100 ms apart, with one operation in flight and no catch-up bursts;
 activation preparation is a separate native operation. Individual operation
 faults terminate the wait rather than being treated as an unsatisfied condition.

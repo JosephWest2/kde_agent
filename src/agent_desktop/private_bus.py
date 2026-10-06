@@ -1,8 +1,13 @@
-"""Deadline-owned asynchronous private D-Bus connection and calls."""
+"""Deadline-owned asynchronous private D-Bus connection and calls.
+
+A deadline is a monotonic float or an owner_time.Budget, which owner stalls do
+not use up; Gio's own call timeout is set to the latest the deadline can be.
+"""
 from __future__ import annotations
 import os
 import time
 from .contracts import ContractError
+from .owner_time import expired, hard
 
 
 class PrivateBus:
@@ -19,17 +24,18 @@ class PrivateBus:
             None, self.pending['connect'][1], self._connected, self.pending['connect'])
 
     def _begin(self, token, deadline):
-        if self.closed or token in self.pending or self.now() >= deadline:
+        if self.closed or token in self.pending or expired(deadline, self.now()):
             raise ContractError('timeout', 'Private bus operation deadline expired.', context={'component': token})
         op = (deadline, self.Gio.Cancellable())
         self.pending[token] = op
         return op
 
     def _valid(self, token, op):
-        valid = not self.closed and self.pending.get(token) is op and self.now() < op[0]
+        now = self.now()
+        valid = not self.closed and self.pending.get(token) is op and not expired(op[0], now)
         if self.pending.get(token) is op:
             del self.pending[token]
-            if not self.closed and self.now() >= op[0]:
+            if not self.closed and expired(op[0], now):
                 self.error = ContractError('timeout', 'Late private bus operation reply.', context={'component': token})
         return valid
 
@@ -71,7 +77,7 @@ class PrivateBus:
             fds = None
         args = (destination, path, interface, method, parameters,
                 GLib.VariantType.new(signature), self.Gio.DBusCallFlags.NONE,
-                max(1, int((deadline - self.now()) * 1000)))
+                max(1, int((hard(deadline) - self.now()) * 1000)))
         if fd:
             self.connection.call_with_unix_fd_list(*args, None, op[1], finished, None)
         else:
@@ -88,7 +94,7 @@ class PrivateBus:
             raise self.error
         now = self.now()
         for token, op in tuple(self.pending.items()):
-            if now >= op[0]:
+            if expired(op[0], now):
                 del self.pending[token]
                 op[1].cancel()
                 self.error = ContractError('timeout', 'Private bus operation timed out.', context={'component': token})

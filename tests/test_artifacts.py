@@ -283,6 +283,19 @@ class StoreTests(unittest.TestCase):
         recreated, _ = self.fsyncs(lambda: self.store.window_observation('c' * 32, value))
         self.assertEqual(recreated, [self.store.path, 'file', observations])
 
+    def test_failed_observations_link_fsync_is_retried(self):
+        value = {'windows': []}
+        observations = self.store.path / 'window-observations'
+        self.store.window_observation('a' * 32, value)
+        for child in observations.iterdir():
+            child.unlink()
+        observations.rmdir()
+        with patch('agent_desktop.artifacts.os.fsync', side_effect=OSError('injected')), self.assertRaises(Exception):
+            self.store.window_observation('b' * 32, value)
+        self.assertTrue(observations.is_dir())  # Recreated, but its entry was never made durable.
+        retried, _ = self.fsyncs(lambda: self.store.window_observation('c' * 32, value))
+        self.assertEqual(retried, [self.store.path, 'file', observations])
+
     def test_ancestor_swap_cannot_redirect_store(self):
         durable = self.root / 'race-root'
         disposable = self.root / 'runtime'

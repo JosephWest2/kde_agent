@@ -25,6 +25,7 @@ STALLS = (50, 100, 250)
 PASS_THROUGH = ('Connection.ready', 'Scheduler.tick', 'Desktop.tick')  # Stall triggers are their children.
 SLACK_MS = 10  # Timing overshoot beyond this is reported one by one (the owner ticks every 5ms).
 PROBE_SLACK = .006  # A late probe can land just after the delayed event it explains.
+PROBE_INTERVAL = .005
 
 
 def scenario(path):
@@ -80,6 +81,8 @@ def category(element):
         return 'window query'
     if name.startswith('Input.'):
         return 'libei'
+    if name == 'profiler.write':
+        return 'profiler (own writes)'
     return 'other'
 
 
@@ -106,6 +109,22 @@ def triggers(spans):
     return ' + '.join(sorted(names)) or '(root only)'
 
 
+def owner_lateness(late, start, end):
+    """Owner lateness inside [start, end]: each late probe covers [t - ms - one interval, t].
+
+    The probe that ends a stall can run after the request completed, so probes are
+    matched by overlap, not by their timestamp.
+    """
+    total = worst = 0.0
+    for record in late:
+        begin = record['t'] - record['ms'] / 1000 - PROBE_INTERVAL
+        overlap = min(end, record['t']) - max(start, begin)
+        if overlap > 0:
+            total += overlap * 1000
+            worst = max(worst, record['ms'])
+    return total, worst
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument('paths', nargs='+')
@@ -120,7 +139,7 @@ def main(argv=None):
         parser.error('no owner-profile.jsonl found')
 
     hist, paths, late, stalls, inputs, done = defaultdict(int), {}, [], [], [], []
-    rows = []
+    rows, stopped, ends = [], [], {}
     excluded = set(args.exclude)
     for path in files:
         records = load(path)
@@ -130,6 +149,8 @@ def main(argv=None):
         file_late = [r | {'label': label, 'file': str(path)} for r in records if r['kind'] == 'late']
         file_hist = {float(k): v for k, v in summary['probe']['hist'].items()} if summary else {}
         rows.append((label, path, summary, file_hist, file_late))
+        stopped += [(label, r) for r in records if r['kind'] in ('failed', 'truncated')]
+        ends[str(path)] = max((r['t'] for r in records if type(r.get('t')) in (int, float)), default=0)
         if label in excluded:
             continue
         for key, count in file_hist.items():
@@ -144,9 +165,12 @@ def main(argv=None):
         late += file_late
         stalls += [r | {'label': label, 'file': str(path)} for r in records if r['kind'] == 'stall']
         inputs.append((label, str(path), [r for r in records if r['kind'] == 'input']))
-        done += [r | {'label': label} for r in records if r['kind'] == 'done']
+        done += [r | {'label': label, 'file': str(path)} for r in records if r['kind'] == 'done']
 
     print(f'{len(files)} profile(s); excluded from totals: {sorted(excluded) or "none"}')
+    for label, record in stopped:
+        reason = record.get('error') if record['kind'] == 'failed' else f'byte budget ({record.get("bytes")} bytes)'
+        print(f'  {label}: recording stopped early: {reason}')
     print('\nPer generation (probe lateness, ms):')
     print(f'  {"scenario":<20} {"samples":>7} {"p50":>6} {"p99":>6} {"max":>8} ' + ' '.join(f'>{s:<4}' for s in STALLS))
     for label, path, summary, file_hist, file_late in rows:
@@ -229,6 +253,8 @@ def main(argv=None):
             rid = event.get('rid')
             previous = last.get(rid)
             name = event['ev']
+            if event.get('failed'):
+                continue  # The emission raised; its time is not a release or press time.
             if name == 'release' and previous and previous['ev'] == 'press' and 'hold' in previous:
                 over = (event['t'] - previous['t'] - previous['hold']) * 1000
                 kind = f'{event.get("active")} hold {previous["hold"] * 1000:g}ms'
@@ -278,16 +304,22 @@ def main(argv=None):
         print(f'  {len(values):>4} x  sum {total_ms:7.0f}  max {max(v[0] for v in values):6.1f}  '
               f'fsyncs/turn {sum(v[1] for v in values) / len(values):4.1f}  {key}')
 
-    # A hold runs from the press made with nothing held to the release that clears it.
-    holds = defaultdict(list)
+    # A hold runs from the press that found nothing held to the first confirmed release:
+    # held 0 afterwards and input not uncertain. Otherwise it runs to the end of the profile.
+    holds, unconfirmed = defaultdict(list), 0
     for label, file, events in inputs:
         pressed = None
         for event in sorted(events, key=lambda e: e['t']):
-            if event['ev'] == 'press' and not event.get('held') and pressed is None:
+            if event['ev'] == 'press' and pressed is None and event.get('held_before') == 0 and event.get('held'):
                 pressed = event
             elif event['ev'] == 'release' and pressed is not None:
-                holds[file].append((pressed['t'], event['t']))
-                pressed = None
+                if event.get('held') == 0 and not event.get('uncertain') and not event.get('failed'):
+                    holds[file].append((pressed['t'], event['t']))
+                    pressed = None
+                else:
+                    unconfirmed += 1
+        if pressed is not None:
+            holds[file].append((pressed['t'], ends.get(file, pressed['t'])))
     overlapped = []
     for stall in stalls:
         start, end = stall['t'], stall['t'] + stall['ms'] / 1000
@@ -295,7 +327,8 @@ def main(argv=None):
         if overlap >= 1:
             overlapped.append((overlap, stall))
     print(f'\nStalls (10ms or more) during a held key or button: {len(overlapped)} '
-          f'of {len(stalls)}; held time inside them {sum(o for o, _ in overlapped):.0f} ms')
+          f'of {len(stalls)}; held time inside them {sum(o for o, _ in overlapped):.0f} ms; '
+          f'releases that left input held or uncertain: {unconfirmed}')
     for overlap, stall in sorted(overlapped, key=lambda item: -item[0])[:args.top]:
         print(f'  {overlap:8.1f} ms held of a {stall["ms"]:.1f} ms stall  {stall["label"]:<18} '
               f'{stall.get("active")}/{stall.get("phase")}  {triggers(stall["spans"])}')
@@ -314,11 +347,12 @@ def main(argv=None):
         print(f'  {label:<18} {code}: {message} (owner stalls of 10ms or more in that generation: {before:.0f} ms)')
 
     timeouts = [r for r in done if r.get('code') == 'timeout']
-    print(f'\nResponses: {len(done)}; timeout: {len(timeouts)}')
+    print(f'\nResponses: {len(done)}; timeout: {len(timeouts)} (owner lateness overlapping each, from its own profile)')
     for record in timeouts:
-        during = [r for r in late if r['label'] == record['label'] and record['admitted'] <= r['t'] <= record['t']]
-        worst = max((r['ms'] for r in during), default=0)
-        print(f'  {record["label"]:<18} {record["op"]:<10} {record["rid"]} worst late probe while admitted: {worst:.1f} ms')
+        lateness = owner_lateness(late_by_file[record['file']], record['admitted'], record['t'])
+        print(f'  {record["label"]:<18} {record["op"]:<10} {record["rid"]} admitted '
+              f'{(record["t"] - record["admitted"]) * 1000:6.0f} ms; owner late {lateness[0]:6.0f} ms of it, '
+              f'worst late probe {lateness[1]:.1f} ms')
     return 0
 
 

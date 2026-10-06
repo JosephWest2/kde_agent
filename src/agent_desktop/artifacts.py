@@ -923,7 +923,9 @@ class Store:
         raw = packed(value, 1024 * 1024)
         with self.lock():
             # The first publication fsyncs the generation directory; later ones only a recreated link.
-            mkdir_durable(self.fd, 'window-observations', durable=self.observations_durable)
+            # Cleared first: a recreation whose fsync fails leaves a link that is not yet durable.
+            durable, self.observations_durable = self.observations_durable, False
+            mkdir_durable(self.fd, 'window-observations', durable=durable)
             self.observations_durable = True
             with self.directory('window-observations') as directory:
                 fd = os.open(query_id + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)

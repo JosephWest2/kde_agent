@@ -1,6 +1,7 @@
 """Opt-in owner-loop profile: nothing wrapped by default; spans, stalls and late probes when on."""
 import builtins
 from contextlib import redirect_stdout
+import gc
 import importlib
 import importlib.util
 import io
@@ -10,6 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import uuid
 
 from agent_desktop import profiling
@@ -208,6 +210,142 @@ class ProfilingTests(unittest.TestCase):
         self.assertIn('Stalls of 50ms or more by trigger', report)
         self.assertIn('during a held key or button: 1 of 1; held time inside them 60 ms', report)
         self.assertRegex(report, r'key hold 50ms +n=1 +median +60\.0')
+
+    def test_gc_during_summary_is_accounted_after_the_snapshot(self):
+        clock = Clock()
+        profiler = self.profiler(clock=clock)
+        profiler._span('Server.service', lambda: None)()
+        original, collected = profiling._ms, []
+
+        def collecting(seconds):
+            if not collected:  # A collection while the totals are being iterated.
+                collected.append(True)
+                profiler._gc('start', {'generation': 2})
+                clock.now += .004
+                profiler._gc('stop', {'generation': 2})
+            return original(seconds)
+        with patch.object(profiling, '_ms', collecting):
+            profiler.summary()
+        self.assertTrue(profiler.active)
+        self.assertNotIn('gc[2]', self.records('summary')[-1]['paths'])
+        self.assertEqual(profiler.paths['gc[2]'][0], 1)
+        self.assertEqual(self.records('failed'), [])
+
+    def test_profiler_fault_turns_it_off_without_reaching_the_worker(self):
+        original = Store.__dict__['_write']
+        glib = FakeGLib()
+        profiler = profiling.install(self.store, glib, environ={profiling.ENV: '1'})
+        self.addCleanup(profiler.close)
+        profiler.stack.append(None)  # Corrupt bookkeeping: the next enter() fails.
+
+        def raises():
+            raise KeyError('from the worker')
+        with self.assertRaises(KeyError):
+            profiler._span('x', raises)()
+        self.assertFalse(profiler.active)
+        self.assertEqual(profiler._span('x', lambda: 7)(), 7)  # Calls straight through now.
+        self.assertFalse(profiler.probe())
+        self.assertIsNone(profiler.source)
+        profiler.close()
+        self.assertIs(Store.__dict__['_write'], original)
+        self.assertIs(builtins.__import__, profiler.original_import)
+        self.assertNotIn(profiler._gc, gc.callbacks)
+        failed, = self.records('failed')
+        self.assertTrue(failed['error'].startswith('TypeError'))
+        self.assertEqual(self.records('summary'), [])  # No summary from a broken profile.
+
+    def test_close_restores_even_when_the_final_summary_fails(self):
+        original = Store.__dict__['_write']
+        profiler = profiling.install(self.store, FakeGLib(), environ={profiling.ENV: '1'})
+        profiler.paths['broken'] = None  # The final summary cannot be built.
+        profiler.close()
+        self.assertIs(Store.__dict__['_write'], original)
+        self.assertEqual(len(self.records('failed')), 1)
+
+    def test_write_time_is_charged_to_profiler_write(self):
+        clock = Clock()
+        profiler = self.profiler(clock=clock)
+        write = os.write
+
+        def slow(fd, data):
+            clock.now += .020
+            return write(fd, data)
+        profiler.probe()
+        with patch.object(profiling.os, 'write', slow):
+            clock.now += .005
+            profiler._span('Server.service', lambda: setattr(clock, 'now', clock.now + .015))()  # A stall record.
+            profiler.probe()
+        # start, the first summary, then the slow stall and late-probe records.
+        self.assertEqual(profiler.roots[profiling.WRITE][0], 4)
+        self.assertEqual(round(profiler.roots[profiling.WRITE][1], 3), .040)
+        self.assertEqual([r['root'] for r in self.records('stall')], ['Server.service'])
+        late, = self.records('late')
+        self.assertIn(profiling.WRITE, [root[0] for root in late['roots']])
+
+    def test_byte_budget_ends_with_a_final_summary_and_a_marker(self):
+        profiler = self.profiler()
+        with patch.object(profiling, 'BUDGET_BYTES', 4096):
+            while profiler.active:
+                profiler.event('press', note='x' * 200)
+        *_, summary, marker = self.records()
+        self.assertEqual((summary['kind'], summary['final'], marker['kind']), ('summary', True, 'truncated'))
+        self.assertLessEqual(marker['bytes'], 4096 + len(json.dumps(summary)) + 1)
+        self.assertEqual(profiler._span('x', lambda: 7)(), 7)
+        self.assertFalse(profiler.probe())
+        before = self.output.stat().st_size
+        profiler.event('press')
+        profiler.close()
+        self.assertEqual(self.output.stat().st_size, before)
+
+    def test_wire_operation_labels_are_a_fixed_set(self):
+        label = profiling._wire
+        self.assertEqual(label((None, {'operation': 'windows'}), {}), 'windows')
+        self.assertEqual(label((None, {'operation': 'request.cancel'}), {}), 'request.cancel')
+        for value in ({'operation': 'x' * 4096}, {'operation': ['windows']}, {'operation': None}, b'raw', None):
+            self.assertEqual(label((None, value), {}), 'invalid')
+
+    def test_release_record_carries_the_state_after_the_call(self):
+        profiler = self.profiler()
+
+        class Device:
+            def __init__(self):
+                self.held = [30]
+
+        class Input:
+            uncertain, retired_held = False, []
+
+            def __init__(self):
+                self.devices = {'keyboard': Device()}
+
+            def release(self):
+                self.uncertain = True  # The release could not be sent: keys stay held.
+        release = profiler._input('Input.release', Input.release)
+        release(Input())
+        record, = self.records('input')
+        self.assertEqual((record['ev'], record['held_before'], record['held'], record['uncertain']),
+                         ('release', 1, 1, True))
+
+    def test_analyzer_matches_timeouts_by_overlap_in_their_own_profile(self):
+        root = Path(self.store.root).parent / 'agent-desktop-smoke-abcd1234' / 'logs'
+        other = Path(self.store.root).parent / 'agent-desktop-smoke-efgh5678' / 'logs'
+        for folder in (root, other):
+            folder.mkdir(parents=True)
+        lines = [{'kind': 'start', 't': 9.0},
+                 {'kind': 'done', 't': 10.4, 'op': 'windows', 'rid': 'abcd', 'ok': False, 'code': 'timeout',
+                  'admitted': 9.9, 'deadline': 10.4},
+                 # The stall began during the request; its late probe ran after the response.
+                 {'kind': 'late', 't': 10.6, 'ms': 400.0, 'roots': []},
+                 {'kind': 'summary', 't': 11.0, 'final': True, 'probe': {'samples': 2, 'max_ms': 400.0,
+                  'hist': {'400.0': 1, '0.0': 1}}, 'roots': {}, 'paths': {}}]
+        (root / 'owner-profile.jsonl').write_text(''.join(json.dumps(line) + '\n' for line in lines))
+        # A same-named scenario elsewhere must not lend its stalls.
+        (other / 'owner-profile.jsonl').write_text(json.dumps(
+            {'kind': 'late', 't': 10.2, 'ms': 300.0, 'roots': []}) + '\n')
+        output = io.StringIO()
+        with redirect_stdout(output):
+            owner_profile.main([str(root.parent.parent)])
+        self.assertRegex(output.getvalue(), r'windows +abcd admitted +500 ms; owner late +205 ms of it, '
+                                            r'worst late probe 400\.0 ms')
 
     def test_bucket_resolution(self):
         self.assertEqual([profiling.bucket(v) for v in (0.04, 2.37, 12.9, 140.2)], [0.0, 2.3, 12.0, 140.0])

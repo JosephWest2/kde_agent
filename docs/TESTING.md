@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 586 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 596 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 590 of the 599
+have a user systemd manager, so `test_lifecycle_process` runs there: 600 of the 609
 tests. CI never runs the smoke or failure-path tests below.
 
 ## End-to-end smoke test
@@ -183,8 +183,12 @@ The profile records:
   Callbacks of 10ms or more are written one by one, with their spans of 0.5ms or
   more.
 - **Input and responses.** Each press, release, scroll and move, with its
-  intended hold or gap; focus recheck start (and when it was due) and end; and
+  intended hold or gap, the held count before and after, and whether input
+  was left uncertain; focus recheck start (and when it was due) and end; and
   each response's error code.
+- **Its own writes.** Profile lines are written on the owner thread too. Their
+  time is recorded as `profiler.write`, so a slow write shows up as its own
+  cause and isn't added to the next callback.
 
 `tools/owner_profile.py` takes artifact directories or profile files. It prints:
 - lateness per generation and overall (p50, p95, p99, max, and counts over 50,
@@ -194,10 +198,14 @@ The profile records:
   path;
 - the worst late probes, with the spans behind them;
 - what triggered each stall of 50ms or more;
-- stalls during a held key or button;
+- stalls during a held key or button. A hold ends only at a confirmed release
+  (nothing held afterwards and input not uncertain); otherwise it runs to the
+  end of the profile;
 - startup failures;
 - input timing against its intended hold, gap, scroll pace and recheck time;
-- timeouts.
+- timeouts, with the owner lateness that overlapped each one in the same
+  profile;
+- profiles that stopped early, at the byte budget or after a profiler fault.
 
 It leaves `worker-stopped` out of the totals (`--exclude`), because that
 scenario freezes the worker on purpose.
@@ -205,6 +213,15 @@ scenario freezes the worker on purpose.
 The profile costs about 1µs per wrapped call, plus 2–3ms on the owner for the
 summary it writes every 5s. A smoke run took as long with it as without (about
 11s on tmpfs). A smoke generation's profile is about 1.2 MB.
+
+Limits:
+- Recording stops at 8 MiB per generation, after a final summary and a
+  `truncated` record. That is a few minutes of smoke-like activity.
+- A fault in the profiler turns it off with a `failed` record. The worker
+  carries on, and the profiler still unwraps everything at exit.
+- The profile's own writes can block the owner like any other write. They are
+  charged to `profiler.write`; see VALIDATION.md for how much that was under
+  load.
 
 ## When to run them
 

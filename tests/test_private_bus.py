@@ -13,6 +13,7 @@ from unittest.mock import Mock
 from gi.repository import Gio, GLib
 
 from agent_desktop.contracts import ContractError
+from agent_desktop.owner_time import Budget, OwnerClock
 from agent_desktop.private_bus import PrivateBus
 
 
@@ -71,6 +72,34 @@ class PrivateBusTests(unittest.TestCase):
         self.assertIsNone(fds)
         self.assertRegex(value.unpack()[0], r'^[0-9a-f]{32}$')
         self.assertNotIn('id', bus.pending)
+
+    def test_reply_that_arrived_during_an_owner_stall_is_accepted(self):
+        bus = self.real_bus()
+        owner = OwnerClock()
+        owner.turn()
+        start, result = time.monotonic(), []
+        bus.call('id', 'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                 'GetId', None, '(s)', Budget(.2, clock=owner),
+                 lambda value, fds, error: result.append((value, error)))
+        time.sleep(.3)  # The owner is held up: no turn and no dispatch, while the reply arrives.
+        self.assertGreater(time.monotonic(), start + .2)  # A plain .2s deadline would have expired.
+        bus.tick()
+        self.until(lambda: bool(result), step=bus.tick)
+        value, error = result[0]
+        self.assertIsNone(error)
+        self.assertRegex(value.unpack()[0], r'^[0-9a-f]{32}$')
+
+    def test_gio_timeout_allows_the_latest_budget_deadline(self):
+        bus = self.real_bus()
+        connection, bus.connection = bus.connection, Mock()
+        self.addCleanup(setattr, bus, 'connection', connection)
+        owner = OwnerClock()
+        owner.turn()
+        bus.call('id', 'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                 'GetId', None, '(s)', Budget(.5, clock=owner), lambda *args: None)
+        timeout = bus.connection.call.call_args.args[7]
+        self.assertTrue(950 <= timeout <= 1000, timeout)
+        bus.pending.clear()
 
     def stalled_server(self, *, authenticate):
         listener = socket.socket(socket.AF_UNIX)

@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 from agent_desktop.contracts import ContractError
 from agent_desktop import readiness
+from agent_desktop.owner_time import OwnerClock, expired
 
 
 class Variant:
@@ -53,7 +54,7 @@ class Bus:
         if self.error:
             raise self.error
         for token, call in tuple(self.pending.items()):
-            if readiness.time.monotonic() >= call.deadline:
+            if expired(call.deadline, readiness.time.monotonic()):
                 del self.pending[token]
                 raise ContractError('timeout', 'Private bus operation timed out.', context={'component': token})
 
@@ -377,8 +378,8 @@ class ReadinessTests(unittest.TestCase):
         provider = self.to_health()
         health = [call for call in provider.bus.calls if call.token in ('bus', 'compositor')]
         self.assertEqual(len(health), 2)
-        self.assertEqual(health[0].deadline, health[1].deadline)
-        self.assertEqual(health[0].deadline, self.clock() + 1)
+        self.assertIs(health[0].deadline, health[1].deadline)
+        self.assertEqual(health[0].deadline.at(), self.clock() + 1)
         for _ in range(5):
             self.clock.return_value += .1
             provider.tick()
@@ -391,7 +392,7 @@ class ReadinessTests(unittest.TestCase):
         provider.tick()
         # A still-fresh owner starts one round, without catch-up bursts.
         self.assertEqual(sum(call.token in ('bus', 'compositor') for call in provider.bus.calls), 4)
-        self.assertEqual(provider.round['deadline'], 102.5)
+        self.assertEqual(provider.round['deadline'].at(), 102.5)
 
     def test_delayed_owner_cannot_renew_stale_success_with_a_fresh_control_timestamp(self):
         provider = self.ready()
@@ -414,18 +415,40 @@ class ReadinessTests(unittest.TestCase):
                 if component == 'bus':
                     self.assertEqual(provider.health['compositor']['state'], 'unknown')
 
+    def test_owner_stall_does_not_use_up_the_health_round(self):
+        provider = self.make_provider()
+        provider.owner_clock = OwnerClock()
+        provider.owner_clock.turn()
+        self.to_health(provider)
+        self.clock.return_value = 101.5  # The owner was held up; the replies wait to be dispatched.
+        provider.tick()
+        provider.bus.complete('bus', ('private-bus-id',))
+        provider.bus.complete('compositor', ())
+        provider.tick()
+        self.assertEqual(provider.state, 'ready')
+
+    def test_unanswered_health_round_fails_by_twice_its_budget_despite_owner_stalls(self):
+        provider = self.make_provider()
+        provider.owner_clock = OwnerClock()
+        provider.owner_clock.turn()
+        self.to_health(provider)
+        self.clock.return_value = 101.99
+        provider.tick()
+        self.clock.return_value = 102.0
+        self.failure(provider, 'bus')
+
     def test_bus_round_timeout_invalidates_previous_compositor_observation(self):
         provider = self.ready()
         self.clock.return_value += 1
         provider.tick()
-        self.clock.return_value = provider.round['deadline']
+        self.clock.return_value = provider.round['deadline'].at()
         self.failure(provider, 'bus')
         self.assertEqual(provider.health['compositor']['state'], 'unknown')
 
     def test_compositor_round_timeout_after_bus_reply_is_attributed_to_compositor(self):
         provider = self.to_health()
         provider.bus.complete('bus', ('id',))
-        self.clock.return_value = provider.round['deadline']
+        self.clock.return_value = provider.round['deadline'].at()
         self.failure(provider, 'compositor')
 
     def test_failure_is_sticky_even_if_late_successful_observations_arrive(self):

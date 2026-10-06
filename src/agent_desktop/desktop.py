@@ -34,6 +34,7 @@ class Desktop:
     def __init__(self, generation_root, children, store, *, now=None):
         self.root = Path(generation_root) / 'desktop'
         self.children, self.store = children, store
+        self.owner_clock = None  # The worker's owner_time.OwnerClock, for stall-tolerant observation budgets.
         self.phase = 'new'
         self.bus = self.probe = self.compositor = None
         self.deadline = (time.monotonic() if now is None else now) + CONSTRUCTION_SECONDS

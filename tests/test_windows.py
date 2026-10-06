@@ -15,6 +15,7 @@ from agent_desktop import windows
 from agent_desktop.window_types import Bounds, Decoder, Window, encoded
 from agent_desktop.contracts import ContractError, make_request
 from agent_desktop.children import Children
+from agent_desktop.owner_time import Budget, OwnerClock
 from agent_desktop.artifacts import Store, safe_projection
 from agent_desktop.app_processes import Registry, Application, birth
 
@@ -294,7 +295,7 @@ class QueryTests(unittest.TestCase):
 
     def test_activation_guard_persistence_expiry_never_starts_child(self):
         def guard():
-            action.deadline = time.monotonic()
+            action.budget = Budget(0)  # Spent while the guard persisted.
         action = self.adapter.activate('request', time.monotonic() + .5,
             {'generation': GEN, 'window_id': UID}, guard)
         with self.assertRaises(ContractError) as caught:
@@ -473,12 +474,35 @@ class QueryTests(unittest.TestCase):
         self.clean(query)
         self.assertFalse(path.exists())
 
+    def test_owner_stall_extends_the_query_budget_to_at_most_twice(self):
+        self.mode = 'hang'  # KWin never answers: only the budget ends the query.
+        for stalled, low, high in ((False, .45, .9), (True, .95, 1.45)):
+            with self.subTest(stalled=stalled):
+                owner = OwnerClock()
+                self.desktop.owner_clock = owner
+                query = self.adapter.start('request', time.monotonic() + 5)
+                owner.turn()
+                start = time.monotonic()
+                with self.assertRaises(ContractError) as caught:
+                    for _ in range(5000):
+                        if not stalled:
+                            owner.turn()  # Regular owner turns: nothing to discount.
+                        self.children.poll()
+                        query.step()
+                        time.sleep(.001)
+                elapsed = time.monotonic() - start
+                self.assertEqual(caught.exception.code, 'timeout')
+                self.assertTrue(low <= elapsed < high, elapsed)
+                query.cancel(caught.exception)
+                self.clean(query)
+        del self.desktop.owner_clock
+
     def test_deadline_crossed_during_artifact_publication_keeps_observed_data_unaccepted(self):
         query = self.adapter.start('request', time.monotonic() + .5)
         original = self.store.window_observation
         def late(*args):
             value = original(*args)
-            query.deadline = time.monotonic() - 1
+            query.budget = Budget(-1)  # Spent during publication.
             return value
         with patch.object(self.store, 'window_observation', side_effect=late):
             with self.assertRaises(ContractError) as caught:

@@ -436,7 +436,8 @@ documents separate bounded connect/frame/response allowances.
 
 M1 provisional targets include input cancellation dispatch within 100ms,
 fixture-observed release within 500ms under recorded conditions, focus checks no
-more frequently than 100ms between starts, query work at most 500ms, and holds at
+more frequently than 100ms between starts, query work at most 500ms (up to 1s
+while the worker's owner thread is stalled), and holds at
 most 2s. They require renewed production validation; they are not real-time
 promises; the failure-path tests ([TESTING.md](TESTING.md)) check the real release
 timing. Required cleanup continues after caller departure. Cancellation and stop

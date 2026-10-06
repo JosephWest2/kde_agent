@@ -11,6 +11,7 @@ import uuid
 from importlib.resources import files
 
 from .contracts import ContractError
+from .owner_time import Budget
 from .private_bus import PrivateBus
 from .protocol import encode
 from .window_types import Decoder, encoded, window_id
@@ -58,10 +59,14 @@ class Adapter:
 
 class Query:
     cleanup_seconds = 1.5
+    # Query work: this much owner-available time, within at most twice that of wall time
+    # and never past the caller's deadline (owner_time.Budget).
+    work_seconds = .5
 
     def __init__(self, owner, request_id, deadline, application):
         self.owner, self.desktop, self.registry = owner, owner.desktop, owner.registry
         self.request_id, self.deadline, self.application = request_id, deadline, application
+        self.budget = None  # From the first step; self.deadline is then its value at the last check.
         self.id = uuid.uuid4().hex
         self.name = 'agent-window-' + owner.generation + '-' + self.id
         self.phase = 'prepare'
@@ -93,8 +98,13 @@ class Query:
     def check(self):
         if self.error is not None:
             raise self.error
-        if time.monotonic() >= self.deadline:
+        if self._expired(time.monotonic()):
             raise ContractError('timeout', 'Window query deadline expired.')
+
+    def _expired(self, now):
+        if self.budget is not None:
+            self.deadline = self.budget.at(now)
+        return now >= self.deadline
 
     def _bus(self, deadline):
         if self.bus is None:
@@ -260,7 +270,9 @@ class Query:
     def step(self):
         self.check()
         if self.phase == 'prepare':
-            self.deadline = min(self.deadline, time.monotonic() + .5)
+            self.budget = Budget(self.work_seconds, limit=self.deadline,
+                                 clock=getattr(self.desktop, 'owner_clock', None))
+            self.deadline = self.budget.at()
             if self.application is not None:
                 self.registry.lookup(self.application)
             self.bracket = None if self.registry is None else self.registry.begin_window_observation()
@@ -271,8 +283,8 @@ class Query:
             self.folder = self.desktop.root / 'tmp' / self.name
             self._prepare_script()
             self.phase = 'collision'
-        if self.phase == 'collision' and self._bus(self.deadline):
-            loaded = self._loaded(self.deadline)
+        if self.phase == 'collision' and self._bus(self.budget):
+            loaded = self._loaded(self.budget)
             if loaded is True:
                 raise failure('Window query script name collided.')
             if loaded is False:
@@ -304,8 +316,8 @@ class Query:
                     'association': {'reason': reason, 'verified_at': None if identity is None else time.monotonic(), 'process': None if identity is None else {k: identity[k] for k in ('pid', 'start_time_ticks', 'boot_id')}}})
                 self.identities.append(identity)
                 self.index += 1
-        elif self.phase == 'absence' and self._bus(self.deadline):
-            loaded = self._loaded(self.deadline)
+        elif self.phase == 'absence' and self._bus(self.budget):
+            loaded = self._loaded(self.budget)
             if loaded is True:
                 raise failure('Window query script remained loaded.')
             if loaded is False:
@@ -343,7 +355,7 @@ class Query:
                     if len(self.owner.pins) + len(self.delta) > MAX_PINS or any(key in self.owner.pins and self.owner.pins[key] != value for key, value in self.delta.items()):
                         raise failure('Window identity acceptance changed.')
                     self.accepted_at = time.monotonic()
-                    if self.accepted_at >= self.deadline:
+                    if self._expired(self.accepted_at):
                         raise ContractError('timeout', 'Window query acceptance expired.')
                     self.owner.pins.update(self.delta)
                     self.result['accepted_at'] = self.accepted_at

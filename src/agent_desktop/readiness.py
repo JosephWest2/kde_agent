@@ -13,6 +13,7 @@ from .contracts import ContractError
 from .health import fresh
 from .private_bus import PrivateBus
 from .input_connection import Input
+from .owner_time import Budget
 from .windows import Adapter
 
 CAPABILITIES = ('window_query', 'input_resumed', 'screenshot')
@@ -24,6 +25,8 @@ class Readiness:
         self.GLib = GLib
         self.desktop, self.generation, self.binary = desktop, generation, binary
         self.deadline = deadline
+        # Health rounds and the KWin name check use Budgets that owner stalls don't use up (owner_time).
+        self.owner_clock = getattr(desktop, 'owner_clock', None)
         self.state = 'starting'
         self.phase = 'bus'
         self.health = {key: {'state': 'pending'} for key in CAPABILITIES}
@@ -84,7 +87,8 @@ class Readiness:
     def _query_start(self):
         self.phase = 'window_query'
         self.query_id = 'readiness-' + self.generation
-        self.query_deadline = min(self.deadline, time.monotonic() + .5)
+        # The query applies its own work budget (windows.Query.work_seconds) within the startup deadline.
+        self.query_deadline = self.deadline
         self.query = self.adapter.start(self.query_id, self.query_deadline)
 
     def _query_finish(self):
@@ -138,7 +142,7 @@ class Readiness:
     def _health_start(self):
         now = time.monotonic()
         self.next_health = now + 1
-        self.round = {'deadline': now + 1, 'bus': None, 'compositor': None}
+        self.round = {'deadline': Budget(1, clock=self.owner_clock), 'bus': None, 'compositor': None}
         current = self.round
         def reply(component):
             def accept(value, _fds, error):
@@ -177,7 +181,8 @@ class Readiness:
                     if value.unpack() == (True,):
                         self._query_start()
                 self._call('kwin_registration', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'NameHasOwner',
-                           self.GLib.Variant('(s)', ('org.kde.KWin',)), '(b)', min(self.deadline, now + 1), named,
+                           self.GLib.Variant('(s)', ('org.kde.KWin',)), '(b)',
+                           Budget(1, limit=self.deadline, clock=self.owner_clock), named,
                            destination='org.freedesktop.DBus')
             elif self.phase == 'window_query':
                 self._query_finish()
@@ -198,7 +203,7 @@ class Readiness:
                         self.fail(ContractError('session_failed', 'Private bus is unresponsive.'), 'bus')
                     if self.round['bus'] is True and self.round['compositor'] is False:
                         self.fail(ContractError('session_failed', 'Private compositor is unresponsive.'), 'compositor')
-                    if now >= self.round['deadline']:
+                    if self.round['deadline'].expired(now):
                         component = 'compositor' if self.round['bus'] else 'bus'
                         if component == 'bus':
                             self.health['compositor'] = {'state': 'unknown'}

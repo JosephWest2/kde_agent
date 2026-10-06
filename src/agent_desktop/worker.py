@@ -79,8 +79,13 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     quit_after = None
     from .watchdog import Watchdog
     watchdog = Watchdog()
+    profiler = None
     try:
         from gi.repository import GLib
+        if store is not None and os.environ.get('AGENT_DESKTOP_PROFILE_OWNER') == '1':
+            # Opt-in diagnostic (docs/TESTING.md); by default it is not even imported.
+            from .profiling import install
+            profiler = install(store, GLib)
         endpoint = Endpoint(name, generation, managed=managed)
         children = Children()
         def observe(record):
@@ -347,6 +352,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if not managed:
                 store.generation_update(state="running")
     except BaseException:
+        if profiler is not None:
+            profiler.close()
         if server is not None:
             server.close()
         if children is not None:
@@ -392,6 +399,8 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         children.close()
         if applications is not None:
             applications.close()
+        if profiler is not None:
+            profiler.close()
         if store is not None:
             try:
                 # Infrastructure loop exit is not proof of production cgroup cleanup.

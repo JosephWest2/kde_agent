@@ -220,8 +220,9 @@ Limits:
 - A fault in the profiler turns it off with a `failed` record. The worker
   carries on, and the profiler still unwraps everything at exit.
 - The profile's own writes can block the owner like any other write. They are
-  charged to `profiler.write`; see VALIDATION.md for how much that was under
-  load.
+  charged to `profiler.write`. On btrfs that was 0.7–0.8% of owner time idle
+  and 0.1% under write load, and no single write took over 7ms
+  ([VALIDATION.md](VALIDATION.md#budgets-now-writer-thread-next)).
 
 ## When to run them
 

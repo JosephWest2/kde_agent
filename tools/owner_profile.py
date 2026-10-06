@@ -139,7 +139,7 @@ def main(argv=None):
         parser.error('no owner-profile.jsonl found')
 
     hist, paths, late, stalls, inputs, done = defaultdict(int), {}, [], [], [], []
-    rows, stopped, ends = [], [], {}
+    rows, stopped, ends, stalled = [], [], {}, {}
     excluded = set(args.exclude)
     for path in files:
         records = load(path)
@@ -151,6 +151,7 @@ def main(argv=None):
         rows.append((label, path, summary, file_hist, file_late))
         stopped += [(label, r) for r in records if r['kind'] in ('failed', 'truncated')]
         ends[str(path)] = max((r['t'] for r in records if type(r.get('t')) in (int, float)), default=0)
+        stalled[str(path)] = sum(r['ms'] for r in records if r['kind'] == 'stall')
         if label in excluded:
             continue
         for key, count in file_hist.items():
@@ -339,8 +340,7 @@ def main(argv=None):
             failure = json.loads((Path(path).parent.parent / 'startup-failure.json').read_text())
         except (OSError, ValueError):
             continue
-        before = sum(s['ms'] for s in stalls if s['file'] == str(path))
-        failures.append((label, failure.get('code'), failure.get('message'), before))
+        failures.append((label, failure.get('code'), failure.get('message'), stalled[str(path)]))
     print(f'\nGenerations with a startup-failure.json (the first owner failure; compositor-death and '
           f'bus-death record one on purpose): {len(failures)}')
     for label, code, message, before in failures:

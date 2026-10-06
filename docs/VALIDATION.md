@@ -28,7 +28,7 @@ failure-path tests (#67); see [TESTING.md](TESTING.md).
 | #26 | Termination | 412 tests, retained-pidfd kill settlement, installed suites. | `76c73c8a` |
 | #27 | Persistent libei connection | 436 tests and 9 real compositor lifecycle scenarios. Readiness waits for drained, resumed input. GLib stalls of 140–327 ms were seen (deferred). | `d1efe95b` |
 | #61 | kwin-mcp comparison, target app | Continue the project, using kwin-mcp as a reference. gnome-text-editor passed 5 full cycles. Worker SIGKILL cleanup verified. | `planning/REVISED_PLAN.md` |
-| #80 | Owner-loop stalls | Measured: the stalls are synchronous fsyncs of artifact records on the owner thread. Harmless on tmpfs; on an NVMe btrfs disk the owner sits in fsync for about a third of each smoke run; and under heavy write load they break 0.5s/1s deadlines (failed starts, requests and sessions). Two redundant fsyncs removed (−10%); a redesign is proposed, not shipped. [Details](#80-owner-loop-stalls). | this section |
+| #80 | Owner-loop stalls | Measured: the stalls are synchronous fsyncs of artifact records on the owner thread. Harmless on tmpfs; on an NVMe btrfs disk the owner sits in fsync for about a third of each smoke run; and under heavy write load they break 0.5s/1s deadlines (failed starts, requests and sessions). Two redundant fsyncs removed (−10%). Window-query, KWin name-check and health-round budgets no longer count owner stalls (failed starts under load 10 → 5 of 25). Moving the writes off the owner thread is #96. [Details](#80-owner-loop-stalls). | this section |
 
 ## #80 owner-loop stalls
 
@@ -93,7 +93,9 @@ than 5.6ms, and no stall overlapped a held key or button. On btrfs, 34 stalls
 hold ran 167ms over and a type gap 137ms. Focus rechecks were never more than
 6.3ms late. A cancel's release came before its records were written
 in all 12 cancel stalls that released something (0.1–0.9ms into the turn).
-Neither was delayed. Deadlines were:
+Neither was delayed.
+
+Deadlines were (before the budgets [below](#budgets-now-writer-thread-next)):
 
 - **Readiness window query, 0.5s** (`readiness.py:87`). Status-ping record
   writes used up its budget. Unloaded on btrfs, 1 of about 90 starts failed
@@ -105,14 +107,25 @@ Neither was delayed. Deadlines were:
   - 3 of the 18 load scenarios.
 - **Request window query, 0.5s** (`windows.py:263`). It expired under load in
   4 of the 5 smoke runs and in 1 launch's window wait.
-- **Health observation, 1s** (`readiness.py:141`). It expired under load in 3
-  generations and failed the session.
-- **Not owner stalls.** Under load, 2 `windows` requests in the death scenarios
-  hit their request deadline with no late probe while they were admitted, so
-  that time went outside the owner. The `title-gone` wait timeouts are part of
-  that scenario and happen on tmpfs too.
+- **Health observation, 1s rounds** (`readiness.py:141`). It failed the
+  session under load in 3 generations. In the load sets below, every such
+  failure (7) was the 2s expiry of the last successful observation, not a 1s
+  round timing out.
+- **Request deadlines were owner stalls too (corrected).** This section first
+  said that 2 `windows` requests under load timed out with no late probe while
+  they were admitted, so the time went outside the owner. That matched late
+  probes by when they were recorded, not by the time they cover, and across
+  all profiles. The analyzer now matches each timeout to the late probes of its
+  own generation that overlap its admitted time. In the two load sets below,
+  all 20 request timeouts that weren't meant to happen had the owner late for
+  94–100% of their admitted time. That includes the `windows` timeouts: 762
+  of 812ms and 1,224 of 1,224ms before the budgets, and 971 of 1,016ms, 1,367
+  of 1,367ms and 1,482 of 1,482ms after.
+  The `title-gone` wait timeouts are part of that scenario and happen on tmpfs
+  too (about 1,030ms admitted, of which the owner was late 51–64ms on idle
+  btrfs).
 
-**Decision: a larger redesign, which is your decision.** A contained fix
+**First decision: remove what is redundant, propose the rest.** A contained fix
 cannot remove the cost: it is the per-transition durable write protocol run
 synchronously on the one owner thread. What shipped is the part that keeps
 every guarantee:
@@ -152,3 +165,70 @@ what is recorded, so none is shipped:
    timing alone.
 4. **Documentation only.** Advise a fast or tmpfs `--artifacts` root. tmpfs
    records do not survive a reboot.
+
+### Budgets now, writer thread next
+
+The decision on the proposals: give observation budgets the owner's own stall
+time back now (the second half of proposal 3, made general), and move the
+writes to a writer thread next (proposal 1, #96, before drag in #82).
+Proposals 2 and 4 are not taken up for now.
+
+**What shipped** (`owner_time.py`). The worker turns an `OwnerClock` at the
+start of every owner tick. Owner stall time is the gaps between turns beyond
+10ms, plus the current turn's overrun. A `Budget` of `s` seconds starts with
+the deadline `start + s`. It moves that deadline later by the owner stall time
+since the start, but by no more than `s`, and never past its limit (the startup
+or request deadline). Without stalls it is the old deadline. Bounds for a hung
+KWin or bus:
+
+| Wait | Budget | Worst case before | Worst case now |
+| --- | --- | --- | --- |
+| Window query work (readiness, targeting, activation, waits, close) | 0.5s | 0.5s | 1s, within the caller's deadline |
+| KWin name check during start | 1s | 1s | 2s, within the startup deadline |
+| Bus and KWin health round | 1s | 1s | 2s; once ready, the unchanged 2s observation expiry usually ends it first |
+
+Gio's own call timeout is set to the latest the deadline can be. Not changed:
+the `windows` request's 0.5s contract deadline (its query is capped by it),
+other request deadlines, the 2s health freshness in the worker and the CLI, the
+1s transport frame deadline, query cleanup (1.5s) and the connection budgets
+(3s). Changing any of these would change the CLI contract or the detection of a
+stuck worker.
+
+**Measured** with the same runs on btrfs, idle and under load, on the builds
+just before (`bb99248b`) and after the budgets. Scenarios leave out
+`worker-stopped`; starts and request timeouts count all 25 runs.
+
+| Set | Probes | p95 | p99 | max (ms) | Smoke | Scenarios | Failed starts: window query / name check | Health expiry | Request timeouts (on purpose) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| idle, before | 16,865 | 15 | 32 | 154 | 5/5 | 18/18 | 0 / 0 | 0 | 2 (2) |
+| idle, after | 17,296 | 7.4 | 21 | 106 | 5/5 | 18/18 | 0 / 0 | 0 | 2 (2) |
+| load, before | 4,055 | 120 | 470 | 3,762 | 0/5 | 6/18 | 10 / 1 | 1 | 9 (1) |
+| load, after | 4,527 | 130 | 490 | 2,706 | 0/5 | 8/18 | 5 / 0 | 6 | 13 (1) |
+
+- **Gone: failures where the owner stalled for less than the budget again.**
+  Before the budgets, the owner was stalled for 82–100% of the 0.5s budget in
+  each of the 10 failed starts. Half of them are gone, and so is the name-check
+  timeout. With this few runs and this noisy a load that ratio is rough; the
+  stall times before each failure are the firmer evidence.
+- **Left: stalls longer than the budget again.** Each of the 5 failed starts
+  left reached the new 1s cap, with the owner stalled for 91–100% of the second
+  before the failing check, mostly in one turn of 0.65–2.3s.
+- **Left: the 2s health observation expiry.** It failed 6 sessions, against 1
+  before, each with the owner stalled for 78–97% of the 2s before. More
+  sessions got through start into the workload, where these stalls are. The
+  budgets don't change when a health round completes, so they can't cause
+  these.
+- **Left: request deadlines**, including the `windows` request's 0.5s. They
+  are owner stalls too (above).
+- **Unchanged: input timing.** Under load a 20ms click was held up to 682ms
+  too long and a 20ms wheel step was 113ms late. Only #96 addresses that.
+- **Idle:** everything passed both times, and the lateness difference is disk
+  variance, as before.
+- **The profile's own writes** (`profiler.write`) were 0.7–0.8% of owner self
+  time on idle btrfs (4,026–4,728 writes per set, 0.07ms each on average) and
+  0.1% under load. The slowest single write took 6.8ms, under the 10ms stall
+  threshold.
+
+#96 is done when the same loaded runs show owner probe lateness p99 under 20ms
+and max under 100ms, no fsync in owner self time, input timing at most 10ms
+over intent at p99, and no failure from these deadlines.

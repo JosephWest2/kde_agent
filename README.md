@@ -73,6 +73,12 @@ $D session stop
   cause and the apps that ran) stay under `.agent-desktop/artifacts/generations/GEN/`
   after the session stops ([layout](docs/ARTIFACTS.md)).
 
+**MCP.** `agent-desktop mcp` serves the same commands as MCP tools over stdio,
+with screenshots returned as images. Register it with
+`claude mcp add agent-desktop -- $PWD/.local/dependencies/venv/bin/agent-desktop mcp --dependency-root $PWD/.local/dependencies`
+(run from the checkout); see [MCP server](docs/MCP.md) for the tools, cancellation
+and what happens to sessions when the client disconnects (nothing: they keep running).
+
 [Agent recipes](docs/AGENT_RECIPES.md) cover stale refs, focus before input,
 modal dialogs, waiting for the app to react (`wait --for title|gone`), client
 versus screen coordinates, and recovering from
@@ -83,8 +89,8 @@ and Blender behave in the private desktop: startup, splash and first-run dialogs
 file dialogs and keyboard paths that work.
 
 [docs/TESTING.md](docs/TESTING.md) covers the unit tests, the end-to-end smoke
-test, failure-path tests and optional application tests
-(`python tests/integration/smoke.py`, `failures.py` and `apps.py`, each with
+test, failure-path tests, MCP tests and optional application tests
+(`python tests/integration/smoke.py`, `failures.py`, `mcp.py` and `apps.py`, each with
 `--cli .local/dependencies/venv/bin/agent-desktop` unless that directory is on PATH). See [application ownership](docs/APPLICATIONS.md),
 [window discovery](docs/WINDOWS.md) and [CLI commands](docs/CLI.md).
 The readiness screenshot is an internal diagnostic artifact.

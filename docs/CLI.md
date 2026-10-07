@@ -12,7 +12,8 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
 `focus`, `wait`, `key`, `type`, `click`, `move`, `scroll`, `drag`, `screenshot`, `close` and `kill`.
-Every command in the table below is supported. There is no `input reset`; recover
+Every command in the table below is supported. `agent-desktop mcp` serves the same
+commands as MCP tools over stdio; see [MCP server](MCP.md). There is no `input reset`; recover
 from `input_uncertain` with `session stop` and `session start`. Key names, text limits, pointer coordinates, scroll signs and release guarantees are
 in [keyboard and pointer input](INPUT.md).
 

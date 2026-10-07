@@ -7,7 +7,8 @@ records effects before cancellation can run; observers never receive argv/env.
 
 An observer may return write tickets (objects with `done` and `error`; see
 writer.py) for the records it queued. A work's first step waits until its
-admission and start records are done, its response waits until every record it
+admission and start records are done (unless its task sets gates_effects and
+waits with Context.recorded() before each effect itself), its response waits until every record it
 queued is done, and a failed one latches observing_failed (no new effects,
 artifact_failed). Tasks wait for their own effect records with
 Context.recorded() before the effect they gate. Cancellation, release and
@@ -354,8 +355,9 @@ class Scheduler:
                 work.task = self.factory(work.request, Context(self, work))
             if not work.stepped:
                 # Construction is effect-free; the first step waits until the
-                # admission and start records are durable.
-                if not self._refresh(work):
+                # admission and start records are durable, unless the task gates
+                # each of its effects on Context.recorded() itself.
+                if not self._refresh(work) and not getattr(work.task, "gates_effects", False):
                     return
                 if work.observing_failed and work.request.operation not in CONTROL_OPERATIONS:
                     self._cancel(work, "artifact_failed")

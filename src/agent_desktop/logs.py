@@ -47,6 +47,8 @@ def tail(path, lines, store=None):
 
 
 class LogsTask:
+    # Read-only: no effect to gate, so the first step need not wait for the start records (#96).
+    gates_effects = True
     cleanup_seconds = .1
 
     def __init__(self, request, context, store, applications, healthy):

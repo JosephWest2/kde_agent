@@ -205,6 +205,9 @@ class CloseOperation:
 
 
 class CloseTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     cleanup_seconds = 1.5
 
     def __init__(self, request, context, adapter, registry, healthy):

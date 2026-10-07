@@ -13,6 +13,9 @@ from .writer import all_finished, journal_of, recorded, track
 
 
 class LaunchTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     def __init__(self, request, context, registry, desktop, records, *, healthy=None, adapter=None):
         self.request, self.context = request, context
         self.registry, self.desktop, self.records = registry, desktop, records
@@ -68,7 +71,9 @@ class LaunchTask:
             self.reserve()
         if self.phase == 'preparing':
             try:
-                if not self.written():
+                # FIFO order makes the admission and start records durable by now;
+                # recorded() also sees whether any of them failed.
+                if not self.written() or not recorded(self.context):
                     return
             except Exception:
                 # No helper exists, but a failed prepared record must not lose the

@@ -38,6 +38,9 @@ def busy(owner):
 
 
 class InputTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     cleanup_seconds = 1.5
     kind = 'keyboard'
     gap = TYPE_GAP

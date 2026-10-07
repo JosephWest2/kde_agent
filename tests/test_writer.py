@@ -281,6 +281,21 @@ class SchedulerRecordTests(unittest.TestCase):
         self.assertEqual(admission.results[0]['result'], {'emitted': True})
         self.assertIsNone(self.owner.active)
 
+    def test_a_self_gating_task_steps_early_but_still_emits_only_after_every_record(self):
+        class Early(GatedTask):
+            gates_effects = True
+        self.owner.factory = lambda request, context: Early(context, self.events)
+        admission = Admission(self.clock)
+        self.owner.submit(admission.request, admission)
+        self.owner.tick()
+        self.assertEqual(self.events, ['step'], 'a self-gating task may observe while start records are queued')
+        self.finish('effects')
+        self.owner.tick()
+        self.assertNotIn('emit', self.events, 'emitted before the admission record was durable')
+        self.finish()
+        self.owner.tick()
+        self.assertIn('emit', self.events)
+
     def test_failed_record_latches_artifact_failed_and_never_emits(self):
         admission = Admission(self.clock)
         self.owner.submit(admission.request, admission)

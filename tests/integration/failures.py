@@ -148,7 +148,10 @@ class Scenario(smoke.Smoke):
     def cancel_hold(self):
         _, window, log = self.fixture_window()
         process = self.background_cli('key', '--session', self.session, '--window', window, '--hold', '2', 'w')
-        code, payload = self.interrupt(process, .6)
+        # Interrupt once the key is held: request records are durable before the
+        # press, so how soon that happens depends on the disk, not the hold.
+        smoke_wait(lambda: self.keys(log), lambda rows: any(state == 1 for _, state, _ in rows), timeout=5)
+        code, payload = self.interrupt(process, .2)
         if payload['ok'] or payload['error']['code'] != 'cancelled' or code != 130:
             raise SmokeFailure('cancel-hold', f'exit {code}: {json.dumps(payload)[:400]}')
         ok('cancel-hold', 'client got cancelled (exit 130)')
@@ -158,7 +161,8 @@ class Scenario(smoke.Smoke):
     def cancel_type(self):
         _, window, log = self.fixture_window()
         process = self.background_cli('type', '--session', self.session, '--window', window, '--timeout', '30', 'a' * 1500)
-        code, payload = self.interrupt(process, .8)
+        smoke_wait(lambda: self.keys(log), lambda rows: any(state == 1 for _, state, _ in rows), timeout=5)
+        code, payload = self.interrupt(process, .3)
         if payload['ok'] or payload['error']['code'] != 'cancelled':
             raise SmokeFailure('cancel-type', f'exit {code}: {json.dumps(payload)[:400]}')
         time.sleep(.3)

@@ -13,7 +13,7 @@ from .runtime import Endpoint
 from .transport import Server
 from .scheduler import Scheduler, UnsupportedTask
 from .children import Children
-from .writer import STALL_SECONDS
+from .writer import STALL_SECONDS, final_deadline
 
 
 
@@ -461,15 +461,16 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         if profiler is not None:
             profiler.close()
         if store is not None:
-            # The terminal record is queued last, after everything still queued; the
-            # writer then gets what is left of the drain bound (at least 0.5s).
+            # The terminal record is queued last, after everything still queued. The
+            # loop has exited and everything it serviced is closed; the writer gets
+            # what is left of the shutdown's drain bound, never more (writer.close).
             closed = True
             try:
                 # Infrastructure loop exit is not proof of production cgroup cleanup.
                 ticket = write('generation_update', state="failed" if loop_failed else "stopped",
                                failure="session_failed" if loop_failed else None, cleanup="uncertain")
                 if journal is not None:
-                    closed = journal.close(max(drain_deadline or 0, time.monotonic() + .5))
+                    closed = journal.close(final_deadline(drain_deadline, time.monotonic()))
                 if not ticket.done or ticket.error is not None:
                     diagnostic()
             except Exception:

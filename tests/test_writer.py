@@ -155,6 +155,30 @@ class JournalTests(unittest.TestCase):
         journal.thread.join(2)
         self.assertFalse(journal.thread.is_alive())
 
+    def test_writes_queued_behind_a_stuck_write_never_run_after_the_close_bound(self):
+        stuck = FakeStore()
+        stuck.gate.clear()
+        journal = Journal(stuck, threaded=True)
+        held = journal.submit('write', 'held')
+        queued = [journal.submit('write', 'terminal-%d' % index) for index in range(3)]
+        wait_for(lambda: journal.stalled() > 0)
+        self.assertFalse(journal.close(time.monotonic() + .1))
+        time.sleep(.15)   # Past the bound when the stuck write returns.
+        stuck.gate.set()
+        journal.thread.join(2)
+        self.assertFalse(journal.thread.is_alive())
+        journal.drain()
+        self.assertEqual(stuck.calls, [('held', None)], 'queued writes ran after the shutdown bound')
+        self.assertTrue(held.done)
+        for ticket in queued:
+            self.assertEqual(ticket.error.context['phase'], 'closed')
+
+    def test_final_close_bound_is_the_shutdown_bound(self):
+        from agent_desktop.writer import final_deadline
+        self.assertEqual(final_deadline(5.0, 10.0), 5.0, 'the final close outlived the shutdown bound')
+        self.assertEqual(final_deadline(12.0, 10.0), 12.0)
+        self.assertEqual(final_deadline(None, 10.0), 10.5)   # A failed loop has no shutdown bound.
+
     def test_inline_journal_is_synchronous(self):
         store = FakeStore()
         journal = journal_of(store)

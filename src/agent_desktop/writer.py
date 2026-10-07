@@ -130,6 +130,7 @@ class Journal:
         self.requests = queue.SimpleQueue()
         self.completions = deque()
         self.current = None       # (seq, started) of the write in progress; set by the writer.
+        self.cutoff = None        # Set by close(): the writer starts no queued call after it.
         self.thread = None
         if threaded:
             self.thread = threading.Thread(target=self._run, name='agent-desktop-writer', daemon=True)
@@ -199,10 +200,19 @@ class Journal:
 
     def close(self, deadline):
         """Stop accepting writes; let the writer finish what is queued until DEADLINE.
-        Returns True when the writer thread has exited (its Store fd may be closed)."""
+        Returns True when the writer thread has exited (its Store fd may be closed).
+
+        Called once, from the worker's finally block, after the GLib loop has
+        exited and the server, readiness (input), children and applications are
+        closed: nothing is left for the owner to service, and the shutdown loop
+        has already waited for the queue in nonblocking turns. The wait here is
+        for the terminal generation record only and ends at DEADLINE. The writer
+        starts no queued call after DEADLINE, so a write stuck past it never lets
+        later writes run outside the bound; those fail as closed."""
         self.closed = True
         if self.thread is None:
             return True
+        self.cutoff = deadline
         self.requests.put(_STOP)
         self.thread.join(max(0.0, deadline - self.clock()))
         self.drain()
@@ -253,10 +263,21 @@ class Journal:
             if item is _STOP:
                 return
             ticket, function, args, kwargs = item
+            cutoff = self.cutoff
+            if cutoff is not None and self.clock() >= cutoff:
+                self.completions.append((ticket, None, ContractError(
+                    'artifact_failed', 'Durable record could not be preserved.', context={'phase': 'closed'})))
+                continue
             self.current = (ticket.seq, self.clock())
             value, error = self._call(ticket, function, args, kwargs)
             self.current = None
             self.completions.append((ticket, value, error))
+
+
+def final_deadline(drain_deadline, now):
+    """The bound for the worker's final close: the shutdown's drain bound when there
+    was a shutdown, else (the loop itself failed) half a second."""
+    return now + .5 if drain_deadline is None else drain_deadline
 
 
 def journal_of(store):

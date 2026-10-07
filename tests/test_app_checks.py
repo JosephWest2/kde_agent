@@ -100,6 +100,42 @@ class DotTests(ImageCase):
             apps.check_dot(self.save(image), (320, 240), (80, 60))
 
 
+class StrokeTests(ImageCase):
+    STROKE = ((140, 190), (280, 120))
+
+    def exported(self, stroke=STROKE, width=20, dot=(80, 60)):
+        image = Image.new('RGB', (320, 240), 'white')
+        draw = ImageDraw.Draw(image)
+        draw.ellipse([dot[0] - 6, dot[1] - 6, dot[0] + 6, dot[1] + 6], fill=(20, 20, 20))
+        if stroke is not None:
+            draw.line(list(stroke), fill=(20, 20, 20), width=width)
+        return self.save(image)
+
+    def test_a_stroke_along_the_drag_passes(self):
+        detail = apps.check_dot(self.exported(), (320, 240), (80, 60), self.STROKE)
+        self.assertIn('9 points along it dark', detail)
+
+    def test_missing_short_shifted_or_mirrored_strokes_fail(self):
+        for stroke in (None, ((140, 190), (210, 155)), ((150, 190), (290, 120)), ((140, 120), (280, 190))):
+            with self.subTest(stroke=stroke), self.assertRaises(SmokeFailure):
+                apps.check_dot(self.exported(stroke), (320, 240), (80, 60), self.STROKE)
+
+    def test_paint_beyond_the_stroke_fails(self):
+        image = Image.open(self.exported())
+        ImageDraw.Draw(image).point((300, 20), fill=(240, 240, 240))
+        with self.assertRaises(SmokeFailure):
+            apps.check_dot(self.save(image), (320, 240), (80, 60), self.STROKE)
+        # A soft edge within reach of the stroke is fine.
+        image = Image.open(self.exported())
+        ImageDraw.Draw(image).line([(140, 190 + 30), (280, 120 + 30)], fill=(245, 245, 245))
+        apps.check_dot(self.save(image), (320, 240), (80, 60), self.STROKE)
+
+    def test_segment_distance(self):
+        self.assertEqual(apps.segment_distance((0, 5), (0, 0), (10, 0)), 5)
+        self.assertEqual(apps.segment_distance((13, 4), (0, 0), (10, 0)), 5)
+        self.assertEqual(apps.segment_distance((3, 4), (0, 0), (0, 0)), 5)
+
+
 class OutputTests(unittest.TestCase):
     def test_version_requirements(self):
         self.assertIsNone(apps.version_problem('gimp', 'GNU Image Manipulation Program version 3.2.6\n'))

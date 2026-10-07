@@ -16,11 +16,12 @@ Supported today:
 - keyboard chords and US-layout text, with worker-owned key release;
 - left, right and middle clicks (single, double, triple) in window or screen coordinates;
 - pointer hover (`move`) and mouse-wheel scrolling (`scroll`) at a window or screen point;
+- drags with any button (`drag`), and ctrl, shift or alt held around a click, scroll or drag (`--modifiers`);
 - full-screen or single-window screenshots;
 - graceful close and explicit kill;
 - bounded log tails for the session and each application.
 
-Losing focus during a hold, a long `type` or a long `scroll` releases and stops the input.
+Losing focus during a hold, a long `type`, a long `scroll` or a `drag` releases and stops the input.
 
 ## Quickstart for coding agents
 
@@ -43,6 +44,7 @@ $D wait --for title --window WIN_REF --match 'Hello'   # did the app react? (or 
 $D wait --for gone --window DIALOG_REF            # a dialog closed; the app keeps running
 $D click --window WIN_REF --x 107 --y 23         # client-area pixels, as in a window screenshot
 $D scroll --window WIN_REF --x 350 --y 300 --dy 3 # 3 wheel notches down at that point (negative: up)
+$D drag --window WIN_REF --from 100,50 --to 300,150 --modifiers shift  # press, move, release
 $D screenshot --window WIN_REF                   # → result.path (PNG of the client area)
 $D logs --app APP_REF --tail 50                  # app stdout/stderr tails and paths
 $D close --app APP_REF                           # or: kill --app APP_REF

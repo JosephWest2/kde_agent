@@ -139,9 +139,10 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         from .input_actions import InputTask
                         return InputTask(request, context, readiness.adapter, lambda: readiness.input,
                                          applications, launch_health)
-                    if request.operation in ('click', 'move', 'scroll'):
-                        from .input_actions import ClickTask, MoveTask, ScrollTask
-                        task = {'click': ClickTask, 'move': MoveTask, 'scroll': ScrollTask}[request.operation]
+                    if request.operation in ('click', 'move', 'scroll', 'drag'):
+                        from .input_actions import ClickTask, DragTask, MoveTask, ScrollTask
+                        task = {'click': ClickTask, 'move': MoveTask, 'scroll': ScrollTask,
+                                'drag': DragTask}[request.operation]
                         return task(request, context, readiness.adapter, lambda: readiness.input,
                                     applications, launch_health)
                     if request.operation == 'screenshot':

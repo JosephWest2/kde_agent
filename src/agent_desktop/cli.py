@@ -80,6 +80,15 @@ def parser():
                                            help="client-area pixels with --window, else screen pixels")
     leaves["click"].add_argument("--button", default="left", metavar="left|right|middle")
     leaves["click"].add_argument("--count", default="1", metavar="1-3", help="2 = double click, 3 = triple click")
+    for operation in ("click", "scroll", "drag"):
+        leaves[operation].add_argument("--modifiers", metavar="ctrl,shift,alt",
+                                       help="keys held around the pointer input (needs --window)")
+    leaves["drag"].add_argument("--from", dest="from", required=True, metavar="X,Y",
+                                help="client-area pixels where the button goes down")
+    leaves["drag"].add_argument("--to", required=True, metavar="X,Y", help="client-area pixels where it comes up")
+    leaves["drag"].add_argument("--button", default="left", metavar="left|right|middle")
+    leaves["drag"].add_argument("--duration", default=None, metavar="0-2000",
+                                help="milliseconds from press to the last motion (default 300)")
     leaves["scroll"].add_argument("--dy", default=None, metavar="-50..50",
                                   help="vertical wheel steps: positive scrolls down, negative up (default 0)")
     leaves["scroll"].add_argument("--dx", default=None, metavar="-50..50",

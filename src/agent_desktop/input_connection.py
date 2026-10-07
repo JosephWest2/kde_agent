@@ -21,6 +21,8 @@ MAX_KEYS = 32
 KEYBOARD, POINTER_ABSOLUTE, SCROLL, BUTTON = 4, 2, 16, 32
 WHEEL_STEP = 120  # One wheel notch in libei's discrete scroll units.
 BUTTONS = frozenset({0x110, 0x111, 0x112})  # BTN_LEFT, BTN_RIGHT, BTN_MIDDLE
+# KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_LEFTALT: the only keys that may stay held under pointer input.
+MODIFIERS = frozenset({29, 42, 56})
 MAX_REGIONS = 16
 # KWin's RemoteDesktop EIS request flags (not libei capabilities): 1 keyboard,
 # 2 pointer, 4 touch. KWin then offers a keyboard device and a separate
@@ -372,14 +374,36 @@ class Input:
         else:
             self.lib.ei_device_keyboard_key(device.pointer, code, is_press)
 
-    def move(self, x, y):
-        """Absolute pointer motion to compositor logical (x, y), inside a device region."""
+    def _unresolved(self, modifiers=(), button=None):
+        """Refuse unless the ledger holds exactly what the caller says it holds.
+
+        Nothing held is the rule for every press, motion and wheel step. Pointer
+        input may run under a modifier chord the same caller pressed (MODIFIERS
+        on the keyboard, as one earlier batch), and a drag's motion under the
+        one button it pressed. Anything else held, in any other combination, or
+        retired with a lost device, refuses as before.
+        """
+        if (not isinstance(modifiers, (list, tuple)) or len(set(modifiers)) != len(modifiers)
+                or any(type(code) is not int or code not in MODIFIERS for code in modifiers)
+                or button is not None and (type(button) is not int or button not in BUTTONS)):
+            raise Failure('unsupported_input', 'Pointer input may only run under held ctrl, shift or alt and one button.')
+        expected = {'keyboard': list(modifiers), 'pointer': [] if button is None else [button]}
+        held = {'keyboard': [], 'pointer': []}
+        for device in self.devices.values():
+            held.setdefault(device.kind, []).extend(device.held)
+        if held != expected or self.retired_held:
+            raise Failure('input_unavailable', 'Previous input remains unresolved.')
+
+    def move(self, x, y, *, modifiers=(), button=None):
+        """Absolute pointer motion to compositor logical (x, y), inside a device region.
+
+        MODIFIERS and BUTTON are what the caller holds (a drag); anything else held refuses.
+        """
         self._owner()
         if any(type(v) not in (int, float) or not math.isfinite(v) for v in (x, y)):
             raise Failure('unsupported_input', 'Pointer coordinates must be finite numbers.')
         device = self.device('pointer')
-        if any(d.held for d in self.devices.values()) or self.retired_held:
-            raise Failure('input_unavailable', 'Previous input remains unresolved.')
+        self._unresolved(modifiers, button)
         regions = self.regions(device)
         if not any(rx <= x < rx + width and ry <= y < ry + height for rx, ry, width, height in regions):
             raise Failure('unsupported_input', 'Point is outside every pointer region.',
@@ -394,12 +418,12 @@ class Input:
                 self.uncertain = True
             raise
 
-    def scroll(self, dx, dy):
+    def scroll(self, dx, dy, *, modifiers=()):
         """One wheel notch per axis (-1, 0 or 1; positive is down/right), then a frame.
 
-        Like a physical wheel, a step is complete on its own: nothing is held and
+        Like a physical wheel, a step is complete on its own: it holds nothing and
         no scroll stop follows, so an interrupted sequence leaves nothing open
-        except emulation, which release() closes.
+        except emulation (and any MODIFIERS the caller holds), which release() closes.
         """
         self._owner()
         if any(type(v) is not int or v not in (-1, 0, 1) for v in (dx, dy)) or dx == dy == 0:
@@ -407,8 +431,7 @@ class Input:
         device = self.device('pointer')
         if not device.scroll:
             raise Failure('input_unavailable', 'The pointer device cannot scroll.', context=self.snapshot())
-        if any(d.held for d in self.devices.values()) or self.retired_held:
-            raise Failure('input_unavailable', 'Previous input remains unresolved.')
+        self._unresolved(modifiers)
         epoch, context = self.epoch, self.context
         try:
             self._start(device)
@@ -419,17 +442,20 @@ class Input:
                 self.uncertain = True
             raise
 
-    def press(self, codes, kind='keyboard'):
-        """One prevalidated finite numeric batch. The action layer must schedule release."""
+    def press(self, codes, kind='keyboard', *, modifiers=()):
+        """One prevalidated finite numeric batch. The action layer must schedule release.
+
+        Nothing may be held, except that a pointer press may name the MODIFIERS
+        its caller pressed on the keyboard just before (modifier-click, drag).
+        """
         self._owner()
         valid = (lambda code: code in BUTTONS) if kind == 'pointer' else (lambda code: 1 <= code <= 0x2ff)
         if (not isinstance(codes, (list, tuple)) or not 1 <= len(codes) <= MAX_KEYS
                 or any(type(code) is not int or not valid(code) for code in codes)
-                or len(set(codes)) != len(codes)):
+                or len(set(codes)) != len(codes) or modifiers and kind != 'pointer'):
             raise Failure('unsupported_input', 'Expected 1–32 distinct supported evdev key or button codes.')
         device = self.device(kind)
-        if any(d.held for d in self.devices.values()) or self.retired_held:
-            raise Failure('input_unavailable', 'Previous input remains unresolved.')
+        self._unresolved(modifiers)
         epoch, context = self.epoch, self.context
         try:
             self._start(device)
@@ -449,12 +475,21 @@ class Input:
                 self.uncertain = True
             raise
 
-    def release(self):
-        self._owner()
+    def release(self, kind=None):
+        """Release everything held, or only KIND's devices; pointer devices first.
+
+        Under a modifier-click or drag the button goes up before the modifiers,
+        whichever device KWin announced first. A failure on one device still
+        releases the others, then re-raises.
+        """
         epoch, context = self.epoch, self.context
-        for device in list(self.devices.values()):
+        devices = sorted(self.devices.values(), key=lambda device: device.kind != 'pointer')
+        failure = None
+        for device in devices:
             if not self._current(epoch, context):
                 return
+            if kind is not None and device.kind != kind:
+                continue
             if not device.held:
                 if device.emulating and device.resumed and self.connected and not self.error:
                     # A pointer motion with no button pressed still left emulation open.
@@ -483,10 +518,13 @@ class Input:
                     if not self._current(epoch, context):
                         return
                     self.emit(code, False, device.identity)
-            except Exception:
-                if self._current(epoch, context):
-                    self.uncertain = True
-                raise
+            except Exception as error:
+                if not self._current(epoch, context):
+                    raise
+                self.uncertain = True
+                failure = failure or error
+        if failure is not None:
+            raise failure
 
     def _dispose_resources(self):
         self._remove_sources()

@@ -174,13 +174,33 @@ $D screenshot --window WIN_REF                       # see where it ended up
   gnome-text-editor. Scroll in small requests and check with a screenshot rather
   than overshooting. In documents, keys such as `ctrl+home`, `ctrl+end` and
   `page_down` are often more precise.
-- Canvases and maps often zoom on the wheel instead of scrolling. Scrolling with
-  a key held (ctrl+wheel to zoom, shift+wheel to scroll sideways) is not supported.
+- Canvases and maps often zoom on the wheel instead of scrolling. For ctrl+wheel
+  (zoom) or shift+wheel (sideways in many apps), add `--modifiers ctrl` or
+  `--modifiers shift`; the keys are held only around the wheel steps.
 - Scrolling something that can't scroll, or a screen point with no window, still
   succeeds with `dispatched: true`, so check the result in a screenshot.
 - A long `scroll` that loses focus stops with `target_lost` and reports
   `steps_sent`; some steps may have gone to whatever was under the pointer.
   Inspect before you scroll the rest, as for [focus loss](#focus-before-input).
+
+## Drag and held modifiers
+
+```sh
+agent-desktop --json drag --window "$W" --from 140,190 --to 280,120            # paint a stroke, move a slider
+agent-desktop --json drag --window "$W" --from 400,300 --to 380,290 --button middle   # orbit or pan a viewport
+agent-desktop --json click --window "$W" --x 50 --y 80 --modifiers ctrl         # ctrl+click to add to a selection
+```
+
+- Coordinates are client pixels, as for `click`, from a `screenshot --window`.
+  Both ends must be inside the window; `drag` always needs `--window` and focus.
+- The default is a 300ms drag in up to 30 motions. Use a longer `--duration`
+  (up to 2000) for apps that sample motion slowly, and 0 for a single jump.
+- `--modifiers ctrl,shift,alt` also works on `click` and `scroll`. The keys go
+  down before the button and come up after it. For a key with modifiers use a
+  `key` chord such as `ctrl+shift+s` instead.
+- A drag interrupted by focus loss stops with `target_lost` and reports
+  `steps_sent` and `button_released`; the button and keys are released, so the app
+  sees a drag that ended early. Check with a screenshot and undo if needed.
 
 ## Client vs screen coordinates
 
@@ -218,7 +238,7 @@ automatically.
 ## Recovering from `input_uncertain`
 
 The worker couldn't confirm that a key or button was released, so `key`, `type`,
-`click`, `move` and `scroll` are refused with `input_uncertain` (exit 9) for the rest of the
+`click`, `move`, `scroll` and `drag` are refused with `input_uncertain` (exit 9) for the rest of the
 session. There is no `input reset`.
 
 ```sh

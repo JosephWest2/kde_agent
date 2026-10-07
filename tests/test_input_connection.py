@@ -253,6 +253,125 @@ class InputTests(unittest.TestCase):
         self.assertEqual(value.retired_held[0]['keys'], [0x110])
         with self.assertRaises(Failure): value.press([17])
 
+    def layered(self, pointer_first=False):
+        """Keyboard 9 and pointer 11, in either announcement order; ctrl+shift down, then the left button."""
+        value = self.make()
+        if pointer_first:
+            keyboard = value.devices.pop(9)
+            self.pointer(value)
+            value.devices[9] = keyboard
+        else:
+            self.pointer(value)
+        value.press([29, 42])
+        value.press([0x110], 'pointer', modifiers=[29, 42])
+        return value
+
+    def test_pointer_input_runs_only_under_the_exact_modifiers_and_button_its_caller_holds(self):
+        value = self.make(); self.pointer(value); value.devices[11].scroll = True
+        value.press([29, 42])
+        for refused in (lambda: value.press([0x110], 'pointer'),                      # modifiers not named
+                        lambda: value.press([0x110], 'pointer', modifiers=[29]),      # not all of them
+                        lambda: value.press([0x110], 'pointer', modifiers=[42, 29]),  # not in press order
+                        lambda: value.press([30]),                                    # another keyboard batch
+                        lambda: value.move(5, 5),
+                        lambda: value.move(5, 5, modifiers=[29, 42], button=0x110),   # no button is down yet
+                        lambda: value.scroll(0, 1)):
+            with self.assertRaises(Failure) as caught: refused()
+            self.assertEqual(caught.exception.code, 'input_unavailable')
+        for unsupported in (lambda: value.press([30], modifiers=[29, 42]),            # only pointer presses stack
+                            lambda: value.press([0x110], 'pointer', modifiers=[29, 30]),
+                            lambda: value.press([0x110], 'pointer', modifiers=[29, 29]),
+                            lambda: value.move(5, 5, modifiers=[29, 42], button=0x113),
+                            lambda: value.move(5, 5, modifiers=[29, 42], button=True)):
+            with self.assertRaises(Failure) as caught: unsupported()
+            self.assertEqual(caught.exception.code, 'unsupported_input')
+        self.lib.ei_device_button_button.assert_not_called()
+        self.lib.ei_device_pointer_motion_absolute.assert_not_called()
+        value.scroll(0, 1, modifiers=[29, 42])
+        value.press([0x110], 'pointer', modifiers=[29, 42])
+        self.lib.ei_device_button_button.assert_called_once_with(11, 0x110, True)
+        value.move(7, 8, modifiers=[29, 42], button=0x110)
+        self.lib.ei_device_pointer_motion_absolute.assert_called_once_with(11, 7.0, 8.0)
+        for refused in (lambda: value.move(9, 9, modifiers=[29, 42]),                 # the button is not named
+                        lambda: value.move(9, 9, modifiers=[29, 42], button=0x111),
+                        lambda: value.move(9, 9, button=0x110),
+                        lambda: value.scroll(0, 1, modifiers=[29, 42]),               # never while a button is down
+                        lambda: value.press([0x111], 'pointer', modifiers=[29, 42])):
+            with self.assertRaises(Failure) as caught: refused()
+            self.assertEqual(caught.exception.code, 'input_unavailable')
+        value.retired_held.append({'epoch': 0, 'identity': 7, 'keys': [30]})
+        with self.assertRaises(Failure): value.move(9, 9, modifiers=[29, 42], button=0x110)
+
+    def test_buttons_are_released_before_modifiers_whatever_the_device_order(self):
+        for pointer_first in (False, True):
+            with self.subTest(pointer_first=pointer_first):
+                value = self.layered(pointer_first)
+                self.lib.reset_mock()
+                value.release()
+                sent = [(c[0], c.args) for c in self.lib.mock_calls
+                        if c[0] in ('ei_device_button_button', 'ei_device_keyboard_key', 'ei_device_stop_emulating')]
+                self.assertEqual(sent, [('ei_device_button_button', (11, 0x110, False)), ('ei_device_stop_emulating', (11,)),
+                                        ('ei_device_keyboard_key', (9, 42, False)), ('ei_device_keyboard_key', (9, 29, False)),
+                                        ('ei_device_stop_emulating', (9,))])
+                self.assertEqual([d.held for d in value.devices.values()], [[], []])
+                self.assertFalse(value.uncertain)
+
+    def test_release_of_one_kind_keeps_the_other_held(self):
+        value = self.layered()
+        value.release('pointer')
+        self.assertEqual((value.devices[11].held, value.devices[11].emulating), ([], False))
+        self.assertEqual((value.devices[9].held, value.devices[9].emulating), ([29, 42], True))
+        self.lib.ei_device_keyboard_key.assert_has_calls([call(9, 29, True), call(9, 42, True)])
+        self.assertEqual(self.lib.ei_device_keyboard_key.call_count, 2)
+        value.press([0x110], 'pointer', modifiers=[29, 42])  # The next click of a multi-click.
+        value.release('keyboard')
+        self.assertEqual(value.devices[11].held, [0x110])
+        self.assertEqual(value.devices[9].held, [])
+
+    def test_a_failed_button_release_still_releases_the_modifiers(self):
+        value = self.layered()
+        def button(device, code, press):
+            if not press:
+                raise RuntimeError('native')
+        self.lib.ei_device_button_button.side_effect = button
+        with self.assertRaises(RuntimeError): value.release()
+        self.assertTrue(value.uncertain)
+        self.assertEqual(value.devices[11].held, [0x110])
+        self.assertEqual(value.devices[9].held, [])
+        self.lib.ei_device_keyboard_key.assert_has_calls([call(9, 42, False), call(9, 29, False)])
+
+    def test_device_loss_mid_drag_releases_what_it_can_and_leaves_input_uncertain(self):
+        # Pause and removal of the pointer, and loss of the whole connection, while
+        # ctrl+shift and the left button are held: KWin can no longer take the
+        # button's release, so input is uncertain; the keyboard still releases.
+        for kinds, cause in (([7], 'device_paused'), ([6], 'device_removed'), ([2], 'disconnected')):
+            with self.subTest(cause=cause):
+                value = self.layered()
+                value.move(9, 9, modifiers=[29, 42], button=0x110)
+                self.lib.ei_event_get_device.return_value = 11
+                self.events(kinds); value.drain()
+                self.cancel.assert_called_once_with(cause)
+                self.assertTrue(value.uncertain)
+                # Readiness fails the session; cancelling the drag task then releases.
+                value.release()
+                if cause == 'disconnected':
+                    self.assertEqual(value.devices[9].held, [29, 42])  # Nothing can be sent at all.
+                    self.lib.ei_device_keyboard_key.assert_has_calls([call(9, 29, True), call(9, 42, True)])
+                    self.assertEqual(self.lib.ei_device_keyboard_key.call_count, 2)
+                else:
+                    self.assertEqual(value.devices[9].held, [])
+                    self.lib.ei_device_keyboard_key.assert_has_calls([call(9, 42, False), call(9, 29, False)])
+                if cause == 'device_removed':
+                    self.assertEqual(value.retired_held[0]['keys'], [0x110])
+                else:
+                    self.assertEqual(value.devices[11].held, [0x110])
+                self.lib.ei_device_button_button.assert_called_once_with(11, 0x110, True)
+                with self.assertRaises(Failure): value.press([30])
+                self.cancel.reset_mock(); self.lib.reset_mock()
+                self.lib.ei_get_event.return_value = None
+                self.lib.ei_event_get_seat.return_value = 42
+                self.lib.ei_device_get_seat.return_value = 42
+
     def test_native_exception_preserves_attempted_press(self):
         value = self.make()
         self.lib.ei_device_keyboard_key.side_effect = RuntimeError('native seam')

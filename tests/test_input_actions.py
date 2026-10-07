@@ -12,8 +12,8 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop import cli
 from agent_desktop.contracts import ContractError, make_request, response
-from agent_desktop.input_actions import (CLICK_GAP, CLICK_HOLD, RECHECK, SCROLL_GAP, ClickTask, InputTask, MoveTask,
-                                         ScrollTask)
+from agent_desktop.input_actions import (CLICK_GAP, CLICK_HOLD, DRAG_SETTLE, DRAG_STEP, MODIFIER_GAP, RECHECK,
+                                         SCROLL_GAP, ClickTask, DragTask, InputTask, MoveTask, ScrollTask)
 from agent_desktop.keymap import KEYS, SHIFT, parse_chord, text_strokes
 from agent_desktop.screenshots import crop_rect
 from agent_desktop.shutdown import release_input
@@ -677,6 +677,259 @@ class FocusRecheckTests(unittest.TestCase):
         self.assertFalse(task.cleanup(time.monotonic()) and time.monotonic() - Recheck.created[1].started < .05)
         time.sleep(.06)
         self.assertTrue(task.cleanup(time.monotonic()))
+
+
+class LayeredOwner:
+    """Fake input owner with a keyboard and a pointer device and Input's ledger rules.
+
+    Pointer input may only run under exactly the modifiers (and, for motion,
+    the button) its caller names; release() goes pointer first. A lost device
+    keeps what it holds and makes input uncertain, as Input.release does.
+    """
+
+    def __init__(self):
+        self.keyboard = SimpleNamespace(kind='keyboard', held=[], emulating=False, resumed=True)
+        self.pointer = SimpleNamespace(kind='pointer', held=[], emulating=False, resumed=True)
+        self.devices = {1: self.keyboard, 2: self.pointer}
+        self.uncertain = False
+        self.retired_held = []
+        self.events = []
+
+    def check(self, modifiers=(), button=None):
+        if (self.keyboard.held != list(modifiers) or self.pointer.held != ([] if button is None else [button])
+                or self.uncertain or self.retired_held):
+            raise ContractError('input_unavailable', 'Previous input remains unresolved.')
+
+    def press(self, codes, kind='keyboard', *, modifiers=()):
+        assert not modifiers or kind == 'pointer'
+        self.check(modifiers)
+        device = self.pointer if kind == 'pointer' else self.keyboard
+        device.emulating = True
+        device.held.extend(codes)
+        self.events.append(('press', kind, list(codes), time.monotonic()))
+
+    def move(self, x, y, *, modifiers=(), button=None):
+        self.check(modifiers, button)
+        self.pointer.emulating = True
+        self.events.append(('move', (x, y), list(modifiers), time.monotonic()))
+
+    def scroll(self, dx, dy, *, modifiers=()):
+        self.check(modifiers)
+        self.pointer.emulating = True
+        self.events.append(('scroll', (dx, dy), list(modifiers), time.monotonic()))
+
+    def release(self, kind=None):
+        for device in (self.pointer, self.keyboard):
+            if kind is not None and device.kind != kind or not (device.held or device.emulating):
+                continue
+            if not device.resumed:
+                self.uncertain = True  # KWin can no longer take this device's release.
+                continue
+            self.events.append(('release', device.kind, list(reversed(device.held)), time.monotonic()))
+            device.held.clear()
+            device.emulating = False
+
+    def kinds(self):
+        return [event[:3] for event in self.events]
+
+
+class LayeredPointerTests(unittest.TestCase):
+    """drag, and click and scroll with --modifiers, against Input's ledger rules."""
+    CLIENT = {'x': 290, 'y': 100, 'width': 700, 'height': 520}
+    run_task = InputTaskTests.run_task
+
+    def make(self, operation, plan=(), timeout=None, **arguments):
+        request = make_request(operation, arguments={'window': WINDOW, **arguments}, caller_cwd='/',
+                               timeout_seconds=timeout)
+        self.effects = []
+        work = SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + request.timeout_seconds),
+                               error=None)
+        context = SimpleNamespace(work=work, effects=lambda partial, uncertain=False: self.effects.append((dict(partial), uncertain)))
+        self.owner = LayeredOwner()
+        Recheck.created, Recheck.plan = [], list(plan)
+        self.patch = patch('agent_desktop.input_actions.TargetTask', Recheck)
+        self.patch.start()
+        self.addCleanup(self.patch.stop)
+        task = {'click': ClickTask, 'scroll': ScrollTask, 'drag': DragTask}[operation](
+            request, context, None, lambda: self.owner, None, lambda: None)
+        task.target.result = dict(task.target.result, client=dict(self.CLIENT))
+        return task
+
+    def drag_until(self, task, motions):
+        end = time.monotonic() + 5
+        while sum(event[0] == 'move' for event in self.owner.events) < motions and time.monotonic() < end:
+            self.assertIsNone(task.step(time.monotonic()))
+            time.sleep(.001)
+
+    def assert_all_released(self):
+        self.assertEqual((self.owner.keyboard.held, self.owner.pointer.held), ([], []))
+        self.assertFalse(self.owner.keyboard.emulating or self.owner.pointer.emulating)
+        releases = [event[1] for event in self.owner.events if event[0] == 'release']
+        self.assertEqual(releases[-2:], ['pointer', 'keyboard'])  # The button before the modifiers.
+
+    def test_drag_presses_modifiers_then_button_moves_linearly_and_releases_in_reverse(self):
+        task = self.make('drag', **{'from': [10, 20], 'to': [110, 70]}, duration=100, modifiers=['ctrl', 'shift'])
+        result = self.run_task(task)
+        start, end = (300, 120), (400, 170)
+        path = [(300 + 10 * i, 120 + 5 * i) for i in range(1, 11)]  # 100ms / 10ms = 10 steps.
+        self.assertEqual(self.owner.kinds(),
+                         [('move', start, []), ('press', 'keyboard', [29, 42]), ('press', 'pointer', [0x110])]
+                         + [('move', point, [29, 42]) for point in path]
+                         + [('release', 'pointer', [0x110]), ('release', 'keyboard', [42, 29])])
+        times = [event[-1] for event in self.owner.events]
+        self.assertGreaterEqual(times[2] - times[1], MODIFIER_GAP)
+        steps = times[3:13]
+        for index, at in enumerate(steps, 1):
+            self.assertGreaterEqual(at - times[2], index * DRAG_STEP - .001)  # Never early.
+        self.assertLess(steps[-1] - times[2], .1 + .05)
+        self.assertGreaterEqual(times[13] - times[12], DRAG_SETTLE)
+        self.assertGreaterEqual(times[14] - times[13], MODIFIER_GAP)
+        self.assertEqual({key: result[key] for key in ('from', 'to', 'screen_from', 'screen_to', 'screen_x', 'screen_y',
+                                                       'button', 'duration', 'steps', 'modifiers', 'focused')},
+                         {'from': [10, 20], 'to': [110, 70], 'screen_from': [300, 120], 'screen_to': [400, 170],
+                          'screen_x': 400, 'screen_y': 170, 'button': 'left', 'duration': 100, 'steps': 10,
+                          'modifiers': ['ctrl', 'shift'], 'focused': True})
+        self.assertEqual(self.effects, [({'window': WINDOW, 'phase': 'emitting', 'motion': [300, 120], 'to': [400, 170],
+                                          'button': 'left', 'steps_total': 10, 'modifiers': ['ctrl', 'shift']}, True)])
+        self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_drag_without_modifiers_and_step_count_rules(self):
+        # (from, to, duration ms) -> steps: duration / 10ms, at most the major-axis distance, at least 1, at most 200.
+        for ends, duration, steps in ((([0, 0], [300, 0]), 300, 30), (([0, 0], [5, 2]), 300, 5),
+                                      (([0, 0], [0, 500]), 2000, 200), (([50, 50], [40, 45]), 0, 1),
+                                      (([0, 0], [600, 1]), 5, 1), (([0, 0], [600, 1]), 15, 2)):
+            with self.subTest(ends=ends, duration=duration):
+                task = self.make('drag', **{'from': ends[0], 'to': ends[1]}, duration=duration, button='middle',
+                                 timeout=3)
+                task.step(time.monotonic())
+                self.assertEqual(len(task.path), steps)
+                self.assertEqual(task.path[-1], (290 + ends[1][0], 100 + ends[1][1]))
+        result = self.run_task(self.make('drag', **{'from': [50, 50], 'to': [40, 45]}, duration=0, button='middle'))
+        self.assertEqual(self.owner.kinds(), [('move', (340, 150), []), ('press', 'pointer', [0x112]),
+                                              ('move', (330, 145), []), ('release', 'pointer', [0x112])])
+        self.assertEqual((result['steps'], result['modifiers']), (1, []))
+
+    def test_drag_ends_must_be_inside_the_client_area_and_on_screen(self):
+        for ends, field, reason in ((([10, 10], [700, 10]), 'to', 'outside_window'),
+                                    (([10, 520], [10, 10]), 'from', 'outside_window')):
+            with self.subTest(field=field):
+                task = self.make('drag', **{'from': ends[0], 'to': ends[1]})
+                with self.assertRaises(ContractError) as caught:
+                    task.step(time.monotonic())
+                self.assertEqual((caught.exception.code, caught.exception.context['reason'],
+                                  caught.exception.context['field']), ('invalid_arguments', reason, field))
+                self.assertEqual((self.owner.events, self.effects), ([], []))
+        self.CLIENT = {'x': 1000, 'y': 600, 'width': 700, 'height': 520}
+        task = self.make('drag', **{'from': [10, 10], 'to': [300, 10]})
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual((caught.exception.context['reason'], caught.exception.context['field']), ('outside_screen', 'to'))
+
+    def test_drag_budget_fits_the_longest_drag_and_refuses_one_that_cannot_fit(self):
+        task = self.make('drag', **{'from': [0, 0], 'to': [600, 400]}, duration=2000, modifiers=['alt'])
+        task.step(time.monotonic())
+        self.assertLess(task.estimate() + .1, 3)
+        self.assertGreater(task.estimate(), 2)
+        task.request_cancel('cancelled')
+        with self.assertRaises(ContractError) as caught:
+            self.make('drag', **{'from': [0, 0], 'to': [600, 400]}, duration=2000, timeout=2).step(time.monotonic())
+        self.assertEqual((caught.exception.code, caught.exception.context['phase']), ('timeout', 'budget'))
+        self.assertIn('--duration', caught.exception.context['hint'])
+        self.assertEqual(self.owner.events, [])
+
+    def test_focus_loss_mid_drag_releases_button_then_modifiers_with_progress(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        task = self.make('drag', plan=[{'error': lost}], **{'from': [0, 0], 'to': [600, 400]}, duration=1000,
+                         modifiers=['shift'])
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        context = caught.exception.context
+        self.assertEqual((caught.exception.code, context['reason']), ('target_lost', 'focus_lost'))
+        moves = sum(event[0] == 'move' for event in self.owner.events) - 1
+        self.assertEqual((context['steps_sent'], context['steps_total']), (moves, 100))
+        self.assertTrue(10 < moves < 100)
+        self.assertEqual((context['pointer_moved'], context['button_pressed'], context['button_released']),
+                         (True, True, False))
+        self.assert_all_released()
+        self.assertEqual(self.owner.events[-1][2], [42])
+
+    def test_cancellation_and_session_stop_mid_drag_release_everything_at_once(self):
+        for reason in ('client_disconnected', 'shutdown'):
+            with self.subTest(reason=reason):
+                task = self.make('drag', **{'from': [0, 0], 'to': [600, 400]}, duration=1000,
+                                 modifiers=['ctrl', 'alt'])
+                task.context.work.error = ContractError('cancelled', 'Request interrupted.')
+                self.drag_until(task, 4)
+                task.request_cancel(reason)
+                self.assert_all_released()
+                self.assertEqual(self.owner.events[-1][2], [56, 29])
+                self.assertEqual(task.context.work.error.context['steps_sent'], 3)
+                self.assertTrue(task.cleanup(time.monotonic()))
+                # Shutdown's backstop then finds nothing left to release.
+                self.assertEqual(release_input(self.owner), {'state': 'nothing_held', 'confirmed': True})
+
+    def test_shutdown_backstop_releases_a_drag_button_before_its_modifiers(self):
+        owner = LayeredOwner()
+        owner.press([29]); owner.press([0x111], 'pointer', modifiers=[29])
+        self.assertEqual(release_input(owner), {'state': 'released', 'confirmed': True})
+        self.assertEqual([event[:3] for event in owner.events[-2:]],
+                         [('release', 'pointer', [0x111]), ('release', 'keyboard', [29])])
+
+    def test_timeout_mid_drag_releases_everything(self):
+        task = self.make('drag', **{'from': [0, 0], 'to': [600, 400]}, duration=1000, modifiers=['ctrl'])
+        self.drag_until(task, 5)
+        task.deadline = time.monotonic()
+        with self.assertRaises(ContractError) as caught:
+            task.step(time.monotonic())
+        self.assertEqual(caught.exception.code, 'timeout')
+        self.assertEqual((caught.exception.context['steps_sent'], caught.exception.context['button_pressed']), (4, True))
+        self.assert_all_released()
+
+    def test_device_loss_mid_drag_leaves_input_uncertain_and_blocks_later_input(self):
+        task = self.make('drag', **{'from': [0, 0], 'to': [600, 400]}, duration=1000, modifiers=['ctrl'])
+        self.drag_until(task, 3)
+        self.owner.pointer.resumed = False  # Paused or removed: Input marks it uncertain and the session fails.
+        self.owner.uncertain = True
+        task.request_cancel('shutdown')
+        self.assertEqual(self.owner.keyboard.held, [])     # The modifiers still came up.
+        self.assertEqual(self.owner.pointer.held, [0x110])  # The button's release cannot be confirmed.
+        self.assertFalse(task.cleanup(time.monotonic()))
+        self.assertEqual(release_input(self.owner), {'state': 'uncertain', 'confirmed': False})
+        lost = self.owner
+        later = self.make('drag', **{'from': [0, 0], 'to': [10, 10]})
+        later.input_owner = lambda: lost
+        with self.assertRaises(ContractError) as caught:
+            later.step(time.monotonic())
+        self.assertEqual(caught.exception.code, 'input_uncertain')
+
+    def test_modifier_click_keeps_modifiers_down_across_the_clicks(self):
+        result = self.run_task(self.make('click', x=5, y=6, count=2, button='right', modifiers=['alt', 'ctrl']))
+        self.assertEqual(self.owner.kinds(),
+                         [('move', (295, 106), []), ('press', 'keyboard', [56, 29])]
+                         + [('press', 'pointer', [0x111]), ('release', 'pointer', [0x111])] * 2
+                         + [('release', 'keyboard', [29, 56])])
+        times = [event[-1] for event in self.owner.events]
+        self.assertGreaterEqual(times[2] - times[1], MODIFIER_GAP)
+        self.assertGreaterEqual(times[3] - times[2], CLICK_HOLD)
+        self.assertGreaterEqual(times[4] - times[3], CLICK_GAP)
+        self.assertGreaterEqual(times[6] - times[5], MODIFIER_GAP)
+        self.assertEqual((result['modifiers'], result['count'], result['button']), (['alt', 'ctrl'], 2, 'right'))
+        self.assertEqual(self.effects[0][0]['modifiers'], ['alt', 'ctrl'])
+
+    def test_modifier_scroll_sends_wheel_steps_under_the_held_modifiers(self):
+        result = self.run_task(self.make('scroll', x=5, y=6, dy=-2, modifiers=['ctrl']))
+        self.assertEqual(self.owner.kinds(),
+                         [('move', (295, 106), []), ('press', 'keyboard', [29])]
+                         + [('scroll', (0, -1), [29])] * 2 + [('release', 'pointer', []), ('release', 'keyboard', [29])])
+        self.assertEqual(result['modifiers'], ['ctrl'])
+
+    def test_focus_loss_mid_modifier_scroll_releases_the_modifiers(self):
+        lost = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        task = self.make('scroll', plan=[{'error': lost}], x=1, y=1, dy=40, modifiers=['ctrl', 'shift'])
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertTrue(0 < caught.exception.context['steps_sent'] < 40)
+        self.assert_all_released()
 
 
 class ShutdownReleaseTests(unittest.TestCase):

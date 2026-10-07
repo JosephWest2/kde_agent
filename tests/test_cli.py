@@ -29,6 +29,7 @@ VALID = {
     "click": ["--window", REF, "--x", "0", "--y", "2"],
     "move": ["--window", REF, "--x", "0", "--y", "2"],
     "scroll": ["--window", REF, "--x", "0", "--y", "2", "--dy", "-1"],
+    "drag": ["--window", REF, "--from", "0,2", "--to", "30,4", "--modifiers", "ctrl"],
     "screenshot": [], "logs": [], "close": ["--window", REF], "kill": ["--app", APP],
 }
 
@@ -125,6 +126,13 @@ class CLITests(unittest.TestCase):
                  ["scroll", "--x", "1", "--y", "1"], ["scroll", "--x", "1", "--y", "1", "--dy", "0", "--dx", "0"],
                  ["scroll", "--x", "1", "--y", "1", "--dy", "51"], ["scroll", "--x", "1", "--y", "1", "--dx", "-51"],
                  ["scroll", "--x", "1", "--y", "1", "--dy", "1.5"], ["scroll", "--y", "1", "--dy", "1"],
+                 ["drag", "--window", REF, "--from", "1,1"], ["drag", "--from", "1,1", "--to", "2,2"],
+                 ["drag", "--window", REF, "--from", "1,1", "--to", "1,1"],
+                 ["drag", "--window", REF, "--from", "1,1", "--to", "2,2", "--duration", "2001"],
+                 ["drag", "--window", REF, "--from", "1,1", "--to", "2,2", "--count", "2"],
+                 ["click", "--x", "1", "--y", "1", "--modifiers", "ctrl"],
+                 ["click", "--window", REF, "--x", "1", "--y", "1", "--modifiers", "super"],
+                 ["move", "--window", REF, "--x", "1", "--y", "1", "--modifiers", "ctrl"],
                  ["wait", "--for", "title", "--window", REF], ["wait", "--for", "title", "--app", APP, "--match", "x"],
                  ["wait", "--for", "title", "--window", REF, "--match", ""],
                  ["wait", "--for", "title", "--window", REF, "--match", "x" * 257],
@@ -244,6 +252,45 @@ class ContractTests(unittest.TestCase):
             for bad in ({"x": -1}, {"y": "1.5"}, {"x": True}, {"y": None}):
                 with self.subTest(operation=operation, bad=bad), self.assertRaises(ContractError):
                     self.request(operation, {"x": 1, "y": 1, "dy": 1, **bad} if operation == "scroll" else {"x": 1, "y": 1, **bad})
+
+    def test_drag_points_duration_and_button_are_validated(self):
+        request = cli.parse_request(["drag", "--window", REF, "--from", "3,4", "--to", "30,0"], GEN, "/")[0]
+        self.assertEqual({key: value for key, value in request.arguments.items() if key != "window"},
+                         {"from": [3, 4], "to": [30, 0], "button": "left", "duration": 300, "modifiers": []})
+        self.assertEqual(request.timeout_seconds, 3)
+        request = self.request("drag", {"window": REF, "from": [0, 0], "to": [1, 0], "duration": 0, "button": "middle"})
+        self.assertEqual((request.arguments["duration"], request.arguments["button"]), (0, "middle"))
+        self.assertEqual(self.request("drag", request.arguments).arguments, request.arguments)
+        for bad in ({"from": "1,"}, {"from": "-1,2"}, {"from": "1.5,2"}, {"to": " 1,2"}, {"to": [1]}, {"to": [1, -2]},
+                    {"to": [1, True]}, {"to": [1.0, 2]}, {"to": "1,2,3"}, {"duration": -1}, {"duration": 2001},
+                    {"duration": "1e3"}, {"duration": 1.5}, {"duration": True}, {"button": "back"}, {"window": None}):
+            with self.subTest(bad=bad), self.assertRaises(ContractError) as caught:
+                self.request("drag", {"window": REF, "from": [1, 1], "to": [9, 9], **bad})
+            self.assertEqual(caught.exception.code, "invalid_arguments")
+        with self.assertRaises(ContractError) as caught:
+            self.request("drag", {"window": REF, "from": "5,5", "to": [5, 5]})
+        self.assertEqual(caught.exception.context, {"field": "to", "reason": "zero_drag"})
+
+    def test_modifiers_are_distinct_known_names_and_need_a_window(self):
+        for operation, extra in (("click", {"x": 1, "y": 1}), ("scroll", {"x": 1, "y": 1, "dy": 1}),
+                                 ("drag", {"from": [1, 1], "to": [2, 2]})):
+            with self.subTest(operation=operation):
+                request = self.request(operation, {"window": REF, **extra, "modifiers": "Ctrl,alt,SHIFT"})
+                self.assertEqual(request.arguments["modifiers"], ["ctrl", "alt", "shift"])
+                self.assertEqual(self.request(operation, request.arguments).arguments, request.arguments)
+                for bad in ("", "ctrl,", "ctrl,ctrl", "control", "super", "ctrl+shift", ["ctrl", 1], 3):
+                    with self.assertRaises(ContractError) as caught:
+                        self.request(operation, {"window": REF, **extra, "modifiers": bad})
+                    self.assertEqual(caught.exception.context, {"field": "modifiers"})
+        # Without modifiers click and scroll arguments are what they were.
+        self.assertNotIn("modifiers", self.request("click", {"x": 1, "y": 1, "modifiers": []}).arguments)
+        self.assertNotIn("modifiers", self.request("scroll", {"x": 1, "y": 1, "dy": 1}).arguments)
+        for operation, extra in (("click", {"x": 1, "y": 1}), ("scroll", {"x": 1, "y": 1, "dy": 1})):
+            with self.assertRaises(ContractError) as caught:
+                self.request(operation, {**extra, "modifiers": ["ctrl"]})
+            self.assertEqual(caught.exception.context, {"field": "modifiers", "reason": "modifiers_need_window"})
+        with self.assertRaises(ContractError):
+            self.request("move", {"window": REF, "x": 1, "y": 1, "modifiers": ["ctrl"]})
 
     def test_finite_budgets_are_pure_shared_validation(self):
         for value in ("nan", "inf", "-inf", 0, -1, "1e9999", True, [], {}, 4):

@@ -72,6 +72,14 @@ class CodecTests(unittest.TestCase):
             for value in ("1", 1.0, True):
                 with self.subTest(field=field, value=value), self.assertRaises(ContractError):
                     request_from_wire(scroll | {"arguments": scroll["arguments"] | {field: value}})
+        drag = request("drag", arguments={"window": GEN + ":" + WINDOW, "from": "1,2", "to": [3, 4],
+                                          "modifiers": "ctrl"}).payload()
+        self.assertEqual({k: v for k, v in request_from_wire(drag).arguments.items() if k != "window"},
+                         {"from": [1, 2], "to": [3, 4], "button": "left", "duration": 300, "modifiers": ["ctrl"]})
+        for field, value in (("from", "1,2"), ("to", (3, 4)), ("modifiers", "ctrl"), ("duration", "300"),
+                             ("duration", 300.0), ("from", [1, "2"])):
+            with self.subTest(field=field, value=value), self.assertRaises(ContractError):
+                request_from_wire(drag | {"arguments": drag["arguments"] | {field: value}})
 
     def test_response_correlation_and_shapes(self):
         req = request()

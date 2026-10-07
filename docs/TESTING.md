@@ -85,6 +85,15 @@ invocations, the way an agent would:
    with `axis_value120` ±120 per notch (horizontal first in the diagonal step),
    `axis` values of the same sign, and no `axis_stop`. `logs --app` must then report both logs complete, at the
    `.log` paths launch returned, with a tail matching the file.
+   A second fixture then gets `drag --from 100,50 --to 300,150 --duration 200
+   --modifiers ctrl,shift`, `click --count 2 --modifiers alt`, `scroll --dy 2
+   --modifiers ctrl` and `drag --button middle --duration 0`. Its complete log must
+   show exactly: the motion to the start, ctrl and shift down, the button down,
+   20 motions of (10, 5) to the end, the button up there, shift and ctrl up; alt
+   around both clicks; ctrl around both wheel frames; and the middle drag's single
+   motion between its press and release. Each pointer event is checked against the
+   XKB modifier mask in effect when it arrived (none at the end), and the drag's
+   press to last motion must take about 200ms.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then
    `wait --for title` until the title contains the typed text. A click on the header bar's
    "New Tab" button must switch the same window to a "New Document"
@@ -142,6 +151,7 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `cancel-hold` | Ctrl-C on the client 0.6s into `key --hold 2 w` | `cancelled`, exit 130, release within 1s, and the next `key` works |
 | `cancel-type` | Ctrl-C 0.8s into typing 1500 characters | `cancelled`; no character arrives after the cancel |
 | `scroll-interrupted` | Ctrl-C once the fixture has 3 wheel steps of `scroll --dy 50`, then a `scroll --dy 1`, then `kdotool` activates a second fixture window once a second `scroll --dy 50` has 3 steps | `cancelled` (exit 130) and the wheel stops; the next scroll works; then `target_lost`/`focus_lost` (outcome `unknown`) whose `steps_sent`/`dy_sent` equal the steps the fixture received on either window; never an `axis_stop` |
+| `drag-interrupted` | A 2s `drag --from 20,20 --to 420,320 --modifiers ctrl,shift`, three times: Ctrl-C after 5 motions; `kdotool` activates a second fixture window after 10; `session stop` after 5 | each time the fixture sees exactly the motion to the start, ctrl, shift, the button, some motions under ctrl+shift, then button, shift and ctrl up and nothing after. Ctrl-C gives `cancelled` (exit 130) with release within 0.5s; focus loss gives `target_lost`/`focus_lost` (outcome `unknown`) with `steps_sent` equal to the motions received and release within 1s; stop fails the client and releases within 0.5s |
 | `generation` | `--generation` and a window ref from another generation | `generation_mismatch` for both |
 | `compositor-death` | SIGKILL `kwin_wayland` | session `failed`, input refused with `session_unavailable`; `session status` and the manifest's `failure` name the compositor and SIGKILL; the app is `ended_by_session_stop` |
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
@@ -169,7 +179,7 @@ are in [TARGET_APPS.md](TARGET_APPS.md).
 | Scenario | Application | What it does | What must hold |
 | --- | --- | --- | --- |
 | `text-editor` | `/usr/bin/gnome-text-editor` | types three lines (punctuation, a tab), `ctrl+s`, the path into the `Save a File` dialog, `return`; then appends a line and `ctrl+s` again | the dialog closes (`wait --for gone`), the title names `saved.txt`, and the file's bytes are exactly the typed text plus a final newline, both times; the second save opens no dialog; `close` exits |
-| `gimp` | `/usr/bin/gimp`, version 3 or later | `ctrl+n`, 320×240 in the new-image dialog, one `click` on image pixel (80, 60) (found in a window screenshot), `ctrl+shift+e`, the path, `return` in both export dialogs; `ctrl+q`, `ctrl+d` | the exported PNG is 320×240, dark at (80, 60), white (≥ 250) everywhere more than 34px from (80, 60), and its dark area is centered on (80, 60) within 3px; GIMP exits |
+| `gimp` | `/usr/bin/gimp`, version 3 or later | `ctrl+n`, 320×240 in the new-image dialog, one `click` on image pixel (80, 60) (found in a window screenshot), one `drag` from image pixel (140, 190) to (280, 120), `ctrl+shift+e`, the path, `return` in both export dialogs; `ctrl+q`, `ctrl+d` | the exported PNG is 320×240, dark at (80, 60) and at 9 evenly spaced points from (140, 190) to (280, 120), white (≥ 250) everywhere more than 34px from both the dot and the stroke's line segment, and the dot's dark area is centered on (80, 60) within 3px; GIMP exits |
 | `blender` | `/usr/bin/blender`, 4.2 or later | prepares `scene.blend` and a `userpref.blend` with `blender -b`, opens the scene with `--factory-startup`, `move` into the viewport, `shift+d` `return`, `ctrl+shift+s`, the name `edited.blend` in the file view, `return` twice | the title names `edited.blend` without `*`; `blender -b` lists Camera, Cube, Cube.001 and Light in it and the original three objects in `scene.blend`; `close` exits |
 
 An application that isn't installed, or is older than shown, is skipped with the

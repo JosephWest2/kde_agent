@@ -27,7 +27,7 @@ OPERATIONS = {
     "launch": (10, 60, 22), "windows": (.5, .5, 23),
     "focus": (2, 2, 24), "wait": (10, 60, 24),
     "key": (3, 3, 64), "type": (3, 30, 64), "click": (3, 3, 66),
-    "move": (3, 3, 79), "scroll": (3, 3, 79),
+    "move": (3, 3, 79), "scroll": (3, 3, 79), "drag": (3, 3, 82),
     "screenshot": (3, 3, 64),
     "logs": (3, 3, 68), "close": (5, 60, 25), "kill": (5, 15, 26),
 }
@@ -35,13 +35,15 @@ OPERATIONS = {
 # unsupported_operation. --help, doctor and session status all read this.
 SUPPORTED_OPERATIONS = ("doctor", "session.start", "session.status", "session.stop",
                         "launch", "windows", "focus", "wait", "key", "type", "click", "move", "scroll",
-                        "screenshot", "logs", "close", "kill")
+                        "drag", "screenshot", "logs", "close", "kill")
 # Supported operations that need a ready desktop session.
 DESKTOP_OPERATIONS = tuple(op for op in SUPPORTED_OPERATIONS
                            if op not in ("doctor", "session.start", "session.status", "session.stop"))
 WAIT_CONDITIONS = ("window", "focus", "exit", "title", "gone")
 LOG_SOURCES = ("all", "application", "worker", "compositor", "bus")
 MAX_SCROLL_STEPS = 50  # Wheel notches per axis per scroll request.
+MODIFIER_NAMES = ("ctrl", "shift", "alt")  # --modifiers on click, scroll and drag (left-hand keys).
+DRAG_DURATION = (0, 2000, 300)  # drag --duration milliseconds: minimum, maximum, default.
 MAX_TAIL = 200
 GENERATION = re.compile(r"[0-9a-f]{32}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
@@ -139,6 +141,34 @@ def environment(value):
     return result
 
 
+def point(value, field):
+    """A client-area point: "X,Y" (CLI) or [X, Y] (wire), nonnegative integers."""
+    if isinstance(value, str):
+        match = re.fullmatch(r"([0-9]{1,6}),([0-9]{1,6})", value)
+        if match is None:
+            invalid(field)
+        return [int(match.group(1)), int(match.group(2))]
+    if (not isinstance(value, (list, tuple)) or len(value) != 2
+            or any(type(item) is not int or item < 0 for item in value)):
+        invalid(field)
+    return list(value)
+
+
+def modifier_names(value):
+    """--modifiers as a list of distinct names in the order given: "ctrl,shift" or ["ctrl", "shift"]."""
+    if value is None:
+        return []
+    names = value.split(",") if isinstance(value, str) else value
+    if not isinstance(names, (list, tuple)) or (isinstance(value, str) and not value):
+        invalid("modifiers")
+    result = []
+    for name in names:
+        if not isinstance(name, str) or name.lower() not in MODIFIER_NAMES or name.lower() in result:
+            invalid("modifiers")
+        result.append(name.lower())
+    return result
+
+
 @dataclass(frozen=True)
 class Request:
     schema_version: int
@@ -161,8 +191,9 @@ ARGUMENTS = {
     "launch": {"cwd", "env", "wait_window", "argv"},
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window", "match", "regex"}, "key": {"window", "chord", "hold"},
-    "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count"},
-    "move": {"window", "x", "y"}, "scroll": {"window", "x", "y", "dx", "dy"},
+    "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count", "modifiers"},
+    "move": {"window", "x", "y"}, "scroll": {"window", "x", "y", "dx", "dy", "modifiers"},
+    "drag": {"window", "from", "to", "button", "duration", "modifiers"},
     "screenshot": {"output", "window"}, "logs": {"app", "source", "tail"},
     "close": {"app", "window"}, "kill": {"app"},
 }
@@ -200,7 +231,7 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
             args.pop(kind, None)
     if operation in {"focus", "close"} and sum(k in args for k in ("app", "window")) != 1:
         invalid("target")
-    if operation in {"key", "type"} and "window" not in args:
+    if operation in {"key", "type", "drag"} and "window" not in args:
         invalid("window")
     if operation == "kill" and "app" not in args:
         invalid("app")
@@ -282,10 +313,33 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         if args["dx"] == args["dy"] == 0:
             raise ContractError("invalid_arguments", "Scroll needs a nonzero --dy or --dx.",
                                 context={"field": "dy", "reason": "zero_scroll"})
-    if operation == "click":
+    if operation in ("click", "drag"):
         args.setdefault("button", "left")
         if args["button"] not in ("left", "middle", "right"):
             invalid("button")
+    if operation == "drag":
+        for field in ("from", "to"):
+            args[field] = point(args.get(field), field)
+        if args["from"] == args["to"]:
+            raise ContractError("invalid_arguments", "A drag needs --to different from --from.",
+                                context={"field": "to", "reason": "zero_drag"})
+        low, high, default = DRAG_DURATION
+        duration = args.get("duration")
+        duration = default if duration is None else duration
+        if isinstance(duration, str) and re.fullmatch(r"[0-9]{1,4}", duration):
+            duration = int(duration)
+        if type(duration) is not int or not low <= duration <= high:
+            invalid("duration")
+        args["duration"] = duration
+    if operation in ("click", "scroll", "drag"):
+        # Keyboard input always goes to a checked window, as for key and type.
+        modifiers = modifier_names(args.pop("modifiers", None))
+        if modifiers and "window" not in args:
+            raise ContractError("invalid_arguments", "--modifiers needs --window.",
+                                context={"field": "modifiers", "reason": "modifiers_need_window"})
+        if modifiers or operation == "drag":
+            args["modifiers"] = modifiers
+    if operation == "click":
         count = args.get("count", 1)
         if isinstance(count, str) and re.fullmatch(r"[1-3]", count):
             count = int(count)

@@ -11,17 +11,55 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 - `session status` lists the desktop operations available once the session is ready.
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
-`focus`, `wait`, `key`, `type`, `click`, `move`, `scroll`, `screenshot`, `close` and `kill`.
+`focus`, `wait`, `key`, `type`, `click`, `move`, `scroll`, `drag`, `screenshot`, `close` and `kill`.
 Every command in the table below is supported. There is no `input reset`; recover
 from `input_uncertain` with `session stop` and `session start`. Key names, text limits, pointer coordinates, scroll signs and release guarantees are
 in [keyboard and pointer input](INPUT.md).
+
+## Drag and modifiers
+
+`drag --window W --from X,Y --to X,Y` moves the pointer to `--from`, presses the
+button, moves in a straight line to `--to` and releases there. With `--modifiers`,
+the named keys go down after the pointer reaches `--from` and before the button,
+and come up after it, in reverse order:
+
+```sh
+agent-desktop --json drag --window "$W" --from 100,50 --to 300,150 --modifiers ctrl,shift
+# pointer to (100,50), ctrl down, shift down, left down, 30 motions to (300,150), left up, shift up, ctrl up
+agent-desktop --json click --window "$W" --x 10 --y 20 --modifiers ctrl   # ctrl+click
+agent-desktop --json scroll --window "$W" --x 10 --y 20 --dy -3 --modifiers ctrl   # ctrl+wheel (zoom)
+```
+
+The decisions behind it:
+
+- **Cadence.** One absolute motion every 10 ms, on a straight line with fractional
+  positions: `steps = ceil(duration / 10 ms)`, at most 200 and at most the larger
+  of the x and y distance in pixels, at least 1. A late step is sent as soon as it
+  can be, never skipped, so the application sees every point. The button comes up
+  20 ms after the last motion. `--duration 0` is one motion straight to `--to`.
+- **Maximum duration** 2000 ms (default 300), so the longest drag, with its focus
+  checks and gaps, fits the 3 s timeout. A `--timeout` too short for the drag fails
+  with `timeout`, phase `budget`, before anything is sent.
+- **Default button** left. Endpoints must differ (`zero_drag`) and both must be in
+  the window's client area and on screen (`outside_window`, `outside_screen` with
+  `context.field` naming `from` or `to`).
+- **Modifiers** are `ctrl`, `shift` and `alt` (the left keys), comma separated,
+  distinct, pressed in the order given, 20 ms before the first button or wheel
+  step and released 20 ms after the last. `click` holds them across all of
+  `--count`. They need `--window` (`modifiers_need_window`), so focus is checked
+  while they are down. `move` takes no modifiers. `key` takes none either: a chord
+  such as `ctrl+shift+a` already presses its modifiers first and releases them last.
+- **Release.** As for every input command: focus loss, Ctrl-C, timeout or
+  `session stop` releases the button first, then the modifiers. A device lost while
+  something is held gives `input_uncertain` and blocks input until the session is
+  restarted. See [drag and modifiers](INPUT.md#drag-and-modifiers).
 
 ## Screenshots
 
 `screenshot [--window REF] [--output PATH]` captures the 1280×720 output as PNG.
 With `--window`, the image is the window's client area, rounded outward and
 clipped to the screen; a fully offscreen window fails with `capture_failed`. This
-is the coordinate space of `click`, `move` and `scroll` with `--window`: for a window that is fully on screen,
+is the coordinate space of `click`, `move`, `scroll` and `drag` with `--window`: for a window that is fully on screen,
 a pixel at (x, y) in the image is `click --x x --y y`. If the window extends past
 a screen edge the image is clipped, so add `crop[0] - client.x` and
 `crop[1] - client.y` (or click the screen point `crop[0] + x`, `crop[1] + y`
@@ -196,9 +234,10 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `wait` | `--for window\|focus\|exit\|title\|gone`; window/exit require `--app`, focus/title/gone require `--window`; title requires `--match TEXT` (optional `--regex`). See [Waits](#waits) | 10 / 60 |
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
 | `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
-| `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1) | 3 / 3 |
+| `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1); `--modifiers ctrl,shift,alt` (needs `--window`) | 3 / 3 |
 | `move` | `--x INT --y INT`, as for `click`; moves the pointer (hover) and presses nothing | 3 / 3 |
-| `scroll` | `--x INT --y INT`, as for `click`; `--dy -50..50` (positive down) and `--dx -50..50` (positive right) wheel notches, default 0, not both 0 | 3 / 3 |
+| `scroll` | `--x INT --y INT`, as for `click`; `--dy -50..50` (positive down) and `--dx -50..50` (positive right) wheel notches, default 0, not both 0; `--modifiers` as for `click` | 3 / 3 |
+| `drag` | required `--window WINDOW_REF`; `--from X,Y --to X,Y` client coordinates, different points; `--button left\|middle\|right` (default left); `--duration 0-2000` ms (default 300); `--modifiers` as for `click`. See [Drag and modifiers](#drag-and-modifiers) | 3 / 3 |
 | `screenshot` | optional `--window WINDOW_REF` (crop to its client area), optional `--output PATH` (file or existing directory) | 3 / 3 |
 | `logs` | optional `--app APP_REF`; `--source all\|application\|worker\|compositor\|bus` (default all); `--tail 0-200` (default 20) | 3 / 3 |
 | `close` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 5 / 60 |
@@ -225,7 +264,7 @@ not require Rust/compiler tools once the pinned build is prepared.
 deadline; retry once setup finishes ([setup](SETUP.md#rerunning)).
 
 Timeout and hold values must be finite and strictly positive. No unbounded mode
-exists. Key and type targets always use a window; click, move and scroll use one
+exists. Key, type and drag targets always use a window, as does any pointer command with `--modifiers`; click, move and scroll use one
 unless given screen coordinates. App selection for focus/close must resolve unambiguously.
 Titles are descriptive, never identities. Pointer coordinates are nonnegative
 integer pixels, bounds-checked against current geometry before dispatch. Key,
@@ -363,10 +402,14 @@ Representative launch and window candidate shapes (full discovery also returns o
 Input results report `dispatched: true` (see [INPUT.md](INPUT.md) for the full
 fields). Pointer results (`click`, `move`, `scroll`) give the point as `x`, `y` and
 the screen point where the pointer now is as `screen_x`, `screen_y`; `scroll` adds
-`dx`, `dy` and `steps`. A `scroll` that fails after its first wheel step reports
+`dx`, `dy` and `steps`. `drag` gives `from`, `to`, `screen_from`, `screen_to`,
+`screen_x`, `screen_y` (the end), `button`, `duration` (ms), `steps` and `modifiers`;
+`click` and `scroll` add `modifiers` when given. A `drag` that fails after it
+starts reports `pointer_moved`, `button_pressed`, `steps_sent`, `steps_total` and
+`button_released` in the error context. A `scroll` that fails after its first wheel step reports
 `steps_sent`, `steps_total`, `dx_sent` and `dy_sent` in the error context, as `type`
 reports `strokes_sent`. Exit codes are the ones in the table above: 2 for bad
-coordinates or steps (including `zero_scroll`), 6 for `target_lost`, 8 for a
+coordinates or steps (including `zero_scroll` and `zero_drag`), 6 for `target_lost`, 8 for a
 `timeout` (phase `budget` when nothing was sent), 9 for input errors. Input dispatch does not promise application acknowledgment, a rendered
 frame or UI readiness. Screenshot success reports the fresh complete PNG's path
 and the other fields listed under [Screenshots](#screenshots).
@@ -382,7 +425,7 @@ Each window row has a `kind`: `window`, `popup` (tooltips, menus, popovers) or
 `compositor` (KWin's own surfaces, such as the window menu). Only `window` rows are
 selected by `--app` or accepted by `--window`; an explicit popup or compositor row
 gives `unsupported_operation` with reason `popup_surface` or `compositor_surface`.
-While a compositor row is listed, `key`, `type`, and `click`, `move` or `scroll` with `--window`, fail with
+While a compositor row is listed, `key`, `type`, `drag`, and `click`, `move` or `scroll` with `--window`, fail with
 `target_lost`, reason `compositor_surface_open`: outcome `not_started` when found
 before the first stroke, or outcome `unknown` with input progress when a focus
 recheck finds it mid-input. See [row kinds](WINDOWS.md#row-kinds-windows-popups-and-compositor-surfaces).

@@ -213,8 +213,8 @@ actions:
 - **Readiness.** `session.status` reports ready only once the generation's
   ready update is durable.
 - **Diagnostics.** Readiness `health.json` and `shutdown.json` go through the
-  same writer. `startup-failure.json` is still written inline, once, on the
-  way out.
+  same writer. `startup-failure.json` is still written inline, once, at the
+  session's first failure, so it exists before any shutdown hook runs.
 - **Backlog.** New ordinary connections wait in the listen backlog while any
   write is outstanding, up to 0.25s at a time, so a request's deadline starts
   with the writer caught up. Priority controls (`session.stop`, the client's

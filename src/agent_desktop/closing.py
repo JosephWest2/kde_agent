@@ -161,7 +161,7 @@ class CloseOperation:
             if time.monotonic() < self.next_poll:
                 return None
             self.operation = self.adapter.start(self.request_id, self.deadline,
-                                                application=self.application)
+                                                application=self.application, recorded=self.recorded)
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()
         if result is None:

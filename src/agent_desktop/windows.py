@@ -15,7 +15,7 @@ from .owner_time import Budget
 from .private_bus import PrivateBus
 from .protocol import encode
 from .window_types import Decoder, encoded, window_id
-from .writer import finished, journal_of
+from .writer import finished, journal_of, recorded
 
 MAX_PINS = 4096
 
@@ -31,10 +31,12 @@ class Adapter:
         self.active = None
         self.pins = {}
 
-    def start(self, request_id, deadline, *, application=None):
+    def start(self, request_id, deadline, *, application=None, recorded=None):
+        """RECORDED: whether the caller's records are durable (Context.recorded); the
+        query script is not dispatched to KWin until it is true (#96)."""
         if self.active is not None:
             raise ContractError('session_unavailable', 'Window query cleanup is unresolved.')
-        query = Query(self, request_id, deadline, application)
+        query = Query(self, request_id, deadline, application, recorded=recorded)
         self.active = query
         return query
 
@@ -64,8 +66,9 @@ class Query:
     # and never past the caller's deadline (owner_time.Budget).
     work_seconds = .5
 
-    def __init__(self, owner, request_id, deadline, application):
+    def __init__(self, owner, request_id, deadline, application, *, recorded=None):
         self.owner, self.desktop, self.registry = owner, owner.desktop, owner.registry
+        self.recorded = recorded or (lambda: True)
         self.request_id, self.application = request_id, application
         # The work budget runs from initiation, not the first step, so a stall in
         # between still counts. self.deadline is its value at the last check.
@@ -181,9 +184,9 @@ class Query:
         return [self.owner.binary, '--name', self.name, 'kwinscript', '--file', str(self.folder / 'input.js')]
 
     def _dispatch_guard(self):
-        """Last check before the child starts; False while the dispatch record is not durable."""
+        """Last check before the child starts; False while the caller's records are not durable."""
         self.check()
-        return True
+        return bool(self.recorded())
 
     def _prepare_script(self):
         fd = os.open('input.js', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=self.dir_fd)
@@ -540,7 +543,8 @@ class NativeClose(Activation):
 
 
 class WindowsTask:
-    # Read-only: no effect to gate, so the first step need not wait for the start records (#96).
+    # Its query script waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
     gates_effects = True
     cleanup_seconds = 1.5
 
@@ -559,7 +563,8 @@ class WindowsTask:
             raise ContractError('generation_mismatch', 'Window query generation changed.')
         if self.query is None:
             self.query = self.adapter.start(self.request.request_id, self.context.work.admission.deadline,
-                                           application=self.request.arguments.get('app'))
+                                           application=self.request.arguments.get('app'),
+                                           recorded=lambda: recorded(self.context))
         try:
             return self.query.step()
         except ContractError as error:

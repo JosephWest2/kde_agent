@@ -187,7 +187,8 @@ class TargetTask:
                 return None
             self.check()
             self.operation = self.adapter.start(self.request.request_id, self.deadline,
-                                                application=self.application)
+                                                application=self.application,
+                                                recorded=lambda: recorded(self.context))
             self.polls += 1
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()

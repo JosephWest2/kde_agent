@@ -556,7 +556,11 @@ class DragTask(PointTask):
         self.point = self.screen(self.x, self.y, 'from')
         self.end = self.screen(*self.request.arguments['to'], 'to')
         dx, dy = self.end[0] - self.point[0], self.end[1] - self.point[1]
-        steps = max(1, min(MAX_DRAG_STEPS, math.ceil(round(self.duration / DRAG_STEP, 6)), max(abs(dx), abs(dy))))
+        # The pixel-distance cap comes from the integer client points: a window origin
+        # may be fractional, which would make dx and dy floats. Motion keeps the exact ones.
+        (fx, fy), (tx, ty) = (self.x, self.y), self.request.arguments['to']
+        steps = max(1, min(MAX_DRAG_STEPS, math.ceil(round(self.duration / DRAG_STEP, 6)),
+                           max(abs(tx - fx), abs(ty - fy))))
         self.path = [(self.point[0] + dx * i / steps, self.point[1] + dy * i / steps) for i in range(1, steps + 1)]
         self.interval = self.duration / steps
 

@@ -809,6 +809,46 @@ class LayeredPointerTests(unittest.TestCase):
                                               ('move', (330, 145), []), ('release', 'pointer', [0x112])])
         self.assertEqual((result['steps'], result['modifiers']), (1, []))
 
+    def test_fractional_window_origin_keeps_an_integer_step_count_and_exact_ends(self):
+        # KWin reports fractional client geometry (e.g. x=290.5) on scaled or centred windows. The
+        # pixel-distance cap comes from the integer client points; motion keeps the fractional ones.
+        self.CLIENT = {'x': 290.5, 'y': 100.25, 'width': 700, 'height': 520}
+        for ends, duration, steps in ((([0, 0], [5, 2]), 300, 5), (([0, 0], [0, 3]), 300, 3),
+                                      (([10, 10], [300, 10]), 300, 30)):
+            with self.subTest(ends=ends):
+                result = self.run_task(self.make('drag', **{'from': ends[0], 'to': ends[1]}, duration=duration))
+                moves = [event[1] for event in self.owner.events if event[0] == 'move']
+                self.assertEqual(moves[0], (290.5 + ends[0][0], 100.25 + ends[0][1]))
+                self.assertEqual(moves[-1], (290.5 + ends[1][0], 100.25 + ends[1][1]))
+                self.assertEqual((result['steps'], len(moves) - 1), (steps, steps))
+                self.assertIs(type(result['steps']), int)
+
+    def test_only_the_first_emission_waits_for_records_as_for_type(self):
+        # ARTIFACTS.md "Writer thread": the input intent (outcome uncertain, covering every
+        # stroke, step or motion) is durable before the first emission. A record queued
+        # later, such as a focus recheck's window observation, does not pause input already
+        # under way: type and drag alike keep sending; their responses wait for it instead.
+        durable = [False]
+        def run(task, emitted):
+            task.context.recorded = lambda: durable[0]
+            durable[0] = False
+            for _ in range(20):
+                self.assertIsNone(task.step(time.monotonic()))
+            self.assertEqual(emitted(), 0)  # The intent is not durable yet.
+            durable[0] = True
+            while not emitted():
+                self.assertIsNone(task.step(time.monotonic()))
+            durable[0] = False  # A recheck's observation is queued and not yet durable.
+            return self.run_task(task)
+        result = run(self.make('drag', **{'from': [0, 0], 'to': [100, 50]}, duration=100, modifiers=['ctrl']),
+                     lambda: len(self.owner.events))
+        self.assertEqual(result['steps'], 10)
+        self.assertEqual(self.owner.kinds()[-2:], [('release', 'pointer', [0x110]), ('release', 'keyboard', [29])])
+        typing = InputTaskTests.make(self, 'type', text='abc')
+        typing.context.effects = lambda partial, uncertain=False: None
+        result = run(typing, lambda: len(self.owner.events))
+        self.assertEqual(result['strokes'], 3)
+
     def test_drag_ends_must_be_inside_the_client_area_and_on_screen(self):
         for ends, field, reason in ((([10, 10], [700, 10]), 'to', 'outside_window'),
                                     (([10, 520], [10, 10]), 'from', 'outside_window')):

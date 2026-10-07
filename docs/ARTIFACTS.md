@@ -189,8 +189,11 @@ actions:
   it is admitted and started. No effect of the request (input, activation,
   close or kill signal, launch spawn or gate, window-query script) runs until
   every record the request has queued so far is durable. Each effect also waits
-  for its own record: the input intent, the kill or close phase, the launch
-  allocations and its prepared and authorized records, the query guard. A task
+  for its own record: the input intent; the kill or close phase, and before
+  each further signal the previous signal's progress; the launch allocations
+  and its prepared and authorized records. A window query (for `windows`,
+  targeting or close) loads its KWin script only once the request's records
+  are durable. A task
   that gates every effect this way may take its first, effect-free steps while
   the start records are still queued; any other task waits for them before its
   first step.
@@ -199,7 +202,8 @@ actions:
   synchronous writes did. A failed write latches `artifact_failed`: no new
   effects, and the response reports it. If the records are still not durable
   5s after the later of the request deadline and its cleanup deadline, the
-  response is `artifact_failed` (never success) and the records stay pending.
+  response is `artifact_failed` (`phase: settle`, never success or a timeout)
+  and the records stay pending.
 - **After acceptance.** The accepted terminal outcome is queued after the
   transport freezes the response and is not waited on, so it becomes durable
   shortly after the response, not before; a crash in between leaves the record
@@ -223,9 +227,14 @@ actions:
   session as `artifact_failed` (`phase: stalled`), as the 5s watchdog did when
   the owner itself hung in it; the watchdog keeps running throughout.
 - **Shutdown.** Cancellation, release, reset teardown and cleanup never wait
-  for the writer. The worker then lets the writer drain the queue within the
-  stop cleanup bound before it exits; writes still queued after that are not
-  made, and their records stay at their last durable state.
+  for the writer: once a request's cleanup is done, a stop or reset and the
+  shutdown's release proceed while its response still waits for its records.
+  `session.stop` itself never waits for its records before it steps. The
+  worker then lets the writer drain the queue in nonblocking turns, within the
+  shutdown bound, and queues the terminal generation record after the loop
+  exits, waiting for it until that bound at most. The writer starts no queued
+  write after the bound: writes still queued then fail as closed, and their
+  records stay at their last durable state.
 
 The CLI process (session start and stop, service cleanup) and test helpers
 without a worker still write synchronously.

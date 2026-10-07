@@ -309,5 +309,17 @@ queued and paid for them out of their 0.5s. Holding ordinary accepts while
 writes are outstanding (for at most 0.25s) fixed that. The final sets above ran
 on the final code.
 
+**Rerun after review fixes** (stricter gates on window-query dispatch and on
+every termination signal; shutdown, stop and settlement expiry made
+independent of the writer; final close bounded by the shutdown bound). tmpfs
+and idle btrfs: smoke `--loop 3` and failures `--loop 2` all passed; idle btrfs
+lateness p99 0.1, max 3.7ms, no owner fsync. Under the same load, each run on
+its own: lateness p99 0.1ms and max 54.5ms (one 59ms turn, in a
+`PrivateBus.__init__` bus connection at session start), owner fsync 0, input at
+most 5.5ms over intent, and no window-query, bus or health failure. Smoke 0/5,
+scenarios 8/18, 15 request timeouts (2 on purpose). Every failure was again a
+request deadline used up by storage time, including two `worker-sigkill` runs
+whose hold had not started within the test's 3s.
+
 Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
-tests: 657 (17 new).
+tests: 664 (24 new).

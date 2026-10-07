@@ -155,7 +155,7 @@ keeps each work's queued writes (`Context.track`) and checks them once per turn:
   `gates_effects`; such a task (input, targeting, close, kill, launch, windows,
   logs) checks `Context.recorded()` before each effect and may observe earlier.
   `recorded()` is true only when every record the work has queued so far is
-  durable and none failed.
+  durable and none failed. Controls (`session.stop`) never wait here.
 - **Each effect.** A task queues the record for an effect (for example input's
   `emitting` intent), then waits in its own phase, on later turns, until
   `recorded()` holds. Input checks its time budget again afterwards and sends
@@ -166,8 +166,10 @@ keeps each work's queued writes (`Context.track`) and checks them once per turn:
   the deadline is a timeout with the result as partial, as when storage time
   was spent inline. A failed record answers `artifact_failed`. If the records
   are not done 5s after the later of the deadline and the cleanup deadline
-  (sooner when stopping), it answers `artifact_failed` and the records stay
-  pending.
+  (sooner when stopping), it answers `artifact_failed` (`phase: settle`, not a
+  timeout) and the records stay pending. A finishing work is no longer
+  `active`: the next work, a reset or stop, and `drain_shutdown` go ahead
+  without waiting for its records.
 - **Cancellation and cleanup** never wait for records. `request_cancel`,
   release and `cleanup` run as before; their records are queued behind.
 - **Admission.** While writes are outstanding the transport leaves new

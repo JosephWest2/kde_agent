@@ -21,6 +21,7 @@ from .transport import exchange
 STOP_SECONDS = 15.0
 INSTALL_LOCK_RETRY = .05
 SYSTEMD_STOP_SECONDS = 3
+PING_SECONDS = 3.0  # session.status's maximum work seconds.
 
 
 def remaining(deadline):
@@ -494,7 +495,11 @@ class Manager:
                         raise ContractError('session_failed', 'Worker service exited during startup.')
                     if info['ActiveState'] == 'active':
                         try:
-                            result = self._ping(request, generation, min(deadline, time.monotonic() + .2))
+                            # One ping in flight with the full status budget: its reply
+                            # waits for its records (#96), so a short budget would miss
+                            # under storage load and each retry would queue more records.
+                            # A crashed worker still fails it at once (socket closed).
+                            result = self._ping(request, generation, min(deadline, time.monotonic() + PING_SECONDS))
                             if result['state'] == 'ready' or self.worker_command is not None:
                                 if result['state'] == 'ready':
                                     data['state'] = 'ready'

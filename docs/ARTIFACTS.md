@@ -222,7 +222,11 @@ actions:
   starts when the hold releases. A hold longer than 5s (the stall bound)
   closes the connection unanswered. Nothing else waits: the scheduler, stop
   and cleanup go on, and the worker quits only once held replies are sent, or
-  at the shutdown bound.
+  at the shutdown bound. Every CLI path keeps at most one exchange in flight
+  and gives it the operation's full budget, so a caller's records queue no
+  faster than they become durable: `session start` pings readiness with the
+  3s `session.status` budget (within the start deadline), one ping at a time.
+  A crashed worker still fails a ping at once, since its socket closes.
 - **Window observations.** A query's immutable observation file is durable
   before the query is accepted, and an application's window publication stays
   `pending` until its checkpoint is durable.

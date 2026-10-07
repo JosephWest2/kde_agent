@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 627 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 661 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 631 of the 640
+have a user systemd manager, so `test_lifecycle_process` runs there: 665 of the 674
 tests. CI never runs the smoke, failure-path or application tests below.
 `test_app_checks` covers the application tests' desktop-free checks (finding the
 canvas, the exported pixels, version and skip handling) and is portable.
@@ -212,7 +212,10 @@ The profile records:
   the EIS fd watch) is timed with the calls nested in it: request dispatch,
   scheduler steps, Store methods with their calling `file:line`, `os.fsync` with
   its caller, child spawns, private-bus calls, screenshot and window-query steps,
-  imports and garbage collection. Totals per call path are written every 5s.
+  imports and garbage collection. Since #96 the worker's Store calls run on
+  the writer thread, which the profile does not time; on the owner they show as
+  `Journal.submit` and `Journal.drain`, and the response wait as
+  `Scheduler.settle`. Totals per call path are written every 5s.
   Callbacks of 10ms or more are written one by one, with their spans of 0.5ms or
   more.
 - **Input and responses.** Each press, release, scroll and move, with its

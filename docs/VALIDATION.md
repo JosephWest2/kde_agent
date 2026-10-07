@@ -30,6 +30,7 @@ failure-path tests (#67) and optional application tests (#81); see [TESTING.md](
 | #61 | kwin-mcp comparison, target app | Continue the project, using kwin-mcp as a reference. gnome-text-editor passed 5 full cycles. Worker SIGKILL cleanup verified. | `planning/REVISED_PLAN.md` |
 | #80 | Owner-loop stalls | Measured: the stalls are synchronous fsyncs of artifact records on the owner thread. Harmless on tmpfs; on an NVMe btrfs disk the owner sits in fsync for about a third of each smoke run; and under heavy write load they break 0.5s/1s deadlines (failed starts, requests and sessions). Two redundant fsyncs removed (−10%). Window-query, KWin name-check and health-round budgets no longer count owner stalls (failed starts under load 10 → 5 of 25). Moving the writes off the owner thread is #96. [Details](#80-owner-loop-stalls). | this section |
 | #81 | Target applications | gnome-text-editor 50.1, GIMP 3.2.6 and Blender 5.2.2 all run natively on Wayland in the private session (Blender on the GPU through EGL, with KWin decorations; no XWayland needed). The application tests (`tests/integration/apps.py`) save, export and inspect real files: 24 of 24 scenario runs passed (`--loop 5`, then `--loop 3` with `AGENT_DESKTOP_REQUIRE_HOST_TESTS=1`). No production change was needed. Quirks are in [TARGET_APPS.md](TARGET_APPS.md). | this change |
+| #96 | Writer thread | Durable records are written by one writer thread with a bounded FIFO; the owner never waits on the disk. With btrfs under `dd` load, against `main` under the same load: owner lateness p99 510 → 0.1ms and max 3,989 → 3.3ms, owner fsync 123s → 0, input at most 5ms over intent (was up to 544ms), and no window-query, health or bus failure (11 → 0). Idle btrfs is now as good as tmpfs. Not met: under load, requests still time out because writing their records takes longer than their deadlines (smoke 0/5 before and after). [Details](#96-writer-thread). | this change |
 
 ## #80 owner-loop stalls
 
@@ -234,3 +235,113 @@ just before (`bb99248b`) and after the budgets. Scenarios leave out
 #96 is done when the same loaded runs show owner probe lateness p99 under 20ms
 and max under 100ms, no fsync in owner self time, input timing at most 10ms
 over intent at p99, and no failure from these deadlines.
+
+## #96 writer thread
+
+**What changed.** Inside the worker, every durable Store write is queued to one
+writer thread (`writer.py`) that runs them one at a time, in order, with the
+unchanged protocol. The owner never waits on the disk. Effects wait, on later
+turns, until their records are durable, and responses wait until all of their
+request's records are durable. What is durable relative to the owner's actions
+is in [ARTIFACTS.md](ARTIFACTS.md#writer-thread-when-a-record-is-durable) and
+[SCHEDULING.md](SCHEDULING.md#durable-records-and-the-owner).
+
+**Method.** As for #80: the owner profile with smoke `--loop 5` and failures
+`--loop 2` on tmpfs and idle btrfs. Under load, each smoke run and scenario ran
+as its own invocation, so that one failure doesn't end the set. The load is the
+same `dd` loop as in #80, but it ran faster this time (about 1.2 GB/s against
+830 MiB/s), so `main` (`f508beac`) was measured again under the same load, just
+before. Scenarios leave out `worker-stopped`. `cancel-hold` and `cancel-type`
+now interrupt once the fixture has seen the first press, not after a fixed
+delay: the press comes after durable records, so when it happens depends on the
+disk. The `main` run used the old timing.
+
+| Set | Probes | p95 | p99 | max (ms) | Owner fsync | Smoke | Scenarios | Startup or session failures: window query / bus / health | Request timeouts (on purpose) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tmpfs, #80 | 16,837 | 0.0 | 0.1 | 15.7 | — | 5/5 | 18/18 | 0 / 0 / 0 | — |
+| tmpfs, #96 | 16,520 | 0.0 | 0.0 | 0.2 | 0 | 5/5 | 18/18 | 0 / 0 / 0 | 2 (2) |
+| idle btrfs, #80 after the budgets | 17,296 | 7.4 | 21 | 106 | about a third of each smoke run | 5/5 | 18/18 | 0 / 0 / 0 | 2 (2) |
+| idle btrfs, #96 | 21,420 | 0.0 | 0.1 | 2.5 | 0 | 5/5 | 18/18 | 0 / 0 / 0 | 2 (2) |
+| load, `main` | 4,467 | 130 | 510 | 3,989 | 122.8s | 0/5 | 11/18 | 4 / 2 / 4 | 12 (0), plus 1 window-query failure inside a request |
+| load, #96 | 39,739 | 0.0 | 0.1 | 3.3 | 0 | 0/5 | 7/18 | 0 / 0 / 0 | 18 (2) |
+
+Input timing against intent, worst over all sets: 5.8ms (tmpfs), 5.5ms (idle
+btrfs) and 5.1ms (load), every one under 10ms. Under load on `main` a 20ms
+wheel step was 544ms late and a 200ms key hold 117ms too long. On every #96 set
+the profile saw 0 stalls of 50ms or more and none of 10ms or more during a held
+key or button.
+
+Against the done-when criteria, under load:
+
+| Criterion | Result |
+| --- | --- |
+| Owner lateness p99 under 20ms, max under 100ms | Met: 0.1ms and 3.3ms |
+| No fsync in owner self time | Met: 0 |
+| Input timing at most 10ms over intent at p99 | Met: 5.1ms at worst |
+| No failed start, request or session from window-query, health or bus deadlines | Met for those deadlines: no window-query, bus or health failure, against 11 on `main` (10 sessions, 1 request). Requests still fail on their own deadlines, below |
+| Idle btrfs no worse than tmpfs by more than a few ms | Met: p99 0.1 against 0.0, max 2.5 against 0.2 |
+
+**Not met: request deadlines under load.** Every #96 failure under load was a
+request whose deadline ran out while its records were written, with the owner
+0ms late each time: 13 `Request deadline expired`, 2 input budget refusals
+that sent nothing (the wait for the intent record had used the budget), and 1
+launch helper handshake that expired while the launch waited for its
+authorized record. The `windows` request's 0.5s deadline is the most common.
+One request writes about 8 to 10 fsync'd records in turn (request, admitted,
+started, effects, observation, application windows, finalizing, terminal). A
+temporary trace of the writer on idle btrfs measured 7.7–15.6ms per write at
+the median, 31–69ms at p99 and up to 330ms. Under load single writes took
+300–750ms. That much storage time is longer than many request deadlines,
+whichever thread does the writing. On `main` the same time stalled the owner,
+which failed starts and sessions as well (6 of its 7 scenario failures were
+startup, health, bus or stall failures). Fewer scenarios passed with #96 (7
+against 11). With 18 runs on a noisy load that difference is rough, but every
+#96 failure was this one cause. Fewer, batched writes per request (#80
+proposal 2) would address it. That would change the record protocol, so it
+is not part of this change.
+
+**Also seen.** In an earlier idle btrfs set, a session start failed with
+`Window query deadline expired`. The query was waiting for KWin's reply to
+`isScriptLoaded`, with the owner on time and no record pending, so it was
+compositor-side latency. The set before that (before the accept pause) had two
+idle `windows` timeouts: requests were admitted while earlier records were still
+queued and paid for them out of their 0.5s. Holding ordinary accepts while
+writes are outstanding (for at most 0.25s) fixed that. The final sets above ran
+on the final code.
+
+**Rerun after review fixes** (stricter gates on window-query dispatch and on
+every termination signal; shutdown, stop and settlement expiry made
+independent of the writer; final close bounded by the shutdown bound). tmpfs
+and idle btrfs: smoke `--loop 3` and failures `--loop 2` all passed; idle btrfs
+lateness p99 0.1, max 3.7ms, no owner fsync. Under the same load, each run on
+its own: lateness p99 0.1ms and max 54.5ms (one 59ms turn, in a
+`PrivateBus.__init__` bus connection at session start), owner fsync 0, input at
+most 5.5ms over intent, and no window-query, bus or health failure. Smoke 0/5,
+scenarios 8/18, 15 request timeouts (2 on purpose). Every failure was again a
+request deadline used up by storage time, including two `worker-sigkill` runs
+whose hold had not started within the test's 3s.
+
+**Second review round** (reply bytes wait for the records written at
+acceptance, as on `main`; joined lifecycle waiters answer with the owner's
+settled outcome; one startup readiness ping in flight with the 3s status
+budget). The first load run with the reply hold but the old 0.2s startup ping
+failed most session starts (`Lifecycle deadline expired`): every held ping
+missed its 0.2s, and each 20ms retry queued more records (1,556 status
+requests against 245 responses in the run before). `main` has the same
+weakness, since it wrote those records inline. With one ping in flight:
+tmpfs and idle btrfs smoke `--loop 3` and failures `--loop 2` all passed (idle
+btrfs lateness p99 0.1, max 3.7ms, no owner fsync, input at most 5.1ms over
+intent at p99). An earlier idle btrfs set failed one `windows` deadline while
+the desktop's file indexer was writing (fsync median 50ms against 7ms idle);
+it passed once that stopped. Under the dd load, each run on its own: no session
+start failure, lateness p99 0.1ms and max 95.6ms (two turns of 68 and 100ms,
+uninstrumented time in `Server.service` with no fsync), owner fsync 0, input
+at most 2.1ms over intent, no window-query, bus or health failure. Smoke 0/5,
+scenarios 8/18, 15 request timeouts. Every failure was a request deadline, or
+a test's fixed 3s wait for a first effect, used up by storage time: eleven
+first `windows` calls (0.5s), a launch helper handshake, two input budgets
+(`phase: budget`) and one scroll still waiting for its records when the test
+interrupted it.
+
+Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
+tests: 674 (34 new).

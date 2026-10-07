@@ -231,6 +231,43 @@ class QueryTests(unittest.TestCase):
         self.assertEqual(result['windows'][0]['app'], None)
         self.assertLess(result['accepted_at'], query.deadline)
 
+    def test_acceptance_waits_for_a_held_back_observation_write_without_using_the_budget(self):
+        from agent_desktop.writer import Journal
+        import threading
+        gate = threading.Event()
+        original = self.store.window_observation
+        def held(*args):
+            gate.wait(5)
+            return original(*args)
+        self.store.window_observation = held
+        journal = self.store.journal = Journal(self.store, threaded=True)
+        self.addCleanup(lambda: (gate.set(), journal.close(time.monotonic() + 2)))
+        query = self.adapter.start('request', time.monotonic() + 5)
+        for _ in range(2000):
+            self.children.poll()
+            journal.drain()
+            self.assertIsNone(query.step())
+            if query.phase == 'observed':
+                break
+            time.sleep(.001)
+        # Held for longer than the .5s work budget: the query neither accepts nor times out.
+        until = time.monotonic() + .7
+        while time.monotonic() < until:
+            journal.drain()
+            self.assertIsNone(query.step())
+            self.assertEqual(query.phase, 'observed')
+            self.assertIsNone(query.accepted_at)
+            time.sleep(.005)
+        gate.set()
+        for _ in range(1000):
+            journal.drain()
+            result = query.step()
+            if result is not None:
+                break
+            time.sleep(.001)
+        self.assertTrue((self.store.path / result['query_artifact']).exists())
+        self.assertEqual(result['observation_state'], 'accepted')
+
     def test_activation_native_exact_braces_and_cleanup_without_observation(self):
         guard = Mock()
         action = self.adapter.activate('request', time.monotonic() + .5,
@@ -286,9 +323,61 @@ class QueryTests(unittest.TestCase):
         self.assertFalse(native.folder.exists())
         self.assertIsNone(self.adapter.active)
 
+    def test_query_script_waits_for_the_callers_records_before_dispatch(self):
+        durable = [False]
+        query = self.adapter.start('request', time.monotonic() + 5, recorded=lambda: durable[0])
+        until = time.monotonic() + .1
+        while time.monotonic() < until:
+            self.children.poll()
+            self.assertIsNone(query.step())
+            time.sleep(.002)
+        self.assertEqual(query.phase, 'dispatch')
+        self.assertFalse(query.spawned)
+        self.assertIsNone(query.child)
+        durable[0] = True
+        self.assertIsNotNone(self.drive(query))
+        self.assertTrue(query.spawned)
+
+    def test_windows_task_dispatches_only_once_its_request_records_are_durable(self):
+        durable = [False]
+        context = SimpleNamespace(work=SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + 5)),
+                                  recorded=lambda: durable[0])
+        request = SimpleNamespace(request_id='request', expected_generation=GEN, arguments={})
+        task = windows.WindowsTask(request, context, self.adapter, lambda: None)
+        self.assertTrue(task.gates_effects)
+        for _ in range(50):
+            self.children.poll()
+            self.assertIsNone(task.step(time.monotonic()))
+            time.sleep(.002)
+        self.assertFalse(task.query.spawned, 'query script dispatched before the start records were durable')
+        durable[0] = True
+        for _ in range(1000):
+            self.children.poll()
+            if task.step(time.monotonic()) is not None:
+                break
+            time.sleep(.001)
+        self.assertTrue(task.query.spawned)
+
+    def test_query_writes_count_as_the_requests_records(self):
+        # The observation (and any application publication) is the request's own
+        # record: settlement and the reply hold must see it even when the FIFO is
+        # full and the request's later records fail at once (#96).
+        tracked = []
+        context = SimpleNamespace(work=SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + 5)),
+                                  recorded=lambda: True, track=tracked.append)
+        request = SimpleNamespace(request_id='request', expected_generation=GEN, arguments={})
+        task = windows.WindowsTask(request, context, self.adapter, lambda: None)
+        for _ in range(1000):
+            self.children.poll()
+            if task.step(time.monotonic()) is not None:
+                break
+            time.sleep(.001)
+        self.assertIn('window_observation', [getattr(ticket, 'name', None) for ticket in tracked],
+                      'the observation write is not tracked as the request\'s record')
+
     def test_activation_guard_runs_after_collision_and_failure_spawns_nothing(self):
         def guard():
-            self.assertEqual(action.phase, 'collision')
+            self.assertEqual(action.phase, 'dispatch')  # Collision checked; not yet spawned.
             self.assertFalse(action.call_pending)
             raise ContractError('target_lost', 'Lost before spawn.')
         action = self.adapter.activate('request', time.monotonic() + .5,

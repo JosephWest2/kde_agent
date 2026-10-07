@@ -11,6 +11,7 @@ import uuid
 
 from .contracts import ContractError
 from .service_cleanup import membership
+from .writer import finished, journal_of
 
 MAX_IDENTITIES = 4096
 MAX_GROUPS = 256
@@ -168,13 +169,30 @@ class Application:
         self.observe(force=True)
         return {'root_returncode': self.exit_code, 'all_exited': self.completed, 'state': self.state}
 
-    def persist(self):
-        self.registry.store.application_update(self.id, state=self.state, process=self.process,
-            exit_code=self.exit_code, authorized=self.authorized, uncertain=self.uncertain)
+    def persist(self, *, watch=True):
+        """Queue this application's record; returns its write ticket.
+
+        WATCH: the Registry's own write, whose failure fails the session (as an
+        exception in Registry.tick did). A launch step passes False and makes the
+        write its request's record instead; a failure there leaves it dirty for
+        the Registry to write again, as before.
+        """
+        def retry(error):
+            self.dirty = True
         self.dirty = False
         self.last_write = time.monotonic()
+        try:
+            ticket = self.registry.write('application_update', self.id, state=self.state, process=self.process,
+                exit_code=self.exit_code, authorized=self.authorized, uncertain=self.uncertain,
+                app_id=self.id, watch=watch)
+        except BaseException:
+            self.dirty = True
+            raise
+        if not watch:
+            ticket.on_error(retry)
+        return ticket
 
-    def root_identity(self):
+    def root_identity(self, *, watch=True):
         acquired = identity(self.child.process.pid, self.cgroup, exact=True)
         if acquired is None:
             raise uncertain()
@@ -190,7 +208,7 @@ class Application:
         self.registry.index_add(self, key)
         self.observed[key] = self.process
         self.activated = True
-        self.persist()
+        return self.persist(watch=watch)
 
     def populated(self):
         fd = os.open('cgroup.events', os.O_RDONLY | os.O_NOFOLLOW, dir_fd=self.fd)
@@ -238,11 +256,11 @@ class Application:
             self.dirty = True
             self.persist()
             for path in self.logs.values():
-                self.registry.store.artifact_state(path, 'complete')
+                self.registry.write('artifact_state', path, 'complete', app_id=self.id)
             self.registry.checkpoint_windows()
             self.completed = True
             self.process_state = self.process_state | {'all_exited': True}
-            self.registry.active = None
+            self.registry.retire(self)
             self.close()
             # cgroup rmdir requires empty nested groups, which ordinary apps do
             # not create. Keep a proved-empty tree until systemd removal if any.
@@ -291,7 +309,7 @@ class Application:
         # A batch remains owned in memory until its write succeeds. Flush it
         # before collecting more, bounding deferred persistence to 16 identities.
         if self.pending_processes and time.monotonic() < deadline:
-            self.registry.store.application_processes(self.id, self.pending_processes)
+            self.registry.write('application_processes', self.id, self.pending_processes, app_id=self.id)
             self.pending_processes.clear()
             published = True
         # Alternate priority so either a slow discovery or a slow retained
@@ -304,7 +322,7 @@ class Application:
         if scan_first:
             self.reap_turn(deadline)
         if self.pending_processes and not published and time.monotonic() < deadline:
-            self.registry.store.application_processes(self.id, self.pending_processes)
+            self.registry.write('application_processes', self.id, self.pending_processes, app_id=self.id)
             self.pending_processes.clear()
         now = time.monotonic()
         if self.dirty and now < deadline and now - self.last_write >= .05:
@@ -369,11 +387,16 @@ class Application:
 
 class Termination:
     """Opaque, fixed-sequence dispatch cursor. Only Registry owns descriptors."""
-    def __init__(self, app, deadline, term_cutoff, signal_cutoff, guard, effects):
+    def __init__(self, app, deadline, term_cutoff, signal_cutoff, guard, effects, recorded=None):
         self.app, self.deadline = app, deadline
         self.generation = app.registry.generation
         self.term_cutoff, self.signal_cutoff = term_cutoff, signal_cutoff
         self.guard, self.effects = guard, effects
+        # Whether the request's records are durable. No signal is sent until every
+        # record queued so far is: the phase intent and the previous signal's
+        # progress, as when they were written inline before the next turn (#96).
+        # Without a writer thread, always.
+        self.recorded = recorded or (lambda: True)
         self.token = object()
         self.phase = 'resolve'
         self.revoked = False
@@ -459,6 +482,8 @@ class Termination:
                 return
             if app.signal_marks.get(key) == (self.token, phase):
                 return
+            if not self.recorded():
+                return
             # No yield or publication between the final identity/revision/time
             # guard and the pidfd syscall. Numeric PIDs never grant authority.
             if (self.revoked or app.termination is not self or app.registry.active is not app
@@ -503,6 +528,45 @@ class Registry:
         self.identity_index = {}
         self.identity_revision = 0
         self.window_checkpoint = None
+        self.failure = None   # A failed Registry write, raised by the next tick.
+        self.writes = {}      # application id -> its latest write ticket
+        self.retired = {}     # application id -> retired Application, while its writes are queued
+
+    @property
+    def journal(self):
+        return journal_of(self.store)
+
+    def write(self, method, *args, app_id=None, watch=True, **kwargs):
+        """Queue a Store write. A watched one that fails raises: here when the failure is
+        already known (an inline write), else from the next tick."""
+        def failed(error):
+            if getattr(self, 'failure', None) is None:
+                self.failure = error
+        ticket = self.journal.submit(method, *args, **kwargs)
+        if app_id is not None:
+            if not hasattr(self, 'writes'):
+                self.writes = {}
+            self.writes[app_id] = ticket
+        if watch:
+            if ticket.done:
+                finished(ticket)
+            else:
+                ticket.on_error(failed)
+        return ticket
+
+    def retire(self, app):
+        """App has completed. Until its queued writes are durable its record on disk may
+        be older than what the owner knows, so lookup() answers from memory meanwhile."""
+        if not hasattr(self, 'retired'):
+            self.retired = {}
+        for ident in [ident for ident in self.retired if self._written(ident)]:
+            del self.retired[ident]
+        self.retired[app.id] = app
+        self.active = None
+
+    def _written(self, ident):
+        ticket = getattr(self, 'writes', {}).get(ident)
+        return ticket is None or ticket.done
 
     def index_add(self, app, key):
         # Compatibility with narrow unit test registries constructed via __new__.
@@ -531,18 +595,23 @@ class Registry:
             raise ContractError('target_not_found', 'Application was not found.')
         if self.active is not None and self.active.id == ident:
             return self.active.snapshot()
+        retired = getattr(self, 'retired', {})
+        if ident in retired:
+            if not self._written(ident):
+                return retired[ident].snapshot()
+            del retired[ident]
         return self.store.application_read(ident)
 
     def begin_window_observation(self):
         app = self.active
         return (self.generation, app, getattr(self, 'identity_revision', 0))
 
-    def begin_termination(self, handle, deadline, term_cutoff, signal_cutoff, guard, effects):
+    def begin_termination(self, handle, deadline, term_cutoff, signal_cutoff, guard, effects, recorded=None):
         self.lookup(handle)
         app = self.active
         if app is None or app.handle != handle or app.completed or app.uncertain or app.termination is not None:
             raise uncertain()
-        cursor = Termination(app, deadline, term_cutoff, signal_cutoff, guard, effects)
+        cursor = Termination(app, deadline, term_cutoff, signal_cutoff, guard, effects, recorded)
         app.termination = cursor
         return cursor
 
@@ -611,29 +680,48 @@ class Registry:
     def checkpoint_windows(self):
         owner = getattr(self, 'window_checkpoint', None)
         if owner is not None:
-            self.store.application_windows(owner['application_id'], owner['previous'], owner['current'], 'confirmed')
+            self.write('application_windows', owner['application_id'], owner['previous'], owner['current'],
+                       'confirmed', app_id=owner['application_id'])
             self.window_checkpoint = None
 
     def publish_windows(self, app_handle, observation, check):
+        """Queue the pending window record. Returns the publication; published() finishes
+        it once the record is durable (here already, when the write ran inline)."""
         self.checkpoint_windows()
         current = self.lookup(app_handle)
         previous = current.get('window_observation')
         app = self.active if self.active is not None and self.active.handle == app_handle else None
         if app is not None:
             app.pending_observation = observation | {'publication': 'pending'}
+        ticket = self.write('application_windows', app_handle['application_id'], previous, observation,
+                            'pending', app_id=app_handle['application_id'], watch=False)
+        publication = {'handle': app_handle, 'app': app, 'previous': previous, 'observation': observation,
+                       'ticket': ticket, 'check': check, 'done': False}
+        self.published(publication)
+        return publication
+
+    def published(self, publication):
+        """True once the pending record is durable and the publication is committed in
+        memory; False while it is queued. A failed write or check raises."""
+        if publication['done']:
+            return True
+        app, observation = publication['app'], publication['observation']
         try:
-            self.store.application_windows(app_handle['application_id'], previous, observation, 'pending')
-            check()
+            if not finished(publication['ticket']):
+                return False
+            publication['check']()
         except Exception:
             if app is not None:
                 app.pending_observation = observation | {'publication': 'uncertain'}
             # The prior immutable artifact remains independently recoverable.
             raise
         if app is not None:
-            app.previous_observation, app.window_observation = previous, observation
+            app.previous_observation, app.window_observation = publication['previous'], observation
             app.pending_observation = None
-        self.window_checkpoint = {'application_id': app_handle['application_id'],
-                                  'previous': previous, 'current': observation}
+        self.window_checkpoint = {'application_id': publication['handle']['application_id'],
+                                  'previous': publication['previous'], 'current': observation}
+        publication['done'] = True
+        return True
 
     def available(self):
         if self.active is not None:
@@ -654,6 +742,13 @@ class Registry:
 
     def tick(self):
         app = self.active
+        failure = getattr(self, 'failure', None)
+        if failure is not None:
+            # A queued Registry write failed: the same session failure its inline
+            # exception caused, one turn later.
+            if app is not None:
+                app.uncertain = True
+            raise failure
         if app is None:
             self.checkpoint_windows()
             return

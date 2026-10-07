@@ -140,9 +140,46 @@ accepted result, including timeout or `completion_unknown` conversion. The termi
 notification cannot veto or rewrite acceptance; its exception is contained. The
 durable record keeps a pending/uncertain state if final publication fails, rather
 than write a contradictory success before acceptance ([ARTIFACTS.md](ARTIFACTS.md)).
-Its durable implementation may use
-bounded queues or measured small writes under the normal-storage assumption; no
-hung-filesystem immunity or durable exactly-once execution is promised.
+Its durable implementation is one writer thread with a bounded FIFO
+([ARTIFACTS.md](ARTIFACTS.md#writer-thread-when-a-record-is-durable)) under the
+normal-storage assumption; no hung-filesystem immunity or durable exactly-once
+execution is promised.
+
+## Durable records and the owner
+
+The owner queues records and never waits on the disk (#96). The scheduler
+keeps each work's queued writes (`Context.track`) and checks them once per turn:
+
+- **First step.** Construction is effect-free. The first step waits until the
+  admission and start records are durable, unless the task sets
+  `gates_effects`; such a task (input, targeting, close, kill, launch, windows,
+  logs) checks `Context.recorded()` before each effect and may observe earlier.
+  `recorded()` is true only when every record the work has queued so far is
+  durable and none failed. Controls (`session.stop`) never wait here.
+- **Each effect.** A task queues the record for an effect (for example input's
+  `emitting` intent), then waits in its own phase, on later turns, until
+  `recorded()` holds. Input checks its time budget again afterwards and sends
+  nothing if the wait used it up. Window-query budgets get the time spent
+  waiting for their own records back, never past the caller's deadline.
+- **Response.** A finished work stays in `finishing` until its records are
+  durable, then answers. The deadline check is the usual one: a result after
+  the deadline is a timeout with the result as partial, as when storage time
+  was spent inline. A failed record answers `artifact_failed`. If the records
+  are not done 5s after the later of the deadline and the cleanup deadline
+  (sooner when stopping), it answers `artifact_failed` (`phase: settle`, not a
+  timeout) and the records stay pending. An error already decided
+  (`cancelled`, `timeout`, ...) keeps precedence over a later record failure,
+  as on `main`. A finishing work is no longer `active`: the next work, a
+  reset or stop, and `drain_shutdown` go ahead without waiting for its
+  records. Lifecycle waiters that joined it answer only once it settles, with
+  its final outcome.
+- **Cancellation and cleanup** never wait for records. `request_cancel`,
+  release and `cleanup` run as before; their records are queued behind.
+- **Admission.** While writes are outstanding the transport leaves new
+  ordinary connections in the listen backlog, for at most 0.25s at a time.
+- **Stalls.** The owner keeps its 5ms turn and the watchdog keeps beating while
+  a write is slow. A single write running for 5s fails the session
+  (`artifact_failed`, `phase: stalled`).
 
 ## Verification
 

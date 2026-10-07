@@ -7,9 +7,13 @@ import time
 import signal
 
 from .contracts import ContractError
+from .writer import recorded
 
 
 class KillTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     cleanup_seconds = 0
 
     def __init__(self, request, context, registry, healthy):
@@ -120,7 +124,8 @@ class KillTask:
                 self.retain()  # Failure here leaves no dispatchable cursor.
                 self.check()
                 self.cursor = self.registry.begin_termination(self.application, self.deadline,
-                    self.term_cutoff, self.signal_cutoff, self.check, self.retain)
+                    self.term_cutoff, self.signal_cutoff, self.check, self.retain,
+                    recorded=lambda: recorded(self.context))
             return None
         except ContractError as error:
             self.cancel(error)

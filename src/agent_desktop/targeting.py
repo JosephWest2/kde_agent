@@ -7,6 +7,7 @@ import time
 
 from .contracts import ContractError
 from .window_types import window_id
+from .writer import recorded, track
 
 
 def resolve(observation, *, window=None, application=None, seen=False):
@@ -53,6 +54,9 @@ def current_target(observation, row, *, require_focus=False, require_client=Fals
 
 
 class TargetTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     cleanup_seconds = 1.5
 
     def __init__(self, request, context, adapter, registry, healthy, *, condition=None,
@@ -73,6 +77,7 @@ class TargetTask:
         self.polls = 0
         self.started_at = None
         self.activated = False
+        self.activation_requested = False
         self.initial_exit_check = True
         self.search = self.matched = self.last_seen = None
         self.searched_title = self.unmatched_title = None
@@ -109,20 +114,26 @@ class TargetTask:
                     raise
 
     def activation_guard(self):
-        # Runs after asynchronous collision checking, immediately before spawn.
-        self.check()
-        self.app_exit(force=True)
+        """Runs after asynchronous collision checking, immediately before spawn.
+        False: the activation record is not durable yet, so the spawn waits."""
         app = self.application
-        if app is not None and not self.selected_query.recheck_selected(self.selected, app):
-            raise ContractError('target_lost', 'Selected application association changed.')
-        partial = current_target(self.last, resolve(self.last, window=self.selected)) | {'activation_requested': True}
-        self.context.effects(partial, uncertain=True)
+        if not self.activation_requested:
+            self.check()
+            self.app_exit(force=True)
+            if app is not None and not self.selected_query.recheck_selected(self.selected, app):
+                raise ContractError('target_lost', 'Selected application association changed.')
+            partial = current_target(self.last, resolve(self.last, window=self.selected)) | {'activation_requested': True}
+            self.context.effects(partial, uncertain=True)
+            self.activation_requested = True
+        if not recorded(self.context):
+            return False
         # Persistence may consume the remaining deadline or invalidate identity.
         self.check()
         self.app_exit(force=True)
         if app is not None and not self.selected_query.recheck_selected(self.selected, app):
             raise ContractError('target_lost', 'Selected application association changed.')
         self.activated = True
+        return True
 
     def refs(self):
         refs = {'phase': self.phase}
@@ -176,7 +187,9 @@ class TargetTask:
                 return None
             self.check()
             self.operation = self.adapter.start(self.request.request_id, self.deadline,
-                                                application=self.application)
+                                                application=self.application,
+                                                recorded=lambda: recorded(self.context),
+                                                track=lambda tickets: track(self.context, tickets))
             self.polls += 1
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()

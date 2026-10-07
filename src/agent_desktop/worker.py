@@ -13,6 +13,7 @@ from .runtime import Endpoint
 from .transport import Server
 from .scheduler import Scheduler, UnsupportedTask
 from .children import Children
+from .writer import STALL_SECONDS, final_deadline
 
 
 
@@ -70,6 +71,10 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
     if store is not None and (store.session != name or store.generation != generation):
         raise ContractError("generation_mismatch", "Artifact store identity differs from worker.")
     records = Records(store) if store is not None else None
+    journal = None  # The writer thread's queue, from just before the loop runs (writer.py).
+    storage_error = None  # A background write failure that fails the session, as it did inline.
+    drain_deadline = None
+    ready_record = None  # The write of state=ready; status reports ready once it is durable.
     endpoint = server = children = None
     foundation = readiness = applications = None
     foundation_error = None
@@ -91,10 +96,12 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         endpoint = Endpoint(name, generation, managed=managed)
         children = Children()
         def observe(record):
+            tickets = None
             if records is not None:
-                records.observe(record)
+                tickets = records.observe(record)
             if observer is not None:
                 observer(record)
+            return tickets
         scheduler = Scheduler(factory=records.factory(factory) if records else factory,
                               capabilities=capabilities, observer=observe, children=children)
         if desktop:
@@ -153,7 +160,13 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         def shutdown_record(value):
             if store is not None:
                 from .lifecycle import atomic
-                atomic(store.path / 'shutdown.json', value | {'generation': generation, 'session': name})
+                value = value | {'generation': generation, 'session': name}
+                if journal is None or journal.closed:
+                    atomic(store.path / 'shutdown.json', value)
+                else:
+                    # Diagnostic, unsynced; queued so a slow disk can't hold the owner (#96).
+                    # The shutdown drains the queue before the worker exits.
+                    journal.submit(atomic, store.path / 'shutdown.json', value)
 
         def release_input(now, deadline):
             from .shutdown import release_input as release
@@ -167,6 +180,16 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 shutdown = Shutdown(scheduler, min(time.monotonic() + 1.8, deadline or float('inf')),
                                     observe=shutdown_record, failure=failure, **hooks)
             return shutdown
+
+        def write(method, *args, fatal=False, **kwargs):
+            """A Store write through the writer; FATAL failures fail the session in the next turn."""
+            def failed(error):
+                nonlocal storage_error
+                if fatal and storage_error is None:
+                    storage_error = error if isinstance(error, ContractError) else ContractError(
+                        'artifact_failed', 'Durable record could not be preserved.')
+            from .writer import journal_of
+            return journal_of(store).submit(method, *args, on_error=failed, **kwargs)
 
         def record_failure(error, *, replace=False):
             """Persist ERROR as the session's failure cause; returns its failure code."""
@@ -190,11 +213,21 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 # Nonblocking best effort before any shutdown hook can
                 # stall. The independent finalizer also reads the earlier
                 # diagnostic if this aggregate update is unavailable.
-                store.generation_update(state='failed', failure=code, cleanup='uncertain', detail=first,
-                                        replace_detail=replace)
+                write('generation_update', state='failed', failure=code, cleanup='uncertain', detail=first,
+                      replace_detail=replace)
             except Exception:
                 pass
             return code
+
+        def late_failure():
+            """The first watched write that failed: a session failure, as it was inline."""
+            if storage_error is not None:
+                return storage_error
+            for owner, name in ((applications, 'failure'), (readiness, 'record_error')):
+                error = getattr(owner, name, None) if owner is not None else None
+                if isinstance(error, Exception):
+                    return error
+            return None
 
         def watch_cause():
             """During shutdown, prefer an essential child's exit that shows up late."""
@@ -215,10 +248,20 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 pass
 
         def tick():
-            nonlocal foundation_error, readiness, quit_after, applications, cause_deadline
+            nonlocal foundation_error, readiness, quit_after, applications, cause_deadline, drain_deadline, ready_record
             owner_clock.turn()
+            if journal is not None:
+                journal.drain()  # Finished writes come back here, once per turn; never waits.
             if shutdown is not None:
+                scheduler.settle()
                 watch_cause()
+                # A watched write queued before the stop can fail after it began. Inline,
+                # it failed the session before the stop could start; carry it into the
+                # terminal outcome. Cleanup goes on regardless (#96).
+                late = late_failure()
+                if late is not None and foundation_error is None:
+                    foundation_error = late
+                    record_failure(late)
                 if (shutdown.phase == 'cancel' and readiness is not None
                         and getattr(readiness, 'state', None) != 'ready'
                         and hasattr(readiness, 'cleanup_query')):
@@ -237,10 +280,22 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                                                        'graceful': shutdown.snapshot()})
                     if quit_after is None:
                         quit_after = time.monotonic() + .05
-                    if time.monotonic() >= quit_after and cause_deadline is None:
+                        # Queued records drain within the shutdown's own bound, before the terminal record.
+                        drain_deadline = max(shutdown.deadline, quit_after)
+                    now = time.monotonic()
+                    # Held or unsent replies (stop waiters' included) go out before the loop quits.
+                    drained = ((journal is None or journal.idle()) and not scheduler.finishing
+                               and not server.flushing())
+                    if now >= quit_after and cause_deadline is None and (drained or now >= drain_deadline):
                         loop.quit()
                 return
             try:
+                if storage_error is not None:
+                    raise storage_error
+                if journal is not None and journal.stalled() >= STALL_SECONDS:
+                    # The 5s systemd watchdog used to end a worker stuck this long in a write.
+                    raise ContractError('artifact_failed', 'Durable artifact storage stalled.',
+                                        context={'phase': 'stalled'})
                 if foundation is not None:
                     foundation.tick()
                     if readiness is None and foundation.phase == 'constructed' and (kdotool or readiness_factory):
@@ -256,14 +311,14 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                             if hasattr(readiness, 'adapter'):
                                 readiness.adapter.registry = applications
                         if previous != readiness.state:
-                            store.generation_update(state=readiness.state)
+                            ticket = write('generation_update', state=readiness.state, fatal=True)
+                            if readiness.state == 'ready':
+                                ready_record = ticket
                             output = getattr(getattr(getattr(readiness, 'query', None), 'decoder', None), 'output', None)
                             if readiness.state == 'ready' and output is not None:
-                                try:
-                                    store.provenance(output={'width': output.width, 'height': output.height,
-                                                             'scale': int(output.scale or 1)})
-                                except (ContractError, OSError):
-                                    pass
+                                # Best effort, as before: a failure is not a session failure.
+                                write('provenance', output={'width': output.width, 'height': output.height,
+                                                            'scale': int(output.scale or 1)})
                     if desktop_observer is not None:
                         desktop_observer(foundation)
                 children.poll()
@@ -338,23 +393,38 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 # test effects, while controls still run before best-effort records.
                 if handler is not None and request.operation != "session.stop":
                     try:
-                        records._ensure(records.live[request.request_id])
+                        from .writer import finished
+                        finished(records._ensure(records.live[request.request_id]))  # Inline: already done.
                     except Exception:
                         raise ContractError("artifact_failed", "Request admission could not be preserved.") from None
             if managed and request.operation == "session.status":
-                admission.complete(result=({"state": "starting", "desktop_ready": False}
-                                           if readiness is None else readiness.snapshot()) | {"worker_pid": os.getpid(),
-                    "supported_operations": list(DESKTOP_OPERATIONS) if applications is not None and readiness is not None and readiness.state == "ready" else []})
+                snapshot = {"state": "starting", "desktop_ready": False} if readiness is None else readiness.snapshot()
+                if snapshot["state"] == "ready" and ready_record is not None and not ready_record.done:
+                    # The generation record says ready before any status does (#96).
+                    snapshot |= {"state": "starting", "desktop_ready": False}
+                admission.complete(result=snapshot | {"worker_pid": os.getpid(),
+                    "supported_operations": list(DESKTOP_OPERATIONS) if applications is not None and snapshot["state"] == "ready" else []})
             else:
                 if desktop and kdotool and (readiness is None or readiness.state != 'ready'):
                     raise ContractError('session_unavailable', 'Desktop capabilities are not ready.')
                 (handler or scheduler.submit)(request, admission)
-        server = Server(endpoint, GLib, dispatch_request,
-                        cancel=scheduler.cancel, after_io=tick)
+        server = Server(endpoint, GLib, dispatch_request, cancel=scheduler.cancel, after_io=tick,
+                        paused=lambda: journal is not None and journal.paused())
         if store is not None:
-            store.worker_identity(managed=managed)
+            from .writer import Journal
+            # Test-only raw handlers gate on a record within the dispatch call, so they keep inline writes.
+            journal = store.journal = Journal(store, threaded=handler is None)
+            # First in the queue, so before every request record; a failure fails the session.
+            write('worker_identity', managed=managed, fatal=True)
             if not managed:
-                store.generation_update(state="running")
+                write('generation_update', state="running", fatal=True)
+        if desktop and kdotool and readiness_factory is None:
+            # First-use imports and resource lookups take 10-25ms, and up to 100ms with a
+            # loaded disk; take them before the loop runs rather than in an owner turn.
+            from . import capture, lifecycle, readiness as _readiness  # noqa: F401
+            from gi.repository import Gio  # noqa: F401
+            from importlib.resources import files
+            files('agent_desktop').joinpath('window_query.js').read_text()
     except BaseException:
         if profiler is not None:
             profiler.close()
@@ -365,11 +435,15 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         if endpoint is not None:
             endpoint.close()
         if store is not None:
+            closed = True
+            if journal is not None:
+                closed = journal.close(time.monotonic() + 1)
             try:
-                store.generation_update(state="failed", failure="session_failed", cleanup="uncertain" if managed else "complete")
+                if closed:
+                    store.generation_update(state="failed", failure="session_failed", cleanup="uncertain" if managed else "complete")
             except Exception:
                 diagnostic()
-            if owned_store:
+            if owned_store and closed:
                 store.close()
         raise
     loop = GLib.MainLoop()
@@ -406,13 +480,23 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         if profiler is not None:
             profiler.close()
         if store is not None:
+            # The terminal record is queued last, after everything still queued. The
+            # loop has exited and everything it serviced is closed; the writer gets
+            # what is left of the shutdown's drain bound, never more (writer.close).
+            closed = True
             try:
                 # Infrastructure loop exit is not proof of production cgroup cleanup.
-                store.generation_update(state="failed" if loop_failed else "stopped",
-                                        failure="session_failed" if loop_failed else None, cleanup="uncertain")
+                ticket = write('generation_update', state="failed" if loop_failed else "stopped",
+                               failure="session_failed" if loop_failed else None, cleanup="uncertain")
+                if journal is not None:
+                    closed = journal.close(final_deadline(drain_deadline, time.monotonic()))
+                if not ticket.done or ticket.error is not None:
+                    diagnostic()
             except Exception:
                 diagnostic()
-            if owned_store:
+            # A writer still inside a write keeps the Store's directory fd: closing it
+            # under the writer could let a new file reuse the number.
+            if owned_store and closed:
                 store.close()
 
 

@@ -85,6 +85,16 @@ class BudgetTests(unittest.TestCase):
         budget = self.budget(.5)
         self.assertEqual(budget.at(), 100.8)
 
+    def test_record_wait_credit_moves_both_deadlines_but_never_past_the_limit(self):
+        budget = self.budget(.5, limit=101.5)
+        budget.credit(.3)  # Waiting for the toolkit's own durable record (#96).
+        self.assertAlmostEqual(budget.at(), 100.8)
+        self.assertAlmostEqual(budget.hard, 101.3)
+        budget.credit(1)
+        self.assertEqual((budget.at(), budget.hard), (101.5, 101.5))
+        budget.credit(-1)
+        self.assertEqual(budget.at(), 101.5)
+
     def test_helpers_accept_plain_deadlines(self):
         self.assertTrue(expired(100.0, 100.0))
         self.assertFalse(expired(100.1, 100.0))

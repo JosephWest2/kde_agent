@@ -208,6 +208,39 @@ class LifecycleTests(unittest.TestCase):
             self.manager.start(request)
         self.assertEqual(caught.exception.code, 'session_conflict')
 
+    def test_startup_ping_gets_a_full_status_budget_within_the_start_deadline(self):
+        # A held reply waits for its records (#96): a short ping budget made every
+        # ping miss under storage load, and each retry queued more records.
+        budgets = []
+        def ping(request, generation, deadline):
+            budgets.append(deadline - time.monotonic())
+            return {'state': 'ready', 'desktop_ready': True}
+        self.ping.stop()
+        self.ping = patch.object(self.manager, '_ping', side_effect=ping)
+        self.ping.start()
+        self.start()
+        self.assertGreater(budgets[0], 2.5)
+        self.assertLessEqual(budgets[0], 3)
+        budgets.clear()
+        self.manager.handle(self.request('session.stop'))
+        self.manager.start(self.request(timeout=1))
+        self.assertLessEqual(budgets[0], 1, 'the ping outlived the start deadline')
+
+    def test_worker_crash_during_a_startup_ping_fails_the_start_at_once(self):
+        def crashed(request, generation, deadline):
+            # The worker died: its socket is closed, so the exchange fails at once
+            # (not at the ping budget), and the service is gone.
+            self.services.active[unit_name(generation)] = False
+            raise ContractError('session_unavailable', 'Managed worker control is unavailable.')
+        self.ping.stop()
+        self.ping = patch.object(self.manager, '_ping', side_effect=crashed)
+        self.ping.start()
+        before = time.monotonic()
+        with self.assertRaises(ContractError) as caught:
+            self.manager.start(self.request())
+        self.assertEqual(caught.exception.code, 'session_failed')
+        self.assertLess(time.monotonic() - before, 1)
+
     def test_ready_generation_unexpected_exit_remains_failed(self):
         self.ping.stop()
         self.ping = patch.object(self.manager, '_ping', return_value={'state': 'ready', 'desktop_ready': True})

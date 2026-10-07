@@ -7,15 +7,20 @@ import time
 
 from .contracts import ContractError
 from .targeting import resolve
+from .writer import recorded, track
 
 
 class CloseOperation:
     cleanup_seconds = 1.5
 
     def __init__(self, request_id, generation, deadline, adapter, registry, healthy,
-                 effects, *, window=None, application=None):
+                 effects, *, window=None, application=None, recorded=None, track=None):
         self.request_id, self.generation, self.deadline = request_id, generation, deadline
         self.adapter, self.registry, self.healthy, self.effects = adapter, registry, healthy, effects
+        # Whether the effects recorded so far are durable (Context.recorded); a
+        # host without a writer thread records synchronously.
+        self.recorded = recorded or (lambda: True)
+        self.track = track
         self.window, self.application = window, application
         self.selected = self.selected_query = self.operation = None
         self.last = self.app_snapshot = self.process_state = None
@@ -86,17 +91,22 @@ class CloseOperation:
                 raise
 
     def guard(self):
-        # Executed after asynchronous name collision checking, just before spawn.
+        """Executed after asynchronous name collision checking, just before spawn.
+        False: the dispatch record is not durable yet, so the spawn waits."""
+        if self.dispatch == 'not_started':
+            self.check()
+            self.observe_exit(force=True)
+            if not self.selected_query.recheck_selected(self.selected, self.application):
+                raise ContractError('target_lost', 'Selected application association changed.')
+            self.dispatch = 'uncertain'
+            self.retain()
+        if not self.recorded():
+            return False
         self.check()
         self.observe_exit(force=True)
         if not self.selected_query.recheck_selected(self.selected, self.application):
             raise ContractError('target_lost', 'Selected application association changed.')
-        self.dispatch = 'uncertain'
-        self.retain()
-        self.check()
-        self.observe_exit(force=True)
-        if not self.selected_query.recheck_selected(self.selected, self.application):
-            raise ContractError('target_lost', 'Selected application association changed.')
+        return True
 
     def step(self, now):
         if self.result is not None:
@@ -152,7 +162,8 @@ class CloseOperation:
             if time.monotonic() < self.next_poll:
                 return None
             self.operation = self.adapter.start(self.request_id, self.deadline,
-                                                application=self.application)
+                                                application=self.application, recorded=self.recorded,
+                                                track=self.track)
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()
         if result is None:
@@ -196,6 +207,9 @@ class CloseOperation:
 
 
 class CloseTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     cleanup_seconds = 1.5
 
     def __init__(self, request, context, adapter, registry, healthy):
@@ -203,7 +217,9 @@ class CloseTask:
         self.owner = CloseOperation(request.request_id, request.expected_generation,
                                     context.work.admission.deadline, adapter, registry, healthy,
                                     context.effects, window=request.arguments.get('window'),
-                                    application=request.arguments.get('app'))
+                                    application=request.arguments.get('app'),
+                                    recorded=lambda: recorded(context),
+                                    track=lambda tickets: track(context, tickets))
 
     def step(self, now):
         return self.owner.step(now)

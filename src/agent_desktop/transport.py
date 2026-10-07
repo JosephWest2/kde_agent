@@ -15,6 +15,8 @@ CONNECT_SECONDS = 1.0
 FRAME_SECONDS = 1.0
 CLEANUP_RESERVE = 16.0
 MAX_CONNECTIONS = 32
+MAX_PAUSE = .25  # Longest an ordinary accept waits for the durable-write queue (#96).
+HOLD_SECONDS = 5.0  # Longest a response waits for the records written at its acceptance (#96).
 
 
 def exchange(request, *, deadline=None):
@@ -115,6 +117,11 @@ class Admission:
         self.terminal = False
         self.on_terminal = None
         self.final_payload = None
+        # Writes queued by on_terminal (the request record when it was not yet
+        # queued, and the terminal outcome). The reply bytes leave only once
+        # they are finished, as when on_terminal wrote them inline before the
+        # next send turn (#96).
+        self.holds = []
 
     def complete(self, *, result=None, error=None):
         if self.terminal:
@@ -159,7 +166,27 @@ class Connection:
         self.final_payload = None
         self.offset = 0
         self.closed = False
+        self.held_since = None
         self.arm()
+
+    def releasable(self, now):
+        """Whether the reply may be sent: its acceptance-time writes are finished
+        (durable or failed). A hold longer than HOLD_SECONDS closes the connection
+        unanswered, as a worker stuck in those writes would have."""
+        holds = self.admission.holds if self.admission is not None else ()
+        if all(getattr(ticket, 'done', True) for ticket in holds):
+            if self.held_since is not None:
+                self.held_since = None
+                self.deadline = now + FRAME_SECONDS  # The frame budget starts at release.
+            return True
+        if self.held_since is None:
+            self.held_since = now
+        elif now - self.held_since >= HOLD_SECONDS:
+            self.close()
+        return False
+
+    def holding(self):
+        return not self.closed and self.output is not None and self.held_since is not None
 
     def arm(self):
         # The server's bounded shared service turn polls readiness. Independent
@@ -316,17 +343,31 @@ class Server:
     each turn and only eight per class run, so control floods cannot starve work.
     All callbacks share a single GLib source, not competing source priorities.
     """
-    def __init__(self, endpoint, glib, handler, *, cancel=None, after_io=None):
+    def __init__(self, endpoint, glib, handler, *, cancel=None, after_io=None, paused=None):
         self.endpoint, self.glib, self.handler = endpoint, glib, handler
         self.name, self.generation = endpoint.name, endpoint.generation
         self.connections = set()
         self.active = {}
         self.cancel = cancel or (lambda request_id: False)
         self.after_io = after_io or (lambda: None)
+        # While true, new ordinary connections wait in the listen backlog (the
+        # durable-write queue is behind), for at most MAX_PAUSE at a time so a
+        # steady stream of writes can't starve admission. Priority controls are
+        # never paused.
+        self.paused = paused or (lambda: False)
+        self.paused_since = None
         self.order = {True: [], False: []}
         self.timer = glib.timeout_add(5, self.service)
 
     def accept(self, priority):
+        if not priority:
+            if self.paused():
+                now = time.monotonic()
+                if self.paused_since is None:
+                    self.paused_since = now
+                if now - self.paused_since < MAX_PAUSE:
+                    return
+            self.paused_since = None
         listener = self.endpoint.priority_listener if priority else self.endpoint.listener
         cap = 8 if priority else MAX_CONNECTIONS
         count = sum(c.priority == priority for c in self.connections)
@@ -355,9 +396,10 @@ class Server:
             self.order[priority] = pending
             if not pending:
                 continue
+            now = time.monotonic()
             readers, writers, _ = select.select(
                 [c.sock for c in pending if c.output is None],
-                [c.sock for c in pending if c.output is not None], [], 0)
+                [c.sock for c in pending if c.output is not None and c.releasable(now) and not c.closed], [], 0)
             ready_r, ready_w = set(readers), set(writers)
             served = []
             for connection in pending:
@@ -376,9 +418,14 @@ class Server:
     def expire(self):
         now = time.monotonic()
         for connection in tuple(self.connections):
-            if now >= connection.deadline:
+            # A held reply has its own bound (Connection.releasable).
+            if now >= connection.deadline and not connection.holding():
                 connection.close()
         return True
+
+    def flushing(self):
+        """Whether any reply is still held or unsent."""
+        return any(not c.closed and c.output is not None for c in self.connections)
 
     def close(self):
         self.glib.source_remove(self.timer)

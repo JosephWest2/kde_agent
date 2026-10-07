@@ -9,9 +9,13 @@ import time
 
 from .contracts import ContractError
 from .environment import DEFAULTS, compose, executable
+from .writer import all_finished, journal_of, recorded, track
 
 
 class LaunchTask:
+    # Each effect waits for this request's records (Context.recorded), so the first
+    # step may run while the admission and start records are still queued (#96).
+    gates_effects = True
     def __init__(self, request, context, registry, desktop, records, *, healthy=None, adapter=None):
         self.request, self.context = request, context
         self.registry, self.desktop, self.records = registry, desktop, records
@@ -26,6 +30,9 @@ class LaunchTask:
         self.exec_confirmed = False
         self.adapter = adapter
         self.window_wait = None
+        self.writes = []      # This launch's own durable writes; each step waits for those it needs.
+        self.allocations = None
+        self.selected = self.env = None
 
     def retain(self):
         if self.app is not None and self.app.authorized:
@@ -40,25 +47,65 @@ class LaunchTask:
         if time.monotonic() >= self.deadline:
             raise ContractError('timeout', 'Launch deadline expired.')
 
+    def write(self, method, *args, **kwargs):
+        ticket = journal_of(self.registry.store).submit(method, *args, **kwargs)
+        self.writes.append(ticket)
+        track(self.context, (ticket,))
+        return ticket
+
+    def written(self):
+        """True once this launch's own writes are durable; a failed one raises."""
+        if not all_finished(self.writes):
+            return False
+        self.writes.clear()
+        return True
+
     def prepare(self):
+        """Queue the log allocations and the launch record, then prepare and spawn as
+        far as durable records allow (all the way when the writes run inline)."""
+        if self.phase == 'prepare':
+            self.allocate()
+        if self.phase == 'allocating':
+            if not self.written():
+                return
+            self.reserve()
+        if self.phase == 'preparing':
+            try:
+                # FIFO order makes the admission and start records durable by now;
+                # recorded() also sees whether any of them failed.
+                if not self.written() or not recorded(self.context):
+                    return
+            except Exception:
+                # No helper exists, but a failed prepared record must not lose the
+                # reserved ownership. Session failure handles any uncertain storage.
+                self.app.uncertain = True
+                raise
+            self.spawn()
+
+    def allocate(self):
         args = self.request.arguments
         self.check()
         self.registry.available()
-        env = compose(DEFAULTS, args['env'], self.desktop.private)
-        selected = executable(args['argv'][0], args['cwd'], env)['executable']
+        self.env = compose(DEFAULTS, args['env'], self.desktop.private)
+        self.selected = executable(args['argv'][0], args['cwd'], self.env)['executable']
         token = self.records.token(self.request.request_id)
-        store = self.registry.store
-        logs = {key: str(store.allocate(token, key)) for key in ('stdout', 'stderr')}
-        store.launch(token, args['argv'], args['cwd'])
+        self.allocations = {key: self.write('allocate', token, key) for key in ('stdout', 'stderr')}
+        self.write('launch', token, args['argv'], args['cwd'])
+        self.phase = 'allocating'
+
+    def reserve(self):
+        """Allocations are durable: reserve the cgroup and queue the prepared record."""
+        self.check()
+        logs = {key: str(ticket.result) for key, ticket in self.allocations.items()}
+        token = self.records.token(self.request.request_id)
         app = self.app = self.registry.reserve()
-        app.logs, app.executable = logs, selected
-        try:
-            store.application_prepare(token, app.id, executable=selected, logs=logs, cgroup=app.cgroup)
-        except Exception:
-            # No helper exists, but a failed prepared record must not lose the
-            # reserved ownership. Session failure handles any uncertain storage.
-            app.uncertain = True
-            raise
+        app.logs, app.executable = logs, self.selected
+        self.write('application_prepare', token, app.id, executable=self.selected, logs=logs, cgroup=app.cgroup)
+        self.phase = 'preparing'
+
+    def spawn(self):
+        """The prepared record is durable: start the helper, held at its gate."""
+        args, env, selected, logs, app = self.request.arguments, self.env, self.selected, self.app.logs, self.app
         config = gate_read = status_write = None
         outputs = []
         try:
@@ -104,11 +151,13 @@ class LaunchTask:
                 return self.app.snapshot() | {'window_wait': result}
             return None
         self.check()
-        if self.phase == 'prepare':
+        if self.phase in ('prepare', 'allocating', 'preparing'):
             self.prepare()
             return None
         if time.monotonic() >= self.handshake:
             raise ContractError('timeout', 'Launch helper handshake expired.')
+        if self.phase == 'authorizing':
+            return self.authorize()
         try:
             receipt = os.read(self.status, 64)
         except BlockingIOError:
@@ -116,27 +165,19 @@ class LaunchTask:
         if self.phase == 'ready':
             if receipt != b'R':
                 raise ContractError('session_failed', 'Launch helper did not enter its owned group.')
-            self.app.root_identity()
+            self.track(self.app.root_identity(watch=False))
             self.check()
-            # This record conservatively precedes the irrevocable gate write.
             self.app.state = 'execution-authorized'
-            self.app.persist()
+            self.track(self.app.persist(watch=False))
             self.context.effects(self.app.snapshot(), uncertain=True)
-            self.check()
-            if time.monotonic() >= self.handshake:
-                raise ContractError('timeout', 'Launch gate expired.')
-            self.app.authorized = True
-            os.write(self.gate, b'G')
-            os.close(self.gate)
-            self.gate = None
-            self.handshake = min(self.deadline, time.monotonic() + 1)
-            self.phase = 'exec'
-            return None
+            self.phase = 'authorizing'
+            return self.authorize()
         self.exec_receipt += receipt
         if len(self.exec_receipt) > 64 or b'E' in self.exec_receipt:
             self.app.settled = True
             self.app.state = 'launch-failed'
-            self.app.persist()
+            self.track(self.app.persist(watch=False))
+            self.written()
             raise ContractError('prerequisite_missing', 'Application could not execute.')
         if receipt:
             return None
@@ -146,7 +187,8 @@ class LaunchTask:
             raise ContractError('completion_unknown', 'Application execution could not be confirmed.', outcome='unknown')
         self.exec_confirmed = True
         self.app.state = 'running' if self.app.child.returncode is None else 'root-exited'
-        self.app.persist()
+        self.track(self.app.persist(watch=False))
+        self.written()
         self.close_endpoints()
         self.phase = 'done'
         self.context.effects(self.app.snapshot())
@@ -159,6 +201,26 @@ class LaunchTask:
                 progress=self.retain)
             return None
         return self.app.snapshot()
+
+    def authorize(self):
+        """Open the gate once the authorized record is durable; it precedes the irrevocable write."""
+        if not self.written() or not recorded(self.context):
+            return None
+        self.check()
+        if time.monotonic() >= self.handshake:
+            raise ContractError('timeout', 'Launch gate expired.')
+        self.app.authorized = True
+        os.write(self.gate, b'G')
+        os.close(self.gate)
+        self.gate = None
+        self.handshake = min(self.deadline, time.monotonic() + 1)
+        self.phase = 'exec'
+        return None
+
+    def track(self, ticket):
+        """An application record written by this launch: part of its request's records."""
+        self.writes.append(ticket)
+        track(self.context, (ticket,))
 
     def close_endpoints(self):
         for name in ('gate', 'status'):

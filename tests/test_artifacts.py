@@ -419,7 +419,7 @@ class BridgeTests(StoreTests):
         records = Records(self.store)
         admission = self.admission()
         records.attach(admission.request, admission)
-        token = records._ensure(records.live[admission.request.request_id])
+        token = records._ensure(records.live[admission.request.request_id]).result
         self.store.transition(token, 'finalizing')
         admission.deadline = .05
         with patch('agent_desktop.transport.time.monotonic', side_effect=[0, .1, .1]):
@@ -430,7 +430,7 @@ class BridgeTests(StoreTests):
         self.assertEqual(result['references'], {'application': APP})
         admission = self.admission()
         records.attach(admission.request, admission)
-        token = records._ensure(records.live[admission.request.request_id])
+        token = records._ensure(records.live[admission.request.request_id]).result
         self.store.transition(token, 'finalizing')
         with patch.object(self.store, 'transition', side_effect=OSError), redirect_stderr(io.StringIO()) as err:
             admission.complete(result={'ok': True})

@@ -170,9 +170,98 @@ notification writes the accepted outcome. If that postaccept write fails, the
 response remains accepted and the record stays pending/uncertain, with a safe
 `artifact_failed` diagnostic when a sink is available. Response receipt is not a
 transactional guarantee that the terminal record was committed. Replaying an
-uncertain launch/input is not automatic. Small synchronous storage operations
-are measured under normal storage; hung filesystems are not covered by a hard
+uncertain launch/input is not automatic. Storage operations are measured
+under normal storage; hung filesystems are not covered by a hard
 cancellation-latency guarantee.
+
+### Writer thread: when a record is durable
+
+In the worker, the GLib owner thread never writes a record itself (#96). It
+queues each Store call to one writer thread (`writer.py`) and continues; the
+writer runs the calls one at a time in the order they were queued, with the
+protocol above, so a record's revisions and `events.jsonl` keep the owner's
+order. Each call's arguments are copied when it is queued. Once per turn the
+owner collects finished calls; it never waits on the disk and shares no lock
+with the writer while the writer is inside a write. Relative to the owner's
+actions:
+
+- **Before effects.** A request's admission and start records are queued when
+  it is admitted and started. No effect of the request (input, activation,
+  close or kill signal, launch spawn or gate, window-query script) runs until
+  every record the request has queued so far is durable. Each effect also waits
+  for its own record: the input intent; the kill or close phase, and before
+  each further scan turn's signals the previous turn's progress; the launch allocations
+  and its prepared and authorized records. A window query (for `windows`,
+  targeting or close) loads its KWin script only once the request's records
+  are durable. As on `main`, one termination scan turn signals up to 16
+  retained processes together and publishes its progress after the scan, so
+  progress is per turn, not per signal; the next turn signals nothing until
+  that progress record is durable. A task
+  that gates every effect this way may take its first, effect-free steps while
+  the start records are still queued; any other task waits for them before its
+  first step.
+- **Before the response.** A response is sent only once every record its
+  request queued is durable. Waiting uses the request's own deadline, as the
+  synchronous writes did. A failed write latches `artifact_failed`: no new
+  effects, and the response reports it. If the records are still not durable
+  5s after the later of the request deadline and its cleanup deadline, the
+  response is `artifact_failed` (`phase: settle`, never success or a timeout)
+  and the records stay pending. Precedence is `main`'s: an error decided
+  before the response (`cancelled`, `timeout`, `target_lost`, ...) stands even
+  when a record later failed or never settled; otherwise a result past the
+  deadline is `timeout`, including when a finalizing write failed after the
+  deadline; otherwise a failed record is `artifact_failed`. A `session.stop` or
+  `session.start` that joined a running one answers with that one's settled
+  outcome, after its records, while the mutation slot is released at once.
+- **After acceptance.** The accepted terminal outcome (and the request
+  record, for a reply such as a managed `session.status` or a stop waiter
+  answered without queuing one earlier) is queued after the transport freezes
+  the response. The reply bytes leave only once those writes are finished, as
+  when they ran inline before the next send turn on `main`; a failed write is
+  a diagnostic and the reply still goes, as on `main`. The 1s frame budget
+  starts when the hold releases. A hold longer than 5s (the stall bound)
+  closes the connection unanswered. Nothing else waits: the scheduler, stop
+  and cleanup go on, and the worker quits only once held replies are sent, or
+  at the shutdown bound. Every CLI path keeps at most one exchange in flight
+  and gives it the operation's full budget, so a caller's records queue no
+  faster than they become durable: `session start` pings readiness with the
+  3s `session.status` budget (within the start deadline), one ping at a time.
+  A crashed worker still fails a ping at once, since its socket closes.
+- **Window observations.** A query's immutable observation file is durable
+  before the query is accepted, and an application's window publication stays
+  `pending` until its checkpoint is durable. Both writes count as the
+  request's own records, so even a cancelled or timed-out request answers only
+  once they are finished, as when they were written inline.
+- **Applications.** Lifetime updates of owned applications (exits, process
+  records, window checkpoints) are queued in the same order. A failure of a
+  watched update fails the session, as it did when it ran inline.
+- **Readiness.** `session.status` reports ready only once the generation's
+  ready update is durable.
+- **Diagnostics.** Readiness `health.json` and `shutdown.json` go through the
+  same writer. `startup-failure.json` is still written inline, once, at the
+  session's first failure, so it exists before any shutdown hook runs.
+- **Backlog.** New ordinary connections wait in the listen backlog while any
+  write is outstanding, up to 0.25s at a time, so a request's deadline starts
+  with the writer caught up. Priority controls (`session.stop`, the client's
+  cancel on interrupt) are never held. The queue holds at most 256 writes or 16 MiB; a full queue
+  fails that write as `artifact_failed`. One write running for 5s fails the
+  session as `artifact_failed` (`phase: stalled`), as the 5s watchdog did when
+  the owner itself hung in it; the watchdog keeps running throughout.
+- **Shutdown.** Cancellation, release, reset teardown and cleanup never wait
+  for the writer: once a request's cleanup is done, a stop or reset and the
+  shutdown's release proceed while its response still waits for its records.
+  `session.stop` itself never waits for its records before it steps. The
+  worker then lets the writer drain the queue in nonblocking turns, within the
+  shutdown bound, and queues the terminal generation record after the loop
+  exits, waiting for it until that bound at most. The writer starts no queued
+  write after the bound: writes still queued then fail as closed, and their
+  records stay at their last durable state. A watched write (generation,
+  application or readiness record) queued before a stop and failing after it
+  began still fails the session: cleanup goes on, and the generation ends
+  `failed`, as when that write failed inline before the stop.
+
+The CLI process (session start and stop, service cleanup) and test helpers
+without a worker still write synchronously.
 
 Application launch reserves `applications/<id>/record.json` before helper spawn.
 It records prepared, execution-authorized, running, root-exited, all-exited or

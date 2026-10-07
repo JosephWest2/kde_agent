@@ -4,6 +4,8 @@ Short answers to the situations agents hit most. They assume the
 [quickstart](../README.md#quickstart-for-coding-agents) and `D="agent-desktop --json"`.
 The full contract is in [CLI.md](CLI.md), [INPUT.md](INPUT.md) and
 [WINDOWS.md](WINDOWS.md).
+Startup, dialogs and keyboard paths for gnome-text-editor, GIMP and Blender are
+in [TARGET_APPS.md](TARGET_APPS.md).
 
 ## Refs go stale
 

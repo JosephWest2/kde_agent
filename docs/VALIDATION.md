@@ -5,8 +5,8 @@ copies) were removed from the working tree in #62. They are still in git
 history: every folder exists at commit `d1efe95b` under `evidence/issue-N/`,
 for example `git show d1efe95b:evidence/issue-27/README.md`.
 
-Ongoing validation is the unit suite plus the end-to-end smoke test (#65) and
-failure-path tests (#67); see [TESTING.md](TESTING.md).
+Ongoing validation is the unit suite plus the end-to-end smoke test (#65),
+failure-path tests (#67) and optional application tests (#81); see [TESTING.md](TESTING.md).
 
 | Issue | Area | Headline result | Added in |
 | --- | --- | --- | --- |
@@ -29,6 +29,7 @@ failure-path tests (#67); see [TESTING.md](TESTING.md).
 | #27 | Persistent libei connection | 436 tests and 9 real compositor lifecycle scenarios. Readiness waits for drained, resumed input. GLib stalls of 140–327 ms were seen (deferred). | `d1efe95b` |
 | #61 | kwin-mcp comparison, target app | Continue the project, using kwin-mcp as a reference. gnome-text-editor passed 5 full cycles. Worker SIGKILL cleanup verified. | `planning/REVISED_PLAN.md` |
 | #80 | Owner-loop stalls | Measured: the stalls are synchronous fsyncs of artifact records on the owner thread. Harmless on tmpfs; on an NVMe btrfs disk the owner sits in fsync for about a third of each smoke run; and under heavy write load they break 0.5s/1s deadlines (failed starts, requests and sessions). Two redundant fsyncs removed (−10%). Window-query, KWin name-check and health-round budgets no longer count owner stalls (failed starts under load 10 → 5 of 25). Moving the writes off the owner thread is #96. [Details](#80-owner-loop-stalls). | this section |
+| #81 | Target applications | gnome-text-editor 50.1, GIMP 3.2.6 and Blender 5.2.2 all run natively on Wayland in the private session (Blender on the GPU through EGL, with KWin decorations; no XWayland needed). The application tests (`tests/integration/apps.py`) save, export and inspect real files: 24 of 24 scenario runs passed (`--loop 5`, then `--loop 3` with `AGENT_DESKTOP_REQUIRE_HOST_TESTS=1`). No production change was needed. Quirks are in [TARGET_APPS.md](TARGET_APPS.md). | this change |
 
 ## #80 owner-loop stalls
 

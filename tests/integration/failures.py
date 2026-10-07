@@ -41,7 +41,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import smoke  # noqa: E402
-from smoke import ROOT, SmokeFailure, cgroup_members, log_events, read  # noqa: E402
+from smoke import ROOT, SmokeFailure, cgroup_members, log_events, positive_int, read  # noqa: E402
 
 KDOTOOL = 'bin/kdotool'  # Relative to the dependency root.
 W = 17  # evdev KEY_W
@@ -455,7 +455,7 @@ def main(argv=None):
     parser.add_argument('scenarios', nargs='*', metavar='SCENARIO', help='default: all of ' + ', '.join(SCENARIOS))
     parser.add_argument('--cli', default=shutil.which('agent-desktop'))
     parser.add_argument('--dependency-root', default=str(ROOT / '.local' / 'dependencies'))
-    parser.add_argument('--loop', type=int, default=1, metavar='N')
+    parser.add_argument('--loop', type=positive_int, default=1, metavar='N')
     parser.add_argument('--keep-artifacts', action='store_true', help='keep artifacts after passing scenarios')
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args(argv)

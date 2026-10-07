@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 614 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 627 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,8 +53,10 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 618 of the 627
-tests. CI never runs the smoke or failure-path tests below.
+have a user systemd manager, so `test_lifecycle_process` runs there: 631 of the 640
+tests. CI never runs the smoke, failure-path or application tests below.
+`test_app_checks` covers the application tests' desktop-free checks (finding the
+canvas, the exported pixels, version and skip handling) and is portable.
 
 ## End-to-end smoke test
 
@@ -151,6 +153,37 @@ It takes the same `--cli`, `--dependency-root`, `--keep-artifacts` and `--verbos
 options as the smoke test. A failing scenario keeps its artifact directory and stops
 the run.
 
+## Application tests
+
+```sh
+python tests/integration/apps.py --cli .local/dependencies/venv/bin/agent-desktop   # all three, about 25 seconds
+python tests/integration/apps.py --cli .local/dependencies/venv/bin/agent-desktop gimp blender --loop 3
+```
+
+Optional tests against real target applications, which only the host has. Each
+scenario starts its own session, drives the application through the CLI, checks
+what the application wrote to disk, then requires the same clean stop, leak and
+artifact checks as the smoke test. Per-application quirks and the keyboard paths
+are in [TARGET_APPS.md](TARGET_APPS.md).
+
+| Scenario | Application | What it does | What must hold |
+| --- | --- | --- | --- |
+| `text-editor` | `/usr/bin/gnome-text-editor` | types three lines (punctuation, a tab), `ctrl+s`, the path into the `Save a File` dialog, `return`; then appends a line and `ctrl+s` again | the dialog closes (`wait --for gone`), the title names `saved.txt`, and the file's bytes are exactly the typed text plus a final newline, both times; the second save opens no dialog; `close` exits |
+| `gimp` | `/usr/bin/gimp`, version 3 or later | `ctrl+n`, 320×240 in the new-image dialog, one `click` on image pixel (80, 60) (found in a window screenshot), `ctrl+shift+e`, the path, `return` in both export dialogs; `ctrl+q`, `ctrl+d` | the exported PNG is 320×240, dark at (80, 60), white (≥ 250) everywhere more than 34px from (80, 60), and its dark area is centered on (80, 60) within 3px; GIMP exits |
+| `blender` | `/usr/bin/blender`, 4.2 or later | prepares `scene.blend` and a `userpref.blend` with `blender -b`, opens the scene with `--factory-startup`, `move` into the viewport, `shift+d` `return`, `ctrl+shift+s`, the name `edited.blend` in the file view, `return` twice | the title names `edited.blend` without `*`; `blender -b` lists Camera, Cube, Cube.001 and Light in it and the original three objects in `scene.blend`; `close` exits |
+
+An application that isn't installed, or is older than shown, is skipped with the
+reason (`skip gimp: /usr/bin/gimp is not installed`), and the run still passes.
+`AGENT_DESKTOP_REQUIRE_HOST_TESTS=1` makes that a failure, as for the unit tests.
+Version probes and `blender -b` run outside the session with no display and HOME
+in the work directory.
+
+Each scenario gets a temporary work directory for the files it saves and the
+application's own profile (`GIMP3_DIRECTORY`, `BLENDER_USER_RESOURCES`); the rest
+of its state is in the session's private HOME. A passing scenario deletes the work
+directory and artifacts; a failing one keeps both and prints where. The options are
+the same as for the failure-path tests.
+
 ## Owner-loop profile
 
 An opt-in measurement of how late the worker's owner loop runs and what held it
@@ -229,5 +262,7 @@ Limits:
 
 Run both after system updates (KWin, libei, PyGObject, Python), after rebuilding
 kdotool, and before merging changes to input, capture, windows or lifecycle code.
+Run the application tests too after updating one of those applications or changing
+input or window code.
 If `doctor` warns about an untested version and both pass, update `TESTED_KWIN_VERSION` in `prerequisites.py` or `TESTED_VERSION`
 in `libei_binding.py`.

@@ -556,11 +556,22 @@ def print_versions(cli, dependency_root):
         print(f"warning: {warning['code']}: {warning['message']}")
 
 
+def positive_int(text):
+    """argparse type for --loop: zero or fewer runs would pass without testing anything."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'{text!r} is not an integer') from None
+    if value < 1:
+        raise argparse.ArgumentTypeError(f'must be at least 1, not {value}')
+    return value
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument('--cli', default=shutil.which('agent-desktop'), help='installed agent-desktop executable')
     parser.add_argument('--dependency-root', default=str(ROOT / '.local' / 'dependencies'))
-    parser.add_argument('--loop', type=int, default=1, metavar='N', help='run N full cycles (default 1)')
+    parser.add_argument('--loop', type=positive_int, default=1, metavar='N', help='run N full cycles (default 1)')
     parser.add_argument('--keep-artifacts', action='store_true', help='keep artifacts after passing runs')
     parser.add_argument('--no-fixture', action='store_true', help='skip the native fixture (no gcc needed)')
     parser.add_argument('--no-editor', action='store_true', help=f'skip {EDITOR}')

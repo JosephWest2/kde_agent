@@ -236,6 +236,11 @@ class Scheduler:
         work.result = result
         work.settle_by = min(work.settle_by, max(work.admission.deadline, work.cleanup_deadline) + SETTLE_GRACE)
         self.finishing.append(work)
+        # The task's steps and cleanup are over: only the response waits for its
+        # records, so the next work, a reset or stop, and shutdown's release
+        # never wait for the writer (#96).
+        if self.active is work:
+            self.active = None
         self._settle(work)
 
     def settle(self):
@@ -246,12 +251,21 @@ class Scheduler:
     def _settle(self, work):
         if work.terminal:
             return True
+        result = work.result
         if not self._refresh(work):
             if self.clock() < work.settle_by:
                 return False
             # Durability unknown: never answer success; the records stay pending.
+            # Reported as artifact_failed, ahead of the deadline check (settle_by is
+            # always past the deadline), so a storage stall is not called a timeout.
             work.observing_failed = True
-        result = work.result
+            if work.error is None:
+                work.error = ContractError("artifact_failed", "Request record could not be preserved.",
+                                           context={"phase": "settle"})
+                if isinstance(result, dict):
+                    if work.partial is None:
+                        work.outcome = "unknown"
+                    work.partial = (work.partial or {}) | result
         if work.error is None and self.clock() >= work.admission.deadline:
             work.error = ContractError("timeout", "Request deadline expired.")
             if isinstance(result, dict):
@@ -357,7 +371,9 @@ class Scheduler:
                 # Construction is effect-free; the first step waits until the
                 # admission and start records are durable, unless the task gates
                 # each of its effects on Context.recorded() itself.
-                if not self._refresh(work) and not getattr(work.task, "gates_effects", False):
+                # Controls are storage-independent and never wait here.
+                if (not self._refresh(work) and not getattr(work.task, "gates_effects", False)
+                        and work.request.operation not in CONTROL_OPERATIONS):
                     return
                 if work.observing_failed and work.request.operation not in CONTROL_OPERATIONS:
                     self._cancel(work, "artifact_failed")
@@ -424,7 +440,8 @@ class Scheduler:
             if work is not None and not work.terminal:
                 work.cleanup_deadline = min(work.cleanup_deadline, deadline)
                 self._advance(work)
-        return all(work is None or work.terminal for work in works)
+        # A finishing work's cleanup is complete; only its response waits for records.
+        return all(work is None or work.terminal or work.finishing for work in works)
 
     def tick(self):
         self._guard()
@@ -456,7 +473,7 @@ class Scheduler:
                 self._cancel(owner, "timeout")
             if self.active is None:
                 self._advance(owner)
-            if owner.terminal:
+            if owner.terminal or owner.finishing:
                 self._finish_waiters(owner)
                 self.lifecycle, self.pending_stop = self.pending_stop, None
             return

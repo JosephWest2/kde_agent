@@ -200,7 +200,8 @@ class Clock:
 
 class Admission:
     def __init__(self, clock, operation='type', timeout=3):
-        self.request = make_request(operation, arguments={'window': WINDOW, 'text': 'hi'}, caller_cwd='/tmp',
+        arguments = {} if operation.startswith('session.') else {'window': WINDOW, 'text': 'hi'}
+        self.request = make_request(operation, arguments=arguments, caller_cwd='/tmp',
                                     expected_generation=GEN, timeout_seconds=timeout)
         self.admitted_at = clock()
         self.deadline = clock() + timeout
@@ -341,8 +342,42 @@ class SchedulerRecordTests(unittest.TestCase):
         self.assertEqual(admission.results, [])
         self.clock.now = 1 + SETTLE_GRACE + .2
         self.owner.tick()
-        self.assertIsNotNone(admission.results[0]['error'])
-        self.assertIn(admission.results[0]['error'].code, ('timeout', 'artifact_failed'))
+        error = admission.results[0]['error']
+        self.assertEqual(error.code, 'artifact_failed', 'a storage stall past the bound was reported as a timeout')
+        self.assertTrue(error.partial_result['emitted'])
+
+    def test_finished_cleanup_releases_shutdown_while_its_records_are_pending(self):
+        admission = Admission(self.clock)
+        self.owner.submit(admission.request, admission)
+        self.owner.tick()
+        self.finish()
+        self.owner.tick()
+        self.owner.begin_shutdown(self.clock() + 5)
+        self.assertEqual(self.events[-1], 'release')
+        self.owner.tick()
+        self.assertEqual(self.events[-1], 'cleanup')
+        # Cleanup is complete; the cancelling and finalizing records are still queued.
+        self.assertEqual(admission.results, [])
+        self.assertTrue(self.owner.drain_shutdown(self.clock() + .5),
+                        'release waited for the writer after cleanup had finished')
+        self.finish()
+        self.owner.tick()
+        self.assertEqual(admission.results[0]['error'].code, 'cancelled')
+
+    def test_stop_steps_at_once_even_behind_pending_records(self):
+        admission = Admission(self.clock)
+        self.owner.submit(admission.request, admission)
+        self.owner.tick()
+        self.finish()
+        self.owner.tick()
+        steps = self.events.count('step')
+        stop = Admission(self.clock, operation='session.stop')
+        self.owner.submit(stop.request, stop)   # Cancels the active request.
+        self.owner.tick()
+        self.owner.tick()
+        # The cancelled request's records and the stop's control_admitted are all queued.
+        self.assertTrue(any(not value.done for _, value in self.records))
+        self.assertGreater(self.events.count('step'), steps, 'stop waited for the writer before its first step')
 
 
 class HeldBackWriterTests(unittest.TestCase):

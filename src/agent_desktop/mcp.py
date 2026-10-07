@@ -206,15 +206,13 @@ class Call:
             # signal (SIGINT) fires only when the server itself dies.
             self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, cwd=self.server.cwd, start_new_session=True)
-        try:
-            self.process.stdin.write(json.dumps(spec, ensure_ascii=True).encode())
-            self.process.stdin.close()
-        except OSError:
-            pass
+        # communicate() writes the spec and closes stdin, and keeps it across timeouts.
+        # (Python 3.12's communicate() fails on a stdin already closed by hand.)
+        data = json.dumps(spec, ensure_ascii=True).encode()
         timeout = self.spec["timeout"] if self.spec["timeout"] is not None else OPERATIONS[self.operation][0]
         grace = START_CANCEL_GRACE if self.operation == "session.start" else CANCEL_GRACE
         deadline = time.monotonic() + timeout + OUTER_SLACK
-        stdout, stderr, expired, cancel_started = b"", b"", False, None
+        expired, cancel_started = False, None
         while True:
             now = time.monotonic()
             if self.cancelled.is_set() and cancel_started is None:
@@ -226,10 +224,10 @@ class Call:
                     self.interrupt()
             limit = deadline if cancel_started is None else cancel_started + grace
             try:
-                out, err = self.process.communicate(timeout=max(.01, min(.1, limit - now)))
-                stdout, stderr = stdout + out, stderr + err
+                stdout, stderr = self.process.communicate(data, timeout=max(.01, min(.1, limit - now)))
                 break
             except subprocess.TimeoutExpired:
+                data = None  # Retries must not pass input again.
                 if cancel_started is not None and time.monotonic() >= cancel_started + grace:
                     self.process.kill()
         for line in stderr.decode("utf-8", "replace").splitlines()[:20]:

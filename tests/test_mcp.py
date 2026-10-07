@@ -561,7 +561,11 @@ class ProcessTests(unittest.TestCase):
     def tearDown(self):
         if self.server.poll() is None:
             self.server.kill()
-        self.server.communicate(timeout=10)
+        if not self.server.stdin.closed:
+            self.server.stdin.close()
+        self.server.wait(timeout=10)
+        self.server.stdout.close()
+        self.server.stderr.close()
         self.worker.terminate()
         self.worker.wait(timeout=5)
         self.err.close()
@@ -665,7 +669,10 @@ class ProcessTests(unittest.TestCase):
         while time.monotonic() < until:  # Repeats land at different points of the cancel.
             call.send_signal(signal.SIGINT)
             time.sleep(.0002)
-        stdout, _ = call.communicate(timeout=10)
+        stdout = call.stdout.read()
+        call.wait(timeout=10)
+        call.stderr.close()
+        call.stdout.close()
         self.assertEqual(call.returncode, 130)
         self.assertEqual(json.loads(stdout)["error"]["code"], "cancelled")
         self.assert_correlated_cancel(start, before)

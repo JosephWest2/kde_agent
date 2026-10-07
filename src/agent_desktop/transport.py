@@ -316,17 +316,22 @@ class Server:
     each turn and only eight per class run, so control floods cannot starve work.
     All callbacks share a single GLib source, not competing source priorities.
     """
-    def __init__(self, endpoint, glib, handler, *, cancel=None, after_io=None):
+    def __init__(self, endpoint, glib, handler, *, cancel=None, after_io=None, paused=None):
         self.endpoint, self.glib, self.handler = endpoint, glib, handler
         self.name, self.generation = endpoint.name, endpoint.generation
         self.connections = set()
         self.active = {}
         self.cancel = cancel or (lambda request_id: False)
         self.after_io = after_io or (lambda: None)
+        # While true, new ordinary connections wait in the listen backlog (the
+        # durable-write queue is behind); priority controls are never paused.
+        self.paused = paused or (lambda: False)
         self.order = {True: [], False: []}
         self.timer = glib.timeout_add(5, self.service)
 
     def accept(self, priority):
+        if not priority and self.paused():
+            return
         listener = self.endpoint.priority_listener if priority else self.endpoint.listener
         cap = 8 if priority else MAX_CONNECTIONS
         count = sum(c.priority == priority for c in self.connections)

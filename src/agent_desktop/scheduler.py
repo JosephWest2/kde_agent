@@ -4,18 +4,29 @@ Task factory(request, context) returns an object with step(now) -> result|None,
 request_cancel(reason), cleanup(now) -> bool and cleanup_seconds (<=16). Calls
 must be bounded/nonblocking. Only this owner may call task methods. Context
 records effects before cancellation can run; observers never receive argv/env.
+
+An observer may return write tickets (objects with `done` and `error`; see
+writer.py) for the records it queued. A work's first step waits until its
+admission and start records are done, its response waits until every record it
+queued is done, and a failed one latches observing_failed (no new effects,
+artifact_failed). Tasks wait for their own effect records with
+Context.recorded() before the effect they gate. Cancellation, release and
+cleanup never wait for records.
 """
 from __future__ import annotations
 
 from collections import deque
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 
 from .contracts import ContractError, dispatch
 
 CONTROL_OPERATIONS = frozenset({"session.stop"})
 MAX_ORDINARY = 32
+# A response waits for its records at most this long past its deadline or cleanup
+# deadline; then it is sent without them (never as a success). Matches writer.STALL_SECONDS.
+SETTLE_GRACE = 5.0
 
 
 class UnsupportedTask:
@@ -45,6 +56,10 @@ class Work:
     terminal: bool = False
     observing_failed: bool = False
     result: object = None
+    pending: list = field(default_factory=list)  # Write tickets not yet done.
+    stepped: bool = False      # The first step ran (admission and start records were done).
+    finishing: bool = False    # Outcome decided; the response waits for its records.
+    settle_by: float = float("inf")
 
     @property
     def request(self):
@@ -61,8 +76,22 @@ class Context:
         if partial_result is not None:
             self.work.partial = partial_result
         self.owner._observe(self.work, "effects")
+        self.owner._refresh(self.work)
         if self.work.observing_failed and self.work.request.operation not in CONTROL_OPERATIONS:
             raise ContractError("artifact_failed", "Request record could not be preserved.")
+
+    def recorded(self):
+        """True once every record this request queued is durable. A task calls it after
+        effects() and before the effect that record must precede; False means wait
+        (return None and ask again on a later step). A failed record raises."""
+        self.owner._refresh(self.work)
+        if self.work.observing_failed and self.work.request.operation not in CONTROL_OPERATIONS:
+            raise ContractError("artifact_failed", "Request record could not be preserved.")
+        return not self.work.pending
+
+    def track(self, tickets):
+        """Count other durable writes (application records) as this request's records."""
+        self.owner._track(self.work, tickets)
 
 
 class Scheduler:
@@ -81,6 +110,7 @@ class Scheduler:
         self.pending_stop = None
         self.stopping = False
         self.unavailable = False
+        self.finishing = []
         self._observing = False
 
     def _guard(self):
@@ -92,17 +122,39 @@ class Scheduler:
             return
         self._observing = True
         try:
-            self.observer(deepcopy({"request_id": work.request.request_id,
+            tickets = self.observer(deepcopy({"request_id": work.request.request_id,
                            "operation": work.request.operation,
                            "session": work.request.session,
                            "generation": work.request.expected_generation,
                            "event": event, "outcome": work.outcome,
                            "error_code": work.error.code if work.error else None,
                            "partial_result": work.partial}))
+            self._track(work, tickets)
         except Exception:
             work.observing_failed = True
         finally:
             self._observing = False
+
+    @staticmethod
+    def _track(work, tickets):
+        if tickets is None:
+            return
+        if hasattr(tickets, "done"):
+            tickets = (tickets,)
+        work.pending.extend(ticket for ticket in tickets if ticket is not None)
+
+    @staticmethod
+    def _refresh(work):
+        """Drop finished tickets, latching any failure; True when none are left."""
+        if work.pending:
+            remaining = []
+            for ticket in work.pending:
+                if not ticket.done:
+                    remaining.append(ticket)
+                elif ticket.error is not None:
+                    work.observing_failed = True
+            work.pending = remaining
+        return not work.pending
 
     def submit(self, request, admission):
         self._guard()
@@ -136,13 +188,13 @@ class Scheduler:
     def cancel(self, request_id, *, code="cancelled"):
         self._guard()
         work = self.live.get(request_id)
-        if work is None or work.terminal:
+        if work is None or work.terminal or work.finishing:
             return False
         self._cancel(work, code)
         return True
 
     def _cancel(self, work, code, error=None):
-        if work.error is not None:
+        if work.error is not None or work.finishing:
             return
         work.error = error or ContractError(code, "Request deadline expired." if code == "timeout" else "Request cancelled.")
         if work.task is None:
@@ -173,11 +225,32 @@ class Scheduler:
             pass
 
     def _finish(self, work, result=None):
-        if work.terminal:
+        """Decide the outcome, record finalizing, and respond once its records are done."""
+        if work.terminal or work.finishing:
             return
         if work.error is None and self.clock() >= work.admission.deadline:
             work.error = ContractError("timeout", "Request deadline expired.")
         self._observe(work, "finalizing")
+        work.finishing = True
+        work.result = result
+        work.settle_by = min(work.settle_by, max(work.admission.deadline, work.cleanup_deadline) + SETTLE_GRACE)
+        self.finishing.append(work)
+        self._settle(work)
+
+    def settle(self):
+        """Respond for every finishing work whose records are done (or out of time)."""
+        for work in tuple(self.finishing):
+            self._settle(work)
+
+    def _settle(self, work):
+        if work.terminal:
+            return True
+        if not self._refresh(work):
+            if self.clock() < work.settle_by:
+                return False
+            # Durability unknown: never answer success; the records stay pending.
+            work.observing_failed = True
+        result = work.result
         if work.error is None and self.clock() >= work.admission.deadline:
             work.error = ContractError("timeout", "Request deadline expired.")
             if isinstance(result, dict):
@@ -191,6 +264,8 @@ class Scheduler:
             error = ContractError(error.code, error.message, context=error.context,
                                   outcome=work.outcome, partial_result=work.partial)
         work.terminal = True
+        if work in self.finishing:
+            self.finishing.remove(work)
         self.live.pop(work.request.request_id, None)
         work.result = result
         work.admission.complete(result=result, error=error)
@@ -202,6 +277,7 @@ class Scheduler:
             work.outcome, work.partial = final["outcome"], final["partial_result"]
         if self.active is work:
             self.active = None
+        return True
 
     def _control(self, work):
         op = work.request.operation
@@ -252,10 +328,14 @@ class Scheduler:
         now = self.clock()
         if work.terminal:
             return
+        if work.finishing:
+            self._settle(work)
+            return
         if work.error is None and now >= work.admission.deadline:
             self._cancel(work, "timeout")
-        if work.terminal:
+        if work.terminal or work.finishing:
             return
+        self._refresh(work)
         if work.observing_failed and work.error is None and work.request.operation not in CONTROL_OPERATIONS:
             self._cancel(work, "artifact_failed")
         if work.error is not None:
@@ -272,6 +352,15 @@ class Scheduler:
         try:
             if work.task is None:
                 work.task = self.factory(work.request, Context(self, work))
+            if not work.stepped:
+                # Construction is effect-free; the first step waits until the
+                # admission and start records are durable.
+                if not self._refresh(work):
+                    return
+                if work.observing_failed and work.request.operation not in CONTROL_OPERATIONS:
+                    self._cancel(work, "artifact_failed")
+                    return
+                work.stepped = True
             # Construction is effect-free but can still consume the remaining
             # budget. Never emit using time sampled before any callback.
             now = self.clock()
@@ -320,9 +409,14 @@ class Scheduler:
             self._cancel(work, 'session_failed' if failed else 'cancelled',
                          ContractError('session_failed', 'Essential session health failed.') if failed else None)
             work.cleanup_deadline = min(work.cleanup_deadline, deadline)
+        for work in self.finishing:
+            work.settle_by = min(work.settle_by, deadline)
 
     def drain_shutdown(self, deadline):
         self._guard()
+        for work in self.finishing:
+            work.settle_by = min(work.settle_by, deadline)
+        self.settle()
         works = [self.active, self.lifecycle, self.pending_stop]
         for work in works:
             if work is not None and not work.terminal:
@@ -335,10 +429,11 @@ class Scheduler:
         now = self.clock()
         if self.children is not None:
             self.children.poll(now)
+        self.settle()
         for work in tuple(self.queue):
             if not work.terminal and self.clock() >= work.admission.deadline:
                 self._cancel(work, "timeout")
-        self.queue = deque(work for work in self.queue if not work.terminal)
+        self.queue = deque(work for work in self.queue if not work.terminal and not work.finishing)
         for work in tuple(self.waiters):
             if self.clock() >= work.admission.deadline:
                 work.error = ContractError("timeout", "Control waiter deadline expired.")

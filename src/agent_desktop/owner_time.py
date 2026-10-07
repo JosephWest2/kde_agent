@@ -54,9 +54,20 @@ class Budget:
         start = now()
         self.base = start + seconds
         self.hard = start + 2 * seconds if clock is not None else self.base
+        self.limit = limit
         if limit is not None:
             self.base, self.hard = min(self.base, limit), min(self.hard, limit)
         self.origin = clock.stalled(start) if clock is not None else 0.0
+
+    def credit(self, seconds):
+        """Give back SECONDS spent waiting for the toolkit's own durable records (#96),
+        which no peer is answerable for. Never past the limit."""
+        if seconds <= 0:
+            return
+        self.base += seconds
+        self.hard += seconds
+        if self.limit is not None:
+            self.base, self.hard = min(self.base, self.limit), min(self.hard, self.limit)
 
     def at(self, now=None):
         """The absolute monotonic deadline as of now."""

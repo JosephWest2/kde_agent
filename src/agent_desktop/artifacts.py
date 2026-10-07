@@ -1,9 +1,10 @@
 """Owner-private, bounded generation records independent of disposable runtime.
 
 One nonblocking advisory lock protects read/modify/replace. Request history lives
-in separate attempt records, never an ever-growing generation snapshot. Storage
-is synchronous under the documented normal-storage assumption, not a hard
-latency guarantee on a hung filesystem.
+in separate attempt records, never an ever-growing generation snapshot. Each
+call is synchronous on the thread that makes it; in the worker that is the
+writer thread (writer.Journal), never the GLib owner. Not a hard latency
+guarantee on a hung filesystem.
 """
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -674,7 +675,10 @@ class Store:
     def open_log(self, source):
         if source not in ('worker', 'compositor', 'bus'):
             fail('schema')
-        with self.lock(), self.directory('logs') as directory:
+        # Opening an existing append-only log is not an update, so it takes no
+        # record lock: the owner opens logs while the writer thread holds it.
+        self._location()
+        with self.directory('logs') as directory:
             fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=directory)
             try:
@@ -687,7 +691,8 @@ class Store:
     def log_path(self, source):
         if source not in ('worker', 'compositor', 'bus'):
             fail('schema')
-        with self.lock(), self.directory('logs') as directory:
+        self._location()
+        with self.directory('logs') as directory:
             fd = os.open(source + '.log', os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK,
                          0o600, dir_fd=directory)
             try:

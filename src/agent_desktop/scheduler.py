@@ -112,6 +112,10 @@ class Scheduler:
         self.stopping = False
         self.unavailable = False
         self.finishing = []
+        # Lifecycle owners that have released their slot but whose own records have
+        # not settled, each with the waiters that joined it: the waiters answer
+        # with the owner's final, settled outcome (#96).
+        self.settling = []
         self._observing = False
 
     def _guard(self):
@@ -247,6 +251,20 @@ class Scheduler:
         """Respond for every finishing work whose records are done (or out of time)."""
         for work in tuple(self.finishing):
             self._settle(work)
+        for entry in tuple(self.settling):
+            owner, waiters = entry
+            for waiter in tuple(waiters):
+                if waiter.terminal or waiter.finishing:
+                    waiters.remove(waiter)
+                elif owner.terminal:
+                    self._join(waiter, owner)
+                    waiters.remove(waiter)
+                elif self.clock() >= waiter.admission.deadline:
+                    waiter.error = ContractError("timeout", "Control waiter deadline expired.")
+                    self._finish(waiter)
+                    waiters.remove(waiter)
+            if owner.terminal or not waiters:
+                self.settling.remove(entry)
 
     def _settle(self, work):
         if work.terminal:
@@ -272,6 +290,10 @@ class Scheduler:
                 if work.partial is None:
                     work.outcome = "unknown"
                 work.partial = (work.partial or {}) | result
+        # Precedence, as on main: an error already decided (cancelled, timeout,
+        # target_lost, ...) stands; then a deadline that passed, even while a
+        # record was being written; artifact_failed only otherwise. Settlement
+        # expiry with no error yet is artifact_failed (phase settle), above.
         if work.observing_failed and work.error is None:
             work.error = ContractError("artifact_failed", "Request record could not be preserved.")
         error = work.error
@@ -406,6 +428,18 @@ class Scheduler:
             work.outcome = "unknown"
             self._cancel(work, "internal_error")
 
+    def _join(self, waiter, owner):
+        waiter.error, waiter.outcome, waiter.partial = owner.error, owner.outcome, owner.partial
+        self._finish(waiter, owner.result)
+
+    def _hold_waiters(self, owner):
+        """OWNER released its slot before its records settled: its waiters wait for them."""
+        joined = [waiter for waiter in self.waiters if waiter.request.operation == owner.request.operation]
+        for waiter in joined:
+            self.waiters.remove(waiter)
+        if joined:
+            self.settling.append((owner, joined))
+
     def _finish_waiters(self, owner):
         for waiter in tuple(self.waiters):
             if waiter.request.operation == owner.request.operation:
@@ -474,7 +508,12 @@ class Scheduler:
             if self.active is None:
                 self._advance(owner)
             if owner.terminal or owner.finishing:
-                self._finish_waiters(owner)
+                # The slot is released at once; joined waiters answer with the
+                # owner's settled outcome, not its provisional one.
+                if owner.terminal:
+                    self._finish_waiters(owner)
+                else:
+                    self._hold_waiters(owner)
                 self.lifecycle, self.pending_stop = self.pending_stop, None
             return
         if self.active is None and not self.stopping and not self.unavailable and self.queue:

@@ -152,6 +152,32 @@ class TerminationTests(unittest.TestCase):
         durable[0] = True
         self.visit(cursor, second, second_fd).assert_called_once_with(second_fd, signal.SIGTERM, None, 0)
 
+    def test_real_scan_signals_a_turn_together_then_waits_for_its_progress_record(self):
+        # As on main, one scan turn signals up to 16 retained processes and its
+        # progress is published after the scan; the next turn's signals wait
+        # until that progress record is durable (#96).
+        durable = [True]
+        self.context.recorded = lambda: durable[0]
+        for number in range(20):
+            self.acquire(number + 1, 456, number + 800)
+        self.addCleanup(self.fake_handles_cleanup)
+        cursor = self.start()
+        with patch('agent_desktop.app_processes.live', return_value=True), \
+                patch('agent_desktop.app_processes.birth', return_value=456), \
+                patch('agent_desktop.app_processes.membership', return_value=self.app.cgroup), \
+                patch('signal.pidfd_send_signal') as sent:
+            self.registry.tick()
+            self.assertEqual(sent.call_count, 16)
+            published = len(self.effects)
+            self.assertGreater(published, 1, 'the turn\'s progress was not published after its scan')
+            durable[0] = False   # That progress record is still queued.
+            self.registry.tick()
+            self.registry.tick()
+            self.assertEqual(sent.call_count, 16, 'signalled again before the progress record was durable')
+            durable[0] = True
+            self.registry.tick()
+            self.assertEqual(sent.call_count, 20)
+
     def test_new_lifetime_at_kill_phase_gets_no_term_grace(self):
         key, fd = self.acquire()
         self.addCleanup(self.fake_handles_cleanup)

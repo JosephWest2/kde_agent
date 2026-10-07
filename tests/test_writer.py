@@ -215,6 +215,97 @@ class AcceptPauseTests(unittest.TestCase):
             self.assertEqual(endpoint.listener.accept.call_count, 2)
 
 
+class HeldReplyTests(unittest.TestCase):
+    """A reply answered at acceptance (a managed session.status, a stop waiter)
+    leaves only once the records written then are durable, as on main, where
+    on_terminal wrote them inline before the next send turn."""
+    def serve(self, gated):
+        from unittest.mock import Mock
+        from agent_desktop import transport
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        store = Store(Path(temp.name) / 'artifacts', 'default', GEN, create=True)
+        self.addCleanup(store.close)
+        gate = threading.Event()
+        self.addCleanup(gate.set)
+        for name in gated:
+            original = getattr(store, name)
+            def held(*args, original=original, **kwargs):
+                gate.wait(10)
+                return original(*args, **kwargs)
+            setattr(store, name, held)
+        journal = store.journal = Journal(store, threaded=True)
+        self.addCleanup(lambda: (gate.set(), journal.close(time.monotonic() + 2)))
+        records = Records(store)
+        endpoint = Mock()
+        endpoint.name, endpoint.generation = 'default', GEN
+        endpoint.listener.accept.side_effect = BlockingIOError
+        endpoint.priority_listener.accept.side_effect = BlockingIOError
+        glib = Mock(IO_IN=1, IO_OUT=4, IO_HUP=16, IO_ERR=8)
+        server = transport.Server(endpoint, glib, Mock())
+        ours, peer = socket.socketpair(socket.AF_UNIX)
+        self.addCleanup(peer.close)
+        ours.setblocking(False)
+        peer.settimeout(0)
+        connection = transport.Connection(server, ours)
+        server.connections.add(connection)
+        server.order[False].append(connection)
+        request = make_request('session.status', arguments={}, caller_cwd='/tmp',
+                               expected_generation=GEN, timeout_seconds=3)
+        admission = connection.admission = transport.Admission(connection, request)
+        records.attach(request, admission)
+        admission.complete(result={'state': 'ready'})   # As dispatch_request does.
+
+        def received():
+            journal.drain()
+            server.service()
+            try:
+                return peer.recv(65536)
+            except BlockingIOError:
+                return b''
+        return gate, server, received
+
+    def assert_held_until_durable(self, gated):
+        gate, server, received = self.serve(gated)
+        for _ in range(20):
+            self.assertEqual(received(), b'', 'the reply left before its records were durable')
+            time.sleep(.005)
+        self.assertTrue(server.flushing(), 'the worker could quit with the reply unsent')
+        gate.set()
+        data = []
+        wait_for(lambda: data.append(received()) or any(data))
+        self.assertIn(b'"ok":true', b''.join(data).replace(b' ', b''))
+        self.assertFalse(server.flushing())
+
+    def test_a_hold_is_bounded_and_resets_the_frame_budget_on_release(self):
+        from unittest.mock import Mock, patch
+        from agent_desktop import transport
+        now = [100.0]
+        with patch.object(transport.time, 'monotonic', lambda: now[0]), \
+                socket.socket(socket.AF_UNIX) as sock:
+            server = Mock(connections=set())
+            connection = transport.Connection(server, sock)
+            connection.admission = Mock(holds=[Ticket(1, 'transition', 0)])
+            connection.output = b'reply'
+            self.assertFalse(connection.releasable(now[0]))
+            now[0] += transport.FRAME_SECONDS + 1
+            self.assertTrue(connection.holding(), 'Server.expire would cut a held reply at the frame deadline')
+            connection.admission.holds[0].done = True
+            self.assertTrue(connection.releasable(now[0]))
+            self.assertEqual(connection.deadline, now[0] + transport.FRAME_SECONDS)
+            connection.admission.holds.append(Ticket(2, 'transition', 0))
+            self.assertFalse(connection.releasable(now[0]))
+            now[0] += transport.HOLD_SECONDS
+            self.assertFalse(connection.releasable(now[0]))
+            self.assertTrue(connection.closed, 'a stuck record held the reply without bound')
+
+    def test_reply_waits_for_its_request_record(self):
+        self.assert_held_until_durable(['request'])
+
+    def test_reply_waits_for_its_terminal_record(self):
+        self.assert_held_until_durable(['transition'])
+
+
 class Clock:
     now = 0.0
 
@@ -370,6 +461,18 @@ class SchedulerRecordTests(unittest.TestCase):
         self.assertEqual(error.code, 'artifact_failed', 'a storage stall past the bound was reported as a timeout')
         self.assertTrue(error.partial_result['emitted'])
 
+    def test_an_earlier_error_keeps_precedence_over_unsettled_records_as_on_main(self):
+        admission = Admission(self.clock, timeout=1)
+        self.owner.submit(admission.request, admission)
+        self.owner.tick()
+        self.finish()
+        self.owner.tick()
+        self.owner.cancel(admission.request.request_id)
+        self.owner.tick()
+        self.clock.now = 1 + SETTLE_GRACE + .2   # Its cancelling and finalizing records never settle.
+        self.owner.tick()
+        self.assertEqual(admission.results[0]['error'].code, 'cancelled')
+
     def test_finished_cleanup_releases_shutdown_while_its_records_are_pending(self):
         admission = Admission(self.clock)
         self.owner.submit(admission.request, admission)
@@ -402,6 +505,44 @@ class SchedulerRecordTests(unittest.TestCase):
         # The cancelled request's records and the stop's control_admitted are all queued.
         self.assertTrue(any(not value.done for _, value in self.records))
         self.assertGreater(self.events.count('step'), steps, 'stop waited for the writer before its first step')
+
+
+class LifecycleWaiterTests(unittest.TestCase):
+    def test_joined_stop_waiters_answer_with_the_owners_settled_outcome(self):
+        clock, records = Clock(), []
+        def observer(record):
+            value = ticket()
+            records.append((record['request_id'], record['event'], value))
+            return value
+        class Stop:
+            cleanup_seconds = 0
+            def __init__(self, request, context):
+                pass
+            def step(self, now):
+                return {'state': 'stopping'}
+            def request_cancel(self, reason):
+                pass
+            def cleanup(self, now):
+                return True
+        owner = Scheduler(clock=clock, observer=observer, capabilities={'session.stop'},
+                          factory=lambda request, context: Stop(request, context))
+        first, joined = Admission(clock, operation='session.stop'), Admission(clock, operation='session.stop')
+        owner.submit(first.request, first)
+        owner.submit(joined.request, joined)
+        owner.tick()
+        self.assertIsNone(owner.lifecycle, 'the mutation slot waited for the owner\'s records')
+        self.assertEqual(joined.results, [], 'the waiter answered before the owner\'s records settled')
+        # The owner's finalizing write fails; every other record is durable.
+        for request_id, event, value in records:
+            failed = request_id == first.request.request_id and event == 'finalizing'
+            value.done, value.error = True, ContractError('artifact_failed', 'Injected.') if failed else None
+        owner.tick()
+        for request_id, event, value in records:
+            value.done = True   # The waiter's own finalizing record.
+        owner.tick()
+        self.assertEqual(first.results[0]['error'].code, 'artifact_failed')
+        self.assertIsNotNone(joined.results[0]['error'], 'the waiter reported success for a failed stop')
+        self.assertEqual(joined.results[0]['error'].code, 'artifact_failed')
 
 
 class HeldBackWriterTests(unittest.TestCase):

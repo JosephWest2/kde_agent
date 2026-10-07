@@ -36,17 +36,21 @@ class Records:
         previous = admission.on_terminal
 
         def terminal(payload):
-            # After acceptance: queued best effort, never waited on.
+            # After acceptance: best effort. The reply bytes wait for these writes
+            # (Admission.holds), never the acceptance itself.
             observed_at, observed_monotonic = timestamp(), self.clock()
             try:
                 token = self._ensure(context)
                 error = payload['error']
-                self.journal.submit('transition', token, 'terminal',
+                written = (self.journal.submit('transition', token, 'terminal',
                     outcome='success' if payload['ok'] else error['outcome'],
                     error_code=None if payload['ok'] else error['code'],
                     references=payload['result'] if payload['ok'] else error['partial_result'],
                     observed_at=observed_at, observed_monotonic=observed_monotonic,
-                    on_error=lambda error: diagnostic())
+                    on_error=lambda error: diagnostic()))
+                holds = getattr(admission, 'holds', None)
+                if isinstance(holds, list):
+                    holds += [token, written]
             except Exception:
                 diagnostic()
             finally:

@@ -266,7 +266,9 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                         # Queued records drain within the shutdown's own bound, before the terminal record.
                         drain_deadline = max(shutdown.deadline, quit_after)
                     now = time.monotonic()
-                    drained = (journal is None or journal.idle()) and not scheduler.finishing
+                    # Held or unsent replies (stop waiters' included) go out before the loop quits.
+                    drained = ((journal is None or journal.idle()) and not scheduler.finishing
+                               and not server.flushing())
                     if now >= quit_after and cause_deadline is None and (drained or now >= drain_deadline):
                         loop.quit()
                 return

@@ -1,6 +1,7 @@
 """The desktop-free checks of tests/integration/apps.py: canvas search, exported pixels, versions, skips."""
 import contextlib
 import io
+import itertools
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,8 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'integration'))
 import apps  # noqa: E402
+import failures  # noqa: E402
+import smoke  # noqa: E402
 from smoke import SmokeFailure  # noqa: E402
 
 GREY = (60, 60, 60)
@@ -22,9 +25,10 @@ class ImageCase(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        self.names = itertools.count()
 
     def save(self, image):
-        path = Path(self.temp.name) / f'{id(image)}.png'
+        path = Path(self.temp.name) / f'{next(self.names)}.png'
         image.save(path)
         return path
 
@@ -77,6 +81,18 @@ class DotTests(ImageCase):
             with self.subTest(path=path.name), self.assertRaises(SmokeFailure):
                 apps.check_dot(path, (320, 240), (80, 60))
 
+    def test_light_paint_away_from_the_dab_fails(self):
+        # Too light to count as dark, and away from the five sample points.
+        image = Image.open(self.exported((80, 60)))
+        ImageDraw.Draw(image).rectangle([150, 150, 200, 200], fill=(200, 200, 200))
+        with self.assertRaises(SmokeFailure):
+            apps.check_dot(self.save(image), (320, 240), (80, 60))
+
+    def test_soft_brush_edge_near_the_dab_passes(self):
+        image = Image.open(self.exported((80, 60)))
+        ImageDraw.Draw(image).ellipse([80 - 26, 60 - 26, 80 + 26, 60 + 26], outline=(245, 245, 245))
+        apps.check_dot(self.save(image), (320, 240), (80, 60))
+
     def test_paint_elsewhere_as_well_fails(self):
         image = Image.open(self.exported((80, 60)))
         ImageDraw.Draw(image).point((319, 239), fill='black')
@@ -125,6 +141,14 @@ class SkipTests(unittest.TestCase):
         code, out = self.run_main(require=True)
         self.assertEqual(code, 1)
         self.assertIn('FAIL gimp: /usr/bin/gimp is not installed', out)
+
+    def test_loop_must_run_at_least_once(self):
+        for script in (apps, smoke, failures):
+            for count in ('0', '-1', 'x'):
+                with self.subTest(script=script.__name__, loop=count), \
+                        contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
+                    script.main(['--cli', '/nonexistent/agent-desktop', '--loop', count])
+                self.assertEqual(caught.exception.code, 2)
 
     def test_missing_executable_is_reported_without_running_anything(self):
         with patch.object(apps, 'GIMP', '/nonexistent/gimp'), patch('subprocess.run') as run:

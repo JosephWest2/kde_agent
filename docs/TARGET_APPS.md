@@ -76,7 +76,7 @@ $D launch --wait-window --timeout 60 --cwd "$WORK" --env GIMP3_DIRECTORY="$WORK/
   Small images open at 100% zoom, centered in the canvas.
 - **Painting:** the default tool is the paintbrush with a black foreground. One
   `click` on the image paints one dab (dark core about 12px with the default
-  51px brush). There is no tool-free way to find the canvas: the test finds the
+  51px brush, whose soft edge fades to white within about 26px of the click). There is no tool-free way to find the canvas: the test finds the
   white image in a window screenshot.
 - **Export:** `ctrl+shift+e` opens `Export Image`, a GTK file chooser of about
   1351×996, larger than the screen, so its buttons are off screen. The name field

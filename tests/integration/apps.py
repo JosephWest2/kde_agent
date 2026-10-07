@@ -37,7 +37,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import smoke  # noqa: E402
-from smoke import ROOT, SmokeFailure  # noqa: E402
+from smoke import ROOT, SmokeFailure, positive_int  # noqa: E402
 
 # The same switch as tests/host_facilities.py: a missing application fails instead of skipping.
 REQUIRE = 'AGENT_DESKTOP_REQUIRE_HOST_TESTS'
@@ -357,8 +357,17 @@ def find_canvas(path, size):
     return canvas
 
 
+# Half the side of the square around the clicked pixel that may differ from white:
+# the default 51px brush's soft edge (radius about 26) plus antialiasing.
+DAB_REACH = 34
+
+
 def check_dot(path, size, dot):
-    """The exported image is SIZE, dark at DOT, white far from it, and the dark area is centred on DOT."""
+    """The exported image is SIZE, dark at DOT and centred on it, and white (>= 250) everywhere else.
+
+    Every pixel more than DAB_REACH from DOT in x or y must be white, so paint
+    anywhere else fails, however light.
+    """
     from PIL import Image
     with Image.open(path) as image:
         if image.size != size:
@@ -369,15 +378,20 @@ def check_dot(path, size, dot):
     dark = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 128]
     if pixels[dot] >= 64 or not dark:
         raise SmokeFailure('gimp: exported pixels', f'pixel {dot} is {pixels[dot]}, not painted')
-    far = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1), (width - 1 - dot[0], height - 1 - dot[1])]
-    if any(pixels[point] < 250 for point in far):
-        raise SmokeFailure('gimp: exported pixels', f'paint far from the click: {[pixels[p] for p in far]}')
+    stray = [(x, y) for y in range(height) for x in range(width)
+             if pixels[x, y] < 250 and (abs(x - dot[0]) > DAB_REACH or abs(y - dot[1]) > DAB_REACH)]
+    if stray:
+        raise SmokeFailure('gimp: exported pixels', f'{len(stray)} non-white pixels more than {DAB_REACH}px from '
+                                                    f'{dot}, first {stray[0]} = {pixels[stray[0]]}')
     xs, ys = [x for x, _ in dark], [y for _, y in dark]
     centre = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
     extent = (max(xs) - min(xs) + 1, max(ys) - min(ys) + 1)
-    if abs(centre[0] - dot[0]) > 3 or abs(centre[1] - dot[1]) > 3 or max(extent) > 80:
+    if abs(centre[0] - dot[0]) > 3 or abs(centre[1] - dot[1]) > 3:
         raise SmokeFailure('gimp: exported pixels', f'dark area centred at {centre}, {extent}, expected at {dot}')
-    return f'{size[0]}x{size[1]}, pixel {dot} = {pixels[dot]}, dab {extent[0]}x{extent[1]} centred at {centre}'
+    painted = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 250]
+    reach = max(max(abs(x - dot[0]), abs(y - dot[1])) for x, y in painted)
+    return (f'{size[0]}x{size[1]}, pixel {dot} = {pixels[dot]}, dark core {extent[0]}x{extent[1]} centred at '
+            f'{centre}, paint within {reach}px, white beyond {DAB_REACH}px')
 
 
 def wait_file(step, path, timeout=10):
@@ -492,7 +506,7 @@ def main(argv=None):
     parser.add_argument('scenarios', nargs='*', metavar='SCENARIO', help='default: all of ' + ', '.join(SCENARIOS))
     parser.add_argument('--cli', default=shutil.which('agent-desktop'))
     parser.add_argument('--dependency-root', default=str(ROOT / '.local' / 'dependencies'))
-    parser.add_argument('--loop', type=int, default=1, metavar='N')
+    parser.add_argument('--loop', type=positive_int, default=1, metavar='N', help='run N cycles (default 1)')
     parser.add_argument('--keep-artifacts', action='store_true', help='keep artifacts and work directories after passing')
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args(argv)

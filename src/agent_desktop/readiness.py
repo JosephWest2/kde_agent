@@ -57,8 +57,19 @@ class Readiness:
                                        context={'component': 'input_resumed', 'cause': cause})
 
     def _record(self):
+        # Diagnostic only and never fsynced, but a write can still block under disk
+        # load, so it goes through the store's writer like the durable records (#96).
         from .lifecycle import atomic
-        atomic(self.folder / 'health.json', self.snapshot())
+        from .writer import journal_of
+        def failed(error):
+            # As when the write ran inline: a failed health record fails the session (next tick).
+            if getattr(self, 'record_error', None) is None:
+                self.record_error = error
+        store = getattr(self.desktop, 'store', None)
+        if store is None:
+            atomic(self.folder / 'health.json', self.snapshot())
+            return
+        journal_of(store).submit(atomic, self.folder / 'health.json', self.snapshot(), on_error=failed)
 
     def snapshot(self):
         return {'state': self.state, 'desktop_ready': self.state == 'ready',
@@ -159,6 +170,8 @@ class Readiness:
         if self.error is not None:
             raise self.error
         try:
+            if getattr(self, 'record_error', None) is not None:
+                raise self.record_error
             self.desktop.tick()
             if self.fatal:
                 self.fail(self.fatal, 'input_resumed')

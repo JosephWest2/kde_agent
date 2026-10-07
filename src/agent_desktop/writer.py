@@ -135,13 +135,16 @@ class Journal:
     # Owner side ------------------------------------------------------------
 
     def submit(self, method, *args, on_error=None, size=None, **kwargs):
-        """Queue store.METHOD(*args, **kwargs); returns its Ticket. Never blocks or raises
-        for a storage reason: a full queue or a closed journal fails the Ticket instead."""
+        """Queue store.METHOD(*args, **kwargs), or METHOD(...) when it is a function (an
+        unsynced diagnostic file such as health.json); returns its Ticket. Never blocks
+        or raises for a storage reason: a full queue or a closed journal fails the
+        Ticket instead."""
+        function = method if callable(method) else getattr(self.store, method)
+        method = getattr(method, '__name__', 'call') if callable(method) else method
         self.seq += 1
         ticket = Ticket(self.seq, method, SIZES.get(method, RECORD) if size is None else size)
         if on_error is not None:
             ticket.callbacks.append(on_error)
-        function = getattr(self.store, method)
         if not self.threaded:
             self._finish(ticket, *self._call(ticket, function, args, kwargs))
             return ticket

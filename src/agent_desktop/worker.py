@@ -160,7 +160,13 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         def shutdown_record(value):
             if store is not None:
                 from .lifecycle import atomic
-                atomic(store.path / 'shutdown.json', value | {'generation': generation, 'session': name})
+                value = value | {'generation': generation, 'session': name}
+                if journal is None or journal.closed:
+                    atomic(store.path / 'shutdown.json', value)
+                else:
+                    # Diagnostic, unsynced; queued so a slow disk can't hold the owner (#96).
+                    # The shutdown drains the queue before the worker exits.
+                    journal.submit(atomic, store.path / 'shutdown.json', value)
 
         def release_input(now, deadline):
             from .shutdown import release_input as release
@@ -386,13 +392,20 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
         server = Server(endpoint, GLib, dispatch_request, cancel=scheduler.cancel, after_io=tick,
                         paused=lambda: journal is not None and journal.paused())
         if store is not None:
-            # Before the loop runs, so nothing waits on these two yet.
-            store.worker_identity(managed=managed)
-            if not managed:
-                store.generation_update(state="running")
             from .writer import Journal
             # Test-only raw handlers gate on a record within the dispatch call, so they keep inline writes.
             journal = store.journal = Journal(store, threaded=handler is None)
+            # First in the queue, so before every request record; a failure fails the session.
+            write('worker_identity', managed=managed, fatal=True)
+            if not managed:
+                write('generation_update', state="running", fatal=True)
+        if desktop and kdotool and readiness_factory is None:
+            # First-use imports and resource lookups take 10-25ms, and up to 100ms with a
+            # loaded disk; take them before the loop runs rather than in an owner turn.
+            from . import capture, lifecycle, readiness as _readiness  # noqa: F401
+            from gi.repository import Gio  # noqa: F401
+            from importlib.resources import files
+            files('agent_desktop').joinpath('window_query.js').read_text()
     except BaseException:
         if profiler is not None:
             profiler.close()

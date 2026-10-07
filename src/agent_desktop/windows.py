@@ -15,6 +15,7 @@ from .owner_time import Budget
 from .private_bus import PrivateBus
 from .protocol import encode
 from .window_types import Decoder, encoded, window_id
+from .writer import finished, journal_of
 
 MAX_PINS = 4096
 
@@ -97,12 +98,32 @@ class Query:
         self.done = False
         self.bracket = None
         self.cleanup_phase = 'reap'
+        self.observation_write = self.publication = None
+        self.waiting = None   # Since when this query has waited for its own record (#96).
 
     def check(self):
         if self.error is not None:
             raise self.error
+        self._credit()
         if self._expired(self.budget.now()):
             raise ContractError('timeout', 'Window query deadline expired.')
+
+    def _credit(self):
+        """Time spent waiting for the writer thread does not use up the work budget."""
+        if self.waiting is not None:
+            now = time.monotonic()
+            self.budget.credit(now - self.waiting)
+            self.waiting = now
+
+    def _recorded(self, durable):
+        """DURABLE: whether the record this phase waits for is durable now."""
+        if durable:
+            self._credit()
+            self.waiting = None
+            return True
+        if self.waiting is None:
+            self.waiting = time.monotonic()
+        return False
 
     def _expired(self, now):
         self.deadline = self.budget.at(now)
@@ -143,8 +164,6 @@ class Query:
                 os.set_blocking(reads[key], False)
             self.streams = reads
             argv = [self.owner.binary, '--remove', self.name] if remove else self._argv()
-            if not remove:
-                self._dispatch_guard()
             child = self.desktop.children.start(argv, env=self.desktop.env | {'TMPDIR': str(self.folder)},
                 cwd=str(self.desktop.root), stdout=writes['stdout'], stderr=writes['stderr'])
             if remove:
@@ -162,7 +181,9 @@ class Query:
         return [self.owner.binary, '--name', self.name, 'kwinscript', '--file', str(self.folder / 'input.js')]
 
     def _dispatch_guard(self):
+        """Last check before the child starts; False while the dispatch record is not durable."""
         self.check()
+        return True
 
     def _prepare_script(self):
         fd = os.open('input.js', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=self.dir_fd)
@@ -288,6 +309,9 @@ class Query:
                 raise failure('Window query script name collided.')
             if loaded is False:
                 self.check()
+                self.phase = 'dispatch'
+        if self.phase == 'dispatch':
+            if self._recorded(self._dispatch_guard()):
                 self._spawn()
                 self.phase = 'running'
         elif self.phase == 'running':
@@ -338,11 +362,16 @@ class Query:
             encode({'schema_version': 1, 'request_id': self.request_id, 'operation': 'windows', 'ok': True,
                     'session': self.desktop.store.session, 'result': self.result | {'accepted_at': 999999999999999.9}, 'error': None})
             self.check()
-            artifact = self.desktop.store.window_observation(self.id, self.result)
-            self.result['query_artifact'] = artifact
-            self.check()
-            self.index = 0
-            self.phase = 'recheck'
+            # Copied when queued; later changes to self.result are not written.
+            self.observation_write = journal_of(self.desktop.store).submit('window_observation', self.id, self.result)
+            self.phase = 'observed'
+        if self.phase == 'observed':
+            # Acceptance waits for the immutable observation to be durable.
+            if self._recorded(finished(self.observation_write)):
+                self.result['query_artifact'] = self.observation_write.result
+                self.check()
+                self.index = 0
+                self.phase = 'recheck'
         elif self.phase == 'recheck':
             end = min(self.deadline, time.monotonic() + .002)
             for _ in range(16):
@@ -379,7 +408,13 @@ class Query:
             if app is not None:
                 observation = {k: self.result[k] for k in ('query_artifact', 'query_id', 'observed_at', 'accepted_at')}
                 observation['windows'] = [row['window'] for row in self.rows if row['app'] == app]
-                self.registry.publish_windows(app, observation, self.check)
+                self.publication = self.registry.publish_windows(app, observation, self.check)
+            self.phase = 'publishing'
+        if self.phase == 'publishing':
+            # The result waits for the pending application record to be durable.
+            if not self._recorded(self.publication is None or self.registry.published(self.publication)):
+                self.check()
+                return None
             if self.application is not None:
                 self.result['windows'] = [row for row in self.rows if row['app'] == self.application]
             self.check()
@@ -391,6 +426,10 @@ class Query:
         return None
 
     def cancel(self, cause='cancelled'):
+        publication = self.publication
+        if publication is not None and not publication['done'] and publication['app'] is not None:
+            # Queued but never committed, as when its check fails.
+            publication['app'].pending_observation = publication['observation'] | {'publication': 'uncertain'}
         if self.error is None:
             self.error = cause if isinstance(cause, ContractError) else ContractError(cause, 'Window query did not complete.')
             self.cleanup_deadline = time.monotonic() + self.cleanup_seconds
@@ -468,8 +507,10 @@ class Activation(Query):
 
     def _dispatch_guard(self):
         self.check()
-        self.guard()
+        if self.guard() is False:
+            return False
         self.check()
+        return True
 
     def _received(self):
         self.phase = 'absence'

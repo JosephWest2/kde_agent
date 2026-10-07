@@ -7,6 +7,7 @@ import time
 import signal
 
 from .contracts import ContractError
+from .writer import recorded
 
 
 class KillTask:
@@ -120,7 +121,8 @@ class KillTask:
                 self.retain()  # Failure here leaves no dispatchable cursor.
                 self.check()
                 self.cursor = self.registry.begin_termination(self.application, self.deadline,
-                    self.term_cutoff, self.signal_cutoff, self.check, self.retain)
+                    self.term_cutoff, self.signal_cutoff, self.check, self.retain,
+                    recorded=lambda: recorded(self.context))
             return None
         except ContractError as error:
             self.cancel(error)

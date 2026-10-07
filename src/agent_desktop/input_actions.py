@@ -13,6 +13,7 @@ from .capture import HEIGHT, WIDTH
 from .contracts import ContractError
 from .keymap import CAPS_LOCK, parse_chord, text_strokes
 from .targeting import TargetTask
+from .writer import recorded
 
 TYPE_HOLD = .004      # Press-to-release for each typed character.
 TYPE_GAP = .004       # Release-to-next-press.
@@ -167,6 +168,19 @@ class InputTask:
             self.owner()
             # Durable intent before the first native emission.
             self.context.effects(self.intent(), uncertain=True)
+            self.phase = 'intent'
+        if self.phase == 'intent':
+            # The intent record is written by the writer thread; nothing is sent
+            # until it is durable. Its wait used up time, so the budget is checked again.
+            if not recorded(self.context):
+                return None
+            remaining = self.deadline - time.monotonic()
+            needed = self.estimate()
+            if needed > remaining - MARGIN:
+                raise ContractError('timeout', 'Not enough time left to send this input; nothing was sent.',
+                                    context={'phase': 'budget', 'estimated_seconds': round(needed, 3),
+                                             'remaining_seconds': round(max(remaining, 0), 3),
+                                             'hint': self.budget_hint})
             self.phase = 'emit'
             self.started_at = time.monotonic()
             self.next_recheck = self.started_at + RECHECK

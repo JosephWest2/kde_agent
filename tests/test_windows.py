@@ -231,6 +231,43 @@ class QueryTests(unittest.TestCase):
         self.assertEqual(result['windows'][0]['app'], None)
         self.assertLess(result['accepted_at'], query.deadline)
 
+    def test_acceptance_waits_for_a_held_back_observation_write_without_using_the_budget(self):
+        from agent_desktop.writer import Journal
+        import threading
+        gate = threading.Event()
+        original = self.store.window_observation
+        def held(*args):
+            gate.wait(5)
+            return original(*args)
+        self.store.window_observation = held
+        journal = self.store.journal = Journal(self.store, threaded=True)
+        self.addCleanup(lambda: (gate.set(), journal.close(time.monotonic() + 2)))
+        query = self.adapter.start('request', time.monotonic() + 5)
+        for _ in range(2000):
+            self.children.poll()
+            journal.drain()
+            self.assertIsNone(query.step())
+            if query.phase == 'observed':
+                break
+            time.sleep(.001)
+        # Held for longer than the .5s work budget: the query neither accepts nor times out.
+        until = time.monotonic() + .7
+        while time.monotonic() < until:
+            journal.drain()
+            self.assertIsNone(query.step())
+            self.assertEqual(query.phase, 'observed')
+            self.assertIsNone(query.accepted_at)
+            time.sleep(.005)
+        gate.set()
+        for _ in range(1000):
+            journal.drain()
+            result = query.step()
+            if result is not None:
+                break
+            time.sleep(.001)
+        self.assertTrue((self.store.path / result['query_artifact']).exists())
+        self.assertEqual(result['observation_state'], 'accepted')
+
     def test_activation_native_exact_braces_and_cleanup_without_observation(self):
         guard = Mock()
         action = self.adapter.activate('request', time.monotonic() + .5,
@@ -288,7 +325,7 @@ class QueryTests(unittest.TestCase):
 
     def test_activation_guard_runs_after_collision_and_failure_spawns_nothing(self):
         def guard():
-            self.assertEqual(action.phase, 'collision')
+            self.assertEqual(action.phase, 'dispatch')  # Collision checked; not yet spawned.
             self.assertFalse(action.call_pending)
             raise ContractError('target_lost', 'Lost before spawn.')
         action = self.adapter.activate('request', time.monotonic() + .5,

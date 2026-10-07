@@ -10,6 +10,9 @@ generation's cgroup and no systemd unit:
     cancel-type      Ctrl-C on the client during a long `type`
     scroll-interrupted  Ctrl-C, then focus loss, during `scroll --dy 50`: the
                      wheel stops and steps_sent matches what the fixture got
+    drag-interrupted Ctrl-C, focus loss and `session stop` during a 2s
+                     `drag --modifiers ctrl,shift`: the motion stops, the button
+                     comes up, then shift and ctrl, at once
     generation       stale and mismatched generations are refused
     compositor-death SIGKILL kwin_wayland
     bus-death        SIGKILL the private dbus-daemon
@@ -225,6 +228,79 @@ class Scenario(smoke.Smoke):
         ok(step, f'{error["code"]} after {len(rows)} of 50 steps (on {", ".join(surfaces)}); '
                  f'{"steps_sent matches, " * progress}no axis_stop')
 
+    def drag_interrupted(self):
+        """A drag stops part way and releases its button, then its modifiers, on Ctrl-C, focus loss and stop."""
+        _, window, log = self.fixture_window('--sibling', windows=2)
+        sibling = self.windows[1]['window']
+        drag = ('drag', '--session', self.session, '--window', window, '--from', '20,20', '--to', '420,320',
+                '--duration', '2000', '--modifiers', 'ctrl,shift')
+        under_way = lambda before, count: smoke_wait(lambda: drag_receipts(log)[before:],
+                                                     lambda rows: drag_motions(rows) >= count, timeout=5)
+
+        before = len(drag_receipts(log))
+        process = self.background_cli(*drag)
+        under_way(before, 5)
+        interrupted = time.monotonic_ns()
+        process.send_signal(signal.SIGINT)
+        out, _ = process.communicate(timeout=10)
+        payload = json.loads(out)
+        if payload['ok'] or payload['error']['code'] != 'cancelled' or process.returncode != 130:
+            raise SmokeFailure('drag-interrupted: cancel', f'exit {process.returncode}: {json.dumps(payload)[:400]}')
+        self.expect_drag_released('drag-interrupted: cancel', log, before, interrupted)
+
+        before = len(drag_receipts(log))
+        kdotool = str(Path(self.dependency_root) / KDOTOOL)
+        stolen = []
+        def steal():
+            under_way(before, 10)
+            stolen.append(time.monotonic_ns())
+            subprocess.run([kdotool, 'windowactivate', '{' + sibling['window_id'] + '}'], env=self.private_env(),
+                           capture_output=True, timeout=5, stdin=subprocess.DEVNULL)
+        thief = threading.Thread(target=steal)
+        thief.start()
+        payload = self.desktop('drag (focus stolen)', *drag[:1], *drag[3:], expect_ok=False)
+        thief.join()
+        error = payload['error'] or {}
+        if ((error.get('code'), error.get('context', {}).get('reason'), error.get('outcome'))
+                != ('target_lost', 'focus_lost', 'unknown')):
+            raise SmokeFailure('drag-interrupted: focus', f'expected target_lost/focus_lost: {json.dumps(payload)[:400]}')
+        self.expect_drag_released('drag-interrupted: focus', log, before, stolen[0], error=error, within=1.0)
+
+        self.desktop('drag-interrupted: focus back', 'focus', '--window', window)
+        before = len(drag_receipts(log))
+        process = self.background_cli(*drag)
+        under_way(before, 5)
+        stopping = time.monotonic_ns()
+        self.stop_session()
+        out, _ = process.communicate(timeout=10)
+        payload = json.loads(out)
+        if payload['ok']:
+            raise SmokeFailure('drag-interrupted: stop', f'the drag succeeded across session stop: {out[:300]}')
+        self.expect_drag_released('drag-interrupted: stop', log, before, stopping, settle=False)
+        ok('drag-interrupted: stop', f'client got {payload["error"]["code"]} (exit {process.returncode})')
+
+    def expect_drag_released(self, step, log, before, interrupted_ns, *, error=None, within=.5, settle=True):
+        """After BEFORE: ctrl+shift down, the button down, some motion, then button up, shift up, ctrl up, and nothing after."""
+        rows = smoke_wait(lambda: drag_receipts(log)[before:], lambda rows: rows and rows[-1][:3] == ('key', 29, 0))
+        if settle:
+            time.sleep(.3)
+            if drag_receipts(log)[before:] != rows:
+                raise SmokeFailure(step, f'input continued after the release: {drag_receipts(log)[before + len(rows):]}')
+        motions = drag_motions(rows)
+        head = [row[:3] for row in rows[:4]]
+        tail = [row[:3] for row in rows[-3:]]
+        if (head[:3] != [('motion', 20, 20), ('key', 29, 1), ('key', 42, 1)] or head[3] != ('button', 272, 1)
+                or tail != [('button', 272, 0), ('key', 42, 0), ('key', 29, 0)] or not 3 <= motions < 200
+                or len(rows) != 7 + motions or any(row[0] == 'motion' and row[-1] != 5 for row in rows[4:-3])):
+            raise SmokeFailure(step, f'unexpected receipts {rows[:6]} ... {rows[-5:]} ({motions} motions)')
+        if error is not None and (error['context'].get('steps_sent'), error['context'].get('steps_total')) != (motions, 200):
+            raise SmokeFailure(step, f'{motions} motions received, error reports {json.dumps(error["context"])[:300]}')
+        late = release_ns(log, before) - interrupted_ns
+        if late / 1e9 > within:
+            raise SmokeFailure(step, f'button released {late / 1e9:.2f}s after the interruption, expected within {within}s')
+        ok(step, f'{motions} of 200 motions, then button, shift, ctrl up {late / 1e6:.0f}ms after the interruption'
+                 + (', steps_sent matches' if error is not None else ''))
+
     def generation_refusal(self):
         _, window, _ = self.fixture_window()
         other = uuid.uuid4().hex
@@ -435,6 +511,31 @@ class Scenario(smoke.Smoke):
         return time.monotonic() - started
 
 
+def drag_receipts(log):
+    """Key, button and motion receipts as ('key', code, state), ('button', code, state, ns) and ('motion', x, y, mask)."""
+    rows, mask = [], 0
+    for row in log_events(log, {'key', 'button', 'motion', 'modifiers'}):
+        if row['event'] == 'modifiers':
+            mask = row['depressed']
+        elif row['event'] == 'key':
+            rows.append(('key', row['key'], row['state']))
+        elif row['event'] == 'button':
+            rows.append(('button', row['button'], row['state'], row['monotonic_ns']))
+        else:
+            rows.append(('motion', row['x'], row['y'], mask))
+    return rows
+
+
+def drag_motions(rows):
+    """Motions after the first button press in ROWS."""
+    pressed = next((index for index, row in enumerate(rows) if row[:3] == ('button', 272, 1)), None)
+    return 0 if pressed is None else sum(row[0] == 'motion' for row in rows[pressed:])
+
+
+def release_ns(log, before):
+    return next(row[3] for row in drag_receipts(log)[before:] if row[:3] == ('button', 272, 0))
+
+
 def smoke_wait(fetch, done, timeout=3):
     deadline = time.monotonic() + timeout
     while True:
@@ -449,7 +550,7 @@ def ok(step, detail):
 
 
 SCENARIOS = {'focus-loss': 'focus_loss', 'cancel-hold': 'cancel_hold', 'cancel-type': 'cancel_type',
-             'scroll-interrupted': 'scroll_interrupted',
+             'scroll-interrupted': 'scroll_interrupted', 'drag-interrupted': 'drag_interrupted',
              'generation': 'generation_refusal', 'compositor-death': 'compositor_death', 'bus-death': 'bus_death',
              'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'title-gone': 'title_gone_waits'}
 

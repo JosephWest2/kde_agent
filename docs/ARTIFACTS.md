@@ -200,6 +200,16 @@ actions:
   that gates every effect this way may take its first, effect-free steps while
   the start records are still queued; any other task waits for them before its
   first step.
+- **Input is one effect.** For `key`, `type`, `click`, `move`, `scroll` and
+  `drag`, the input intent (outcome uncertain, naming every stroke, wheel step
+  or motion the request will send) and every record queued before it are
+  durable before the first emission. The strokes, steps and motions after that
+  do not wait again. A record the request queues later, such as a focus
+  recheck's window observation, does not pause input already under way. So a
+  slow disk never stretches a hold or leaves a button down mid-drag, and the
+  input's timing and budget don't depend on the writer. That recheck is
+  accepted, and the response sent, only once its observation is durable.
+  Release and cancellation never wait for records.
 - **Before the response.** A response is sent only once every record its
   request queued is durable. Waiting uses the request's own deadline, as the
   synchronous writes did. A failed write latches `artifact_failed`: no new

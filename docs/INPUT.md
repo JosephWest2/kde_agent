@@ -202,6 +202,59 @@ at `screen_x`, `screen_y`. `dispatched: true` means the steps reached the compos
 Scrolling over something that does not scroll, or over no surface at all in screen
 coordinates, still succeeds, so check with a screenshot.
 
+## Public `drag` and `--modifiers`
+
+```sh
+agent-desktop --json drag --window REF --from 140,190 --to 280,120 [--button left|middle|right] [--duration 0-2000] [--modifiers ctrl,shift,alt]
+agent-desktop --json click --window REF --x 10 --y 20 --modifiers ctrl          # ctrl+click
+agent-desktop --json scroll --window REF --x 350 --y 300 --dy -3 --modifiers ctrl # ctrl+wheel
+```
+
+**Order.** The pointer moves to `--from` (or the click or scroll point) with
+nothing held. Then the modifiers go down in the order given, 20ms before the first
+button press or wheel step; then the button, the motion and the release; then the
+modifiers come up in reverse order 20ms later. A multi-click holds the modifiers
+across all its clicks. The fixture's receipts in the smoke test check this order
+and the XKB modifier mask on every pointer event.
+
+**Drag motion.** One absolute motion every 10ms along a straight line, with
+fractional positions, ending exactly at `--to`: `ceil(duration / 10ms)` steps,
+at most 200 and at most the larger of the x and y distance in pixels, at least
+one. A step that falls behind is sent as soon as the owner can, never skipped,
+so an application that paints along the path gets every point. The button comes
+up 20ms after the last motion, at `--to`. While the button is down, Wayland's
+implicit grab sends the motion to the surface where the press landed even if
+the pointer leaves it. `--duration` is 0–2000ms (default 300); 0 is a single
+motion. Both ends must be in the client area and on screen (`outside_window`,
+`outside_screen`, with `field`), and they must differ (`zero_drag`). `drag`
+always needs `--window`, as do `--modifiers` on `click` and `scroll`
+(`modifiers_need_window`), so focus is checked while anything is held.
+
+**Focus rechecks, interruption and progress.** As for `scroll`, the window is
+queried every 250ms while the drag runs. Focus loss, a KWin surface, Ctrl-C,
+timeout or `session stop` stops the motion between steps and releases the button
+first, then the modifiers, in the same owner turn. A failure after the first
+emission reports `pointer_moved`, `button_pressed`, `steps_sent`, `steps_total`,
+`button_released` and `focus_rechecks`. If the pointer device is paused or
+removed mid-drag, the button's release cannot be confirmed: the session fails,
+the modifiers are still released on the keyboard, and input stays
+`input_uncertain` until the session restarts. The failure test interrupts a 2s
+`drag --modifiers ctrl,shift` all three ways and checks that the fixture saw the
+button, shift and ctrl come up and no motion after.
+
+**Budget.** A drag's estimate is its duration plus the focus checks and gaps
+(about 0.3s more); the 2000ms maximum fits the 3s timeout. A drag that does not fit
+fails with `timeout`, phase `budget`, before anything is sent.
+
+**Results.** `from`, `to`, `screen_from`, `screen_to`, `screen_x`/`screen_y` (the
+end, where the pointer stays), `button`, `duration` in ms, `steps`, `modifiers`
+and the window fields of `click`. `click` and `scroll` add `modifiers` when given.
+
+**Modifiers and `key`.** Modifiers are `ctrl`, `shift` and `alt` (the left keys),
+distinct, in any order. `move` takes none, since nothing is pressed. `key` takes
+none either: its chord (`ctrl+shift+a`) already presses the modifiers first and
+releases them last.
+
 # Private input connection
 
 The worker owns one persistent `input_connection.Input` on its GLib thread. Its
@@ -214,9 +267,9 @@ device and a separate absolute device (absolute motion, button, scroll) with one
 region per output; relative-pointer and touch devices are never bound or
 referenced. The startup gate requires CONNECT and one resumed keyboard, within
 the existing shared startup deadline and a three-second input limit. The pointer
-device is checked when `click`, `move` or `scroll` uses it (`input_unavailable` if
+device is checked when `click`, `move`, `scroll` or `drag` uses it (`input_unavailable` if
 it is missing, or for `scroll` if it lacks the scroll capability). Public `key`,
-`type`, `click`, `move` and `scroll` use this same connection (above). It is never replaced within a session; see recovery above.
+`type`, `click`, `move`, `scroll` and `drag` use this same connection (above). It is never replaced within a session; see recovery above.
 
 The limited ctypes declarations in `libei_binding.py` accept any x86_64 libei
 1.x (soname `libei.so.1`) that exports every declared symbol. 1.6.0 is the tested
@@ -245,12 +298,23 @@ pointer reuse. Disposal cancels its pending private-bus request token; stale
 FD replies cannot attach to a replacement. The numeric primitive validates a complete batch of at
 most 32 distinct evdev codes (BTN_LEFT/RIGHT/MIDDLE for the pointer device)
 before emission and records attempted presses before native calls. Absolute
-motion must fall inside one of the pointer device's regions, and nothing may be
-held on any device when a press, motion or wheel step starts. A wheel step is one
+motion must fall inside one of the pointer device's regions. When a press, motion
+or wheel step starts, what is held must be exactly what its caller says it holds,
+and otherwise nothing: pointer input may name `modifiers`, the keyboard batch of
+ctrl, shift and alt it pressed earlier, in press order, and a motion may also name
+the one `button` its drag is holding. Anything else held, anything held on a lost
+device, or any uncertainty refuses with `input_unavailable`, so input still never
+stacks on a press it does not own; only pointer presses may name modifiers, and a
+wheel step never runs with a button down. A wheel step is one
 notch (-1, 0 or 1) per axis, sent as `ei_device_scroll_discrete` with 120 units
 per notch and a frame; it holds nothing. It is internal: the public
-`key`/`type`/`click`/`move`/`scroll` tasks enforce finite holds and focus checks. Release uses explicit release events and a frame,
+`key`/`type`/`click`/`move`/`scroll`/`drag` tasks enforce finite holds and focus checks. Release uses explicit release events and a frame,
 and a motion or wheel step with nothing held is closed with `stop_emulating`.
+Release goes through the pointer device before the keyboard, so a button always
+comes up before the modifiers it was pressed under. If one device's release fails,
+input becomes uncertain and the other device is still released before the failure
+is raised. `release(kind)` releases one device kind only, which a modifier click
+uses between its clicks.
 
 Held state becomes uncertain after lifecycle loss or an emission failure.
 RESUMED does not clear uncertainty, and disposal preserves uncertain held

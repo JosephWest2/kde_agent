@@ -115,6 +115,11 @@ def request_from_wire(value):
             malformed()
     if "hold" in args and type(args["hold"]) not in (int, float):
         malformed()
+    for key in ("from", "to", "modifiers"):
+        if key in args and not isinstance(args[key], list):
+            malformed()
+    if "duration" in args and type(args["duration"]) is not int:
+        malformed()
     if "env" in args and not isinstance(args["env"], dict):
         malformed()
     from .paths import validate_wire

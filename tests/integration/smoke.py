@@ -5,8 +5,8 @@ Drives the real CLI through separate invocations against the native Wayland
 fixture (exact key acknowledgements) and gnome-text-editor (a real GTK app):
 
     doctor, session start, launch, windows, focus, key, type, click, move,
-    scroll, screenshot, wait, close, kill, session stop, and input while
-    KWin's window menu is open
+    scroll, drag, modifier click/scroll/drag, screenshot, wait, close, kill,
+    session stop, and input while KWin's window menu is open
 
 After stop it checks that no process remains in the generation's cgroup, the
 systemd unit is gone and the artifacts survived. Run it after system updates:
@@ -49,6 +49,22 @@ EXPECTED_BUTTONS = [(272, 1, 100, 50), (272, 0, 100, 50)] + [(273, 1, 20, 30), (
 EXPECTED_POINTER = ([('motion', 200, 100), ('motion', 210, 110), ('wheel', 210, 110, [(1, -120), (0, 120)])]
                     + [('wheel', 210, 110, [(0, 120)])] * 2
                     + [('motion', 50, 60)] + [('wheel', 50, 60, [(0, -120)])] * 2)
+# A second fixture: drag --from 100,50 --to 300,150 --duration 200 --modifiers ctrl,shift
+# (20 motions of (10, 5)); click --x 10 --y 20 --count 2 --modifiers alt; scroll --x 10
+# --y 20 --dy 2 --modifiers ctrl (the pointer is already there, so no motion); then
+# drag --from 400,300 --to 380,290 --button middle --duration 0 (one motion). Rows are
+# ('key', code, state), ('button', code, state, x, y, mask), ('motion', x, y, mask) and
+# ('wheel', x, y, value120s, mask); MASK is the XKB modifier mask in effect (Shift 1,
+# Ctrl 4, Alt 8), so every pointer event proves which modifiers it arrived under.
+DRAG_STEPS, DRAG_MS = 20, 200
+EXPECTED_LAYERED = ([('motion', 100, 50, 0), ('key', 29, 1), ('key', 42, 1), ('button', 272, 1, 100, 50, 5)]
+                    + [('motion', 100 + 10 * i, 50 + 5 * i, 5) for i in range(1, DRAG_STEPS + 1)]
+                    + [('button', 272, 0, 300, 150, 5), ('key', 42, 0), ('key', 29, 0)]
+                    + [('motion', 10, 20, 0), ('key', 56, 1)]
+                    + [('button', 272, 1, 10, 20, 8), ('button', 272, 0, 10, 20, 8)] * 2 + [('key', 56, 0)]
+                    + [('key', 29, 1)] + [('wheel', 10, 20, [120], 4)] * 2 + [('key', 29, 0)]
+                    + [('motion', 400, 300, 0), ('button', 274, 1, 400, 300, 0), ('motion', 380, 290, 0),
+                       ('button', 274, 0, 380, 290, 0)])
 # gnome-text-editor's "New Tab" header-bar button, in client coordinates.
 EDITOR_NEW_TAB = (107, 23)
 # Empty header-bar space; a right-click there opens KWin's window menu.
@@ -107,8 +123,8 @@ class Smoke:
         self.generation = payload['session']['generation']
         self.pids.append(payload['result']['worker_pid'])
         supported = set(payload['result']['supported_operations'])
-        missing = {'launch', 'windows', 'focus', 'key', 'type', 'click', 'move', 'scroll', 'screenshot', 'close',
-                   'kill'} - supported
+        missing = {'launch', 'windows', 'focus', 'key', 'type', 'click', 'move', 'scroll', 'drag', 'screenshot',
+                   'close', 'kill'} - supported
         if missing:
             raise SmokeFailure('session start', f'operations not supported: {sorted(missing)}')
 
@@ -174,6 +190,31 @@ class Smoke:
         check_pointer_log(Path(logs['stdout']))
         print(f'  ok  {"fixture: move/scroll acknowledgements":<34}       motion, wheel steps, signs, order')
         self.check_logs(app, logs)
+        self.layered_flow()
+
+    def layered_flow(self):
+        """drag, and click and scroll with --modifiers, on a fresh fixture: exact receipts in order."""
+        app, window, logs = self.launch('fixture 2', str(self.fixture), '--autonomous', '--exit-after-ms', '60000')
+        self.desktop('fixture 2: focus', 'focus', '--window', window)
+        dragged = self.desktop('fixture 2: drag --modifiers ctrl,shift', 'drag', '--window', window, '--from', '100,50',
+                               '--to', '300,150', '--duration', str(DRAG_MS), '--modifiers', 'ctrl,shift')['result']
+        client = dragged['client']
+        if ((dragged['steps'], dragged['modifiers'], dragged['screen_x'], dragged['screen_y'])
+                != (DRAG_STEPS, ['ctrl', 'shift'], client['x'] + 300, client['y'] + 150)):
+            raise SmokeFailure('fixture 2: drag', f'unexpected result {json.dumps(dragged)[:400]}')
+        self.desktop('fixture 2: click --count 2 --modifiers alt', 'click', '--window', window, '--x', '10', '--y', '20',
+                     '--count', '2', '--modifiers', 'alt')
+        self.desktop('fixture 2: scroll --dy 2 --modifiers ctrl', 'scroll', '--window', window, '--x', '10', '--y', '20',
+                     '--dy', '2', '--modifiers', 'ctrl')
+        self.desktop('fixture 2: drag --button middle --duration 0', 'drag', '--window', window, '--from', '400,300',
+                     '--to', '380,290', '--button', 'middle', '--duration', '0')
+        wait_for_keys(Path(logs['stdout']), 4, kinds={'button'})
+        result = self.desktop('fixture 2: close', 'close', '--app', app)['result']
+        if result['exited'] is not True:
+            raise SmokeFailure('fixture 2: close', 'application did not exit')
+        took = check_layered_log(Path(logs['stdout']))
+        print(f'  ok  {"fixture 2: drag/modifier receipts":<34}       order, positions, modifier masks; '
+              f'{DRAG_STEPS} motions in {took}ms')
 
     def check_logs(self, app, launched):
         """`logs` finds the exited fixture's complete logs at the paths launch returned."""
@@ -483,6 +524,38 @@ def check_pointer_log(log):
             wheel, continuous = [], []
     if observed != EXPECTED_POINTER or wheel or continuous:
         raise SmokeFailure(step, f'expected {EXPECTED_POINTER}, saw {observed} (unframed {wheel})')
+
+
+def check_layered_log(log):
+    """The second fixture's complete log against EXPECTED_LAYERED; returns the first drag's press-to-last-motion ms."""
+    step = 'fixture 2: drag/modifier receipts'
+    rows = log_events(log, {'key', 'modifiers', 'button', 'motion', 'axis_value120', 'pointer_frame', 'axis_stop'})
+    observed, wheel, mask, times = [], [], 0, []
+    for row in rows:
+        if row['event'] != 'modifiers' and row['surface'] != 'primary' or row['event'] == 'axis_stop':
+            raise SmokeFailure(step, f'unexpected receipt {row}')
+        if row['event'] == 'modifiers':
+            mask = row['depressed']
+        elif row['event'] == 'key':
+            observed.append(('key', row['key'], row['state']))
+        elif row['event'] == 'button':
+            observed.append(('button', row['button'], row['state'], row['x'], row['y'], mask))
+            times.append(row['time_ms'])
+        elif row['event'] == 'motion':
+            observed.append(('motion', row['x'], row['y'], mask))
+            times.append(row['time_ms'])
+        elif row['event'] == 'axis_value120':
+            wheel.append(row['value120'])
+        elif row['event'] == 'pointer_frame' and wheel:
+            observed.append(('wheel', row['x'], row['y'], wheel, mask))
+            wheel = []
+    if observed != EXPECTED_LAYERED or mask != 0:
+        raise SmokeFailure(step, f'expected {EXPECTED_LAYERED}, saw {observed} (final modifiers {mask})')
+    # times: the positioning motion, the press, DRAG_STEPS motions, the release, ...
+    took = times[DRAG_STEPS + 1] - times[1]
+    if not DRAG_MS - 10 <= took <= DRAG_MS + 400:
+        raise SmokeFailure(step, f'press to last motion took {took}ms, expected about {DRAG_MS}ms')
+    return took
 
 
 def ink_bands(path):

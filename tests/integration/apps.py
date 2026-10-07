@@ -7,8 +7,9 @@ just that input was dispatched:
 
     text-editor  gnome-text-editor: type, save through the "Save a File" dialog
                  with keyboard shortcuts, compare the file; edit and save again
-    gimp         GIMP 3: a new 320x240 image, one paintbrush click, export to PNG
-                 through the export dialogs; the clicked pixel is dark, the rest white
+    gimp         GIMP 3: a new 320x240 image, one paintbrush click and one brush
+                 stroke (drag), export to PNG through the export dialogs; the
+                 clicked pixel and points along the stroke are dark, the rest white
     blender      Blender: --factory-startup on a prepared scene, duplicate the
                  cube from the keyboard, Save As through Blender's file view;
                  `blender -b` counts the objects in both files
@@ -54,6 +55,8 @@ EDITOR_MORE = '\nappended after the first save'
 
 GIMP_SIZE = (320, 240)
 GIMP_DOT = (80, 60)  # Image pixel to paint: off-centre, so a shifted or mirrored mapping fails.
+# Image pixels a paintbrush stroke goes between: diagonal and away from the dot and the edges.
+GIMP_STROKE = ((140, 190), (280, 120))
 # GIMP shows its welcome dialog on first run and after an upgrade, which it detects
 # from config-version, whatever show-welcome-dialog says.
 GIMPRC = '(config-version "{version}")\n(show-welcome-dialog no)\n(check-updates no)\n'
@@ -178,6 +181,10 @@ class AppScenario(smoke.Smoke):
         # The default tool is the paintbrush with black foreground: one click paints one dab.
         self.desktop(f'{label}: click image {GIMP_DOT}', 'click', '--window', window, '--x', str(x), '--y', str(y))
         self.title(f'{label}: wait --for title (dirty)', window, '^\\*', '--regex')
+        # One stroke: the paintbrush paints along the drag's motion while the button is held.
+        ends = [f'{round(canvas[0] + px * scale)},{round(canvas[1] + py * scale)}' for px, py in GIMP_STROKE]
+        self.desktop(f'{label}: drag stroke {GIMP_STROKE[0]}-{GIMP_STROKE[1]}', 'drag', '--window', window,
+                     '--from', ends[0], '--to', ends[1])
         self.key(label, window, 'ctrl+shift+e')
         export = self.wait_row(f'{label}: export dialog', app, '^Export Image$')['window']['ref']
         self.key(label, export, 'ctrl+a')
@@ -187,7 +194,7 @@ class AppScenario(smoke.Smoke):
         self.key(label, options, 'return')
         self.gone(f'{label}: wait --for gone (PNG options)', options)
         self.title(f'{label}: wait --for title (exported)', window, '(exported)')
-        detail = check_dot(wait_png(f'{label}: exported file', target), GIMP_SIZE, GIMP_DOT)
+        detail = check_dot(wait_png(f'{label}: exported file', target), GIMP_SIZE, GIMP_DOT, GIMP_STROKE)
         ok(f'{label}: exported pixels', detail)
         # Quit: the image is exported but unsaved, so GIMP asks; ctrl+d discards.
         self.focus_window(label, window)
@@ -362,11 +369,24 @@ def find_canvas(path, size):
 DAB_REACH = 34
 
 
-def check_dot(path, size, dot):
+def segment_distance(point, start, end):
+    """Euclidean distance from POINT to the segment START-END."""
+    (px, py), (ax, ay), (bx, by) = point, start, end
+    length = (bx - ax) ** 2 + (by - ay) ** 2
+    t = 0 if not length else max(0, min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / length))
+    return ((px - ax - t * (bx - ax)) ** 2 + (py - ay - t * (by - ay)) ** 2) ** .5
+
+
+STROKE_SAMPLES = 9  # Points checked along a stroke, both ends included.
+
+
+def check_dot(path, size, dot, stroke=None):
     """The exported image is SIZE, dark at DOT and centred on it, and white (>= 250) everywhere else.
 
     Every pixel more than DAB_REACH from DOT in x or y must be white, so paint
-    anywhere else fails, however light.
+    anywhere else fails, however light. With STROKE (start, end), STROKE_SAMPLES
+    evenly spaced points from start to end must be dark too, and paint may also
+    lie within DAB_REACH of that segment, but nowhere else.
     """
     from PIL import Image
     with Image.open(path) as image:
@@ -375,23 +395,35 @@ def check_dot(path, size, dot):
         gray = image.convert('L')
     pixels = gray.load()
     width, height = size
-    dark = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 128]
+    near_dot = lambda x, y: abs(x - dot[0]) <= DAB_REACH and abs(y - dot[1]) <= DAB_REACH
+    near_stroke = lambda x, y: stroke is not None and segment_distance((x, y), *stroke) <= DAB_REACH
+    dark = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 128 and near_dot(x, y)]
     if pixels[dot] >= 64 or not dark:
         raise SmokeFailure('gimp: exported pixels', f'pixel {dot} is {pixels[dot]}, not painted')
     stray = [(x, y) for y in range(height) for x in range(width)
-             if pixels[x, y] < 250 and (abs(x - dot[0]) > DAB_REACH or abs(y - dot[1]) > DAB_REACH)]
+             if pixels[x, y] < 250 and not near_dot(x, y) and not near_stroke(x, y)]
     if stray:
         raise SmokeFailure('gimp: exported pixels', f'{len(stray)} non-white pixels more than {DAB_REACH}px from '
-                                                    f'{dot}, first {stray[0]} = {pixels[stray[0]]}')
+                                                    f'{dot}{" and the stroke" if stroke else ""}, '
+                                                    f'first {stray[0]} = {pixels[stray[0]]}')
     xs, ys = [x for x, _ in dark], [y for _, y in dark]
     centre = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
     extent = (max(xs) - min(xs) + 1, max(ys) - min(ys) + 1)
     if abs(centre[0] - dot[0]) > 3 or abs(centre[1] - dot[1]) > 3:
         raise SmokeFailure('gimp: exported pixels', f'dark area centred at {centre}, {extent}, expected at {dot}')
-    painted = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 250]
+    painted = [(x, y) for y in range(height) for x in range(width) if pixels[x, y] < 250 and near_dot(x, y)]
     reach = max(max(abs(x - dot[0]), abs(y - dot[1])) for x, y in painted)
-    return (f'{size[0]}x{size[1]}, pixel {dot} = {pixels[dot]}, dark core {extent[0]}x{extent[1]} centred at '
-            f'{centre}, paint within {reach}px, white beyond {DAB_REACH}px')
+    detail = (f'{size[0]}x{size[1]}, pixel {dot} = {pixels[dot]}, dark core {extent[0]}x{extent[1]} centred at '
+              f'{centre}, paint within {reach}px, white beyond {DAB_REACH}px')
+    if stroke is None:
+        return detail
+    (ax, ay), (bx, by) = stroke
+    samples = [(round(ax + (bx - ax) * i / (STROKE_SAMPLES - 1)), round(ay + (by - ay) * i / (STROKE_SAMPLES - 1)))
+               for i in range(STROKE_SAMPLES)]
+    light = [(point, pixels[point]) for point in samples if pixels[point] >= 64]
+    if light:
+        raise SmokeFailure('gimp: exported pixels', f'stroke {stroke} not painted at {light}')
+    return detail + f'; stroke {stroke}: {STROKE_SAMPLES} points along it dark (max {max(pixels[p] for p in samples)})'
 
 
 def wait_file(step, path, timeout=10):

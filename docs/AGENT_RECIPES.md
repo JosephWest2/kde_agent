@@ -228,3 +228,22 @@ $D session start     # about 1s; new generation
 
 Then launch the app again with new refs. The error's `context` describes the
 uncertainty.
+
+## Timeouts while the disk is busy
+
+Every request writes a few durable records (each with an fsync) before it
+answers. On an idle SSD that costs a few milliseconds. When the artifacts disk is
+saturated, for example by a large build or copy writing to the same disk, a single
+fsync can take hundreds of milliseconds. Short requests then fail with `timeout`
+(exit 8), most often `windows`, whose deadline is 0.5s. The desktop itself keeps
+running and input timing is unaffected. Only the request ran out of time.
+
+If this happens, retry the request once the disk is quieter, or keep artifacts on
+a faster or less busy filesystem:
+
+```sh
+$D session start --artifacts /tmp/my-project-artifacts   # tmpfs; lost on reboot
+```
+
+Artifacts on tmpfs don't survive a reboot, so copy out anything you want to keep.
+[VALIDATION.md](VALIDATION.md#96-writer-thread) has the measurements.

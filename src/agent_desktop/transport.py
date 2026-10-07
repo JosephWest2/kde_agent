@@ -15,6 +15,7 @@ CONNECT_SECONDS = 1.0
 FRAME_SECONDS = 1.0
 CLEANUP_RESERVE = 16.0
 MAX_CONNECTIONS = 32
+MAX_PAUSE = .25  # Longest an ordinary accept waits for the durable-write queue (#96).
 
 
 def exchange(request, *, deadline=None):
@@ -324,14 +325,23 @@ class Server:
         self.cancel = cancel or (lambda request_id: False)
         self.after_io = after_io or (lambda: None)
         # While true, new ordinary connections wait in the listen backlog (the
-        # durable-write queue is behind); priority controls are never paused.
+        # durable-write queue is behind), for at most MAX_PAUSE at a time so a
+        # steady stream of writes can't starve admission. Priority controls are
+        # never paused.
         self.paused = paused or (lambda: False)
+        self.paused_since = None
         self.order = {True: [], False: []}
         self.timer = glib.timeout_add(5, self.service)
 
     def accept(self, priority):
-        if not priority and self.paused():
-            return
+        if not priority:
+            if self.paused():
+                now = time.monotonic()
+                if self.paused_since is None:
+                    self.paused_since = now
+                if now - self.paused_since < MAX_PAUSE:
+                    return
+            self.paused_since = None
         listener = self.endpoint.priority_listener if priority else self.endpoint.listener
         cap = 8 if priority else MAX_CONNECTIONS
         count = sum(c.priority == priority for c in self.connections)

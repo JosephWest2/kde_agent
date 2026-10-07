@@ -165,6 +165,32 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(store.threads, {threading.get_ident()})
 
 
+class AcceptPauseTests(unittest.TestCase):
+    def test_ordinary_accepts_wait_for_the_writer_but_never_longer_than_max_pause(self):
+        from unittest.mock import Mock, patch
+        from agent_desktop import transport
+        endpoint = Mock()
+        endpoint.listener.accept.side_effect = BlockingIOError
+        endpoint.priority_listener.accept.side_effect = BlockingIOError
+        busy = [True]
+        server = transport.Server(endpoint, Mock(), Mock(), paused=lambda: busy[0])
+        now = [100.0]
+        with patch.object(transport.time, 'monotonic', lambda: now[0]):
+            server.accept(False)
+            server.accept(True)  # Priority controls are never paused.
+            self.assertEqual(endpoint.listener.accept.call_count, 0)
+            self.assertEqual(endpoint.priority_listener.accept.call_count, 1)
+            now[0] += transport.MAX_PAUSE - .01
+            server.accept(False)
+            self.assertEqual(endpoint.listener.accept.call_count, 0)
+            now[0] += .02
+            server.accept(False)
+            self.assertEqual(endpoint.listener.accept.call_count, 1)
+            busy[0] = False
+            server.accept(False)
+            self.assertEqual(endpoint.listener.accept.call_count, 2)
+
+
 class Clock:
     now = 0.0
 

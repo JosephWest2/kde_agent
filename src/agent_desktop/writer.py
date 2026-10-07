@@ -33,7 +33,10 @@ from .contracts import ContractError
 
 MAX_OPS = 256              # Queued or running writes.
 MAX_BYTES = 16 << 20       # Their estimated encoded size (see SIZES).
-PAUSE_OPS = 8              # Ordinary admission waits while this many are outstanding.
+# Ordinary admission waits while this many writes are outstanding (transport bounds the
+# wait), so a new request's deadline starts with the writer caught up, as it used to
+# start after the owner had finished the earlier writes itself.
+PAUSE_OPS = 1
 STALL_SECONDS = 5.0        # One write this long fails the session, as the 5s watchdog did.
 RECORD = 65536
 SIZES = {'event': 4096, 'launch': 1 << 20, 'window_observation': 1 << 20}

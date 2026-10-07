@@ -167,9 +167,12 @@ keeps each work's queued writes (`Context.track`) and checks them once per turn:
   was spent inline. A failed record answers `artifact_failed`. If the records
   are not done 5s after the later of the deadline and the cleanup deadline
   (sooner when stopping), it answers `artifact_failed` (`phase: settle`, not a
-  timeout) and the records stay pending. A finishing work is no longer
-  `active`: the next work, a reset or stop, and `drain_shutdown` go ahead
-  without waiting for its records.
+  timeout) and the records stay pending. An error already decided
+  (`cancelled`, `timeout`, ...) keeps precedence over a later record failure,
+  as on `main`. A finishing work is no longer `active`: the next work, a
+  reset or stop, and `drain_shutdown` go ahead without waiting for its
+  records. Lifecycle waiters that joined it answer only once it settles, with
+  its final outcome.
 - **Cancellation and cleanup** never wait for records. `request_cancel`,
   release and `cleanup` run as before; their records are queued behind.
 - **Admission.** While writes are outstanding the transport leaves new

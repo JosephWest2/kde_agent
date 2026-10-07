@@ -190,10 +190,13 @@ actions:
   close or kill signal, launch spawn or gate, window-query script) runs until
   every record the request has queued so far is durable. Each effect also waits
   for its own record: the input intent; the kill or close phase, and before
-  each further signal the previous signal's progress; the launch allocations
+  each further scan turn's signals the previous turn's progress; the launch allocations
   and its prepared and authorized records. A window query (for `windows`,
   targeting or close) loads its KWin script only once the request's records
-  are durable. A task
+  are durable. As on `main`, one termination scan turn signals up to 16
+  retained processes together and publishes its progress after the scan, so
+  progress is per turn, not per signal; the next turn signals nothing until
+  that progress record is durable. A task
   that gates every effect this way may take its first, effect-free steps while
   the start records are still queued; any other task waits for them before its
   first step.
@@ -203,11 +206,23 @@ actions:
   effects, and the response reports it. If the records are still not durable
   5s after the later of the request deadline and its cleanup deadline, the
   response is `artifact_failed` (`phase: settle`, never success or a timeout)
-  and the records stay pending.
-- **After acceptance.** The accepted terminal outcome is queued after the
-  transport freezes the response and is not waited on, so it becomes durable
-  shortly after the response, not before; a crash in between leaves the record
-  `finalizing` (pending), never a contradictory success.
+  and the records stay pending. Precedence is `main`'s: an error decided
+  before the response (`cancelled`, `timeout`, `target_lost`, ...) stands even
+  when a record later failed or never settled; otherwise a result past the
+  deadline is `timeout`, including when a finalizing write failed after the
+  deadline; otherwise a failed record is `artifact_failed`. A `session.stop` or
+  `session.start` that joined a running one answers with that one's settled
+  outcome, after its records, while the mutation slot is released at once.
+- **After acceptance.** The accepted terminal outcome (and the request
+  record, for a reply such as a managed `session.status` or a stop waiter
+  answered without queuing one earlier) is queued after the transport freezes
+  the response. The reply bytes leave only once those writes are finished, as
+  when they ran inline before the next send turn on `main`; a failed write is
+  a diagnostic and the reply still goes, as on `main`. The 1s frame budget
+  starts when the hold releases. A hold longer than 5s (the stall bound)
+  closes the connection unanswered. Nothing else waits: the scheduler, stop
+  and cleanup go on, and the worker quits only once held replies are sent, or
+  at the shutdown bound.
 - **Window observations.** A query's immutable observation file is durable
   before the query is accepted, and an application's window publication stays
   `pending` until its checkpoint is durable.

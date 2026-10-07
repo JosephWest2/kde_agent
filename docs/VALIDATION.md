@@ -322,4 +322,4 @@ request deadline used up by storage time, including two `worker-sigkill` runs
 whose hold had not started within the test's 3s.
 
 Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
-tests: 664 (24 new).
+tests: 670 (30 new).

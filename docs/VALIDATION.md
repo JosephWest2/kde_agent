@@ -30,7 +30,7 @@ failure-path tests (#67) and optional application tests (#81); see [TESTING.md](
 | #61 | kwin-mcp comparison, target app | Continue the project, using kwin-mcp as a reference. gnome-text-editor passed 5 full cycles. Worker SIGKILL cleanup verified. | `planning/REVISED_PLAN.md` |
 | #80 | Owner-loop stalls | Measured: the stalls are synchronous fsyncs of artifact records on the owner thread. Harmless on tmpfs; on an NVMe btrfs disk the owner sits in fsync for about a third of each smoke run; and under heavy write load they break 0.5s/1s deadlines (failed starts, requests and sessions). Two redundant fsyncs removed (−10%). Window-query, KWin name-check and health-round budgets no longer count owner stalls (failed starts under load 10 → 5 of 25). Moving the writes off the owner thread is #96. [Details](#80-owner-loop-stalls). | this section |
 | #81 | Target applications | gnome-text-editor 50.1, GIMP 3.2.6 and Blender 5.2.2 all run natively on Wayland in the private session (Blender on the GPU through EGL, with KWin decorations; no XWayland needed). The application tests (`tests/integration/apps.py`) save, export and inspect real files: 24 of 24 scenario runs passed (`--loop 5`, then `--loop 3` with `AGENT_DESKTOP_REQUIRE_HOST_TESTS=1`). No production change was needed. Quirks are in [TARGET_APPS.md](TARGET_APPS.md). | this change |
-| #96 | Writer thread | Durable records are written by one writer thread with a bounded FIFO; the owner never waits on the disk. With btrfs under `dd` load, against `main` under the same load: owner lateness p99 510 → 0.1ms and max 3,989 → 3.3ms, owner fsync 123s → 0, input at most 5ms over intent (was up to 544ms), and no window-query, health or bus failure (11 → 0). Idle btrfs is now as good as tmpfs. Not met: under load, requests still time out because writing their records takes longer than their deadlines (smoke 0/5 before and after). [Details](#96-writer-thread). | this change |
+| #96 | Writer thread | Durable records are written by one writer thread with a bounded FIFO; the owner never waits on the disk. With btrfs under `dd` load, against `main` under the same load: owner lateness p99 510 → 0.1ms and max 3,989 → 3.3ms, owner fsync 123s → 0, input at most 5ms over intent (was up to 544ms), and no window-query, health or bus failure (11 → 0). Idle btrfs is now as good as tmpfs. Not met, by decision: under load, requests still time out because writing their records takes longer than their deadlines (smoke 0/5 before and after); documented as a known limit. [Details](#96-writer-thread). | this change |
 
 ## #80 owner-loop stalls
 
@@ -345,3 +345,12 @@ interrupted it.
 
 Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
 tests: 674 (34 new).
+
+**Decision.** #96 is closed with the owner-responsiveness criteria met and the
+request-deadline criterion left unmet on purpose. Under saturating write load,
+single fsyncs take 300–750ms and a request writes 14–16 of them before it
+answers, so neither batching (to about 6–8) nor anything short of not counting
+storage time against request deadlines (a CLI contract change) would make the
+0.5s `windows` deadline fit. This is documented as a known limit in
+[AGENT_RECIPES.md](AGENT_RECIPES.md#timeouts-while-the-disk-is-busy), which
+recommends a quieter or faster `--artifacts` filesystem.

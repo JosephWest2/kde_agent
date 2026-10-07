@@ -138,6 +138,20 @@ class TerminationTests(unittest.TestCase):
         self.visit(cursor, key, fd).assert_not_called()
         self.assertEqual(cursor.counts['term_submitted'], 1)
         self.assertEqual(cursor.counts['kill_submitted'], 1)
+    def test_every_signal_waits_for_the_previous_progress_record_to_be_durable(self):
+        durable = [True]
+        self.context.recorded = lambda: durable[0]
+        first, first_fd = self.acquire(123, 456, 800)
+        second, second_fd = self.acquire(124, 456, 801)
+        self.addCleanup(self.fake_handles_cleanup)
+        cursor = self.start()
+        self.visit(cursor, first, first_fd).assert_called_once_with(first_fd, signal.SIGTERM, None, 0)
+        cursor.publish()   # The first signal's progress record, still queued on the writer.
+        durable[0] = False
+        self.visit(cursor, second, second_fd).assert_not_called()
+        durable[0] = True
+        self.visit(cursor, second, second_fd).assert_called_once_with(second_fd, signal.SIGTERM, None, 0)
+
     def test_new_lifetime_at_kill_phase_gets_no_term_grace(self):
         key, fd = self.acquire()
         self.addCleanup(self.fake_handles_cleanup)

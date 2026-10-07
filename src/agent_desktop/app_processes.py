@@ -392,10 +392,11 @@ class Termination:
         self.generation = app.registry.generation
         self.term_cutoff, self.signal_cutoff = term_cutoff, signal_cutoff
         self.guard, self.effects = guard, effects
-        # Whether the request's records are durable; no signal of a new phase is
-        # sent until its intent is (#96). Without a writer thread, always.
+        # Whether the request's records are durable. No signal is sent until every
+        # record queued so far is: the phase intent and the previous signal's
+        # progress, as when they were written inline before the next turn (#96).
+        # Without a writer thread, always.
         self.recorded = recorded or (lambda: True)
-        self.awaiting = False
         self.token = object()
         self.phase = 'resolve'
         self.revoked = False
@@ -438,7 +439,6 @@ class Termination:
             if phase != self.phase:
                 self.phase, self.phase_started_at = phase, now
                 self.dirty = True
-                self.awaiting = True
                 self.publish()  # Durable phase intent precedes any dispatch.
         except ContractError as error:
             self.fail(error)
@@ -482,10 +482,8 @@ class Termination:
                 return
             if app.signal_marks.get(key) == (self.token, phase):
                 return
-            if self.awaiting:
-                if not self.recorded():
-                    return
-                self.awaiting = False
+            if not self.recorded():
+                return
             # No yield or publication between the final identity/revision/time
             # guard and the pidfd syscall. Numeric PIDs never grant authority.
             if (self.revoked or app.termination is not self or app.registry.active is not app

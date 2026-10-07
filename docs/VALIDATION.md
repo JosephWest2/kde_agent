@@ -321,5 +321,27 @@ scenarios 8/18, 15 request timeouts (2 on purpose). Every failure was again a
 request deadline used up by storage time, including two `worker-sigkill` runs
 whose hold had not started within the test's 3s.
 
+**Second review round** (reply bytes wait for the records written at
+acceptance, as on `main`; joined lifecycle waiters answer with the owner's
+settled outcome; one startup readiness ping in flight with the 3s status
+budget). The first load run with the reply hold but the old 0.2s startup ping
+failed most session starts (`Lifecycle deadline expired`): every held ping
+missed its 0.2s, and each 20ms retry queued more records (1,556 status
+requests against 245 responses in the run before). `main` has the same
+weakness, since it wrote those records inline. With one ping in flight:
+tmpfs and idle btrfs smoke `--loop 3` and failures `--loop 2` all passed (idle
+btrfs lateness p99 0.1, max 3.7ms, no owner fsync, input at most 5.1ms over
+intent at p99). An earlier idle btrfs set failed one `windows` deadline while
+the desktop's file indexer was writing (fsync median 50ms against 7ms idle);
+it passed once that stopped. Under the dd load, each run on its own: no session
+start failure, lateness p99 0.1ms and max 95.6ms (two turns of 68 and 100ms,
+uninstrumented time in `Server.service` with no fsync), owner fsync 0, input
+at most 2.1ms over intent, no window-query, bus or health failure. Smoke 0/5,
+scenarios 8/18, 15 request timeouts. Every failure was a request deadline, or
+a test's fixed 3s wait for a first effect, used up by storage time: eleven
+first `windows` calls (0.5s), a launch helper handshake, two input budgets
+(`phase: budget`) and one scroll still waiting for its records when the test
+interrupted it.
+
 Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
 tests: 672 (32 new).

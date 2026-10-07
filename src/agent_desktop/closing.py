@@ -7,19 +7,20 @@ import time
 
 from .contracts import ContractError
 from .targeting import resolve
-from .writer import recorded
+from .writer import recorded, track
 
 
 class CloseOperation:
     cleanup_seconds = 1.5
 
     def __init__(self, request_id, generation, deadline, adapter, registry, healthy,
-                 effects, *, window=None, application=None, recorded=None):
+                 effects, *, window=None, application=None, recorded=None, track=None):
         self.request_id, self.generation, self.deadline = request_id, generation, deadline
         self.adapter, self.registry, self.healthy, self.effects = adapter, registry, healthy, effects
         # Whether the effects recorded so far are durable (Context.recorded); a
         # host without a writer thread records synchronously.
         self.recorded = recorded or (lambda: True)
+        self.track = track
         self.window, self.application = window, application
         self.selected = self.selected_query = self.operation = None
         self.last = self.app_snapshot = self.process_state = None
@@ -161,7 +162,8 @@ class CloseOperation:
             if time.monotonic() < self.next_poll:
                 return None
             self.operation = self.adapter.start(self.request_id, self.deadline,
-                                                application=self.application, recorded=self.recorded)
+                                                application=self.application, recorded=self.recorded,
+                                                track=self.track)
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()
         if result is None:
@@ -216,7 +218,8 @@ class CloseTask:
                                     context.work.admission.deadline, adapter, registry, healthy,
                                     context.effects, window=request.arguments.get('window'),
                                     application=request.arguments.get('app'),
-                                    recorded=lambda: recorded(context))
+                                    recorded=lambda: recorded(context),
+                                    track=lambda tickets: track(context, tickets))
 
     def step(self, now):
         return self.owner.step(now)

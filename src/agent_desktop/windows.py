@@ -15,7 +15,7 @@ from .owner_time import Budget
 from .private_bus import PrivateBus
 from .protocol import encode
 from .window_types import Decoder, encoded, window_id
-from .writer import finished, journal_of, recorded
+from .writer import finished, journal_of, recorded, track
 
 MAX_PINS = 4096
 
@@ -31,12 +31,14 @@ class Adapter:
         self.active = None
         self.pins = {}
 
-    def start(self, request_id, deadline, *, application=None, recorded=None):
+    def start(self, request_id, deadline, *, application=None, recorded=None, track=None):
         """RECORDED: whether the caller's records are durable (Context.recorded); the
-        query script is not dispatched to KWin until it is true (#96)."""
+        query script is not dispatched to KWin until it is true (#96). TRACK counts the
+        query's own writes (observation, application publication) as the caller's
+        records (Context.track), so its response and cleanup settle on them too."""
         if self.active is not None:
             raise ContractError('session_unavailable', 'Window query cleanup is unresolved.')
-        query = Query(self, request_id, deadline, application, recorded=recorded)
+        query = Query(self, request_id, deadline, application, recorded=recorded, track=track)
         self.active = query
         return query
 
@@ -66,9 +68,10 @@ class Query:
     # and never past the caller's deadline (owner_time.Budget).
     work_seconds = .5
 
-    def __init__(self, owner, request_id, deadline, application, *, recorded=None):
+    def __init__(self, owner, request_id, deadline, application, *, recorded=None, track=None):
         self.owner, self.desktop, self.registry = owner, owner.desktop, owner.registry
         self.recorded = recorded or (lambda: True)
+        self.track = track or (lambda tickets: None)
         self.request_id, self.application = request_id, application
         # The work budget runs from initiation, not the first step, so a stall in
         # between still counts. self.deadline is its value at the last check.
@@ -367,6 +370,7 @@ class Query:
             self.check()
             # Copied when queued; later changes to self.result are not written.
             self.observation_write = journal_of(self.desktop.store).submit('window_observation', self.id, self.result)
+            self.track(self.observation_write)
             self.phase = 'observed'
         if self.phase == 'observed':
             # Acceptance waits for the immutable observation to be durable.
@@ -412,6 +416,8 @@ class Query:
                 observation = {k: self.result[k] for k in ('query_artifact', 'query_id', 'observed_at', 'accepted_at')}
                 observation['windows'] = [row['window'] for row in self.rows if row['app'] == app]
                 self.publication = self.registry.publish_windows(app, observation, self.check)
+                if isinstance(self.publication, dict):
+                    self.track(self.publication.get('ticket'))
             self.phase = 'publishing'
         if self.phase == 'publishing':
             # The result waits for the pending application record to be durable.
@@ -564,7 +570,8 @@ class WindowsTask:
         if self.query is None:
             self.query = self.adapter.start(self.request.request_id, self.context.work.admission.deadline,
                                            application=self.request.arguments.get('app'),
-                                           recorded=lambda: recorded(self.context))
+                                           recorded=lambda: recorded(self.context),
+                                           track=lambda tickets: track(self.context, tickets))
         try:
             return self.query.step()
         except ContractError as error:

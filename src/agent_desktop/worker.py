@@ -219,6 +219,16 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                 pass
             return code
 
+        def late_failure():
+            """The first watched write that failed: a session failure, as it was inline."""
+            if storage_error is not None:
+                return storage_error
+            for owner, name in ((applications, 'failure'), (readiness, 'record_error')):
+                error = getattr(owner, name, None) if owner is not None else None
+                if isinstance(error, Exception):
+                    return error
+            return None
+
         def watch_cause():
             """During shutdown, prefer an essential child's exit that shows up late."""
             nonlocal cause_deadline, foundation_error
@@ -245,6 +255,13 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
             if shutdown is not None:
                 scheduler.settle()
                 watch_cause()
+                # A watched write queued before the stop can fail after it began. Inline,
+                # it failed the session before the stop could start; carry it into the
+                # terminal outcome. Cleanup goes on regardless (#96).
+                late = late_failure()
+                if late is not None and foundation_error is None:
+                    foundation_error = late
+                    record_failure(late)
                 if (shutdown.phase == 'cancel' and readiness is not None
                         and getattr(readiness, 'state', None) != 'ready'
                         and hasattr(readiness, 'cleanup_query')):

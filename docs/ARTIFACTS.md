@@ -229,7 +229,9 @@ actions:
   A crashed worker still fails a ping at once, since its socket closes.
 - **Window observations.** A query's immutable observation file is durable
   before the query is accepted, and an application's window publication stays
-  `pending` until its checkpoint is durable.
+  `pending` until its checkpoint is durable. Both writes count as the
+  request's own records, so even a cancelled or timed-out request answers only
+  once they are finished, as when they were written inline.
 - **Applications.** Lifetime updates of owned applications (exits, process
   records, window checkpoints) are queued in the same order. A failure of a
   watched update fails the session, as it did when it ran inline.
@@ -253,7 +255,10 @@ actions:
   shutdown bound, and queues the terminal generation record after the loop
   exits, waiting for it until that bound at most. The writer starts no queued
   write after the bound: writes still queued then fail as closed, and their
-  records stay at their last durable state.
+  records stay at their last durable state. A watched write (generation,
+  application or readiness record) queued before a stop and failing after it
+  began still fails the session: cleanup goes on, and the generation ends
+  `failed`, as when that write failed inline before the stop.
 
 The CLI process (session start and stop, service cleanup) and test helpers
 without a worker still write synchronously.

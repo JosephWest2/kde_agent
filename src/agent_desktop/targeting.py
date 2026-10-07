@@ -7,7 +7,7 @@ import time
 
 from .contracts import ContractError
 from .window_types import window_id
-from .writer import recorded
+from .writer import recorded, track
 
 
 def resolve(observation, *, window=None, application=None, seen=False):
@@ -188,7 +188,8 @@ class TargetTask:
             self.check()
             self.operation = self.adapter.start(self.request.request_id, self.deadline,
                                                 application=self.application,
-                                                recorded=lambda: recorded(self.context))
+                                                recorded=lambda: recorded(self.context),
+                                                track=lambda tickets: track(self.context, tickets))
             self.polls += 1
             self.next_poll = time.monotonic() + .1
         result = self.operation.step()

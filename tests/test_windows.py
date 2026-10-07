@@ -358,6 +358,23 @@ class QueryTests(unittest.TestCase):
             time.sleep(.001)
         self.assertTrue(task.query.spawned)
 
+    def test_query_writes_count_as_the_requests_records(self):
+        # The observation (and any application publication) is the request's own
+        # record: settlement and the reply hold must see it even when the FIFO is
+        # full and the request's later records fail at once (#96).
+        tracked = []
+        context = SimpleNamespace(work=SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + 5)),
+                                  recorded=lambda: True, track=tracked.append)
+        request = SimpleNamespace(request_id='request', expected_generation=GEN, arguments={})
+        task = windows.WindowsTask(request, context, self.adapter, lambda: None)
+        for _ in range(1000):
+            self.children.poll()
+            if task.step(time.monotonic()) is not None:
+                break
+            time.sleep(.001)
+        self.assertIn('window_observation', [getattr(ticket, 'name', None) for ticket in tracked],
+                      'the observation write is not tracked as the request\'s record')
+
     def test_activation_guard_runs_after_collision_and_failure_spawns_nothing(self):
         def guard():
             self.assertEqual(action.phase, 'dispatch')  # Collision checked; not yet spawned.

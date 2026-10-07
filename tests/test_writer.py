@@ -189,6 +189,46 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(store.threads, {threading.get_ident()})
 
 
+class LateFailureTests(unittest.TestCase):
+    def test_a_watched_write_failing_after_stop_began_fails_the_session(self):
+        # Inline, this write failed the session before any stop could begin; with
+        # the writer it can fail after session.stop started the shutdown (#96).
+        import signal
+        from unittest.mock import patch
+        from agent_desktop.runtime import Endpoint
+        from agent_desktop.worker import run
+        temp = tempfile.TemporaryDirectory(prefix='late-')
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        (root / 'runtime').mkdir(mode=0o700)
+        store = Store(str(root / 'artifacts'), 'late', GEN, create=True)
+        self.addCleanup(store.close)
+        gate, stopping = threading.Event(), threading.Event()
+        self.addCleanup(gate.set)
+        update = store.generation_update
+        def held(**kwargs):
+            if kwargs.get('state') == 'running':
+                stopping.set()
+                gate.wait(10)
+                raise OSError('injected')
+            return update(**kwargs)
+        store.generation_update = held
+        def stop():
+            stopping.wait(10)
+            time.sleep(.2)
+            os.kill(os.getpid(), signal.SIGTERM)   # The stop begins while the write is pending.
+            time.sleep(.3)
+            gate.set()
+        threading.Thread(target=stop, daemon=True).start()
+        with patch.dict(os.environ, {'XDG_RUNTIME_DIR': str(root / 'runtime'), 'NOTIFY_SOCKET': ''}), \
+                patch('agent_desktop.worker.Endpoint',
+                      side_effect=lambda name, generation, **kw: Endpoint(name, generation)), \
+                self.assertRaises(ContractError, msg='the late storage failure was lost') as caught:
+            run('late', GEN, store=store, capabilities={'session.stop'})
+        self.assertEqual(caught.exception.code, 'artifact_failed')
+        self.assertEqual(store.read()['state'], 'failed')
+
+
 class AcceptPauseTests(unittest.TestCase):
     def test_ordinary_accepts_wait_for_the_writer_but_never_longer_than_max_pause(self):
         from unittest.mock import Mock, patch

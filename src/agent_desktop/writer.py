@@ -110,6 +110,13 @@ def track(context, tickets):
     return tickets
 
 
+def track(context, tickets):
+    """Context.track(tickets) where the context has it (task doubles may not)."""
+    method = getattr(context, 'track', None)
+    if method is not None:
+        method(tickets)
+
+
 def recorded(context):
     """Context.recorded() where the context has it (task doubles may not); else True."""
     method = getattr(context, 'recorded', None)

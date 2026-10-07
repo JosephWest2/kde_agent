@@ -344,4 +344,4 @@ first `windows` calls (0.5s), a launch helper handshake, two input budgets
 interrupted it.
 
 Application tests (`apps.py`): GIMP, Blender and gnome-text-editor passed. Unit
-tests: 672 (32 new).
+tests: 674 (34 new).

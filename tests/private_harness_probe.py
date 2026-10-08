@@ -20,7 +20,7 @@ control_path = os.environ["HARNESS_CONTROL"]
 expected = harness.clean_env(runtime, generation)
 for key, value in expected.items():
     assert os.environ.get(key) == value, key
-for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_SOCKET", "AT_SPI_BUS_ADDRESS", "PYTHONPATH", "LD_PRELOAD", "KDE_APPLICATIONS_AS_SCOPE"):
+for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_SOCKET", "AT_SPI_BUS_ADDRESS", "QT_LINUX_ACCESSIBILITY_ALWAYS_ON", "PYTHONPATH", "LD_PRELOAD", "KDE_APPLICATIONS_AS_SCOPE"):
     assert key not in os.environ, key
 assert Path.cwd() == Path(sys.argv[1])
 manifest = json.loads((artifacts / "manifest.json").read_text())

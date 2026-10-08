@@ -6,7 +6,7 @@ from pathlib import Path
 import stat
 import sys
 
-from agent_desktop.environment import FIXED, DISABLED, SETTINGS
+from agent_desktop.environment import ABSENT, FIXED, DISABLED, SETTINGS
 
 env = dict(os.environ)
 assert 'HOST_CONTAMINATION' not in env.values()
@@ -15,6 +15,7 @@ assert 'DISPLAY' not in env and 'XAUTHORITY' not in env and 'AT_SPI_BUS_ADDRESS'
 assert not any(key.startswith('KWIN_') for key in env)
 for key, value in (FIXED | DISABLED).items():
     assert env[key] == value, (key, env[key])
+assert not ABSENT & env.keys(), sorted(ABSENT & env.keys())
 root = Path(env['XDG_RUNTIME_DIR'])
 assert all(Path(env[key]).is_relative_to(root) for key in SETTINGS)
 for name in ('bus', env['WAYLAND_DISPLAY']):

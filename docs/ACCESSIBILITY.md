@@ -85,12 +85,16 @@ their text and value, and press them with an accessibility action.
 **What there is today.**
 - The private `dbus-daemon` config (`desktop.py`) has no `<servicedir>`, so
   nothing on the private bus is activatable, `org.a11y.Bus` included.
-- Applications get `NO_AT_BRIDGE=1`, `QT_ACCESSIBILITY=0` and
-  `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0`, and `AT_SPI_BUS_ADDRESS` is stripped
-  (`environment.py`, [ARTIFACTS.md](ARTIFACTS.md)). There is no `DISPLAY`, so
-  the X root-window property `AT_SPI_BUS` doesn't apply.
-- So in practice **accessibility is off because no bus can be found**, not
-  because of those variables (section 2).
+- At the time of the spike, applications got `NO_AT_BRIDGE=1`,
+  `QT_ACCESSIBILITY=0` and `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0`, and
+  `AT_SPI_BUS_ADDRESS` is stripped (`environment.py`,
+  [ARTIFACTS.md](ARTIFACTS.md)). There is no `DISPLAY`, so the X root-window
+  property `AT_SPI_BUS` doesn't apply.
+- So in practice **accessibility was off because no bus could be found**, not
+  because of those variables (section 2). #107 has since changed the off
+  values to the ones section 2 recommends: `QT_LINUX_ACCESSIBILITY_ALWAYS_ON`
+  removed and protected, `GTK_A11Y=none` added, `NO_AT_BRIDGE=1` and
+  `QT_ACCESSIBILITY=0` kept.
 - A libatspi client in the session with no bus doesn't fail cleanly: it logs
   `Couldn't connect to accessibility bus` and aborts (SIGABRT). A helper must
   check for `org.a11y.Bus` first, or treat that crash as "no bus".
@@ -168,8 +172,9 @@ N=2 and N=5 runs, plus the manual sessions where noted:
   say so.
 
 **KWin joins the bus too.**
-- The private KWin is a Qt program, and its environment has
-  `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0` (section 2). It connected to the private
+- The private KWin is a Qt program, and at the time of the spike its
+  environment had `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0` (section 2; removed
+  since by #107). It connected to the private
   accessibility bus as soon as one existed. It logged `Error in contacting
   registry` to the user journal (the exact trigger wasn't isolated).
 - It never appeared as a registry application.
@@ -211,8 +216,9 @@ a toplevel within 2.5s; 1 sample per cell.
   therefore sets `GTK_A11Y=atspi` explicitly when on, rather than relying on
   the default.
 - **GTK3**'s ATK bridge ignores `IsEnabled` and is controlled by `NO_AT_BRIDGE`.
-- **So today's "disabled" variables don't disable Qt6 or GTK4.** They are
-  harmless only because no bus exists. The off state should instead:
+- **So the spike-time "disabled" variables didn't disable Qt6 or GTK4.** They
+  were harmless only because no bus existed. The off state should instead
+  (done in #107):
   - remove `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` (not set it to `0`);
   - add `GTK_A11Y=none`;
   - keep `NO_AT_BRIDGE=1`.
@@ -509,9 +515,9 @@ agent-desktop --json ui set-text --window W --role text --name Name TEXT        
 3. **Actions first, coordinates second.** Bounds are returned as approximate
    hints with a per-toolkit conversion. GTK3 needs KWin's buffer geometry added
    to the window query.
-4. **Fix the off state anyway.** Today's `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0`
-   turns Qt accessibility on whenever a bus exists, and GTK4 ignores
-   `NO_AT_BRIDGE`. This is in the follow-up's scope.
+4. **Fix the off state anyway.** The spike-time
+   `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0` turned Qt accessibility on whenever a
+   bus exists, and GTK4 ignores `NO_AT_BRIDGE`. Fixed by #107.
 5. **Scope.** [REQUIREMENTS.md](../REQUIREMENTS.md) lists accessibility
    automation as outside the initial scope, and
    [ARCHITECTURE.md](../ARCHITECTURE.md) calls the tree deliberately absent.

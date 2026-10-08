@@ -72,8 +72,8 @@ def clean_env(runtime, generation):
             "DBUS_SESSION_BUS_ADDRESS": "unix:path=" + str(runtime / "bus"),
             "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=" + str(runtime / "no-system-bus"),
             "WAYLAND_DISPLAY": "fixture-wayland", "QT_QPA_PLATFORM": "wayland",
-            "QT_ACCESSIBILITY": "0", "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0",
-            "NO_AT_BRIDGE": "1", "KDE_SESSION_VERSION": "6",
+            "QT_ACCESSIBILITY": "0", "NO_AT_BRIDGE": "1", "GTK_A11Y": "none",
+            "KDE_SESSION_VERSION": "6",
             "XDG_SESSION_TYPE": "wayland", "XKB_DEFAULT_LAYOUT": "us",
             "HARNESS_GENERATION": generation}
 

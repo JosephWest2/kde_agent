@@ -105,6 +105,78 @@ def root_directory(path, *, create=False):
         os.close(fd)
 
 
+class CaptureRefused(Exception):
+    """A capture file that may not be read; the reason is a stable word."""
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
+
+
+def generation_root(session, generation):
+    """The artifact root of SESSION's GENERATION, from its lifecycle record (as session status reads it)."""
+    from .lifecycle import read_metadata
+    from .runtime import Runtime
+    try:
+        return Path(read_metadata(Runtime(), session, generation)['configuration']['artifacts'])
+    except (OSError, ContractError, KeyError, TypeError, ValueError):
+        raise CaptureRefused('unreadable') from None
+
+
+def open_capture(session, generation, path):
+    """A read-only fd for a file of SESSION's GENERATION, inside ROOT/generations/GENERATION.
+
+    For the screenshot a worker reported: `screenshot --output` copies it and the MCP
+    server sends it. Opened one component at a time below the root, never following
+    a symlink, every directory and the file owner-private (check_fd), the file
+    regular and opened O_NONBLOCK so a FIFO cannot block. CaptureRefused otherwise:
+    outside_artifacts, not_regular_file or unreadable.
+    """
+    if (not isinstance(session, str) or not NAME.fullmatch(session) or not isinstance(generation, str)
+            or not GENERATION.fullmatch(generation) or not isinstance(path, str) or not os.path.isabs(path)
+            or os.path.normpath(path) != path):
+        raise CaptureRefused('outside_artifacts')
+    root = generation_root(session, generation)
+    try:
+        parts = Path(path).relative_to(root / 'generations' / generation).parts
+    except ValueError:
+        raise CaptureRefused('outside_artifacts') from None
+    if not parts:
+        raise CaptureRefused('outside_artifacts')
+    fd = final = None
+    try:
+        with root_directory(root) as root_fd:
+            fd = os.dup(root_fd)
+        for part in ('generations', generation, *parts[:-1]):
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+            check_fd(fd, True)
+        final = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=fd)
+        if not stat.S_ISREG(os.fstat(final).st_mode):
+            raise CaptureRefused('not_regular_file')
+        check_fd(final)
+        opened, final = final, None
+        return opened
+    except (OSError, ContractError):
+        raise CaptureRefused('unreadable') from None
+    finally:
+        for descriptor in (fd, final):
+            if descriptor is not None:
+                os.close(descriptor)
+
+
+def read_bounded(fd, limit):
+    """Up to LIMIT + 1 bytes of FD: more than LIMIT means the file is over the limit."""
+    chunks, total = [], 0
+    while total <= limit:
+        chunk = os.read(fd, limit + 1 - total)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+    return b''.join(chunks)
+
+
 def actual_path(fd):
     # Linux is the worker's supported platform. procfs reflects renamed/unlinked
     # directory identities, unlike a prior Path.resolve check.

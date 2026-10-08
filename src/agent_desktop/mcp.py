@@ -21,10 +21,8 @@ from collections import deque
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import signal
-import stat
 import struct
 import subprocess
 import sys
@@ -33,6 +31,7 @@ import time
 import uuid
 
 from . import __version__
+from .artifacts import CaptureRefused, open_capture, read_bounded
 from .contracts import ContractError, NAME, OPERATIONS, response, with_refs
 from .mcp_tools import TOOLS, SchemaError, call_spec, definitions
 
@@ -79,13 +78,74 @@ class Stop(Exception):
     """SIGTERM or SIGHUP: shut down as for a client disconnect."""
 
 
+class Diagnostics:
+    """Best-effort stderr: a bounded queue written by one daemon thread.
+
+    log() never blocks, so a client that stops reading stderr cannot stall
+    disconnect handling or a call; when the queue is full a line is dropped.
+    Raw os.write, as for stdout: a daemon thread blocked in a buffered write
+    would abort the interpreter at exit.
+    """
+    LIMIT = 256  # Lines.
+
+    def __init__(self, fd=2):
+        self.fd = fd
+        self.queue = deque()
+        self.condition = threading.Condition()
+        self.pending = 0
+        self.thread = None
+
+    def put(self, line):
+        with self.condition:
+            if self.pending >= self.LIMIT:
+                return
+            self.queue.append(line)
+            self.pending += 1
+            if self.thread is None:
+                thread = threading.Thread(target=self.run, name="mcp-stderr", daemon=True)
+                try:
+                    thread.start()
+                except RuntimeError:  # No thread, no diagnostics; never fail the caller.
+                    self.queue.pop()
+                    self.pending -= 1
+                    return
+                self.thread = thread
+            self.condition.notify_all()
+
+    def run(self):
+        while True:
+            with self.condition:
+                while not self.queue:
+                    self.condition.wait()
+                line = self.queue.popleft()
+            try:
+                view = memoryview(line)
+                while view:
+                    view = view[os.write(self.fd, view):]
+            except OSError:
+                pass
+            with self.condition:
+                self.pending -= 1
+                self.condition.notify_all()
+
+    def flush(self, timeout):
+        """Wait (at most TIMEOUT) for queued lines to be written; True when all were."""
+        until = time.monotonic() + timeout
+        with self.condition:
+            while self.pending:
+                remaining = until - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self.condition.wait(remaining)
+            return True
+
+
+DIAGNOSTICS = Diagnostics()
+
+
 def log(message):
-    """Controlled diagnostics only: never arguments, results or the environment."""
-    try:
-        sys.stderr.write(f"agent-desktop mcp: {message}\n")
-        sys.stderr.flush()
-    except (OSError, ValueError):
-        pass
+    """Controlled diagnostics only: never arguments, results or the environment. Never blocks."""
+    DIAGNOSTICS.put(f"agent-desktop mcp: {message}\n".encode("utf-8", "replace"))
 
 
 def id_key(value):
@@ -100,66 +160,12 @@ class ImageError(Exception):
     pass
 
 
-def capture_root(session, generation):
-    """The artifact root of SESSION's GENERATION, from its lifecycle record (as session status reads it)."""
-    from .lifecycle import read_metadata
-    from .runtime import Runtime
-    return Path(read_metadata(Runtime(), session, generation)["configuration"]["artifacts"])
-
-
-def open_capture(root, generation, path):
-    """A read-only fd for a capture file inside ROOT/generations/GENERATION.
-
-    Opened one component at a time below the root (artifacts.root_directory, then
-    each hop with O_NOFOLLOW and the owner-private check the artifact store uses),
-    so no symlink anywhere is followed. O_NONBLOCK and the regular-file check keep
-    a FIFO or device at the path from blocking the read.
-    """
-    from .artifacts import check_fd, root_directory
-    if not isinstance(path, str) or not os.path.isabs(path) or os.path.normpath(path) != path:
-        raise ImageError("outside_artifacts")
-    try:
-        parts = Path(path).relative_to(root / "generations" / generation).parts
-    except ValueError:
-        raise ImageError("outside_artifacts") from None
-    if not parts:
-        raise ImageError("outside_artifacts")
-    fd = final = None
-    try:
-        with root_directory(root) as root_fd:
-            fd = os.dup(root_fd)
-        for part in ("generations", generation, *parts[:-1]):
-            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=fd)
-            os.close(fd)
-            fd = next_fd
-            check_fd(fd, True)
-        final = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=fd)
-        if not stat.S_ISREG(os.fstat(final).st_mode):
-            raise ImageError("not_regular_file")
-        check_fd(final)
-        opened, final = final, None
-        return opened
-    except (OSError, ContractError):
-        raise ImageError("unreadable") from None
-    finally:
-        for descriptor in (fd, final):
-            if descriptor is not None:
-                os.close(descriptor)
-
-
 def read_png(fd, sha256, dimensions):
     """The capture's PNG bytes and size from FD, checked against its result; None when over the limits."""
     size = os.fstat(fd).st_size
     if size > MAX_IMAGE_BYTES:
         return None, size, None
-    chunks, total = [], 0
-    while total <= MAX_IMAGE_BYTES:
-        chunk = os.read(fd, MAX_IMAGE_BYTES + 1 - total)
-        if not chunk:
-            break
-        chunks.append(chunk)
-        total += len(chunk)
-    data = b"".join(chunks)
+    data = read_bounded(fd, MAX_IMAGE_BYTES)
     if len(data) > MAX_IMAGE_BYTES:
         return None, len(data), None
     if len(data) < 24 or data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
@@ -186,10 +192,9 @@ def load_capture(payload):
             or not isinstance(session.get("generation"), str)):
         raise ImageError("result_incomplete")
     try:
-        root = capture_root(session["name"], session["generation"])
-    except (OSError, ContractError, KeyError, TypeError, ValueError):
-        raise ImageError("unreadable") from None
-    fd = open_capture(root, session["generation"], result.get("path"))
+        fd = open_capture(session["name"], session["generation"], result.get("path"))
+    except CaptureRefused as refused:
+        raise ImageError(refused.reason) from None
     try:
         return read_png(fd, result["png_sha256"], dimensions)
     except OSError:
@@ -238,6 +243,10 @@ class Call:
         self.cancelled = threading.Event()
         self.interrupted = False
         self.process = None
+        # A pidfd names this child, never a later process that reuses its PID. Held
+        # from spawn until this thread has reaped the child; guarded by self.lock.
+        self.pidfd = None
+        self.reaped = False
         self.thread = threading.Thread(target=self.run, name="mcp-call", daemon=True)
 
     def cancel(self):
@@ -247,7 +256,16 @@ class Call:
 
     def interrupt(self):
         # Caller holds self.lock. One SIGINT: a second could interrupt the cancel itself.
-        if self.process is not None and not self.interrupted and self.process.poll() is None:
+        if self.process is None or self.interrupted or self.reaped:
+            return
+        if self.pidfd is not None:
+            self.interrupted = True
+            try:
+                signal.pidfd_send_signal(self.pidfd, signal.SIGINT)
+            except OSError:
+                pass  # Already exited (not yet reaped): nothing to interrupt.
+        elif self.process.poll() is None:
+            # No pidfd (Linux before 5.3): Popen's own check, which can still race the reap.
             self.interrupted = True
             try:
                 self.process.send_signal(signal.SIGINT)
@@ -290,6 +308,22 @@ class Call:
             # signal (SIGINT) fires only when the server itself dies.
             self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, cwd=self.server.cwd, start_new_session=True)
+            try:
+                # Only this thread reaps the child, and it has not yet: the PID is still ours.
+                self.pidfd = os.pidfd_open(self.process.pid)
+            except (AttributeError, OSError):
+                self.pidfd = None
+        try:
+            return self.wait_for_result(spec)
+        finally:
+            # Reaped by now, or about to be killed and reaped by this thread (run()).
+            with self.lock:
+                self.reaped = True
+                if self.pidfd is not None:
+                    os.close(self.pidfd)
+                    self.pidfd = None
+
+    def wait_for_result(self, spec):
         # communicate() writes the spec and closes stdin, and keeps it across timeouts.
         # (Python 3.12's communicate() fails on a stdin already closed by hand.)
         data = json.dumps(spec, ensure_ascii=True).encode()
@@ -359,30 +393,38 @@ class Outbox:
             if self.broken:
                 return
             if self.size + len(line) > MAX_OUTBOUND:
-                self.fail("the client is not reading responses")
-                return
-            self.queue.append(line)
-            self.size += len(line)
-            self.condition.notify_all()
+                reason = self.fail("the client is not reading responses")
+            else:
+                reason = None
+                self.queue.append(line)
+                self.size += len(line)
+                self.condition.notify_all()
+        if reason:
+            log(reason)
         self.check()
 
     def fail(self, reason):
-        # Caller holds self.condition.
-        if not self.broken:
-            self.broken = True
-            log(f"{reason}; treating it as a disconnect")
-            self.queue.clear()
-            self.size = 0
-            self.condition.notify_all()
+        """Caller holds self.condition. Marks the client gone at once and returns the
+        diagnostic for the caller to log after releasing the condition (None if already broken)."""
+        first = not self.broken
+        self.broken = True
+        self.queue.clear()
+        self.size = 0
         self.gone.set()
+        self.condition.notify_all()
+        return f"{reason}; treating it as a disconnect" if first else None
 
     def check(self, now=None):
         """Treat a write blocked for STALL_SECONDS as a disconnect; True when stalled."""
+        reason = None
         with self.condition:
             started = self.writing_since
             if started is not None and (now or time.monotonic()) - started >= STALL_SECONDS:
-                self.fail("a response write has been blocked too long")
-            return self.broken
+                reason = self.fail("a response write has been blocked too long")
+            broken = self.broken
+        if reason:
+            log(reason)
+        return broken
 
     def run(self):
         while True:
@@ -399,7 +441,9 @@ class Outbox:
             except (OSError, ValueError):
                 with self.condition:
                     self.writing_since = None
-                    self.fail("stdout is closed")
+                    reason = self.fail("stdout is closed")
+                if reason:
+                    log(reason)
                 return
             with self.condition:
                 self.writing_since = None
@@ -715,6 +759,13 @@ def options(argv):
 
 
 def serve(argv):
+    try:
+        return serve_until_done(argv)
+    finally:
+        DIAGNOSTICS.flush(1.0)  # Best effort: a client not reading stderr cannot hold up exit.
+
+
+def serve_until_done(argv):
     try:
         values = options(argv)
     except ContractError as error:

@@ -4,13 +4,14 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from agent_desktop import cli
+from agent_desktop import artifacts, cli
 from agent_desktop.contracts import ContractError, make_request, response
 from agent_desktop.input_actions import (CLICK_GAP, CLICK_HOLD, DRAG_SETTLE, DRAG_STEP, MODIFIER_GAP, RECHECK,
                                          SCROLL_GAP, ClickTask, DragTask, InputTask, MoveTask, ScrollTask)
@@ -1005,12 +1006,27 @@ class ScreenshotTests(unittest.TestCase):
         self.assertEqual((caught.exception.code, caught.exception.context['reason']),
                          ('capture_failed', 'client_geometry_unavailable'))
 
+    def capture(self, root, data=b'png-bytes'):
+        """A capture at the worker's layout under ROOT/artifacts, owner-private; its payload.
+
+        The session's artifact root is otherwise read from its lifecycle record."""
+        artifact_root = Path(root) / 'artifacts'
+        folder = artifact_root / 'generations' / GEN / 'captures' / 'capture-1'
+        folder.mkdir(mode=0o700, parents=True)
+        for part in (artifact_root, artifact_root / 'generations', folder.parent.parent, folder.parent, folder):
+            part.chmod(0o700)
+        source = folder / 'image.png'
+        source.write_bytes(data)
+        source.chmod(0o600)
+        roots = patch.object(artifacts, 'generation_root', lambda session, generation: artifact_root, create=True)
+        roots.start()
+        self.addCleanup(roots.stop)
+        return source, response('r' * 32, 'screenshot', session='default', generation=GEN,
+                                result={'capture_id': 'capture-1', 'path': str(source)})
+
     def test_interrupted_copy_leaves_no_partial_file_and_keeps_the_capture(self):
         with tempfile.TemporaryDirectory() as root:
-            source = Path(root) / 'image.png'
-            source.write_bytes(b'png-bytes')
-            payload = response('r' * 32, 'screenshot', session='default', generation=GEN,
-                               result={'capture_id': 'capture-1', 'path': str(source)})
+            source, payload = self.capture(root)
             real_open = open
             def interrupting(path, mode='r', *args, **kwargs):
                 handle = real_open(path, mode, *args, **kwargs)
@@ -1021,14 +1037,50 @@ class ScreenshotTests(unittest.TestCase):
                 failed = cli.copy_output(payload, str(Path(root) / 'out.png'))
             self.assertEqual(failed['error']['code'], 'cancelled')
             self.assertEqual(failed['error']['partial_result']['path'], str(source))
-            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ['image.png'])
+            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ['artifacts'])
+
+    def test_cli_copies_only_the_generations_own_regular_capture(self):
+        with tempfile.TemporaryDirectory() as root:
+            source, payload = self.capture(root)
+            secret = Path(root) / 'secret.txt'
+            secret.write_text('not a capture')
+            secret.chmod(0o600)
+            out = Path(root) / 'out.png'
+
+            def refused(path, step):
+                failed = cli.copy_output(dict(payload, result=dict(payload['result'], path=str(path))), str(out))
+                self.assertFalse(failed['ok'], f'{step}: copied')
+                self.assertEqual((failed['ok'], failed['error']['code'], failed['error']['context']),
+                                 (False, 'artifact_failed', {'output': str(out)}), step)
+                self.assertFalse(out.exists(), step)
+            refused(secret, 'outside the generation')
+            refused(source.parent / '..' / '..' / '..' / '..' / '..' / 'secret.txt', 'dot-dot')
+            source.unlink()
+            source.symlink_to(secret)
+            refused(source, 'symlink at the file')
+            source.unlink()
+            folder = source.parent
+            folder.rename(folder.with_name('real'))
+            folder.symlink_to(folder.with_name('real'))
+            refused(source, 'symlink on the way')
+            folder.unlink()
+            folder.with_name('real').rename(folder)
+            os.mkfifo(source, 0o600)
+            done = []
+            thread = threading.Thread(target=lambda: done.append(refused(source, 'fifo')), daemon=True)
+            thread.start()
+            thread.join(2)
+            if thread.is_alive():
+                os.close(os.open(source, os.O_WRONLY | os.O_NONBLOCK))
+            self.assertEqual(done, [None], 'a FIFO must not block the copy')
+            source.unlink()
+            source.write_bytes(b'x' * (cli.COPY_LIMIT + 1))
+            source.chmod(0o600)
+            refused(source, 'over the size limit')
 
     def test_cli_copies_capture_to_output_file_or_directory(self):
         with tempfile.TemporaryDirectory() as root:
-            source = Path(root) / 'image.png'
-            source.write_bytes(b'png-bytes')
-            payload = response('r' * 32, 'screenshot', session='default', generation=GEN,
-                               result={'capture_id': 'capture-1', 'path': str(source)})
+            source, payload = self.capture(root)
             copied = cli.copy_output(payload, str(Path(root) / 'out.png'))
             self.assertEqual(Path(copied['result']['output']).read_bytes(), b'png-bytes')
             folder = Path(root) / 'dir'
@@ -1039,7 +1091,7 @@ class ScreenshotTests(unittest.TestCase):
             self.assertFalse(failed['ok'])
             self.assertEqual(failed['error']['code'], 'artifact_failed')
             self.assertEqual(failed['error']['partial_result']['path'], str(source))
-            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ['dir', 'image.png', 'out.png'])
+            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ['artifacts', 'dir', 'out.png'])
 
 
 if __name__ == '__main__':

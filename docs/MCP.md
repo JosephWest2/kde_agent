@@ -124,7 +124,9 @@ every directory and the file owner-private (the artifact store's own checks), an
 the file must be regular (opened non-blocking, so a FIFO cannot hang the server);
 at most 3 MiB plus one byte is read. Before sending, the server checks the PNG
 signature, that its SHA-256 equals `result.png_sha256` and its size equals
-`result.dimensions`; both fields are required.
+`result.dimensions`; both fields are required. The same confined open (`artifacts.open_capture`) guards
+`output`, which the call process copies exactly as the CLI's `--output` does
+([CLI.md](CLI.md)), also with `include_image: false`.
 
 `result.path` always stays in the result, and `result.image` records what
 happened:
@@ -162,7 +164,7 @@ request and releases anything held ([scheduling](SCHEDULING.md),
 
 | Event | What the server does |
 | --- | --- |
-| `notifications/cancelled` for an in-flight call | SIGINT that call. No response is sent for it (the MCP rule); the call's `cancelled` envelope is dropped. A cancel for an unknown or finished request is ignored. A call still waiting for a slot never starts. |
+| `notifications/cancelled` for an in-flight call | SIGINT that call, through a pidfd opened at spawn and closed once the call's thread has reaped the process, so the signal can never reach a process that reused its PID. No response is sent for it (the MCP rule); the call's `cancelled` envelope is dropped. A cancel for an unknown or finished request is ignored. A call still waiting for a slot never starts. |
 | client disconnect: stdin closes, or the client stops reading stdout (64 MiB of responses queued, or one write blocked for 30s) | SIGINT every running call except `session_stop`, which finishes (stop is idempotent and its cleanup should not be cut short); wait for them, at most 30s; exit 0 |
 | SIGTERM, SIGHUP or SIGINT to the server | the same as a disconnect |
 | the server dies (SIGKILL, crash) | each call process gets SIGINT from Linux (`PR_SET_PDEATHSIG`), so it still sends the correlated cancel. Linux can repeat that signal while a multithreaded server's threads exit, so a call process honors only its first SIGINT (at a terminal a second Ctrl-C skips the cancel; here a repeat never means that) |
@@ -212,7 +214,9 @@ example 60s for `session_start`, and 130s for `doctor`.
 
 The server is dual-era, standard library only (no MCP SDK), newline-delimited
 JSON-RPC 2.0 on stdin and stdout; diagnostics go to stderr and never include
-arguments, results or the environment.
+arguments, results or the environment. They are best effort: a bounded queue
+written by its own thread, so a client that stops reading stderr cannot stall
+disconnect handling or a call (lines are dropped once 256 are waiting).
 
 - **Modern, 2026-07-28.** Every request carries
   `_meta["io.modelcontextprotocol/protocolVersion"]` and

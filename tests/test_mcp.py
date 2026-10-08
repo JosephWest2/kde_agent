@@ -27,7 +27,7 @@ import zlib
 TESTS = Path(__file__).resolve().parent
 SRC = TESTS.parent / "src"
 sys.path.insert(0, str(SRC))
-from agent_desktop import cli, mcp, mcp_call  # noqa: E402
+from agent_desktop import artifacts, cli, mcp, mcp_call  # noqa: E402
 from agent_desktop.mcp_tools import TOOLS, SchemaError, call_spec, definitions, input_schema, validate  # noqa: E402
 from agent_desktop.contracts import OPERATIONS, SUPPORTED_OPERATIONS  # noqa: E402
 
@@ -108,7 +108,7 @@ class ServerTests(unittest.TestCase):
         self.addCleanup(self.server.shutdown)
         # The session's artifact root, which the server otherwise reads from its lifecycle record.
         self.artifacts = self.root / "artifacts"
-        roots = patch.object(mcp, "capture_root", lambda session, generation: self.artifacts, create=True)
+        roots = patch.object(artifacts, "generation_root", lambda session, generation: self.artifacts, create=True)
         roots.start()
         self.addCleanup(roots.stop)
 
@@ -497,6 +497,87 @@ class ServerTests(unittest.TestCase):
                 server.handle_line(ping)
         self.assertTrue(server.gone.is_set())
         self.assertTrue(server.outbox.broken)
+
+    def full_stderr(self):
+        """Point diagnostics (and sys.stderr) at a pipe nobody reads, already full."""
+        read_end, write_end = os.pipe()
+        os.set_blocking(write_end, False)
+        try:
+            while True:
+                os.write(write_end, b"x" * 65536)
+        except BlockingIOError:
+            pass
+        os.set_blocking(write_end, True)
+        diagnostics = mcp.Diagnostics(write_end) if hasattr(mcp, "Diagnostics") else None
+        stream = open(write_end, "w", closefd=False)
+
+        def release():
+            os.set_blocking(read_end, False)
+            until = time.monotonic() + 10
+            while time.monotonic() < until:  # Drain until every blocked writer has finished.
+                try:
+                    while os.read(read_end, 65536):
+                        pass
+                except BlockingIOError:
+                    pass
+                if diagnostics is None or diagnostics.flush(.05):
+                    break
+            try:
+                stream.close()
+            except OSError:
+                pass
+            os.close(write_end)
+            os.close(read_end)
+        self.addCleanup(release)
+        for target in (patch.object(mcp, "DIAGNOSTICS", diagnostics, create=True), patch.object(sys, "stderr", stream)):
+            target.start()
+            self.addCleanup(target.stop)
+
+    def test_a_client_not_reading_stderr_cannot_stall_disconnect_handling(self):
+        output = BlockingOutput()
+        server = mcp.Server(output, cwd=str(self.root), defaults=DEFAULTS, command=self.server.command)
+        self.addCleanup(server.shutdown)
+        self.addCleanup(output.open.set)
+        self.full_stderr()
+        output.open.clear()
+        ping = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "ping"}).encode()
+        self.assertTrue(run_briefly(lambda: server.handle_line(ping)))
+        until = time.monotonic() + 5
+        while server.outbox.writing_since is None and time.monotonic() < until:
+            time.sleep(.01)
+        stalled = []
+        self.assertTrue(run_briefly(lambda: stalled.append(server.outbox.check(time.monotonic() + mcp.STALL_SECONDS))),
+                        "the stall check returned although stderr is full")
+        self.assertEqual(stalled, [True])
+        self.assertTrue(server.gone.is_set())
+        self.assertTrue(run_briefly(lambda: [mcp.log("diagnostic") for _ in range(1000)]), "log() never blocks")
+
+    def test_a_cancel_racing_the_reap_never_signals_a_reused_pid(self):
+        self.initialize()
+        self.mode("reply")
+        calls = []
+        original = mcp.Call.execute
+
+        def execute(call):
+            calls.append(call)
+            return original(call)
+        with patch.object(mcp.Call, "execute", execute):
+            self.call(1, "windows")
+        call = calls[0]
+        self.assertIsNotNone(call.process.returncode)
+        # The reaped PID may belong to another process by now. Mid-reap, another thread
+        # holds Popen's wait lock: waitpid has returned but returncode is not yet set,
+        # and poll() answers None. Simulate exactly that state.
+        returncode, call.process.returncode = call.process.returncode, None
+        call.interrupted = False
+        signalled = []
+        try:
+            with patch.object(subprocess.Popen, "poll", return_value=None), \
+                    patch.object(os, "kill", lambda pid, sig: signalled.append(pid)):
+                call.cancel()
+        finally:
+            call.process.returncode = returncode
+        self.assertEqual(signalled, [])
 
     def test_shutdown_while_a_call_registers_joins_only_started_calls(self):
         self.initialize()

@@ -144,17 +144,37 @@ def parse_request(argv, request_id, caller_cwd):
     return normalize(request), None, operation, json_mode
 
 
+COPY_LIMIT = 8 * 1024 * 1024  # Bytes; a 1280x720 RGBA PNG is at most about 3.7 MB.
+
+
 def copy_output(payload, output):
-    """Copy the worker's artifact PNG to --output (a file path, or an existing directory)."""
+    """Copy the worker's artifact PNG to --output (a file path, or an existing directory).
+
+    The source must be the session generation's own regular file, opened without
+    symlinks (artifacts.open_capture) and at most COPY_LIMIT bytes; anything else is
+    refused like an unreadable source, so nothing outside the artifacts is copied.
+    """
+    from .artifacts import CaptureRefused, open_capture, read_bounded
     result = payload["result"]
+    session = payload.get("session") or {}
     target = output
     if os.path.isdir(target):
         target = os.path.join(target, result["capture_id"] + ".png")
     temporary = f"{target}.{uuid.uuid4().hex}.partial"
     error = None
     try:
-        with open(result["path"], "rb") as source, open(temporary, "xb") as destination:
-            destination.write(source.read())
+        try:
+            fd = open_capture(session.get("name"), session.get("generation"), result.get("path"))
+        except CaptureRefused:
+            raise OSError("refused capture source") from None
+        try:
+            data = read_bounded(fd, COPY_LIMIT)
+        finally:
+            os.close(fd)
+        if len(data) > COPY_LIMIT:
+            raise OSError("capture over the copy limit")
+        with open(temporary, "xb") as destination:
+            destination.write(data)
         os.replace(temporary, target)
     except OSError:
         error = ContractError("artifact_failed", "Screenshot was captured but could not be copied to --output.",

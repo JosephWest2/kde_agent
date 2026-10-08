@@ -6,8 +6,9 @@ session through it, and requires that `session stop` leaves no process in the
 generation's cgroup and no systemd unit:
 
     flow        (legacy initialize handshake) session_start, launch, windows,
-                focus, type, key, screenshot (window and full screen, each a
-                valid PNG image block matching the stored capture), session_stop
+                focus, type, key, screenshot (window, also copied to `output`,
+                and full screen, each a valid PNG image block matching the stored
+                capture), session_stop
     cancel      (modern per-request _meta) notifications/cancelled during
                 `key --hold 2`: the fixture sees the release within 1s, no
                 response is sent for the cancelled call, and input works after
@@ -210,8 +211,12 @@ class MCPScenario(failures.Scenario):
         if observed != expected:
             raise SmokeFailure('fixture: key acknowledgements', f'expected {expected}, saw {observed}')
         ok('fixture: key acknowledgements', 'typed text and chord arrived in order')
-        payload, result = self.tool('screenshot (window)', 'screenshot', {'window': window})
+        copy = self.artifacts / 'window-copy.png'
+        payload, result = self.tool('screenshot (window)', 'screenshot', {'window': window, 'output': str(copy)})
         self.check_image('screenshot (window): image', result, payload)
+        if payload['result'].get('output') != str(copy) or copy.read_bytes() != Path(payload['result']['path']).read_bytes():
+            raise SmokeFailure('screenshot (window): output', f'output copy differs: {json.dumps(payload["result"])[:300]}')
+        ok('screenshot (window): output', f'copied to {copy.name}')
         payload, result = self.tool('screenshot (full)', 'screenshot')
         self.check_image('screenshot (full): image', result, payload)
         if payload['result']['dimensions'] != [1280, 720]:

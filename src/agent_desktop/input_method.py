@@ -375,6 +375,8 @@ class InputMethod:
     # I/O -------------------------------------------------------------------
 
     def _send(self, message):
+        if self.sock is None:
+            return  # Torn down (a write failed mid-dispatch): nothing more goes out.
         if len(self.outgoing) + len(message) > MAX_OUTGOING:
             raise ProtocolError('Input-method output buffer is full.')
         self.outgoing += message
@@ -382,6 +384,11 @@ class InputMethod:
         self._flush()
 
     def _flush(self):
+        commit = self.pending
+        if commit is not None and commit.epoch != self.epoch and self.sock is not None:
+            self._stale(commit)  # The write boundary: never write a commit to a context no longer active.
+            if self.sock is None:
+                return
         while self.outgoing and self.sock is not None:
             try:
                 count = self.sock.send(self.outgoing, socket.MSG_NOSIGNAL | socket.MSG_DONTWAIT)
@@ -500,11 +507,11 @@ class InputMethod:
     def _zwp_input_method_v1_activate(self, obj, context):
         if context < SERVER_ID or context in self.objects:
             raise ProtocolError('Invalid input-method context id.')
-        if self.context is not None:
-            # KWin deactivates before activating another field (as recorded), but
-            # an activation that replaces a context retires it, as a deactivate would.
-            self._send(encode(self.context, CONTEXT_DESTROY))
-            del self.objects[self.context]
+        # KWin deactivates before activating another field (as recorded), but
+        # an activation that replaces a context retires it, as a deactivate would.
+        retired = self.context
+        if retired is not None:
+            del self.objects[retired]
         if len(self.objects) >= MAX_OBJECTS:
             raise ProtocolError('Too many input-method objects.')
         self.objects[context] = 'context'
@@ -514,22 +521,43 @@ class InputMethod:
         self.activations += 1
         self.serial = 0
         self.snapshot = None
-        if self.pending is not None:
-            self.pending.changed = True
+        self._stale(self.pending)
+        if retired is not None:
+            self._send(encode(retired, CONTEXT_DESTROY))  # A no-op if the connection is already torn down.
 
     def _zwp_input_method_v1_deactivate(self, obj, context):
         if self.objects.get(context) != 'context':
             if context >= SERVER_ID:
                 return  # A context already retired by a later activate.
             raise ProtocolError('Deactivate of an unknown context.')
+        del self.objects[context]
         if context == self.context:
             self.context, self.snapshot = None, None
             self.epoch += 1
-            if self.pending is not None:
-                self.pending.changed = True
+            self._stale(self.pending)
         # v1 contexts are destroyed by the client once deactivated.
         self._send(encode(context, CONTEXT_DESTROY))
-        del self.objects[context]
+
+    def _stale(self, commit):
+        """COMMIT's context is no longer active: recall it if none of it was written; if only part
+        was, close the connection (the rest can neither be recalled nor sent to another field)."""
+        if commit is None or commit.recalled or commit.lost:
+            return
+        commit.changed = True
+        if commit.flushed:
+            return
+        if commit.sent:
+            self._fail('context_changed')
+        else:
+            self._recall(commit)
+
+    def _recall(self, commit):
+        """Remove COMMIT, none of which was written, from the output queue."""
+        offset = commit.start - self.written
+        del self.outgoing[offset:offset + commit.end - commit.start]
+        self.queued -= commit.end - commit.start
+        commit.end = commit.start  # Never flushed: nothing of it can be written now.
+        commit.recalled = True
 
     def _context_surrounding_text(self, obj, text, cursor, anchor):
         if obj != self.context:
@@ -569,7 +597,10 @@ class InputMethod:
         message = commit_message(self.context, self.serial, text)
         start = self.queued
         self.pending = Commit(self, text, self.snapshot, self.epoch, start, start + len(message), wait, limit)
-        self._send(message)
+        try:
+            self._send(message)
+        except ProtocolError:  # The compositor stopped reading: the output buffer is full.
+            self._fail('overflow')
         return self.pending
 
     def finish(self, commit):
@@ -580,15 +611,11 @@ class InputMethod:
     def abandon(self, commit):
         """Cancellation: recall COMMIT if none of it was written; if only part was, close the connection
         (the rest can neither be recalled nor completed)."""
-        if self.pending is commit and not commit.flushed:
+        if self.pending is commit and not commit.flushed and not commit.recalled:
             if commit.sent:
                 self._fail('abandoned')
             elif self.sock is not None:
-                offset = commit.start - self.written
-                del self.outgoing[offset:offset + commit.end - commit.start]
-                self.queued -= commit.end - commit.start
-                commit.end = commit.start  # Never flushed: nothing of it can be written now.
-                commit.recalled = True
+                self._recall(commit)
                 self._flush()
         self.finish(commit)
 

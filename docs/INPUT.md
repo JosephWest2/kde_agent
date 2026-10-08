@@ -97,9 +97,13 @@ key results have `method: keys`.
 - **Same field.** If the field became active after the focus check started (for
   example, the window was only just focused), the focus is checked again
   (`focus_rechecks`). The field found active must still be the active one when the
-  commit is written: if another field took over (a dialog opened, focus moved),
-  the request fails with `target_lost` (exit 6), reason `context_changed`, and
-  nothing is sent.
+  commit is written: if it was deactivated or another field took over (a dialog
+  opened, focus moved), the request fails with `target_lost` (exit 6), reason
+  `context_changed`, and nothing is sent. That holds up to the socket write: a
+  commit still queued (the compositor not reading) is withdrawn when its field
+  changes, while one already partly written closes the connection (outcome
+  `unknown`, reason `input_method_lost`). A connection lost before the commit
+  fails with `input_unavailable`, reason `input_method_unavailable`.
 - **One effect.** The commit is a single message. Once any of it may have been
   written, failure, timeout or cancellation report outcome `unknown` with
   `partial_result` (`method`, `bytes`, `commit_sent`), and nothing is retried

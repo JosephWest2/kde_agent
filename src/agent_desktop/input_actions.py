@@ -409,12 +409,7 @@ class TypeTask(InputTask):
             self.client, self.acquired = self.input_method(), True
         client = self.client
         if client is None or client.state in ('unavailable', 'failed', 'closed'):
-            raise ContractError('input_unavailable', 'The private compositor offers no usable input method, '
-                                'so only text the US layout can type is supported.',
-                                context={'reason': 'input_method_unavailable',
-                                         'state': None if client is None else client.state,
-                                         'hint': 'Check health.input_method in session status; '
-                                                 'see docs/INPUT.md.'})
+            raise self.unavailable()
         now = time.monotonic()
         if now >= self.deadline:
             raise ContractError('timeout', 'Input deadline expired.')
@@ -433,15 +428,27 @@ class TypeTask(InputTask):
             return False
         raise self.no_context()
 
+    def unavailable(self):
+        client = self.client
+        return ContractError('input_unavailable', 'The private compositor offers no usable input method, '
+                             'so only text the US layout can type is supported.',
+                             context={'reason': 'input_method_unavailable',
+                                      'state': None if client is None else client.state,
+                                      'hint': 'Check health.input_method in session status; '
+                                              'see docs/INPUT.md.'})
+
     def same_context(self):
         """Raise unless the context found active (and focus-checked) is still the active one."""
-        if not self.client.active():
-            raise self.no_context()
-        if self.client.epoch != self.epoch:
-            raise ContractError('target_lost', 'A different text field became active before the commit '
-                                '(for example, a dialog opened); nothing was sent.',
-                                context={'reason': 'context_changed',
-                                         'hint': 'Check which window and field have focus, then retry.'})
+        if self.client.state != 'ready':
+            raise self.unavailable()  # The connection itself was lost.
+        if not self.client.active() or self.client.epoch != self.epoch:
+            raise self.context_changed()
+
+    def context_changed(self, **kwargs):
+        return ContractError('target_lost', 'The text field was deactivated or another one became active '
+                             'before the commit (for example, a dialog opened); nothing was sent.',
+                             context={'reason': 'context_changed',
+                                      'hint': 'Check which window and field have focus, then retry.'}, **kwargs)
 
     def no_context(self):
         return ContractError('unsupported_input', 'The focused window has no active text input field, '
@@ -465,6 +472,8 @@ class TypeTask(InputTask):
             if commit.lost:
                 raise ContractError('input_unavailable', 'The input-method connection closed during the commit.',
                                     context={'reason': 'input_method_lost'}, outcome='unknown')
+            if commit.recalled:  # Its field lost the input method before any of it was written.
+                raise self.context_changed(partial_result=self.progress())
             return None
         now = time.monotonic()
         if self.confirm_until is None:

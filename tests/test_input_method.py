@@ -300,6 +300,73 @@ class ClientTests(unittest.TestCase):
         self.assertEqual((client.state, client.reason), ('failed', 'abandoned'))
 
 
+    def jam(self, client):
+        """Make the client's socket report EAGAIN (or, with error set, fail) on send."""
+        jammed = Jammed(client.sock)
+        client.sock = jammed
+        return jammed
+
+    def test_a_queued_commit_is_recalled_when_its_field_is_deactivated(self):
+        client = self.ready()
+        self.feed(SURROUNDING_AB)
+        jammed = self.jam(client)
+        commit = client.commit('é'.encode())
+        self.assertFalse(commit.sent)
+        self.feed(DEACTIVATE)
+        self.assertTrue(commit.recalled and commit.changed)
+        self.assertFalse(commit.sent)
+        jammed.blocked = False
+        client._flush()
+        # Only the context's destroy goes out, never the commit.
+        self.assertEqual(self.read(8), im.encode(CONTEXT, 0))
+        self.conn.settimeout(.1)
+        self.assertRaises(TimeoutError, self.conn.recv, 1)
+        self.assertEqual(client.state, 'ready')
+
+    def test_a_queued_commit_is_recalled_when_another_field_activates(self):
+        client = self.ready()
+        jammed = self.jam(client)
+        commit = client.commit('é'.encode())
+        self.feed(struct.pack('<III', 4, 12 << 16, CONTEXT + 1))
+        self.assertTrue(commit.recalled)
+        jammed.blocked = False
+        client._flush()
+        self.assertEqual(self.read(8), im.encode(CONTEXT, 0))
+        self.conn.settimeout(.1)
+        self.assertRaises(TimeoutError, self.conn.recv, 1)
+
+    def test_a_partly_written_commit_closes_the_connection_when_its_field_changes(self):
+        client = self.ready()
+        self.jam(client)
+        commit = client.commit(b'z' * 40)
+        client.written += 4
+        self.feed(DEACTIVATE)
+        self.assertEqual((client.state, client.reason), ('failed', 'context_changed'))
+        self.assertTrue(commit.lost and commit.sent)
+
+    def test_a_failed_write_during_an_overlapping_activation_tears_down_cleanly(self):
+        client = self.ready()
+        self.jam(client).error = True
+        self.feed(struct.pack('<III', 4, 12 << 16, CONTEXT + 1), DONE_5)
+        self.assertEqual((client.state, client.reason, client.context), ('failed', 'disconnected', None))
+        self.assertEqual(client.outgoing, b'')
+
+
+class Jammed:
+    def __init__(self, sock):
+        self.sock, self.blocked, self.error = sock, True, False
+
+    def send(self, data, flags):
+        if self.error:
+            raise BrokenPipeError()
+        if self.blocked:
+            raise BlockingIOError()
+        return self.sock.send(data, flags)
+
+    def __getattr__(self, name):
+        return getattr(self.sock, name)
+
+
 class RoutingTests(unittest.TestCase):
     def test_typeable_matches_the_key_map_exactly(self):
         for code in range(0, 0x3000):
@@ -373,6 +440,10 @@ class Client:
         self.epoch = 1 if active else 0
         self.activated_at = time.monotonic() - 1 if active else None
 
+    def deactivate(self):
+        self.is_active = False
+        self.epoch += 1
+
     def activate(self, at=None):
         """A new context (a field, or a dialog's field) becomes active."""
         self.is_active = True
@@ -384,6 +455,7 @@ class Client:
 
     def commit(self, text, wait, limit):
         commit = SimpleNamespace(text=text, sent=True, flushed=True, flushed_at=time.monotonic(), lost=False,
+                                 recalled=False,
                                  settled=lambda: True, verdict=lambda: self.verdict)
         commit.until = min(commit.flushed_at + wait, limit)
         self.commits.append(text)
@@ -558,7 +630,7 @@ class TypeTaskTests(unittest.TestCase):
 
     def test_cancel_after_the_commit_abandons_it_and_keeps_progress(self):
         task = self.make('é')
-        commit = SimpleNamespace(sent=True, flushed=False, lost=False, flushed_at=None)
+        commit = SimpleNamespace(sent=True, flushed=False, lost=False, recalled=False, flushed_at=None)
         self.client.commit = lambda text, **_: commit
         for _ in range(5):
             task.step(time.monotonic())
@@ -572,7 +644,8 @@ class TypeTaskTests(unittest.TestCase):
         self.on_effects = self.client.activate  # A dialog's field takes over before the commit.
         with self.assertRaises(ContractError) as caught:
             self.run_task(task)
-        self.assertEqual((caught.exception.code, caught.exception.context['reason']), ('target_lost', 'context_changed'))
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']),
+                         ('target_lost', 'context_changed'))
         self.assertEqual(self.client.commits, [])
 
     def test_a_context_change_during_the_focus_recheck_records_nothing(self):
@@ -639,9 +712,38 @@ class TypeTaskTests(unittest.TestCase):
         self.assertEqual(caught.exception.context['reason'], 'input_method_unavailable')
         self.assertEqual(self.getter_calls, 1)
 
+    def test_a_commit_recalled_with_its_field_fails_with_nothing_sent(self):
+        task = self.make('é')
+        commit = SimpleNamespace(sent=False, flushed=False, lost=False, recalled=True, changed=True)
+        self.client.commit = lambda text, **_: commit
+        with self.assertRaises(ContractError) as caught:
+            for _ in range(5):
+                task.step(time.monotonic())
+        error = caught.exception
+        self.assertEqual((error.code, error.context['reason']), ('target_lost', 'context_changed'))
+        self.assertEqual(error.partial_result['commit_sent'], False)
+
+    def test_losing_the_connection_before_the_commit_is_input_method_unavailable(self):
+        task = self.make('é')
+        self.on_effects = lambda: setattr(self.client, 'state', 'failed')
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']),
+                         ('input_unavailable', 'input_method_unavailable'))
+        self.assertEqual(self.client.commits, [])
+
+    def test_the_field_deactivated_before_the_commit_is_context_changed(self):
+        task = self.make('é')
+        self.on_effects = self.client.deactivate
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']),
+                         ('target_lost', 'context_changed'))
+        self.assertEqual(self.client.commits, [])
+
     def test_timeout_after_the_commit_reports_it_sent_over_the_intent(self):
         task = self.make('é')
-        commit = SimpleNamespace(sent=True, flushed=False, lost=False, flushed_at=None)
+        commit = SimpleNamespace(sent=True, flushed=False, lost=False, recalled=False, flushed_at=None)
         self.client.commit = lambda text, **_: commit
         for _ in range(5):
             task.step(time.monotonic())

@@ -76,7 +76,12 @@ every tool except `doctor` also takes `session`, `generation` and `timeout`
 
 `app` and `window` are the `ref` strings from results (`GENERATION:ID`).
 `tools/list` gives each tool's JSON Schema (draft 2020-12, `additionalProperties:
-false`), a title, a description and annotations (`readOnlyHint` and so on).
+false`), a title, a description and annotations. Read-only: `doctor`,
+`session_status`, `windows`, `wait`, `logs`. Destructive: `key`, `type`,
+`click`, `scroll`, `drag` (the application may delete, close or overwrite
+things in response), `screenshot` (each call stores a capture, and `output`
+replaces an existing file), `close`, `kill`, `session_stop`. Neither: `focus`,
+`move`, `launch`, `session_start`.
 
 The schema checks JSON types, ranges and names. Everything else (refs, key names,
 text, paths, environment names, `--regex` compilation) goes through the CLI's own
@@ -101,16 +106,25 @@ non-object or batch message, a bad `jsonrpc`/`id`/`method` (`-32600`), an
 unknown method (`-32601`), an unknown tool, a non-object `arguments` or a
 missing protocol version (`-32602`), and an unsupported protocol version
 (`-32022`). Messages are limited to 1 MiB, the worker's frame limit; a longer one
-is `-32600` and the stream continues.
+is `-32600` and the stream continues. A request whose `id` belongs to a call still
+in flight gets `-32600` before anything else is checked, so no other reply can
+carry that id. More than 32 calls in flight is refused at once with `-32603`,
+`data: {"reason": "too_many_calls", "limit": 32}` (see below).
 
 ## Screenshots
 
 A successful `screenshot` returns the envelope plus one image block:
 `{"type": "image", "mimeType": "image/png", "data": BASE64}`. The server reads
-the PNG from `result.path` in the artifact root; it never crosses the worker's
-1 MiB frame. Before sending it checks the PNG signature, that its SHA-256 matches
-`result.png_sha256` and its size matches `result.dimensions`. The file is opened
-without following symlinks.
+the PNG from `result.path`; it never crosses the worker's 1 MiB frame. The path
+must lie inside `ARTIFACTS/generations/GENERATION/` of the session generation in
+the envelope, where ARTIFACTS is the root recorded in that generation's lifecycle
+record (the one `session status` reads), not the server's `--artifacts`. It is
+opened one component at a time below that root, never following a symlink, with
+every directory and the file owner-private (the artifact store's own checks), and
+the file must be regular (opened non-blocking, so a FIFO cannot hang the server);
+at most 3 MiB plus one byte is read. Before sending, the server checks the PNG
+signature, that its SHA-256 equals `result.png_sha256` and its size equals
+`result.dimensions`; both fields are required.
 
 `result.path` always stays in the result, and `result.image` records what
 happened:
@@ -125,9 +139,12 @@ Images over the limit are left out, never downscaled: the output is a fixed
 1280×720 (a full-screen PNG is typically well under 1 MiB), so only an
 unusually noisy capture can exceed 3 MiB, and resampling would change the pixel
 coordinates that `click --window` relies on. Read `result.path` instead. A
-capture that cannot be read back (missing, not a PNG, digest or size mismatch)
-fails like a failed `--output` copy: `artifact_failed`, outcome `partial`,
-`context.reason`, and the capture in `partial_result`. `output` still copies the
+capture that cannot be sent fails like a failed `--output` copy:
+`artifact_failed`, outcome `partial`, the capture in `partial_result`, and
+`context.reason` one of `result_incomplete` (no valid `png_sha256` or
+`dimensions`), `outside_artifacts`, `not_regular_file`, `unreadable` (missing, a
+symlink on the way, not owner-private, or no lifecycle record), `not_png`,
+`digest_mismatch` or `dimensions_mismatch`. `output` still copies the
 PNG, as `--output` does.
 
 ## Cancellation, disconnect and sessions
@@ -146,7 +163,7 @@ request and releases anything held ([scheduling](SCHEDULING.md),
 | Event | What the server does |
 | --- | --- |
 | `notifications/cancelled` for an in-flight call | SIGINT that call. No response is sent for it (the MCP rule); the call's `cancelled` envelope is dropped. A cancel for an unknown or finished request is ignored. A call still waiting for a slot never starts. |
-| client disconnect: stdin closes | SIGINT every running call except `session_stop`, which finishes (stop is idempotent and its cleanup should not be cut short); wait for them, at most 30s; exit 0 |
+| client disconnect: stdin closes, or the client stops reading stdout (64 MiB of responses queued, or one write blocked for 30s) | SIGINT every running call except `session_stop`, which finishes (stop is idempotent and its cleanup should not be cut short); wait for them, at most 30s; exit 0 |
 | SIGTERM, SIGHUP or SIGINT to the server | the same as a disconnect |
 | the server dies (SIGKILL, crash) | each call process gets SIGINT from Linux (`PR_SET_PDEATHSIG`), so it still sends the correlated cancel. Linux can repeat that signal while a multithreaded server's threads exit, so a call process honors only its first SIGINT (at a terminal a second Ctrl-C skips the cancel; here a repeat never means that) |
 | a call process that doesn't finish in its budget plus 45s | SIGINT, then SIGKILL after 5s (20s for `session_start`, which cleans up a half-started session); the result is `timeout`, outcome `unknown`, `context.phase: mcp_call` |
@@ -168,7 +185,17 @@ in flight. Call `session_stop` (or `agent-desktop session stop`) when done.
 ## Concurrency and timeouts
 
 Calls run in parallel, each in its own process, up to 8 at once; later calls wait
-for a slot (a cancel while waiting means the call never starts). The server adds
+for a slot (a cancel while waiting means the call never starts). At most 32 calls
+are in flight, running or waiting: each waiting call holds its arguments and a
+thread, so a 33rd is refused at once with a JSON-RPC error (`-32603`,
+`data.reason: "too_many_calls"`) rather than queued. It is a protocol error, not
+a tool result, because no CLI error code means "server busy" and the call never
+reached the CLI; retry once a call finishes.
+
+Responses are written by their own thread from a queue, so a client that stops
+reading stdout never stops the server reading stdin: cancellations and EOF are
+still acted on and held input is still released. A queue over 64 MiB or a single
+write blocked for 30s is treated as a disconnect. The server adds
 no ordering of its own: the worker already queues ordinary requests in arrival
 order and runs one at a time per session, with cancellation and stop on a
 separate priority path ([scheduling](SCHEDULING.md)). Parallel calls therefore

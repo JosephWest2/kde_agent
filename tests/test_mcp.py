@@ -73,6 +73,26 @@ class Output:
             return next(m for m in self.messages if predicate(m))
 
 
+class BlockingOutput(Output):
+    """A client that stops reading stdout: writes block while `open` is clear."""
+    def __init__(self):
+        super().__init__()
+        self.open = threading.Event()
+        self.open.set()
+
+    def write(self, data):
+        self.open.wait()
+        super().write(data)
+
+
+def run_briefly(target, timeout=2):
+    """Run TARGET on a daemon thread; True if it returned within TIMEOUT (it may still be blocked)."""
+    thread = threading.Thread(target=target, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    return not thread.is_alive()
+
+
 class ServerTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="adm-")
@@ -86,6 +106,11 @@ class ServerTests(unittest.TestCase):
         command = [sys.executable, str(TESTS / "mcp_call_fixture.py"), str(self.plan), str(self.events)]
         self.server = mcp.Server(self.output, cwd=str(self.root), defaults=DEFAULTS, command=command)
         self.addCleanup(self.server.shutdown)
+        # The session's artifact root, which the server otherwise reads from its lifecycle record.
+        self.artifacts = self.root / "artifacts"
+        roots = patch.object(mcp, "capture_root", lambda session, generation: self.artifacts, create=True)
+        roots.start()
+        self.addCleanup(roots.stop)
 
     def mode(self, mode, **plan):
         self.plan.write_text(json.dumps({"mode": mode, **plan}))
@@ -106,6 +131,11 @@ class ServerTests(unittest.TestCase):
 
     def line(self, value):
         self.server.handle_line(value if isinstance(value, bytes) else json.dumps(value).encode())
+        self.flush(self.server)
+
+    def flush(self, server):
+        if hasattr(server, "outbox"):  # Written by the outbox thread.
+            self.assertTrue(server.outbox.flush(5), "immediate responses are written")
 
     def request(self, rpc_id, method, params=None, wait=True):
         message = {"jsonrpc": "2.0", "id": rpc_id, "method": method}
@@ -176,12 +206,16 @@ class ServerTests(unittest.TestCase):
         self.assertNotIn("resultType", reply["result"])
         self.assertEqual(self.request(1, "initialize", {"protocolVersion": LEGACY})["error"]["code"], -32600)
         self.assertEqual(self.request(2, "ping")["result"], {})
-        other = mcp.Server(Output(), cwd="/", defaults=DEFAULTS)
+        output = Output()
+        other = mcp.Server(output, cwd="/", defaults=DEFAULTS)
+        self.addCleanup(other.shutdown)
         other.handle_line(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                                       "params": {"protocolVersion": "1999-01-01", "capabilities": {}}}).encode())
-        self.assertEqual(other.output.messages[-1]["result"]["protocolVersion"], LEGACY)
+        self.assertTrue(other.outbox.flush(5))
+        self.assertEqual(output.messages[-1]["result"]["protocolVersion"], LEGACY)
         other.handle_line(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "initialize", "params": {}}).encode())
-        self.assertEqual(other.output.messages[-1]["error"]["code"], -32602)
+        self.assertTrue(other.outbox.flush(5))
+        self.assertEqual(output.messages[-1]["error"]["code"], -32602)
 
     def test_requests_before_initialize_need_modern_metadata(self):
         self.assertEqual(self.request(1, "tools/list")["error"]["code"], -32602)
@@ -394,11 +428,167 @@ class ServerTests(unittest.TestCase):
         self.assertLess(starts[1] - starts[0], .4)
         self.assertGreater(starts[2] - starts[0], .4)
 
+    def test_calls_beyond_the_in_flight_bound_are_refused_at_once(self):
+        self.initialize()
+        self.mode("hold", seconds=5)
+        with patch.object(mcp, "MAX_CALLS", 3, create=True), patch.object(mcp, "MAX_CONCURRENT", 1):
+            self.server.slots = threading.BoundedSemaphore(1)  # One runs, two wait for the slot.
+            for index in range(3):
+                self.call(index + 1, "windows", wait=False)
+            self.call(4, "windows", wait=False)
+            refused = self.output.wait(lambda m: m.get("id") == 4, timeout=2)
+            self.assertEqual(refused["error"]["code"], -32603)
+            self.assertEqual(refused["error"]["data"], {"reason": "too_many_calls", "limit": 3})
+            # Notifications are still processed: cancelling a waiting call frees a place.
+            self.line({"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": 3}})
+            until = time.monotonic() + 5
+            while len(self.server.calls) > 2 and time.monotonic() < until:
+                time.sleep(.01)
+            self.call(5, "windows", wait=False)
+            self.assertFalse([m for m in self.output.messages if m.get("id") == 5], "accepted, not refused")
+            for rpc_id in (1, 2, 5):
+                self.line({"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": rpc_id}})
+
+    def test_a_client_that_stops_reading_stdout_cannot_block_cancel_or_eof(self):
+        output = BlockingOutput()
+        server = mcp.Server(output, cwd=str(self.root), defaults=DEFAULTS, command=self.server.command)
+        self.addCleanup(server.shutdown)
+        self.addCleanup(output.open.set)
+
+        def handle(message):
+            server.handle_line(json.dumps(message).encode())
+        handle({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": LEGACY}})
+        self.mode("hold", seconds=10)
+        handle({"jsonrpc": "2.0", "id": "h", "method": "tools/call",
+                "params": {"name": "key", "arguments": {"window": WINDOW, "chord": "w"}}})
+        self.wait_records("start")
+        output.open.clear()  # The client stops reading.
+        # One reader thread, as in serve(): a response it cannot write must not stop it.
+        stream = io.BytesIO(b"".join(json.dumps(m).encode() + b"\n" for m in (
+            {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+            {"jsonrpc": "2.0", "id": 2, "method": "ping"},
+            {"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": "h"}})))
+        self.assertTrue(run_briefly(lambda: mcp.read_loop(server, mcp.Lines(stream.read))),
+                        "the reader reached EOF while stdout was blocked")
+        self.assertTrue(server.gone.is_set())
+        self.wait_records("sigint")  # The held key's call was cancelled.
+
+    def test_a_stuck_or_overflowing_stdout_counts_as_a_disconnect(self):
+        output = BlockingOutput()
+        server = mcp.Server(output, cwd=str(self.root), defaults=DEFAULTS, command=self.server.command)
+        self.addCleanup(server.shutdown)
+        self.addCleanup(output.open.set)
+        output.open.clear()
+        ping = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "ping"}).encode()
+        self.assertTrue(run_briefly(lambda: server.handle_line(ping)))
+        until = time.monotonic() + 5
+        while server.outbox.writing_since is None and time.monotonic() < until:
+            time.sleep(.01)
+        self.assertFalse(server.outbox.check())
+        self.assertTrue(server.outbox.check(time.monotonic() + mcp.STALL_SECONDS))
+        self.assertTrue(server.gone.is_set())
+        output = BlockingOutput()
+        server = mcp.Server(output, cwd=str(self.root), defaults=DEFAULTS, command=self.server.command)
+        self.addCleanup(server.shutdown)
+        self.addCleanup(output.open.set)
+        output.open.clear()
+        with patch.object(mcp, "MAX_OUTBOUND", 3 * len(ping)):
+            for _ in range(4):
+                server.handle_line(ping)
+        self.assertTrue(server.gone.is_set())
+        self.assertTrue(server.outbox.broken)
+
+    def test_shutdown_while_a_call_registers_joins_only_started_calls(self):
+        self.initialize()
+        self.mode("hold", seconds=5)
+        errors, stoppers = [], []
+        original = threading.Thread.start
+
+        def start(thread):
+            if thread.name == "mcp-call":
+                def stop():
+                    try:
+                        self.server.shutdown()
+                    except Exception as error:
+                        errors.append(error)
+                stopper = threading.Thread(target=stop, daemon=True)
+                original(stopper)
+                stopper.join(.3)  # A signal landing between registration and start.
+                stoppers.append(stopper)
+            original(thread)
+        with patch.object(threading.Thread, "start", start):
+            self.call(1, "windows", wait=False)
+        stoppers[0].join(10)
+        self.assertEqual(errors, [])
+
+    def test_a_call_thread_that_cannot_start_is_rolled_back(self):
+        self.initialize()
+        with patch.object(threading.Thread, "start", side_effect=RuntimeError("can't start new thread")):
+            reply = self.call(1, "windows")
+        self.assertEqual(reply["error"]["code"], -32603)
+        self.assertEqual(self.server.calls, {})
+
+    def test_unexpected_failures_are_internal_errors_and_the_reader_survives(self):
+        self.initialize()
+        with patch.object(self.server, "request", side_effect=ValueError("boom")), patch.object(mcp, "log"):
+            reply = self.request(1, "tools/list")
+        self.assertEqual(reply["error"], {"code": -32603, "message": "Internal error"})
+        self.assertEqual(self.request(2, "ping")["result"], {})
+
+    def test_a_call_that_fails_unexpectedly_kills_its_process(self):
+        self.initialize()
+        self.mode("hold", seconds=10)
+        processes = []
+
+        def broken(process, *args, **kwargs):
+            processes.append(process)
+            raise ValueError("boom")
+        with patch.object(subprocess.Popen, "communicate", broken), patch.object(mcp, "log"):
+            reply = self.call(1, "windows")
+        self.assertEqual(reply["result"]["structuredContent"]["error"]["code"], "internal_error")
+        self.assertIsNotNone(processes[0].poll(), "the call process was killed and reaped")
+        for stream in (processes[0].stdin, processes[0].stdout, processes[0].stderr):
+            stream.close()
+
+    def test_a_duplicate_id_is_refused_before_any_other_response(self):
+        self.initialize()
+        self.mode("hold", seconds=5)
+        self.call(1, "windows", wait=False)
+        self.wait_records("start")
+        for message in ({"name": "windows", "arguments": {"bogus": 1}},  # schema error: a tool result otherwise
+                        {"name": "no_such_tool"}):
+            count = len(self.output.messages)
+            self.request(1, "tools/call", message, wait=False)
+            self.assertEqual(self.output.messages[count:], [{"jsonrpc": "2.0", "id": 1, "error": {
+                "code": -32600, "message": "Invalid Request: request id already in progress"}}])
+        self.assertEqual(self.request(1, "ping", wait=False), None)
+        self.assertEqual(self.output.messages[-1]["error"]["code"], -32600)
+        self.line({"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": 1}})
+
+    def test_annotations_match_what_each_tool_changes(self):
+        tools = {tool["name"]: tool["annotations"] for tool in mcp.definitions(LEGACY)}
+        for name in ("windows", "wait", "logs", "session_status", "doctor"):
+            self.assertIs(tools[name]["readOnlyHint"], True, name)
+        for name in ("screenshot", "key", "type", "click", "scroll", "drag", "close", "kill", "session_stop"):
+            self.assertEqual((tools[name]["readOnlyHint"], tools[name]["destructiveHint"]), (False, True), name)
+        for name in ("focus", "move", "launch", "session_start"):
+            self.assertEqual((tools[name]["readOnlyHint"], tools[name]["destructiveHint"]), (False, False), name)
+        for name, (_, _, _, properties, _, annotations) in TOOLS.items():
+            if annotations.get("readOnlyHint"):
+                self.assertNotIn("output", properties, f"{name} writes a file")
+
     # Images -----------------------------------------------------------------
 
     def screenshot_payload(self, data, dimensions):
-        path = self.root / "capture.png"
+        """A capture at the worker's layout: ARTIFACTS/generations/GEN/captures/ID/image.png, owner-private."""
+        folder = self.artifacts / "generations" / GEN / "captures" / "capture-1"
+        folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+        for directory in (self.artifacts, *folder.relative_to(self.artifacts).parents):
+            (self.artifacts / directory).chmod(0o700)
+        path = folder / "image.png"
+        path.unlink(missing_ok=True)
         path.write_bytes(data)
+        path.chmod(0o600)
         result = {"capture_id": "capture-1", "path": str(path), "png_sha256": hashlib.sha256(data).hexdigest(),
                   "png_bytes": len(data), "dimensions": dimensions}
         return {"schema_version": 1, "request_id": "f" * 32, "operation": "screenshot", "ok": True,
@@ -416,7 +606,8 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(base64.b64decode(image["data"]), data)
         payload = result["structuredContent"]
         self.assertEqual(json.loads(text["text"]), payload)
-        self.assertEqual(payload["result"]["path"], str(self.root / "capture.png"))
+        self.assertEqual(payload["result"]["path"], str(self.artifacts / "generations" / GEN / "captures" / "capture-1"
+                                                        / "image.png"))
         self.assertEqual(payload["result"]["image"], {"included": True, "mime_type": "image/png",
                                                       "bytes": len(data), "dimensions": [64, 36]})
         result = self.call(2, "screenshot", {"include_image": False})["result"]
@@ -442,6 +633,68 @@ class ServerTests(unittest.TestCase):
         checked, image = mcp.attach_image(json.loads(json.dumps(payload)))
         self.assertTrue(checked["result"]["image"]["included"])
 
+    def attach(self, payload):
+        """attach_image, which must not block: (checked payload, image)."""
+        outcome = []
+        self.assertTrue(run_briefly(lambda: outcome.append(mcp.attach_image(payload))), "attach_image blocked")
+        return outcome[0]
+
+    def assert_refused(self, payload, reason):
+        checked, image = self.attach(payload)
+        self.assertIsNone(image)
+        self.assertEqual((checked["ok"], checked["error"]["code"], checked["error"]["context"]),
+                         (False, "artifact_failed", {"reason": reason}))
+        self.assertEqual(checked["error"]["partial_result"]["capture_id"], "capture-1")
+
+    def test_a_fifo_at_the_capture_path_is_refused_without_blocking(self):
+        payload = self.screenshot_payload(png(8, 8), [8, 8])
+        path = Path(payload["result"]["path"])
+        path.unlink()
+        os.mkfifo(path, 0o600)
+        try:
+            self.assert_refused(payload, "not_regular_file")
+        finally:
+            try:  # Release a reader blocked on the FIFO.
+                os.close(os.open(path, os.O_WRONLY | os.O_NONBLOCK))
+            except OSError:
+                pass
+
+    def test_captures_are_read_only_inside_the_generation_without_symlinks(self):
+        data = png(8, 8)
+        payload = self.screenshot_payload(data, [8, 8])
+        outside = self.root / "outside.png"
+        outside.write_bytes(data)
+        outside.chmod(0o600)
+        for path in (str(outside), str(self.artifacts / "generations" / ("b" * 32) / "image.png"),
+                     str(self.artifacts / "generations" / GEN / ".." / GEN / "captures" / "capture-1" / "image.png"),
+                     "relative/image.png"):
+            with self.subTest(path=path):
+                self.assert_refused(dict(payload, result=dict(payload["result"], path=path)), "outside_artifacts")
+        # A symlinked directory on the way, not just at the last component.
+        folder = Path(payload["result"]["path"]).parent
+        moved = folder.with_name("real")
+        folder.rename(moved)
+        folder.symlink_to(moved)
+        self.assert_refused(payload, "unreadable")
+        folder.unlink()
+        moved.rename(folder)
+        folder.chmod(0o755)  # Not owner-private, as the artifact store requires.
+        self.assert_refused(payload, "unreadable")
+        folder.chmod(0o700)
+        self.assertTrue(self.attach(payload)[0]["ok"])
+
+    def test_a_capture_without_digest_or_dimensions_is_never_sent(self):
+        data = png(8, 8)
+        for field, value in (("png_sha256", None), ("png_sha256", "ABC"), ("png_sha256", 7), ("dimensions", None),
+                             ("dimensions", [8]), ("dimensions", ["8", "8"]), ("dimensions", [8, 0])):
+            with self.subTest(field=field, value=value):
+                payload = self.screenshot_payload(data, [8, 8])
+                if value is None:
+                    del payload["result"][field]
+                else:
+                    payload["result"][field] = value
+                self.assert_refused(payload, "result_incomplete")
+
     def test_unreadable_capture_is_artifact_failed_with_the_capture_kept(self):
         data = png(8, 8)
         for change, reason in ((lambda p: p["result"].update(png_sha256="0" * 64), "digest_mismatch"),
@@ -458,9 +711,6 @@ class ServerTests(unittest.TestCase):
                 self.assertEqual(checked["error"]["outcome"], "partial")
                 self.assertEqual(checked["error"]["context"], {"reason": reason})
                 self.assertEqual(checked["error"]["partial_result"]["capture_id"], "capture-1")
-        link = self.root / "link.png"
-        link.symlink_to(self.root / "capture.png")
-        self.assertRaises(mcp.ImageError, mcp.read_png, str(link), None, None)
 
 
 class EntryPointTests(unittest.TestCase):

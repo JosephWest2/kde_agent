@@ -17,10 +17,14 @@ input is released. Sessions are never stopped implicitly. See docs/MCP.md.
 from __future__ import annotations
 
 import base64
+from collections import deque
 import hashlib
 import json
 import os
+from pathlib import Path
+import re
 import signal
+import stat
 import struct
 import subprocess
 import sys
@@ -48,6 +52,10 @@ LIST_TTL_MS = 3600 * 1000  # The tool list only changes with the installed versi
 
 MAX_LINE = 1 << 20  # Bytes per JSON-RPC message, as the worker's frames.
 MAX_CONCURRENT = 8  # Call processes at once; later calls wait for a slot.
+MAX_CALLS = 32  # Calls in flight (running or waiting for a slot); more are refused at once.
+MAX_OUTBOUND = 64 * 1024 * 1024  # Bytes of responses queued for a client that isn't reading stdout.
+STALL_SECONDS = 30.0  # One stdout write blocked this long: the client is treated as gone.
+FLUSH_SECONDS = 2.0  # At exit, the longest the server waits to write queued responses.
 MAX_IMAGE_BYTES = 3 * 1024 * 1024  # PNG bytes before base64 (4 MiB encoded).
 MAX_IMAGE_SIDE = 2048  # Pixels; the desktop output is 1280x720.
 OUTER_SLACK = 45.0  # Seconds past a call's work budget before its process is interrupted.
@@ -55,6 +63,7 @@ CANCEL_GRACE = 5.0  # Seconds from SIGINT to SIGKILL (session start may clean up
 START_CANCEL_GRACE = 20.0
 SHUTDOWN_SECONDS = 30.0  # Longest the server waits for calls after a disconnect.
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 PARSE_ERROR, INVALID_REQUEST, METHOD_NOT_FOUND, INVALID_PARAMS, INTERNAL_ERROR = -32700, -32600, -32601, -32602, -32603
 UNSUPPORTED_PROTOCOL_VERSION = -32022
@@ -91,30 +100,102 @@ class ImageError(Exception):
     pass
 
 
-def read_png(path, sha256, dimensions):
-    """The capture's PNG bytes and size, checked against its result; None when over the limits."""
-    flags = os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0)
+def capture_root(session, generation):
+    """The artifact root of SESSION's GENERATION, from its lifecycle record (as session status reads it)."""
+    from .lifecycle import read_metadata
+    from .runtime import Runtime
+    return Path(read_metadata(Runtime(), session, generation)["configuration"]["artifacts"])
+
+
+def open_capture(root, generation, path):
+    """A read-only fd for a capture file inside ROOT/generations/GENERATION.
+
+    Opened one component at a time below the root (artifacts.root_directory, then
+    each hop with O_NOFOLLOW and the owner-private check the artifact store uses),
+    so no symlink anywhere is followed. O_NONBLOCK and the regular-file check keep
+    a FIFO or device at the path from blocking the read.
+    """
+    from .artifacts import check_fd, root_directory
+    if not isinstance(path, str) or not os.path.isabs(path) or os.path.normpath(path) != path:
+        raise ImageError("outside_artifacts")
     try:
-        fd = os.open(path, flags)
-    except (OSError, TypeError, ValueError):
+        parts = Path(path).relative_to(root / "generations" / generation).parts
+    except ValueError:
+        raise ImageError("outside_artifacts") from None
+    if not parts:
+        raise ImageError("outside_artifacts")
+    fd = final = None
+    try:
+        with root_directory(root) as root_fd:
+            fd = os.dup(root_fd)
+        for part in ("generations", generation, *parts[:-1]):
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+            check_fd(fd, True)
+        final = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=fd)
+        if not stat.S_ISREG(os.fstat(final).st_mode):
+            raise ImageError("not_regular_file")
+        check_fd(final)
+        opened, final = final, None
+        return opened
+    except (OSError, ContractError):
         raise ImageError("unreadable") from None
-    with os.fdopen(fd, "rb") as stream:
-        size = os.fstat(stream.fileno()).st_size
-        if size > MAX_IMAGE_BYTES:
-            return None, size, None
-        data = stream.read(MAX_IMAGE_BYTES + 1)
+    finally:
+        for descriptor in (fd, final):
+            if descriptor is not None:
+                os.close(descriptor)
+
+
+def read_png(fd, sha256, dimensions):
+    """The capture's PNG bytes and size from FD, checked against its result; None when over the limits."""
+    size = os.fstat(fd).st_size
+    if size > MAX_IMAGE_BYTES:
+        return None, size, None
+    chunks, total = [], 0
+    while total <= MAX_IMAGE_BYTES:
+        chunk = os.read(fd, MAX_IMAGE_BYTES + 1 - total)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+    data = b"".join(chunks)
     if len(data) > MAX_IMAGE_BYTES:
         return None, len(data), None
-    if data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR" or len(data) < 24:
+    if len(data) < 24 or data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
         raise ImageError("not_png")
     width, height = struct.unpack(">II", data[16:24])
-    if isinstance(sha256, str) and hashlib.sha256(data).hexdigest() != sha256:
+    if hashlib.sha256(data).hexdigest() != sha256:
         raise ImageError("digest_mismatch")
-    if isinstance(dimensions, list) and dimensions != [width, height]:
+    if dimensions != [width, height]:
         raise ImageError("dimensions_mismatch")
     if max(width, height) > MAX_IMAGE_SIDE:
         return None, len(data), [width, height]
     return data, len(data), [width, height]
+
+
+def load_capture(payload):
+    """(data, size, dimensions) for a screenshot payload, or ImageError naming the reason."""
+    result, session = payload["result"], payload.get("session")
+    dimensions = result.get("dimensions")
+    # The worker always reports these; without them nothing can be checked, so nothing is sent.
+    if (not isinstance(result.get("png_sha256"), str) or not SHA256.fullmatch(result["png_sha256"])
+            or not isinstance(dimensions, list) or len(dimensions) != 2
+            or not all(type(value) is int and value > 0 for value in dimensions)
+            or not isinstance(session, dict) or not isinstance(session.get("name"), str)
+            or not isinstance(session.get("generation"), str)):
+        raise ImageError("result_incomplete")
+    try:
+        root = capture_root(session["name"], session["generation"])
+    except (OSError, ContractError, KeyError, TypeError, ValueError):
+        raise ImageError("unreadable") from None
+    fd = open_capture(root, session["generation"], result.get("path"))
+    try:
+        return read_png(fd, result["png_sha256"], dimensions)
+    except OSError:
+        raise ImageError("unreadable") from None
+    finally:
+        os.close(fd)
 
 
 def attach_image(payload):
@@ -126,7 +207,7 @@ def attach_image(payload):
     """
     result = payload["result"]
     try:
-        data, size, dimensions = read_png(result.get("path"), result.get("png_sha256"), result.get("dimensions"))
+        data, size, dimensions = load_capture(payload)
     except ImageError as error:
         failure = ContractError("artifact_failed", "Screenshot was captured but could not be read for the image.",
                                 context={"reason": str(error)}, outcome="partial", partial_result=result)
@@ -255,31 +336,113 @@ class Call:
         return payload
 
 
+class Outbox:
+    """Responses queued for one writer thread, so a client that stops reading stdout
+    never blocks the stdin reader: cancellations and EOF are still read and acted on.
+
+    A client that lets more than MAX_OUTBOUND bytes pile up, or leaves one write
+    blocked for STALL_SECONDS, is treated as gone (a disconnect), as is a failed write.
+    """
+    def __init__(self, output, gone):
+        self.output, self.gone = output, gone
+        self.queue = deque()
+        self.size = 0
+        self.writing_since = None
+        self.broken = False
+        self.closed = False
+        self.condition = threading.Condition()
+        self.thread = threading.Thread(target=self.run, name="mcp-stdout", daemon=True)
+        self.thread.start()
+
+    def put(self, line):
+        with self.condition:
+            if self.broken:
+                return
+            if self.size + len(line) > MAX_OUTBOUND:
+                self.fail("the client is not reading responses")
+                return
+            self.queue.append(line)
+            self.size += len(line)
+            self.condition.notify_all()
+        self.check()
+
+    def fail(self, reason):
+        # Caller holds self.condition.
+        if not self.broken:
+            self.broken = True
+            log(f"{reason}; treating it as a disconnect")
+            self.queue.clear()
+            self.size = 0
+            self.condition.notify_all()
+        self.gone.set()
+
+    def check(self, now=None):
+        """Treat a write blocked for STALL_SECONDS as a disconnect; True when stalled."""
+        with self.condition:
+            started = self.writing_since
+            if started is not None and (now or time.monotonic()) - started >= STALL_SECONDS:
+                self.fail("a response write has been blocked too long")
+            return self.broken
+
+    def run(self):
+        while True:
+            with self.condition:
+                while not self.queue and not self.closed:
+                    self.condition.wait()
+                if not self.queue:
+                    return
+                line = self.queue[0]
+                self.writing_since = time.monotonic()
+            try:
+                self.output.write(line)
+                self.output.flush()
+            except (OSError, ValueError):
+                with self.condition:
+                    self.writing_since = None
+                    self.fail("stdout is closed")
+                return
+            with self.condition:
+                self.writing_since = None
+                if self.queue and self.queue[0] is line:
+                    self.queue.popleft()
+                    self.size -= len(line)
+                self.condition.notify_all()
+
+    def flush(self, timeout):
+        """Wait until everything queued is written (or the client is gone); True when empty."""
+        until = time.monotonic() + timeout
+        with self.condition:
+            while self.queue and not self.broken:
+                remaining = until - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self.condition.wait(min(remaining, .1))
+            return not self.queue
+
+    def close(self, timeout):
+        self.flush(timeout)
+        with self.condition:
+            self.closed = True
+            self.condition.notify_all()
+
+
 class Server:
     def __init__(self, output, *, cwd, defaults, command=None):
-        self.output = output
         self.cwd = cwd
         self.defaults = defaults
         self.command = command or [sys.executable, "-P", "-m", "agent_desktop.mcp_call"]
-        self.write_lock = threading.Lock()
         self.lock = threading.Lock()
         self.calls = {}
         self.slots = threading.BoundedSemaphore(MAX_CONCURRENT)
         self.legacy_version = None
         self.closing = False
-        self.gone = threading.Event()  # Set at stdin EOF or when stdout breaks.
+        self.gone = threading.Event()  # Set at stdin EOF or when the client stops reading stdout.
+        self.outbox = Outbox(output, self.gone)
 
     # Output ------------------------------------------------------------------
 
     def send(self, message):
-        line = json.dumps(message, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode() + b"\n"
-        with self.write_lock:
-            try:
-                self.output.write(line)
-                self.output.flush()
-            except (OSError, ValueError):
-                # The client stopped reading: treat it as a disconnect.
-                self.gone.set()
+        self.outbox.put(json.dumps(message, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode() + b"\n")
 
     def error(self, rpc_id, code, message, data=None):
         error = {"code": code, "message": message}
@@ -323,6 +486,12 @@ class Server:
             if isinstance(params, dict):
                 self.notification(method, params)
             return
+        with self.lock:
+            duplicate = id_key(rpc_id) in self.calls
+        if duplicate:
+            # Before any other response: a reply with this id would look like the running call's.
+            self.error(rpc_id, INVALID_REQUEST, "Invalid Request: request id already in progress")
+            return
         try:
             if not isinstance(params, dict):
                 raise RPCError(INVALID_PARAMS, "Invalid params: expected an object")
@@ -331,9 +500,6 @@ class Server:
             self.error(rpc_id, error.code, error.message, error.data)
         except Exception as error:
             log(f"internal diagnostic: {type(error).__name__}")
-            if self.process is not None and self.process.poll() is None:
-                self.process.kill()  # Never leave a call running that nothing waits for.
-                self.process.wait()
             self.error(rpc_id, INTERNAL_ERROR, "Internal error")
 
     def notification(self, method, params):
@@ -431,9 +597,18 @@ class Server:
                 raise RPCError(INVALID_REQUEST, "Invalid Request: request id already in progress")
             if self.closing:
                 return
+            if len(self.calls) >= MAX_CALLS:
+                # Each waiting call holds its arguments and a thread: refuse rather than queue without bound.
+                raise RPCError(INTERNAL_ERROR, f"Server busy: {MAX_CALLS} tool calls are already in flight; "
+                               "retry after one finishes", {"reason": "too_many_calls", "limit": MAX_CALLS})
             call = Call(self, key, rpc_id, operation, spec, local, structured=structured, modern=modern)
             self.calls[key] = call
-        call.thread.start()
+            # Started under the lock, so shutdown never sees (and joins) an unstarted call.
+            try:
+                call.thread.start()
+            except RuntimeError:
+                del self.calls[key]
+                raise RPCError(INTERNAL_ERROR, "Internal error: the call could not be started") from None
 
     def tool_body(self, payload, image, structured, modern):
         content = [{"type": "text", "text": json.dumps(payload, ensure_ascii=True, allow_nan=False,
@@ -469,6 +644,7 @@ class Server:
         deadline = time.monotonic() + SHUTDOWN_SECONDS
         for call in calls:
             call.thread.join(max(0, deadline - time.monotonic()))
+        self.outbox.close(FLUSH_SECONDS)
 
 
 class Lines:
@@ -563,7 +739,7 @@ def serve(argv):
     try:
         reader.start()
         while not server.gone.wait(.5):
-            pass
+            server.outbox.check()
     except (KeyboardInterrupt, Stop):
         pass
     finally:

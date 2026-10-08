@@ -34,7 +34,11 @@ def timeout(operation):
 
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
-INPUT = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False}
+# Keys, text, clicks, wheel and drags reach the application, which may delete, close or overwrite
+# things in response: never only additive.
+INPUT = {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": False}
+# Focus and pointer motion change which window is active or hovered, nothing else.
+NON_DESTRUCTIVE = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 
 # name: (operation, title, description, properties, required, annotations)
 TOOLS = {
@@ -76,7 +80,7 @@ TOOLS = {
                 {"app": APP}, [], READ_ONLY),
     "focus": ("focus", "Focus window",
               "Activate a window (exactly one of window or app) and wait until KWin reports it active. Needed before "
-              "key and type.", {"window": WINDOW, "app": APP}, [], INPUT),
+              "key and type.", {"window": WINDOW, "app": APP}, [], NON_DESTRUCTIVE),
     "wait": ("wait", "Wait for condition",
              "Poll until a condition holds: window/exit take app; focus/title/gone take window; title needs match "
              "(a substring, or a Python regex with regex: true). Fails with timeout otherwise.",
@@ -101,7 +105,7 @@ TOOLS = {
                "count": {"type": "integer", "minimum": 1, "maximum": 3, "description": "1-3 (2 = double click)."},
                "modifiers": MODIFIERS}, ["x", "y"], INPUT),
     "move": ("move", "Move pointer", "Move the pointer (hover) without pressing anything.",
-             {"window": WINDOW, "x": COORDINATE, "y": COORDINATE}, ["x", "y"], INPUT),
+             {"window": WINDOW, "x": COORDINATE, "y": COORDINATE}, ["x", "y"], NON_DESTRUCTIVE),
     "scroll": ("scroll", "Scroll", "Turn the wheel at a point: dy positive scrolls down, dx positive scrolls right; "
                "not both zero.",
                {"window": WINDOW, "x": COORDINATE, "y": COORDINATE,
@@ -117,9 +121,11 @@ TOOLS = {
                    "Capture the screen, or a window's client area, as PNG. The image is returned as image content; "
                    "result.path is the stored PNG, result.image says whether it was included.",
                    {"window": WINDOW,
-                    "output": {"type": "string", "description": "Also copy the PNG to this file or existing directory."},
+                    "output": {"type": "string", "description": "Also copy the PNG to this file (replacing it) or existing directory."},
                     "include_image": {"type": "boolean", "description": "Return the PNG as image content (default true)."}},
-                   [], READ_ONLY),
+                   # Each call stores a new capture, and output replaces an existing file.
+                   [], {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False,
+                        "openWorldHint": False}),
     "logs": ("logs", "Read logs", "Return the last lines of application and session logs, with their paths.",
              {"app": APP, "source": {"type": "string", "enum": list(LOG_SOURCES)},
               "tail": {"type": "integer", "minimum": 0, "maximum": MAX_TAIL}}, [], READ_ONLY),

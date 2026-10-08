@@ -5,6 +5,7 @@
 ```sh
 agent-desktop --json key  --window REF ctrl+shift+t [--hold 0.05]
 agent-desktop --json type --window REF 'Hello, World!' [--timeout 30]
+agent-desktop --json type --window REF 'héllo ✓ 中文 🎉' [--method auto|keys|input-method]
 ```
 
 **Focus first.** Both commands query the window before the first stroke and
@@ -47,17 +48,111 @@ Shifted symbols are not key names: `ctrl+!` is rejected with a hint to use
 `ctrl+shift+1`. `+` cannot appear inside a name; use `shift+equal`. Games can hold
 keys such as `w` or `shift+w` with `--hold` (at most 2s).
 
-**Text.** `type` maps printable ASCII, space, newline (Return) and tab (Tab) to the
-US layout, adding Shift where needed. Any other character rejects the whole request
-before anything is sent, with its `index` and `codepoint` (non-ASCII lookalikes
-such as the Kelvin sign included). Non-ASCII entry is planned through an input-method
-commit; see [the #84 spike](UNICODE.md). If `key caps_lock` has turned Caps Lock on,
+**Text.** `type` picks a method for the whole text (`--method`, default `auto`):
+text made only of printable ASCII, space, newline and tab goes as keys, exactly as
+before; text with any other character goes whole as one input-method commit
+([below](#non-ascii-text-the-input-method)). `--method keys` always uses keys and
+rejects any other character before anything is sent, with its `index` and
+`codepoint` (`unsupported_input`, non-ASCII lookalikes such as the Kelvin sign
+included). `--method input-method` commits even ASCII text.
+
+Keys map printable ASCII, space, newline (Return) and tab (Tab) to the
+US layout, adding Shift where needed. If `key caps_lock` has turned Caps Lock on,
 `type` inverts Shift for letters so the text still comes out as written; only this
 toolkit sends input to the private desktop, so the worker tracks that state. Each character is one
 press and one release, about 10ms apart, so roughly 170 characters fit the default
 3s and about 1900 fit the 30s maximum. Text whose estimate (15ms per character,
 plus 0.25s for a final focus recheck when it takes longer than 250ms) does not fit
 the remaining time fails with `timeout`, phase `budget`, and sends nothing.
+
+### Non-ASCII text: the input method
+
+Text the US layout cannot type is sent through KWin's `zwp_input_method_v1`: the
+worker is the private session's input method and commits the whole text as one
+`commit_string` to the focused text field. No key events are sent, so a newline or
+tab in that text is inserted as a character, never as Return or Tab: it can't
+activate a default button or move focus. Combining characters, emoji and any other
+Unicode go through unchanged (UTF-8). The result has `method: input_method`,
+`characters` (code points), `bytes` (UTF-8), `confirmed` and `confirmation_reason`;
+key results have `method: keys`.
+
+- **Limit.** One commit carries at most 4000 UTF-8 bytes (text-input's limit;
+  4001 would break the connection with nothing delivered). Longer text is refused
+  before anything is sent: `invalid_arguments`, reason `text_too_long`, with
+  `bytes` and `limit_bytes` (4000). Split it into several `type` requests; there
+  is no automatic chunking. Empty text with `--method input-method` is
+  `invalid_arguments`, reason `empty_text`. The limit doesn't apply to keys.
+- **Preconditions.** The same focus and compositor-surface checks as keys, then
+  the focused window must have an active text field: KWin activates the input
+  method for a Wayland client with text-input enabled. If none is active within
+  200ms (by when KWin's activation was received, not when the worker got to it)
+  the request fails before anything is recorded or sent: `unsupported_input`
+  (exit 5), reason `text_input_unavailable`, outcome `not_started`. That covers
+  windows without a text field (the fixture without `--text-input`), a focused
+  widget that isn't a text field, and X11 (XWayland) clients, which can't receive
+  it. If the private KWin doesn't offer the input method at all (see `health`
+  below), the request fails with `input_unavailable`, reason
+  `input_method_unavailable`. The client is acquired once per request: a
+  connection that fails during the request fails it, and the next request reopens it.
+- **Same field.** If the field became active after the focus check started (for
+  example, the window was only just focused), the focus is checked again
+  (`focus_rechecks`). The field found active must still be the active one when the
+  commit is written: if it was deactivated or another field took over (a dialog
+  opened, focus moved), the request fails with `target_lost` (exit 6), reason
+  `context_changed`, and nothing is sent. That holds up to the socket write: a
+  commit still queued (the compositor not reading) is withdrawn when its field
+  changes, while one already partly written closes the connection (outcome
+  `unknown`, reason `input_method_lost`). A connection lost before the commit
+  fails with `input_unavailable`, reason `input_method_unavailable`.
+- **One effect.** The commit is a single message. Once any of it may have been
+  written, failure, timeout or cancellation report outcome `unknown` with
+  `partial_result` (`method`, `bytes`, `commit_sent`), and nothing is retried
+  automatically: check the application before sending it again. Cancellation
+  before the message was written withdraws it. As for keys, the request is
+  refused with `input_uncertain` while an earlier release is unconfirmed.
+- **`confirmed`.** After the commit the worker waits up to 250ms for the field to
+  report its text (`surrounding_text`); reports received later never count. `confirmed: true` only if the field's last
+  report before the commit (newer than the field's activation) and a later report
+  from the same field, with no deactivation in between, differ by exactly the
+  commit: the selection (anchor to cursor, in bytes) replaced by the text and the
+  cursor right after it. Otherwise `confirmed: false` with `confirmation_reason`:
+
+  | Reason | Meaning |
+  | --- | --- |
+  | `no_surrounding_text` | The field reports empty text (Blender does). |
+  | `no_fresh_snapshot` | The field hadn't reported its text since it was activated, so there is nothing to compare with. |
+  | `truncated` | A report is near the 4000-byte cap, so it may be a window into a longer text. |
+  | `context_changed` | The field was deactivated or replaced (focus moved) before a matching report. |
+  | `mismatch` | The field's text changed in some other way, or the toolkit reported a different window of it. |
+  | `timeout` | No report arrived within the wait. |
+
+  `confirmed: false` is not a failure and does not mean nothing was typed: the
+  commit was delivered (`dispatched: true`). Check the application (screenshot,
+  title, saved file) and do not resend blindly. GTK reports only part of a
+  multi-line text (lines around the cursor, and just the current line after a
+  commit), so in a multi-line GTK editor `mismatch` is common even when the text
+  arrived; in a single-line field it is usually confirmed.
+- **Health.** `session status` reports `health.input_method`: `state` `passed`
+  (bound), `unavailable` (KWin doesn't advertise `zwp_input_method_v1`; `reason`
+  `not_advertised`) or `failed` (connect or set-up error), and `advertised`. Its
+  absence never fails the session; only non-ASCII `type` needs it. `doctor` runs
+  no compositor, so it reports `input_method: not_tested`. KWin 6.7.5 advertises
+  it in the private session without configuration. If a KWin build ever needs one,
+  the untested fallback is a private `kwinrc` with `[Wayland] InputMethod=` set
+  before KWin starts.
+- **One input method.** The worker binds when the session starts and keeps that
+  connection: KWin sends a field's text only when the application next updates it,
+  never replayed to a later client, so a per-request connection would rarely have
+  anything to confirm against. A lost connection is reopened by the next
+  non-ASCII `type` (its confirmation then usually reports `no_fresh_snapshot`).
+  Running another input method (an IME such as fcitx5 or ibus) inside the private
+  session is unsupported: every bound input method gets the field's context, a
+  commit clears any preedit text (KWin 6.7.5), and an application under test that
+  is itself an input method gives undefined results. Preedit, compose and paste
+  are out of scope.
+- **Privacy.** The worker keeps only the field's latest report, in memory. Neither
+  that text nor the typed text is written to request records, events or logs:
+  results and records carry lengths and whether they matched.
 
 **Release guarantees.** The worker owns every hold. Client disconnect, Ctrl-C,
 timeout, cancellation and `session stop` release held keys immediately on the owner
@@ -77,7 +172,9 @@ releases before it closes the connection, and stop does the same.
 **Results.** `dispatched: true` means the events reached the compositor for the
 focused window, not that the application handled them. Check with a screenshot or
 window query. Results also include the window, the query artifact used for the
-focus check, timing and either `codes` and `hold` (key) or `characters` (type).
+focus check, timing and either `codes` and `hold` (key) or `method` and
+`characters` (type; keys add `strokes`, the input method `bytes`, `confirmed` and
+`confirmation_reason`).
 
 ## Public `click`
 

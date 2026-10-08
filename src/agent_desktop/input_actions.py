@@ -6,13 +6,18 @@ the owner thread. Input is refused while an earlier release is uncertain.
 Focus is verified before the first stroke, then rechecked every RECHECK seconds
 while a sequence or hold is still being sent. A recheck that finds the window
 gone or unfocused releases everything and fails with what was already sent.
+
+``type`` text the US layout cannot type goes instead as one input-method commit
+(TypeTask; input_method.py): no keys, a single effect, then a bounded wait for
+the field to report its new text, which decides ``confirmed``.
 """
 import math
 import time
 
 from .capture import HEIGHT, WIDTH
 from .contracts import ContractError
-from .keymap import CAPS_LOCK, parse_chord, text_strokes
+from .input_method import CONFIRM_WAIT
+from .keymap import CAPS_LOCK, commit_text, parse_chord, route, text_strokes
 from .targeting import TargetTask
 from .writer import recorded
 
@@ -31,6 +36,8 @@ BUTTONS = {'left': 0x110, 'right': 0x111, 'middle': 0x112}
 MODIFIERS = {'ctrl': 29, 'shift': 42, 'alt': 56}
 MODIFIER_GAP = .02    # Modifiers down to the first button press or wheel step, and last release to modifiers up.
 DRAG_STEP = .01       # Drag motion cadence: one absolute motion every 10ms while the button is held.
+ACTIVATION_WAIT = .2   # A focused text field's input-method context is active within this, or `type` fails.
+COMMIT_ESTIMATE = .05  # Budget for writing one commit.
 DRAG_SETTLE = .02     # Last drag motion to the button release, so the release lands where the motion ended.
 MAX_DRAG_STEPS = 200  # 2000ms (the --duration maximum) / DRAG_STEP.
 
@@ -282,6 +289,218 @@ class InputTask:
         released = owner is None or not busy(owner)
         rechecked = self.recheck is None or self.recheck.cleanup(now)
         return released and rechecked and (self.target is None or self.target.cleanup(now))
+
+
+class TypeTask(InputTask):
+    """`type`: keys for text the US layout can type, otherwise one input-method commit.
+
+    The key route is InputTask unchanged (same strokes, pacing and checks); its
+    result only adds ``method: keys``. The input-method route checks the
+    focused window like keys do, then needs the input-method client's active
+    context within ACTIVATION_WAIT, before anything is recorded or sent. A
+    context activated after the focus check started gets the focus checked
+    again, and the context must stay the same one (its epoch) until the commit
+    is written. The commit is one effect: once any of it was written the
+    outcome is unknown on any failure, it is never retried, and ``confirmed``
+    (input_method.verdict) only reports whether the field's own text then
+    showed it.
+    """
+
+    def __init__(self, request, context, adapter, input_owner, registry, healthy, input_method=lambda: None):
+        self.method = route(request.arguments['text'], request.arguments.get('method') or 'auto')
+        self.input_method = input_method
+        self.client = self.commit = None
+        self.acquired = False
+        self.target_from = self.activation_from = None
+        self.epoch = None
+        self.confirm_until = None
+        super().__init__(request, context, adapter, input_owner, registry, healthy)
+
+    def parse(self, request, input_owner):
+        if self.method == 'keys':
+            return super().parse(request, input_owner)
+        self.text = commit_text(request.arguments['text'])
+        self.strokes, self.hold = [], 0
+
+    def estimate(self):
+        return super().estimate() if self.method == 'keys' else COMMIT_ESTIMATE + CONFIRM_WAIT
+
+    def progress(self):
+        if self.method == 'keys':
+            return super().progress()
+        return {'window': self.request.arguments.get('window'), 'method': 'input_method',
+                'bytes': len(self.text), 'commit_sent': self.sent()}
+
+    def sent(self):
+        return self.commit is not None and self.commit.sent
+
+    def intent(self):
+        if self.method == 'keys':
+            return super().intent()
+        return {'window': self.focus and self.focus['window'], 'phase': 'emitting', 'method': 'input_method',
+                'bytes': len(self.text)}
+
+    def step(self, now):
+        try:
+            return super().step(now)
+        except ContractError as error:
+            if self.sent() and error.partial_result is None:
+                error.partial_result = self.progress()
+            raise
+
+    def advance(self):
+        if self.method == 'keys':
+            return super().advance()
+        if self.phase == 'target':
+            if self.target is not None:
+                if self.target_from is None:
+                    self.target_from = time.monotonic()
+                focus = self.target.step(time.monotonic())
+                if focus is None:
+                    return None
+                self.focus = focus
+            self.phase = 'context'
+        if self.phase == 'context':
+            if not self.context_ready():
+                return None
+            activated = self.client.activated_at
+            late = self.target is not None and (activated is None or activated >= self.target_from)
+            self.phase = 'refocus' if late else 'record'
+        if self.phase == 'refocus':
+            # The context became active after the focus check began (a dialog may
+            # have opened): check that the window still has focus before the commit.
+            if self.recheck is None:
+                self.recheck = self.make_target(self.request, self.context, self.adapter, self.registry,
+                                                self.healthy)
+                self.recheck.selected = self.focus['window']
+            if self.recheck.step(time.monotonic()) is None:
+                return None
+            self.rechecks += 1
+            self.recheck = None
+            self.phase = 'record'
+        if self.phase == 'record':
+            self.same_context()
+            self.budget()
+            self.owner()
+            self.context.effects(self.intent(), uncertain=True)
+            self.phase = 'intent'
+        if self.phase == 'intent':
+            if not recorded(self.context):
+                return None
+            self.budget()
+            self.same_context()
+            self.healthy()
+            if time.monotonic() >= self.deadline:
+                raise ContractError('timeout', 'Input deadline expired.')
+            self.phase = 'emit'
+            self.started_at = time.monotonic()
+            self.commit = self.client.commit(self.text, wait=CONFIRM_WAIT, limit=self.deadline - MARGIN / 2)
+        if time.monotonic() >= self.deadline:
+            raise ContractError('timeout', 'Input deadline expired.')
+        return self.confirm()
+
+    def context_ready(self):
+        """True once the input-method context is active; raises if it cannot be (nothing sent yet).
+
+        The client is acquired once per request; if it fails later, the next
+        request reopens it (no reconnects within one request).
+        """
+        if not self.acquired:
+            self.client, self.acquired = self.input_method(), True
+        client = self.client
+        if client is None or client.state in ('unavailable', 'failed', 'closed'):
+            raise self.unavailable()
+        now = time.monotonic()
+        if now >= self.deadline:
+            raise ContractError('timeout', 'Input deadline expired.')
+        if not client.settled:
+            return False  # A reconnect still binding; its own bound (INPUT_METHOD_SETUP) ends it.
+        if self.activation_from is None:
+            self.activation_from = now
+        if client.active():
+            # Bounded by when the activation was observed, not when this turn ran.
+            activated = client.activated_at
+            if activated is not None and activated - self.activation_from > ACTIVATION_WAIT:
+                raise self.no_context()
+            self.epoch = client.epoch
+            return True
+        if now - self.activation_from < ACTIVATION_WAIT:
+            return False
+        raise self.no_context()
+
+    def unavailable(self):
+        client = self.client
+        return ContractError('input_unavailable', 'The private compositor offers no usable input method, '
+                             'so only text the US layout can type is supported.',
+                             context={'reason': 'input_method_unavailable',
+                                      'state': None if client is None else client.state,
+                                      'hint': 'Check health.input_method in session status; '
+                                              'see docs/INPUT.md.'})
+
+    def same_context(self):
+        """Raise unless the context found active (and focus-checked) is still the active one."""
+        if self.client.state != 'ready':
+            raise self.unavailable()  # The connection itself was lost.
+        if not self.client.active() or self.client.epoch != self.epoch:
+            raise self.context_changed()
+
+    def context_changed(self, **kwargs):
+        return ContractError('target_lost', 'The text field was deactivated or another one became active '
+                             'before the commit (for example, a dialog opened); nothing was sent.',
+                             context={'reason': 'context_changed',
+                                      'hint': 'Check which window and field have focus, then retry.'}, **kwargs)
+
+    def no_context(self):
+        return ContractError('unsupported_input', 'The focused window has no active text input field, '
+                             'so the text cannot be committed; nothing was sent.',
+                             context={'reason': 'text_input_unavailable', 'waited_seconds': ACTIVATION_WAIT,
+                                      'hint': 'Focus a text field of a Wayland application that supports '
+                                              'text-input (X11 applications do not), or use ASCII text.'})
+
+    def budget(self):
+        remaining = self.deadline - time.monotonic()
+        needed = self.estimate()
+        if needed > remaining - MARGIN:
+            raise ContractError('timeout', 'Not enough time left to send this input; nothing was sent.',
+                                context={'phase': 'budget', 'estimated_seconds': round(needed, 3),
+                                         'remaining_seconds': round(max(remaining, 0), 3),
+                                         'hint': 'Raise --timeout (max 30).'})
+
+    def confirm(self):
+        commit = self.commit
+        if not commit.flushed:
+            if commit.lost:
+                raise ContractError('input_unavailable', 'The input-method connection closed during the commit.',
+                                    context={'reason': 'input_method_lost'}, outcome='unknown')
+            if commit.recalled:  # Its field lost the input method before any of it was written.
+                raise self.context_changed(partial_result=self.progress())
+            return None
+        now = time.monotonic()
+        if self.confirm_until is None:
+            self.finished_at = commit.flushed_at or now
+            self.confirm_until = commit.until  # Reports received later do not count either.
+        if not commit.settled() and now < self.confirm_until:
+            return None
+        self.client.finish(commit)
+        return self.result()
+
+    def result(self):
+        if self.method == 'keys':
+            return super().result() | {'method': 'keys'}
+        confirmed, reason = self.commit.verdict()
+        return {'window': self.focus['window'], 'focused': True, 'dispatched': True,
+                'query_artifact': self.focus['query_artifact'], 'focus_rechecks': self.rechecks,
+                'started_at': self.started_at, 'finished_at': self.finished_at,
+                'method': 'input_method', 'characters': len(self.request.arguments['text']),
+                'bytes': len(self.text), 'confirmed': confirmed, 'confirmation_reason': reason}
+
+    def request_cancel(self, reason):
+        if self.commit is not None:
+            # Recall a commit not yet written; a partly written one closes the connection.
+            self.client.abandon(self.commit)
+            # Replace the intent Context.effects recorded with what was actually sent.
+            self.context.work.partial = self.progress()
+        super().request_cancel(reason)
 
 
 class PointTask(InputTask):

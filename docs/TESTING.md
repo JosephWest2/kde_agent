@@ -94,6 +94,12 @@ invocations, the way an agent would:
    motion between its press and release. Each pointer event is checked against the
    XKB modifier mask in effect when it arrived (none at the end), and the drag's
    press to last motion must take about 200ms.
+   `session status` must report `health.input_method` passed. A third fixture,
+   with `--text-input`, gets `type 'héllo ✓ 中文 🎉 é'` (the last é is e + U+0301):
+   the result must be `method: input_method`, `confirmed: true`, with the right
+   `characters` and `bytes`; the fixture must log exactly one `commit_string` and a
+   field holding exactly that text, and no key events. After stop, no artifact
+   other than that fixture's own logs may contain the typed text.
 4. **gnome-text-editor:** launch, focus, `wait --for focus`, `type`, then
    `wait --for title` until the title contains the typed text. A click on the header bar's
    "New Tab" button must switch the same window to a "New Document"
@@ -157,6 +163,7 @@ process remains in the generation's cgroup and the systemd unit is gone:
 | `bus-death` | SIGKILL the private `dbus-daemon` | as above, naming the bus |
 | `worker-sigkill` | SIGKILL the worker once the fixture sees the held key | the client gets `completion_unknown` |
 | `worker-stopped` | SIGSTOP the worker, then `session stop` | stop still completes cleanly (about 2s) |
+| `text-input` | non-ASCII `type` on a fixture without `--text-input`, then 4001 UTF-8 bytes | `unsupported_input`/`text_input_unavailable` (exit 5) and `invalid_arguments`/`text_too_long` (exit 2), both outcome `not_started`; the fixture logs no key events and no commit; ASCII `type` still works as keys |
 | `title-gone` | a fixture with a sibling and a dialog whose `--on-sigusr1` steps retitle the primary, close the sibling, then close the dialog; each signal is sent only after the running wait's first observation artifact appears, so no step depends on launch timing (`AGENT_DESKTOP_TEST_SLOW=SECONDS` adds setup delay to prove it) | `wait --for title` times out (context: phase `title_wait`, window, last query) on a title that never appears, matches the retitle on a later poll, matches a `--regex` on the first poll, ends a runaway `--regex` with `pattern_too_slow`, gives `invalid_regex` from the helper for a bad pattern sent straight over the transport (skipping the CLI's compile), and fails with `target_lost` when the sibling closes mid-wait; `wait --for gone` on the dialog succeeds (`already_gone: false`) while the primary stays listed, then reports `already_gone`; a title wait on the gone dialog is `target_not_found` and a stale ref `generation_mismatch` |
 
 It takes the same `--cli`, `--dependency-root`, `--keep-artifacts` and `--verbose`
@@ -177,7 +184,7 @@ the other tests:
 
 | Scenario | What it does | What must happen |
 | --- | --- | --- |
-| `flow` | legacy `initialize` (2025-11-25), `tools/list`, then `session_start`, `launch`, `windows`, `focus`, `type 'aB!'`, `key ctrl+shift+t`, `screenshot` of the window (also copied to `output`) and of the screen, `close`, `session_stop` | the fixture's key receipts in order; the `output` copy equals the capture; each screenshot has one PNG image block whose size and SHA-256 match the result and whose bytes equal the stored file; the full screen is 1280×720; text, `structuredContent` and `isError` agree |
+| `flow` | legacy `initialize` (2025-11-25), `tools/list`, then `session_start`, `launch`, `windows`, `focus`, `type 'aB!'`, `key ctrl+shift+t`, `screenshot` of the window (also copied to `output`) and of the screen, `close`, then on a `--text-input` fixture non-ASCII `type` with `method: keys` (refused, `unsupported_input`) and without (one commit, `confirmed: true`), `session_stop` | the fixture's key receipts in order; the `output` copy equals the capture; each screenshot has one PNG image block whose size and SHA-256 match the result and whose bytes equal the stored file; the full screen is 1280×720; text, `structuredContent` and `isError` agree |
 | `cancel` | modern per-request `_meta` (2026-07-28, after `server/discover`); `notifications/cancelled` while `key --hold 2 w` is held | release within 0.5s of the cancel (fixture clock); no response for the cancelled call; the next `key` works |
 | `disconnect` | the client closes the server's stdin while the key is held | release within 0.5s; the server exits 0; the session is still `ready` (CLI `session status`) and takes input |
 | `server-kill` | SIGKILL the server while the key is held | release within 0.5s (the call process's parent-death signal); the session keeps running |
@@ -201,7 +208,7 @@ are in [TARGET_APPS.md](TARGET_APPS.md).
 
 | Scenario | Application | What it does | What must hold |
 | --- | --- | --- | --- |
-| `text-editor` | `/usr/bin/gnome-text-editor` | types three lines (punctuation, a tab), `ctrl+s`, the path into the `Save a File` dialog, `return`; then appends a line and `ctrl+s` again | the dialog closes (`wait --for gone`), the title names `saved.txt`, and the file's bytes are exactly the typed text plus a final newline, both times; the second save opens no dialog; `close` exits |
+| `text-editor` | `/usr/bin/gnome-text-editor` | types three lines (punctuation, a tab), `ctrl+s`, the path into the `Save a File` dialog, `return`; then appends a line and `ctrl+s` again; then a new line of non-ASCII text (`ünïcödé ✓ 中文 🎉 é`, one input-method commit) and `ctrl+s` | the dialog closes (`wait --for gone`), the title names `saved.txt`, and the file's bytes are exactly the typed text plus a final newline, all three times; the non-ASCII `type` reports `method: input_method` (its `confirmed` is printed: GTK's windowed report of a multi-line text usually gives `mismatch`); the second save opens no dialog; `close` exits |
 | `gimp` | `/usr/bin/gimp`, version 3 or later | `ctrl+n`, 320×240 in the new-image dialog, one `click` on image pixel (80, 60) (found in a window screenshot), one `drag` from image pixel (140, 190) to (280, 120), `ctrl+shift+e`, the path, `return` in both export dialogs; `ctrl+q`, `ctrl+d` | the exported PNG is 320×240, dark at (80, 60) and at 9 evenly spaced points from (140, 190) to (280, 120), white (≥ 250) everywhere more than 34px from both the dot and the stroke's line segment, and the dot's dark area is centered on (80, 60) within 3px; GIMP exits |
 | `blender` | `/usr/bin/blender`, 4.2 or later | prepares `scene.blend` and a `userpref.blend` with `blender -b`, opens the scene with `--factory-startup`, `move` into the viewport, `shift+d` `return`, `ctrl+shift+s`, the name `edited.blend` in the file view, `return` twice | the title names `edited.blend` without `*`; `blender -b` lists Camera, Cube, Cube.001 and Light in it and the original three objects in `scene.blend`; `close` exits |
 

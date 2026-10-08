@@ -6,7 +6,8 @@ fixture (exact key acknowledgements) and gnome-text-editor (a real GTK app):
 
     doctor, session start, launch, windows, focus, key, type, click, move,
     scroll, drag, modifier click/scroll/drag, screenshot, wait, close, kill,
-    session stop, and input while KWin's window menu is open
+    session stop, input while KWin's window menu is open, and non-ASCII type
+    through the input method into the fixture's text-input field
 
 After stop it checks that no process remains in the generation's cgroup, the
 systemd unit is gone and the artifacts survived. Run it after system updates:
@@ -65,6 +66,8 @@ EXPECTED_LAYERED = ([('motion', 100, 50, 0), ('key', 29, 1), ('key', 42, 1), ('b
                     + [('key', 29, 1)] + [('wheel', 10, 20, [120], 4)] * 2 + [('key', 29, 0)]
                     + [('motion', 400, 300, 0), ('button', 274, 1, 400, 300, 0), ('motion', 380, 290, 0),
                        ('button', 274, 0, 380, 290, 0)])
+# Non-ASCII type: a precomposed é, a symbol, CJK, an emoji and e + U+0301 (combining acute).
+UNICODE_TEXT = 'héllo ✓ 中文 🎉 e\u0301'
 # gnome-text-editor's "New Tab" header-bar button, in client coordinates.
 EDITOR_NEW_TAB = (107, 23)
 # Empty header-bar space; a right-click there opens KWin's window menu.
@@ -90,6 +93,7 @@ class Smoke:
         self.pids = []
         self.screenshots = []
         self.launched = 0
+        self.private_logs = set()  # Application logs that may hold typed text; nothing else may.
 
     def run_cli(self, step, *args, timeout=40, expect_ok=True, quiet=False):
         started = time.monotonic()
@@ -161,7 +165,9 @@ class Smoke:
         self.desktop('fixture: focus', 'focus', '--window', window)
         self.desktop('fixture: key ctrl+shift+t', 'key', '--window', window, 'ctrl+shift+t')
         self.desktop('fixture: key --hold 0.2 w', 'key', '--window', window, '--hold', '0.2', 'w')
-        self.desktop("fixture: type 'aB!'", 'type', '--window', window, 'aB!')
+        typed = self.desktop("fixture: type 'aB!'", 'type', '--window', window, 'aB!')['result']
+        if typed.get('method') != 'keys':
+            raise SmokeFailure("fixture: type 'aB!'", f'expected method keys, saw {typed.get("method")}')
         self.desktop('fixture: click 100,50', 'click', '--window', window, '--x', '100', '--y', '50')
         self.desktop('fixture: double right-click', 'click', '--window', window, '--x', '20', '--y', '30',
                      '--button', 'right', '--count', '2')
@@ -191,6 +197,34 @@ class Smoke:
         print(f'  ok  {"fixture: move/scroll acknowledgements":<34}       motion, wheel steps, signs, order')
         self.check_logs(app, logs)
         self.layered_flow()
+        self.unicode_flow()
+
+    def unicode_flow(self):
+        """Non-ASCII type is one input-method commit: the field holds exactly the text, confirmed, no keys."""
+        health = self.desktop('session status: input_method', 'session status')['result']['health']
+        if health.get('input_method', {}).get('state') != 'passed':
+            raise SmokeFailure('session status: input_method', json.dumps(health.get('input_method')))
+        app, window, logs = self.launch('fixture 3', str(self.fixture), '--autonomous', '--text-input',
+                                        '--exit-after-ms', '60000')
+        self.private_logs.update(str(Path(path).resolve()) for path in logs.values())
+        self.desktop('fixture 3: focus', 'focus', '--window', window)
+        step = 'fixture 3: type (input method)'
+        result = self.desktop(step, 'type', '--window', window, UNICODE_TEXT)['result']
+        expected = {'method': 'input_method', 'confirmed': True, 'confirmation_reason': None,
+                    'characters': len(UNICODE_TEXT), 'bytes': len(UNICODE_TEXT.encode())}
+        if {key: result.get(key) for key in expected} != expected:
+            raise SmokeFailure(step, f'unexpected result {json.dumps(result)[:400]}')
+        wait_for_keys(Path(logs['stdout']), 1, kinds={'text_input_commit_string'})
+        result = self.desktop('fixture 3: close', 'close', '--app', app)['result']
+        if result['exited'] is not True:
+            raise SmokeFailure('fixture 3: close', 'application did not exit')
+        commits = [row['text'] for row in log_events(Path(logs['stdout']), {'text_input_commit_string'})]
+        applied = [row['text'] for row in log_events(Path(logs['stdout']), {'text_input_done'}) if row['applied']]
+        keys = log_events(Path(logs['stdout']), {'key'})
+        if commits != [UNICODE_TEXT] or applied != [UNICODE_TEXT] or keys:
+            raise SmokeFailure('fixture 3: commit receipts', f'commits {commits!r}, field {applied!r}, '
+                               f'{len(keys)} key events')
+        print(f'  ok  {"fixture 3: commit receipts":<34}       one exact commit, no key events')
 
     def layered_flow(self):
         """drag, and click and scroll with --modifiers, on a fresh fixture: exact receipts in order."""
@@ -418,6 +452,14 @@ class Smoke:
         applications = manifest.get('applications', [])
         if len(applications) != self.launched or manifest.get('failure') is not None:
             raise SmokeFailure('artifacts', f'manifest lists {len(applications)} of {self.launched} applications')
+        if self.private_logs:
+            # Typed text is never recorded: only the application's own logs may hold it.
+            needles = [UNICODE_TEXT.encode(), json.dumps(UNICODE_TEXT).encode()[1:-1], '中文'.encode()]
+            leaks = [str(path) for path in generation.rglob('*') if path.is_file()
+                     and str(path.resolve()) not in self.private_logs
+                     and any(needle in path.read_bytes() for needle in needles)]
+            if leaks:
+                raise SmokeFailure('artifacts', f'typed text recorded in {leaks}')
         print(f'  ok  {"artifacts":<34}       manifest (versions, {len(applications)} apps), shutdown record, '
               f'{len(self.screenshots)} screenshots')
 

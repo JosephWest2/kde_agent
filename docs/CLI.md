@@ -238,7 +238,7 @@ Generation tokens are 32 lowercase hexadecimal characters.
 | `focus` | exactly one of `--window WINDOW_REF` or `--app APP_REF` | 2 / 2 |
 | `wait` | `--for window\|focus\|exit\|title\|gone`; window/exit require `--app`, focus/title/gone require `--window`; title requires `--match TEXT` (optional `--regex`). See [Waits](#waits) | 10 / 60 |
 | `key` | required `--window WINDOW_REF`, positional `CHORD`; `--hold SECONDS` (default 0.05, at most 2) | 3 / 3 |
-| `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed) | 3 / 30 |
+| `type` | required `--window WINDOW_REF`, positional literal `TEXT` (empty allowed); `--method auto\|keys\|input-method` (default auto: keys when every character has a US key, else one input-method commit of at most 4000 UTF-8 bytes). See [non-ASCII text](INPUT.md#non-ascii-text-the-input-method) | 3 / 30 |
 | `click` | `--x INT --y INT`, client coordinates with `--window WINDOW_REF` or screen coordinates without; `--button left\|middle\|right` (default left); `--count 1-3` (default 1); `--modifiers ctrl,shift,alt` (needs `--window`) | 3 / 3 |
 | `move` | `--x INT --y INT`, as for `click`; moves the pointer (hover) and presses nothing | 3 / 3 |
 | `scroll` | `--x INT --y INT`, as for `click`; `--dy -50..50` (positive down) and `--dx -50..50` (positive right) wheel notches, default 0, not both 0; `--modifiers` as for `click` | 3 / 3 |
@@ -413,7 +413,15 @@ the screen point where the pointer now is as `screen_x`, `screen_y`; `scroll` ad
 starts reports `pointer_moved`, `button_pressed`, `steps_sent`, `steps_total` and
 `button_released` in the error context. A `scroll` that fails after its first wheel step reports
 `steps_sent`, `steps_total`, `dx_sent` and `dy_sent` in the error context, as `type`
-reports `strokes_sent`. Exit codes are the ones in the table above: 2 for bad
+reports `strokes_sent`. `type` results give `method` (`keys` or `input_method`); an
+input-method commit adds `bytes`, `confirmed` and `confirmation_reason`, and a
+failure after it may have been written reports outcome `unknown` with
+`partial_result` (`method`, `bytes`, `commit_sent`). `confirmed: false` is not an
+error: check the application, and never resend blindly. Non-ASCII `type` is refused
+before sending with exit 2 (`invalid_arguments`, reason `text_too_long`, over 4000
+UTF-8 bytes) or exit 5 (`unsupported_input`, reason `text_input_unavailable`, no
+active text field within 200ms), and fails with exit 6 (`target_lost`, reason
+`context_changed`, nothing sent) if another field became active before the commit. Exit codes are the ones in the table above: 2 for bad
 coordinates or steps (including `zero_scroll` and `zero_drag`), 6 for `target_lost`, 8 for a
 `timeout` (phase `budget` when nothing was sent), 9 for input errors. Input dispatch does not promise application acknowledgment, a rendered
 frame or UI readiness. Screenshot success reports the fresh complete PNG's path

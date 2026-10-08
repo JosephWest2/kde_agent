@@ -64,7 +64,7 @@ every tool except `doctor` also takes `session`, `generation` and `timeout`
 | `focus` | `focus` | `window` or `app` |
 | `wait` | `wait` | `for` (required), `app`, `window`, `match`, `regex` (boolean) |
 | `key` | `key CHORD` | `window`, `chord` (both required), `hold` |
-| `type` | `type TEXT` | `window`, `text` (both required) |
+| `type` | `type TEXT` | `window`, `text` (both required), `method` (`auto`, `keys` or `input-method`; default `auto`). Non-ASCII text is one input-method commit of at most 4000 UTF-8 bytes; the result's `method` and `confirmed` are as in [INPUT.md](INPUT.md#non-ascii-text-the-input-method) |
 | `click` | `click` | `x`, `y` (required), `window`, `button`, `count`, `modifiers` (array) |
 | `move` | `move` | `x`, `y` (required), `window` |
 | `scroll` | `scroll` | `x`, `y` (required), `window`, `dx`, `dy`, `modifiers` |

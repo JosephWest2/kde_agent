@@ -120,6 +120,8 @@ def request_from_wire(value):
             malformed()
     if "duration" in args and type(args["duration"]) is not int:
         malformed()
+    if "method" in args and args["method"] is not None and not isinstance(args["method"], str):
+        malformed()
     if "env" in args and not isinstance(args["env"], dict):
         malformed()
     from .paths import validate_wire

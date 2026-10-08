@@ -10,7 +10,7 @@ their text and value, and press them with an accessibility action.
 [#104](https://github.com/JosephWest2/kde_agent/issues/104), size large.**
 - **Why.**
   - A private bus started in about a quarter of a second (221–310ms, 5 starts)
-    and left nothing behind on `session stop` in any of the 6 sessions.
+    and left nothing behind on `session stop` in any of the 7 sessions.
   - Turning accessibility on made no difference to time to first window that
     the 100ms polling could see (5 runs per app, each way).
   - Finds took 14–28ms on gnome-text-editor (85 nodes, client walk) and
@@ -28,6 +28,9 @@ their text and value, and press them with an accessibility action.
   - A full GIMP tree is 1.76 MB, more than one 1 MiB response.
   - An action is a request, not a confirmation: GTK4 clicks 250ms later and Qt
     100ms later, and one Qt action returned true and did nothing.
+  - The private bus is not a security boundary. Any process of the same user
+    that can reach the socket can read the applications' text and invoke their
+    actions directly, without the CLI's gates and records (section 1).
 - **Command shape (proposed):** `ui tree`, `ui find`, `ui invoke`, `ui text`
   and `ui set-text` (below).
 
@@ -69,9 +72,10 @@ their text and value, and press them with an accessibility action.
 - **The prototypes stayed out of the repository.** They were the sidecar, the
   probe apps, the query helper, a run script and a socket and environment audit,
   about 900 lines of Python in all.
-- **Sessions.** The spike ran 6 sessions, all of which became ready: one
+- **Sessions.** The spike ran 7 sessions, all of which became ready: one
   exploratory, three scripted runs (N=1, N=2 and N=5 cycles), one enablement
-  matrix and one for the frozen-app, popup, duplicate-title and Unicode checks.
+  matrix, one for the frozen-app, popup, duplicate-title and Unicode checks, and
+  one after review for the combined on and off environments.
   Each ended with `session stop`. One more attempt was refused before start
   with `prerequisite_missing`, because the script ran outside the repository and
   the CLI resolved its dependency root from the working directory.
@@ -122,7 +126,7 @@ their text and value, and press them with an accessibility action.
 - Killing the registry (SIGTERM) and then the launcher (it exits 0) removed the
   launcher's children and `org.a11y.Bus` (4 of 4 cycles). That took 479–527ms,
   including a fixed 0.3s wait and a status check.
-- `session stop` cleaned up every time (6 sessions):
+- `session stop` cleaned up every time (7 sessions):
   - no `agent-desktop*` units;
   - no process left in the generation's cgroup;
   - the private `desktop/` tree removed, `at-spi/bus` socket included;
@@ -148,6 +152,20 @@ N=2 and N=5 runs, plus the manual sessions where noted:
 - **Separation, not a sandbox.** A program in the session that deliberately
   connected to `/run/user/1000/at-spi/bus_0` would not be stopped
   ([ARTIFACTS.md](ARTIFACTS.md)).
+- **The reverse direction is open too.** The private bus uses
+  `accessibility.conf`: `EXTERNAL` authentication, which admits the bus's own
+  user (and root), and a policy that allows sending to any destination. So any
+  other process of the same user that can reach
+  `$XDG_RUNTIME_DIR/at-spi/bus` (or ask the private session bus for
+  `org.a11y.Bus`) can read every registered application's text and call its
+  actions, `EditableText` included, without going through the CLI. The CLI's
+  durable intents, deadlines and records don't apply to it. This comes from the
+  configuration and the socket's location; no outside connection was attempted.
+  The private bus keeps ordinary discovery apart (host tools and screen readers
+  don't find it), but it is **not a confidentiality or mutation boundary**. The
+  private session bus and Wayland socket are just as reachable today;
+  accessibility adds reading text and pressing widgets with one D-Bus call. Opting in should
+  say so.
 
 **KWin joins the bus too.**
 - The private KWin is a Qt program, and its environment has
@@ -177,20 +195,42 @@ a toplevel within 2.5s; 1 sample per cell.
 - **Qt** follows `IsEnabled` unless `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` is
   **set**, and any value turns it on, `0` included. Qt 6.11's libQt6Gui doesn't
   mention `QT_ACCESSIBILITY` at all (`strings`).
-- **GTK4** ignores both `IsEnabled` and `NO_AT_BRIDGE`. It registers whenever a
-  bus exists; only `GTK_A11Y=none` stops it.
+- **GTK4** (the AT-SPI backend; see below) ignores both `IsEnabled` and
+  `NO_AT_BRIDGE`. It registers whenever a bus exists; only `GTK_A11Y=none`
+  stops it.
+- **Which GTK4 backend was measured.** GTK4 picks its accessibility backend
+  with `GTK_A11Y`: `atspi`, `accesskit` (when built), `test` or `none`. This
+  host's gtk4 4.22.5 (Arch package `1:4.22.5-1`) was built without AccessKit:
+  the library's `GTK_A11Y` help text lists `accesskit - Disabled during GTK
+  build` and has no enabled variant, and there are no `accesskit_` symbols
+  (`strings`). Running with `GTK_A11Y=help` printed nothing, because Gtk.init
+  without a window doesn't reach backend selection. So every GTK4 result here
+  is for the **AT-SPI backend** only. AccessKit, in builds that include it,
+  is reported to follow `IsEnabled` (from the review of this spike; not checked
+  here), so its behaviour may differ. The policy below
+  therefore sets `GTK_A11Y=atspi` explicitly when on, rather than relying on
+  the default.
 - **GTK3**'s ATK bridge ignores `IsEnabled` and is controlled by `NO_AT_BRIDGE`.
 - **So today's "disabled" variables don't disable Qt6 or GTK4.** They are
   harmless only because no bus exists. The off state should instead:
   - remove `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` (not set it to `0`);
   - add `GTK_A11Y=none`;
   - keep `NO_AT_BRIDGE=1`.
-- **The on state the follow-up should use** (inferred from the matrix, not run
-  as a whole):
+- **The on state the follow-up should use:**
   - the launcher with `--a11y=0`, so `IsEnabled` is false;
-  - applications get `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1`, no `NO_AT_BRIDGE` and
-    no `GTK_A11Y`;
-  - KWin gets none of these, so it stays off the bus.
+  - applications get `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` and
+    `GTK_A11Y=atspi`, with no `QT_ACCESSIBILITY` and no `NO_AT_BRIDGE`;
+  - KWin keeps the off values, so it stays off the bus.
+- **Both combinations, run as a whole** (one session after the review, with the
+  launcher at `--a11y=0` and a registry running; 1 sample per cell):
+  - on: the Qt, GTK4 and GTK3 probes all registered, and a find for `button`
+    `Save` matched once in each;
+  - off (Qt variables removed, `GTK_A11Y=none`, `NO_AT_BRIDGE=1`): none of the
+    three registered, although a bus existed.
+
+  So `GTK_A11Y=none` is the right disable setting for the AT-SPI-only build
+  measured here. `none` selects GTK's no-op backend whatever is built, so it
+  should disable an AccessKit build too, but that wasn't measured.
 - **Not measured.** Setting `IsEnabled` at run time through
   `org.freedesktop.DBus.Properties.Set` was tried once. The property read back
   false, and the test was confounded anyway (that Qt probe had `ALWAYS_ON=0`).
@@ -241,8 +281,9 @@ similar ranges (GIMP full dump 1,639–1,844ms).
     down and its tree is 25 deep; GIMP's is 26 and Dolphin's 13.
 - **Size.**
   - A full GIMP tree, 1.76 MB, doesn't fit one 1 MiB response. `ui tree` should
-    write the full tree to an artifact file and return counts plus a bounded,
-    filtered list.
+    write the walked tree to an artifact file and return counts plus a bounded,
+    filtered list. The artifact is only the full tree when the walk was
+    complete; its metadata says which (see "Proposed commands").
   - Only 251 of GIMP's 4,759 nodes are `showing`; 2,997 are table cells and 719
     are menu items of closed menus.
 - **A frozen application** (SIGSTOP on the Qt probe, 500ms per-call timeout):
@@ -286,7 +327,8 @@ or `dialog`, and the accessible name is the title.
 - take the app's toplevels with the window's pid;
 - keep those whose name equals the title;
 - if more than one is left, keep the one in the `active` state if W is active;
-- otherwise fail with an ambiguity error that names `focus` as the way out.
+- otherwise fail with `target_ambiguous` (exit 6), with the bounded candidate
+  toplevels in its context and `focus` named as the way out.
 
 Never guess by order.
 
@@ -367,7 +409,7 @@ and runs one bounded helper.
 
 ```sh
 agent-desktop --json ui find   --window W --role button --name Save [--name-regex RE] [--showing] [--limit 20]
-agent-desktop --json ui tree   --window W [--depth 8] [--max-nodes 2000] [--showing]   # full tree goes to an artifact file
+agent-desktop --json ui tree   --window W [--depth 8] [--max-nodes 10000] [--showing]   # walked tree goes to an artifact file
 agent-desktop --json ui invoke --window W --role button --name Save [--index 0] [--action click]
 agent-desktop --json ui text   --window W --role text [--name Name] [--max-chars 4096]
 agent-desktop --json ui set-text --window W --role text --name Name TEXT                  # EditableText, if the follow-up keeps it
@@ -378,9 +420,28 @@ agent-desktop --json ui set-text --window W --role text --name Name TEXT        
   `push button` as `button`.
 - **One request finds and acts.** `ui invoke` finds and invokes in one helper
   run. It fails with `target_not_found` if nothing matches, and with
-  `ambiguous_target` (the matches in context) if several do and `--index` isn't
-  given. There are no node handles kept across requests, because paths change as
-  the tree changes.
+  `target_ambiguous` (exit 6, the existing code; at most 20 candidate rows in
+  its context, with a `candidates_total` count) if several do and `--index`
+  isn't given. There are no node handles kept across requests, because paths
+  change as the tree changes.
+- **Completeness.** Every `ui` result carries `walk`:
+  `{"complete": bool, "visited": N, "limit": "max_nodes" | "depth" | "deadline"
+  | "output_bytes" | "call_errors" | null, "call_errors": N}`. A walk is complete
+  only if no limit stopped it and no call failed; a Collection match is complete
+  when its single call succeeded.
+  - `ui find` and `ui tree` may return incomplete results, marked as such. A
+    `ui tree` artifact is called the walked tree, never the full tree, unless
+    `complete` is true.
+  - **Mutations fail closed.** `ui invoke` and `ui set-text` act only on a
+    unique match from a complete resolution. From an incomplete one they claim
+    neither `target_not_found` nor a unique match: they fail before dispatch
+    (`outcome: not_started`) with a reason such as `resolution_incomplete`,
+    with the walk metadata in context. Narrow `--role` (Collection, where the
+    app has it) or raise the limits.
+  - The default 10,000 nodes covers every tree measured (GIMP's 4,759 is the
+    largest) within the deadline: GIMP's full walk took 1.7–1.8s. A lower
+    `--max-nodes` is allowed, with the consequences above.
+
 - **Rows** look like this:
 
 ```json
@@ -396,8 +457,41 @@ agent-desktop --json ui set-text --window W --role text --name Name TEXT        
   - `text` is truncated to `--max-chars`, with the full `chars` count given.
 - **`ui invoke`'s result** has `action`, `sent: true` and the matched row. It
   doesn't wait for the effect.
-- **Bounds.** Defaults: a 2s helper deadline (killed at 2.5s), 500ms per D-Bus
-  call, depth 32, 2,000 nodes, and 512 KiB of rows in the response.
+- **Mutations are gated like input.** `ui invoke` and `ui set-text` are effects
+  under [ARTIFACTS.md](ARTIFACTS.md)'s "before effects" rule: admission and
+  start records are not enough. The helper runs in two phases:
+  1. **Resolve** (no effect): map the window, walk or match, and report the
+     unique target (path, role, name, pid, toplevel) and the action or text
+     length to the worker, then wait.
+  2. The worker queues a **mutation intent** record (outcome uncertain, naming
+     the window, target, action or text length, never the text itself) and
+     waits, without blocking the owner thread (as input does today), until
+     that record and every earlier record of the request are durable.
+  3. The worker then rechecks: enough of the work deadline is left for one
+     call, the request isn't cancelled, and W is still the same window in the
+     same generation. Only then does it **authorize** the helper, over a pipe,
+     to make the one mutating call (`DoAction` or `SetTextContents`).
+  4. The helper re-resolves the target by path and checks role and name before
+     the call. A mismatch fails as `target_lost`, still before dispatch.
+- **Uncertain completion.**
+  - Any failure before the worker authorizes the call is
+    `outcome: not_started`: resolution errors, a timeout, a helper crash, a
+    cancelled request or a failed recheck.
+  - Once authorized, the helper reports `dispatching` and then makes the call.
+    If it then times out, crashes, is killed or the reply is lost, the result is
+    `completion_unknown` (exit 11) with `outcome: unknown`. `partial_result`
+    keeps the window, target row, action (or text length) and whether the reply
+    arrived. A `false` reply is `outcome: unknown` too, because the
+    application may still have acted.
+  - Nothing is retried automatically ([CLI.md](CLI.md)'s rule for launch and
+    input applies). The docs tell agents to check the application instead.
+- **Deadlines.** The **work deadline** (default 2s) bounds resolution and the
+  mutating call. Authorization is refused when less than one per-call timeout
+  (500ms) of it is left. A separate **reap allowance** (default 0.5s) after
+  the work deadline is only for killing and reaping the helper: the worker
+  closes the authorization pipe at the work deadline, so no mutation can start
+  during cleanup. Other defaults: 500ms per D-Bus call, depth 32, 10,000 nodes,
+  and 512 KiB of rows in the response.
 - **Data handling.** Text read from applications is application data, like
   screenshots: it is returned to the caller, and the follow-up decides whether
   request records keep it.
@@ -408,17 +502,21 @@ agent-desktop --json ui set-text --window W --role text --name Name TEXT        
    `ui invoke` and `ui text`; follow-up
    [#104](https://github.com/JosephWest2/kde_agent/issues/104), size
    large. It can split into a read-only part and an invoke and set-text part.
-2. **Actions first, coordinates second.** Bounds are returned as approximate
+2. **Not a security boundary.** Opting in exposes every registered
+   application's text and actions to any process of the same user that reaches
+   the private bus, outside the CLI's gates (section 1). The opt-in flag's
+   documentation must say so.
+3. **Actions first, coordinates second.** Bounds are returned as approximate
    hints with a per-toolkit conversion. GTK3 needs KWin's buffer geometry added
    to the window query.
-3. **Fix the off state anyway.** Today's `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0`
+4. **Fix the off state anyway.** Today's `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=0`
    turns Qt accessibility on whenever a bus exists, and GTK4 ignores
    `NO_AT_BRIDGE`. This is in the follow-up's scope.
-4. **Scope.** [REQUIREMENTS.md](../REQUIREMENTS.md) lists accessibility
+5. **Scope.** [REQUIREMENTS.md](../REQUIREMENTS.md) lists accessibility
    automation as outside the initial scope, and
    [ARCHITECTURE.md](../ARCHITECTURE.md) calls the tree deliberately absent.
    Going ahead changes both; #104 includes that, and it needs the owner's
    approval like any scope change.
-5. **No-go for Blender and custom-rendered apps.** They keep using screenshots
+6. **No-go for Blender and custom-rendered apps.** They keep using screenshots
    and coordinates, which [REQ-017](../REQUIREMENTS.md) already requires to work
    without accessibility.

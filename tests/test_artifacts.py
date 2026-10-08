@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop.artifacts import Store, LIMIT, safe_projection
 from agent_desktop.cli import parse_request
 from agent_desktop.contracts import ContractError, make_request
-from agent_desktop.environment import compose, executable, PROTECTED
+from agent_desktop.environment import check_overrides, compose, executable, PROTECTED
 from agent_desktop.paths import normalize
 from agent_desktop.protocol import request_from_wire
 from agent_desktop.records import Records
@@ -96,6 +96,41 @@ class PathEnvironmentTests(unittest.TestCase):
             Path(directory, 'no-bus').touch()
             with self.assertRaises(ContractError):
                 compose({}, {}, private)
+
+    def test_accessibility_off_policy(self):
+        # Qt enables accessibility whenever QT_LINUX_ACCESSIBILITY_ALWAYS_ON is
+        # set, even to 0, so it must be absent; GTK4 needs GTK_A11Y=none.
+        with tempfile.TemporaryDirectory() as directory:
+            private = self.private(Path(directory))
+            for value in ('0', '1', ''):
+                with self.subTest(value=value):
+                    base = {'QT_LINUX_ACCESSIBILITY_ALWAYS_ON': value, 'GTK_A11Y': 'atspi',
+                            'QT_ACCESSIBILITY': '1', 'NO_AT_BRIDGE': '0'}
+                    result = compose(base, {}, private)
+                    self.assertNotIn('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', result)
+                    self.assertEqual(result['GTK_A11Y'], 'none')
+                    self.assertEqual(result['QT_ACCESSIBILITY'], '0')
+                    self.assertEqual(result['NO_AT_BRIDGE'], '1')
+            self.assertNotIn('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', compose({}, {}, private))
+            for key, value in [('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', '0'),
+                               ('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', '1'),
+                               ('GTK_A11Y', 'none'), ('GTK_A11Y', 'atspi')]:
+                with self.subTest(key=key, value=value):
+                    self.assertIn(key, PROTECTED)
+                    for attempt in (lambda: check_overrides({key: value}),
+                                    lambda: compose({}, {key: value}, private),
+                                    lambda: request('launch', {'argv': ['app'], 'env': {key: value}})):
+                        with self.assertRaises(ContractError) as caught:
+                            attempt()
+                        self.assertEqual(caught.exception.code, 'invalid_arguments')
+            # The private values may restate the off values but never change them
+            # or name the absent variable.
+            self.assertEqual(compose({}, {}, private | {'GTK_A11Y': 'none'})['GTK_A11Y'], 'none')
+            for extra in ({'GTK_A11Y': 'atspi'}, {'QT_LINUX_ACCESSIBILITY_ALWAYS_ON': '0'},
+                          {'QT_LINUX_ACCESSIBILITY_ALWAYS_ON': '1'}):
+                with self.subTest(extra=extra), self.assertRaises(ContractError) as caught:
+                    compose({}, {}, private | extra)
+                self.assertEqual(caught.exception.code, 'session_unavailable')
 
     def test_executable_final_path_and_cwd_without_chdir(self):
         with tempfile.TemporaryDirectory() as directory:

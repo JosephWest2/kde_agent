@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from agent_desktop.artifacts import Store
 from agent_desktop.contracts import ContractError
 from agent_desktop.desktop import Desktop, dispose
-from agent_desktop.environment import DEFAULTS, DISABLED, FIXED, PROTECTED, compose
+from agent_desktop.environment import ABSENT, DEFAULTS, DISABLED, FIXED, PROTECTED, compose
 
 
 class Child:
@@ -100,6 +100,11 @@ class DesktopTests(unittest.TestCase):
         self.assertNotIn('KWIN_SCREENSHOT_NO_PERMISSION_CHECKS', env)
         for key, value in (DISABLED | FIXED).items():
             self.assertEqual(env[key], value)
+        self.assertEqual(env['GTK_A11Y'], 'none')
+        self.assertTrue(ABSENT and ABSENT <= PROTECTED)
+        for key in ABSENT:
+            self.assertNotIn(key, env)
+            self.assertNotIn(key, desktop.env)
         count = len(self.children.calls)
         for key in [*PROTECTED, 'KWIN_SCREENSHOT_NO_PERMISSION_CHECKS', 'KWIN_EIS_NO_PERMISSION_CHECKS']:
             with self.subTest(key=key), self.assertRaises(ContractError) as caught:

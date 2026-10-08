@@ -10,10 +10,15 @@ ENDPOINTS = frozenset({'DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'WAYLAND_SOCK
                        'DBUS_SESSION_BUS_WINDOWID', 'DBUS_SYSTEM_BUS_ADDRESS', 'AT_SPI_BUS_ADDRESS',
                        'DBUS_STARTER_ADDRESS', 'DBUS_STARTER_BUS_TYPE', 'SESSION_MANAGER',
                        'KDE_FULL_SESSION', 'KDE_APPLICATIONS_AS_SCOPE'})
-DISABLED = {'QT_ACCESSIBILITY': '0', 'QT_LINUX_ACCESSIBILITY_ALWAYS_ON': '0', 'NO_AT_BRIDGE': '1'}
+# Accessibility off. GTK4 ignores NO_AT_BRIDGE and needs GTK_A11Y=none; GTK3
+# needs NO_AT_BRIDGE=1. Qt turns accessibility on whenever
+# QT_LINUX_ACCESSIBILITY_ALWAYS_ON is set, whatever its value, so that variable
+# is ABSENT: removed from every environment and protected, never given a value.
+DISABLED = {'QT_ACCESSIBILITY': '0', 'NO_AT_BRIDGE': '1', 'GTK_A11Y': 'none'}
+ABSENT = frozenset({'QT_LINUX_ACCESSIBILITY_ALWAYS_ON'})
 FIXED = {'XDG_DATA_DIRS': '/usr/local/share:/usr/share', 'QT_QPA_PLATFORM': 'wayland',
          'XDG_SESSION_TYPE': 'wayland', 'KDE_SESSION_VERSION': '6', 'XKB_DEFAULT_LAYOUT': 'us'}
-PROTECTED = SETTINGS | ENDPOINTS | DISABLED.keys() | FIXED.keys()
+PROTECTED = SETTINGS | ENDPOINTS | DISABLED.keys() | ABSENT | FIXED.keys()
 DEFAULTS = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
 
 
@@ -74,6 +79,8 @@ def compose(base, overrides, private):
     result.update(private)
     result.update(DISABLED)
     result.update(FIXED)
+    for key in ABSENT:
+        result.pop(key, None)
     return result
 
 

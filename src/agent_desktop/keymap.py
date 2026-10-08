@@ -1,8 +1,9 @@
-"""Physical key names, chord parsing and US-layout text mapping. Pure; no native imports.
+"""Physical key names, chord parsing, US-layout text mapping and `type` routing. Pure; no native imports.
 
 Every name maps to exactly one Linux evdev key code (linux/input-event-codes.h).
 The private desktop uses KWin's default US keyboard layout, so ``type`` maps
 characters to the physical keys that produce them there, adding Shift as needed.
+Text with any other character goes as one input-method commit instead (``route``).
 """
 from __future__ import annotations
 
@@ -11,6 +12,9 @@ from .contracts import ContractError
 MAX_CHORD = 8
 SHIFT = 42
 CAPS_LOCK = 58
+# `type --method`: auto (keys when every character has a US key, else the input method), keys, input-method.
+TYPE_METHODS = ('auto', 'keys', 'input-method')
+MAX_COMMIT_BYTES = 4000  # One input-method commit: text-input-v3's limit, inside libwayland's 4096-byte message.
 
 _LETTERS = dict(zip('qwertyuiop', range(16, 26))) | dict(zip('asdfghjkl', range(30, 39))) \
     | dict(zip('zxcvbnm', range(44, 51)))
@@ -113,3 +117,33 @@ def text_strokes(text, *, caps_lock=False):
             _unsupported('Text contains a character the US layout cannot type.',
                          index=index, codepoint=f'U+{ord(char):04X}')
     return strokes
+
+
+_TYPEABLE = frozenset(_LETTERS) | frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ') | frozenset(_DIGITS) \
+    | frozenset(_PUNCTUATION) | frozenset(_SHIFTED) | frozenset(' \n\t')
+
+
+def typeable(text):
+    """True if the US layout can type every character of TEXT (``text_strokes`` would accept it)."""
+    return _TYPEABLE.issuperset(text)
+
+
+def route(text, method='auto'):
+    """'keys' or 'input_method': how ``type`` sends TEXT under METHOD.
+
+    auto keeps today's key path for text the US layout can type, and commits
+    any other text whole through the input method. keys always uses keys (and
+    rejects what it cannot type); input-method always commits.
+    """
+    if method == 'keys' or (method == 'auto' and typeable(text)):
+        return 'keys'
+    return 'input_method'
+
+
+def commit_text(text):
+    """TEXT as the UTF-8 bytes of one commit; rejects characters UTF-8 cannot carry (lone surrogates)."""
+    for index, char in enumerate(text):
+        if 0xd800 <= ord(char) <= 0xdfff:
+            _unsupported('Text contains a lone surrogate, which is not a character.',
+                         index=index, codepoint=f'U+{ord(char):04X}')
+    return text.encode('utf-8')

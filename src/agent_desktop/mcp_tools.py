@@ -7,6 +7,7 @@ reject the same requests with the same errors.
 """
 from __future__ import annotations
 
+from .keymap import TYPE_METHODS
 from .contracts import DRAG_DURATION, LOG_SOURCES, MAX_SCROLL_STEPS, MAX_TAIL, MODIFIER_NAMES, OPERATIONS, WAIT_CONDITIONS
 
 SESSION = {"type": "string", "description": "Session name: 1-64 letters, digits, '_' or '-' "
@@ -96,8 +97,14 @@ TOOLS = {
                       "description": "Seconds to hold the chord (default 0.05, at most 2)."}},
             ["window", "chord"], INPUT),
     "type": ("type", "Type text",
-             "Type literal ASCII text (newline and tab included) into a focused window, about 10ms per character.",
-             {"window": WINDOW, "text": {"type": "string", "description": "Text to type; may be empty."}},
+             "Type literal text into a focused window. Text the US layout can type (ASCII, newline, tab) goes as "
+             "keys, about 10ms per character; any other text goes whole as one input-method commit (at most 4000 "
+             "UTF-8 bytes; newline and tab are inserted as characters, not Return/Tab keys) and the result says "
+             "method and confirmed. confirmed false is not a failure and never a reason to retry: check the app.",
+             {"window": WINDOW, "text": {"type": "string", "description": "Text to type; may be empty."},
+              "method": {"type": "string", "enum": list(TYPE_METHODS),
+                         "description": "auto (default): keys if every character has a US key, else the input "
+                                        "method; keys; or input-method."}},
              ["window", "text"], INPUT),
     "click": ("click", "Click", "Click at a point. With window, coordinates are client-area pixels and the window "
               "must be focused; without, screen pixels.",

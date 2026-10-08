@@ -1,7 +1,7 @@
 # Native Wayland fixture
 
 `private_harness.build()` builds `wayland_fixture.c` with the generated stable
-xdg-shell and presentation-time protocols, `wayland-client`, and `xkbcommon`.
+xdg-shell and presentation-time protocols, unstable text-input-v3, `wayland-client`, and `xkbcommon`.
 The existing `tools/private_harness.py run` smoke exercises the default
 stdin-driven primary surface. No AT-SPI integration is used.
 
@@ -142,3 +142,28 @@ Wayland also does not reliably force missing PID or client bounds; null decoder
 coverage belongs in fixed synthetic tests. An unassociated evidence window can
 use the same fixture binary launched as service infrastructure outside the
 application subgroup; the fixture does not create or move cgroups.
+
+## Text input
+
+`--text-input` gives the fixture one text field through `zwp_text_input_v3`, for
+the input-method `type` tests ([INPUT.md](../docs/INPUT.md#non-ascii-text-the-input-method)).
+Without it the fixture never binds text-input, so it is the "no text field" case:
+KWin activates no input method for it.
+
+- On `text_input_enter` (keyboard focus) the field is enabled and its state sent:
+  `set_surrounding_text` with the last 4000 bytes of the field (starting on a
+  UTF-8 boundary), cursor and anchor at the end, a content type and `commit`.
+  `text_input_leave` disables it.
+- `commit_string` is applied on the following `done`, and the state is sent again
+  with change cause `input_method`. Key presses while the field is enabled also
+  edit it (the key's text; Return and Tab insert `\n` and `\t`; BackSpace deletes
+  one character) and send the state with cause `other`. Every key still has its
+  usual `key` receipt.
+- Receipts: `text_input_ready` (bound at start-up), `text_input_enter` and
+  `text_input_leave` with the surface, `text_input_state` (`reason`, `commits`,
+  `surrounding_bytes`, `field_bytes`), `text_input_commit_string` with the exact
+  `text` and its `bytes`, `text_input_preedit_string`,
+  `text_input_delete_surrounding_text`, and `text_input_done` with `serial`,
+  `applied` (a commit was applied) and the field's whole `text` and `bytes`. These
+  receipts hold the typed text on purpose: they are the test's evidence, in the
+  application's own log.

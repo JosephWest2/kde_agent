@@ -320,7 +320,8 @@ def check(root, deadline):
     started = time.monotonic()
     report = {'schema_version': 1, 'scope': 'prerequisites', 'dependency_root': str(root),
               'desktop_ready': False, 'desktop_launched': False,
-              'capabilities': {key: 'not_tested' for key in ('control', 'window_query', 'input_resumed', 'screenshot')},
+              'capabilities': {key: 'not_tested' for key in ('control', 'window_query', 'input_resumed', 'screenshot',
+                                                             'input_method')},
               'supported_operations': list(SUPPORTED_OPERATIONS),
               'unsupported_operations': [key for key in OPERATIONS if key not in SUPPORTED_OPERATIONS],
               'dependencies': []}

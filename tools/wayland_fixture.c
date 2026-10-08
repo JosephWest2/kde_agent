@@ -4,6 +4,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "xdg-shell-client-protocol.h"
 #include "presentation-time-client-protocol.h"
+#include "text-input-unstable-v3-client-protocol.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/input-event-codes.h>
@@ -78,6 +79,18 @@ static unsigned signal_step_count, signal_steps_done;
 static volatile sig_atomic_t usr1_received;
 static void on_usr1(int sig) { (void)sig; usr1_received = usr1_received + 1; }
 static struct fixture_surface *confirmation_target;
+/* --text-input: a zwp_text_input_v3 field holding everything typed or committed.
+ * Its whole text and every commit are logged exactly: they are the test's data. */
+#define TEXT_CAPACITY 65536
+#define SURROUNDING_MAX 4000
+static bool text_input_mode, text_input_enabled;
+static struct wl_seat *seat;
+static struct zwp_text_input_manager_v3 *text_input_manager;
+static struct zwp_text_input_v3 *text_input;
+static char field[TEXT_CAPACITY], pending_commit[TEXT_CAPACITY];
+static size_t field_length;
+static bool commit_pending;
+static uint32_t text_input_commits;
 
 static unsigned long long monotonic_ns(void) {
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -98,6 +111,31 @@ static void quoted(const char *s) {
 }
 static void die(const char *message) {
     event("error"); printf(",\"message\":"); quoted(message); puts("}"); exit(1);
+}
+static void field_append(const char *text) {
+    size_t n = strlen(text);
+    if (field_length + n >= TEXT_CAPACITY) die("text field full");
+    memcpy(field + field_length, text, n); field_length += n; field[field_length] = 0;
+}
+static void field_backspace(void) {
+    while (field_length && ((unsigned char)field[field_length - 1] & 0xc0) == 0x80) --field_length;
+    if (field_length) --field_length;
+    field[field_length] = 0;
+}
+/* Sends the field's state: at most SURROUNDING_MAX bytes before the cursor (at the end),
+ * starting on a UTF-8 character boundary, as text-input-v3 requires. */
+static void text_input_send_state(const char *reason) {
+    if (!text_input_enabled) return;
+    size_t start = field_length > SURROUNDING_MAX ? field_length - SURROUNDING_MAX : 0;
+    while (start < field_length && ((unsigned char)field[start] & 0xc0) == 0x80) ++start;
+    uint32_t cursor = (uint32_t)(field_length - start);
+    zwp_text_input_v3_set_surrounding_text(text_input, field + start, (int32_t)cursor, (int32_t)cursor);
+    zwp_text_input_v3_set_text_change_cause(text_input, !strcmp(reason, "input_method") ?
+        ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_INPUT_METHOD : ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_OTHER);
+    zwp_text_input_v3_set_content_type(text_input, ZWP_TEXT_INPUT_V3_CONTENT_HINT_NONE, ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_NORMAL);
+    zwp_text_input_v3_commit(text_input); ++text_input_commits;
+    event("text_input_state"); printf(",\"reason\":"); quoted(reason);
+    printf(",\"commits\":%u,\"surrounding_bytes\":%u,\"field_bytes\":%zu}\n", text_input_commits, cursor, field_length);
 }
 static void surface_event(const char *type, const struct fixture_surface *s) {
     event(type); printf(",\"surface\":"); quoted(s->label);
@@ -298,6 +336,13 @@ static void key(void *data, struct wl_keyboard *k, uint32_t serial, uint32_t tim
     input_event("key", keyboard_surface); printf(",\"source\":\"wayland\",\"serial\":%u,\"time_ms\":%u,\"key\":%u,\"state\":%u,\"keysym\":%u,\"text\":", serial, time, code, state, sym); quoted(text); puts("}");
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED && (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) &&
         acknowledge_confirmation(keyboard_surface, "key")) return;
+    if (text_input_enabled && state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+        if (sym == XKB_KEY_BackSpace) field_backspace();
+        else if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) field_append("\n");
+        else if (sym == XKB_KEY_Tab) field_append("\t");
+        else if ((unsigned char)text[0] >= 32 && text[0] != 127) field_append(text);
+        text_input_send_state("key");
+    }
     struct fixture_surface *s = keyboard_surface ? keyboard_surface : &surfaces[0];
     ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
 }
@@ -337,6 +382,41 @@ static void axis_discrete(void *d, struct wl_pointer *p, uint32_t a, int32_t s) 
 static void axis_value120(void *d, struct wl_pointer *p, uint32_t a, int32_t v) { (void)d; (void)p; input_event("axis_value120", pointer_surface); printf(",\"axis\":%u,\"value120\":%d}\n", a, v); }
 static void axis_relative_direction(void *d, struct wl_pointer *p, uint32_t a, uint32_t direction) { (void)d; (void)p; input_event("axis_relative_direction", pointer_surface); printf(",\"axis\":%u,\"direction\":%u}\n", a, direction); }
 static const struct wl_pointer_listener pointer_listener = { .enter = pointer_enter, .leave = pointer_leave, .motion = motion, .button = button, .axis = axis, .frame = pointer_frame, .axis_source = axis_source, .axis_stop = axis_stop, .axis_discrete = axis_discrete, .axis_value120 = axis_value120, .axis_relative_direction = axis_relative_direction };
+static void ti_enter(void *data, struct zwp_text_input_v3 *ti, struct wl_surface *s) {
+    (void)data; struct fixture_surface *surface = find_surface(s);
+    input_event("text_input_enter", surface); puts("}");
+    zwp_text_input_v3_enable(ti); text_input_enabled = true; text_input_send_state("enable");
+}
+static void ti_leave(void *data, struct zwp_text_input_v3 *ti, struct wl_surface *s) {
+    (void)data; input_event("text_input_leave", find_surface(s)); puts("}");
+    zwp_text_input_v3_disable(ti); zwp_text_input_v3_commit(ti); ++text_input_commits; text_input_enabled = false;
+}
+static void ti_preedit(void *data, struct zwp_text_input_v3 *ti, const char *text, int32_t begin, int32_t end) {
+    (void)data; (void)ti; event("text_input_preedit_string"); printf(",\"text\":"); quoted(text ? text : "");
+    printf(",\"cursor_begin\":%d,\"cursor_end\":%d}\n", begin, end);
+}
+static void ti_commit_string(void *data, struct zwp_text_input_v3 *ti, const char *text) {
+    (void)data; (void)ti; event("text_input_commit_string"); printf(",\"text\":"); quoted(text ? text : "");
+    printf(",\"bytes\":%zu}\n", text ? strlen(text) : 0);
+    snprintf(pending_commit, sizeof(pending_commit), "%s", text ? text : ""); commit_pending = true;
+}
+static void ti_delete_surrounding(void *data, struct zwp_text_input_v3 *ti, uint32_t before, uint32_t after) {
+    (void)data; (void)ti; event("text_input_delete_surrounding_text"); printf(",\"before\":%u,\"after\":%u}\n", before, after);
+}
+static void ti_done(void *data, struct zwp_text_input_v3 *ti, uint32_t serial) {
+    (void)data; (void)ti; bool applied = commit_pending;
+    if (commit_pending) { field_append(pending_commit); commit_pending = false; }
+    event("text_input_done"); printf(",\"serial\":%u,\"commits\":%u,\"applied\":%s,\"text\":", serial, text_input_commits, applied ? "true" : "false");
+    quoted(field); printf(",\"bytes\":%zu}\n", field_length);
+    if (applied) {
+        struct fixture_surface *s = keyboard_surface ? keyboard_surface : &surfaces[0];
+        ++s->state; s->dirty = true; s->source = "input"; s->control_id = 0; render(s);
+        text_input_send_state("input_method");
+    }
+}
+static const struct zwp_text_input_v3_listener text_input_listener = {
+    .enter = ti_enter, .leave = ti_leave, .preedit_string = ti_preedit, .commit_string = ti_commit_string,
+    .delete_surrounding_text = ti_delete_surrounding, .done = ti_done };
 static void capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
     (void)data;
     if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !keyboard) { keyboard = wl_seat_get_keyboard(seat); wl_keyboard_add_listener(keyboard, &keyboard_listener, NULL); }
@@ -354,7 +434,8 @@ static void global(void *data, struct wl_registry *registry, uint32_t id, const 
     else if (!strcmp(interface, "xdg_wm_base")) { shell = wl_registry_bind(registry, id, &xdg_wm_base_interface, version < 4 ? version : 4); xdg_wm_base_add_listener(shell, &shell_listener, NULL); }
     else if (!strcmp(interface, "wp_presentation")) { presentation = wl_registry_bind(registry, id, &wp_presentation_interface, 1); wp_presentation_add_listener(presentation, &presentation_listener, NULL); }
     else if (!strcmp(interface, "wl_output")) { ++output_count; struct wl_output *o = wl_registry_bind(registry, id, &wl_output_interface, version < 4 ? version : 4); only_output = o; wl_output_add_listener(o, &output_listener, NULL); }
-    else if (!strcmp(interface, "wl_seat")) { struct wl_seat *seat = wl_registry_bind(registry, id, &wl_seat_interface, version < 9 ? version : 9); wl_seat_add_listener(seat, &seat_listener, NULL); }
+    else if (!strcmp(interface, "wl_seat") && !seat) { seat = wl_registry_bind(registry, id, &wl_seat_interface, version < 9 ? version : 9); wl_seat_add_listener(seat, &seat_listener, NULL); }
+    else if (!strcmp(interface, "zwp_text_input_manager_v3") && text_input_mode) text_input_manager = wl_registry_bind(registry, id, &zwp_text_input_manager_v3_interface, 1);
 }
 static void global_remove(void *data, struct wl_registry *registry, uint32_t id) { (void)data; (void)registry; event("global_remove"); printf(",\"id\":%u}\n", id); }
 static const struct wl_registry_listener registry_listener = { .global = global, .global_remove = global_remove };
@@ -370,7 +451,9 @@ static void usage(void) {
             "  [--resize-after-ms LABEL:MS:WIDTH:HEIGHT] [--destroy-after-ms LABEL:MS]\n"
             "  [--on-sigusr1 retitle|close:LABEL[,...]] (each SIGUSR1 applies the next step, at most 8;\n"
             "   retitle sets \"KDE Agent Native Fixture retitled\")\n"
-            "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted]\n"
+            "  [--title-mode normal|empty|omitted] [--app-id-mode normal|empty|omitted] [--text-input]\n"
+            "--text-input: a zwp_text_input_v3 field (enabled on keyboard focus); every commit_string and\n"
+            "the field's whole text after each done are logged exactly. Without it there is no text input.\n"
             "Durations: 0..86400000 ms; exit code: 0..255. "
             "--descendant-ms and --child-window-ms must be positive.\n"
             "Non-normal close modes require positive --exit-after-ms; delay requires positive\n"
@@ -553,6 +636,7 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "--sibling")) { sibling_window = true; continue; }
         if (!strcmp(argv[i], "--dialog")) { dialog_window = true; continue; }
         if (!strcmp(argv[i], "--child-surface")) { child_surface = true; continue; }
+        if (!strcmp(argv[i], "--text-input")) { text_input_mode = true; continue; }
         if (!strcmp(argv[i], "--help")) { usage(); return 0; }
         if (i + 1 >= argc) { usage(); return 2; }
         const char *option = argv[i], *value = argv[++i];
@@ -609,6 +693,12 @@ int main(int argc, char **argv) {
     struct wl_registry *registry = wl_display_get_registry(display); wl_registry_add_listener(registry, &registry_listener, NULL);
     if (wl_display_roundtrip(display) < 0 || wl_display_roundtrip(display) < 0) die("registry failed");
     if (!compositor || !shm || !shell || !presentation) die("required Wayland/presentation global absent");
+    if (text_input_mode) {
+        if (!text_input_manager || !seat) die("zwp_text_input_manager_v3 absent");
+        text_input = zwp_text_input_manager_v3_get_text_input(text_input_manager, seat);
+        zwp_text_input_v3_add_listener(text_input, &text_input_listener, NULL);
+        event("text_input_ready"); puts("}");
+    }
     event("output"); printf(",\"count\":%u,\"width\":%u,\"height\":%u,\"scale\":%u,\"transform\":%u}\n", output_count, output_width, output_height, output_scale, output_transform);
     if (output_count != 1 || output_width != 1280 || output_height != 720 || output_scale != 1 || output_transform != 0) die("unexpected output configuration");
     if (descendant_ms) start_descendant();

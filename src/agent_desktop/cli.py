@@ -76,6 +76,9 @@ def parser():
     leaves["key"].add_argument("chord", metavar="CHORD")
     leaves["key"].add_argument("--hold", default=.05, metavar="SECONDS")
     leaves["type"].add_argument("text", metavar="TEXT")
+    leaves["type"].add_argument("--method", default=None, metavar="auto|keys|input-method",
+                                help="auto (default): keys when the US layout can type every character, "
+                                     "else one input-method commit (at most 4000 UTF-8 bytes)")
     for operation in ("click", "move", "scroll"):
         for axis in ("x", "y"):
             leaves[operation].add_argument(f"--{axis}", required=True, metavar="INT",

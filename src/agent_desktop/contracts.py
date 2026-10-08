@@ -191,7 +191,7 @@ ARGUMENTS = {
     "launch": {"cwd", "env", "wait_window", "argv"},
     "windows": {"app"}, "focus": {"app", "window"},
     "wait": {"condition", "app", "window", "match", "regex"}, "key": {"window", "chord", "hold"},
-    "type": {"window", "text"}, "click": {"window", "x", "y", "button", "count", "modifiers"},
+    "type": {"window", "text", "method"}, "click": {"window", "x", "y", "button", "count", "modifiers"},
     "move": {"window", "x", "y"}, "scroll": {"window", "x", "y", "dx", "dy", "modifiers"},
     "drag": {"window", "from", "to", "button", "duration", "modifiers"},
     "screenshot": {"output", "window"}, "logs": {"app", "source", "tail"},
@@ -285,6 +285,24 @@ def make_request(operation, *, arguments, caller_cwd, session="default",
         args["hold"] = finite_seconds(args.get("hold", .05), "hold", 2)
     if operation == "type":
         args["text"] = text(args.get("text"), "text", empty=True)
+        # keymap imports this module, so it is imported here (as title_regex is above).
+        from .keymap import MAX_COMMIT_BYTES, TYPE_METHODS, route
+        method = "auto" if args.get("method") is None else args["method"]
+        if not isinstance(method, str) or method not in TYPE_METHODS:
+            invalid("method")
+        args["method"] = method
+        if route(args["text"], method) == "input_method":
+            # One commit carries the whole text; a longer one would break the input
+            # method's Wayland connection with nothing delivered. Refused before sending.
+            size = len(args["text"].encode("utf-8", "surrogatepass"))
+            if size > MAX_COMMIT_BYTES:
+                raise ContractError("invalid_arguments", "Text for an input-method commit is too long; "
+                                    "split it into several type requests.",
+                                    context={"field": "text", "reason": "text_too_long", "bytes": size,
+                                             "limit_bytes": MAX_COMMIT_BYTES})
+            if not size:
+                raise ContractError("invalid_arguments", "--method input-method needs non-empty text.",
+                                    context={"field": "text", "reason": "empty_text"})
     if operation in ("click", "move", "scroll"):
         for axis in ("x", "y"):
             value = args.get(axis)

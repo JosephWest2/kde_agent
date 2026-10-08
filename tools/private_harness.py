@@ -151,8 +151,10 @@ def build(root):
         return command(args, env=env, timeout=remaining)
     protocols = Path(run(["/usr/bin/pkg-config", "--variable=pkgdatadir", "wayland-protocols"]).strip())
     sources = []
-    for name in ("xdg-shell", "presentation-time"):
-        xml = protocols / "stable" / name / (name + ".xml")
+    for xml in (protocols / "stable" / "xdg-shell" / "xdg-shell.xml",
+                protocols / "stable" / "presentation-time" / "presentation-time.xml",
+                protocols / "unstable" / "text-input" / "text-input-unstable-v3.xml"):
+        name = xml.stem
         header = root / (name + "-client-protocol.h")
         code = root / (name + "-protocol.c")
         run(["/usr/bin/wayland-scanner", "client-header", str(xml), str(header)])

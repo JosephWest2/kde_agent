@@ -135,10 +135,14 @@ def run(name, generation, *, handler=None, factory=UnsupportedTask, capabilities
                     if request.operation == 'kill':
                         from .terminating import KillTask
                         return KillTask(request, context, applications, launch_health)
-                    if request.operation in ('key', 'type'):
+                    if request.operation == 'key':
                         from .input_actions import InputTask
                         return InputTask(request, context, readiness.adapter, lambda: readiness.input,
                                          applications, launch_health)
+                    if request.operation == 'type':
+                        from .input_actions import TypeTask
+                        return TypeTask(request, context, readiness.adapter, lambda: readiness.input,
+                                        applications, launch_health, readiness.input_method_client)
                     if request.operation in ('click', 'move', 'scroll', 'drag'):
                         from .input_actions import ClickTask, DragTask, MoveTask, ScrollTask
                         task = {'click': ClickTask, 'move': MoveTask, 'scroll': ScrollTask,

@@ -8,7 +8,8 @@ generation's cgroup and no systemd unit:
     flow        (legacy initialize handshake) session_start, launch, windows,
                 focus, type, key, screenshot (window, also copied to `output`,
                 and full screen, each a valid PNG image block matching the stored
-                capture), session_stop
+                capture), non-ASCII type (one input-method commit into the
+                fixture's text-input field; `method: keys` refuses it), session_stop
     cancel      (modern per-request _meta) notifications/cancelled during
                 `key --hold 2`: the fixture sees the release within 1s, no
                 response is sent for the cancelled call, and input works after
@@ -166,9 +167,9 @@ class MCPScenario(failures.Scenario):
         self.generation = payload['session']['generation']
         self.pids.append(payload['result']['worker_pid'])
 
-    def launch_fixture(self, label='fixture'):
+    def launch_fixture(self, label='fixture', *extra):
         payload, _ = self.tool(f'{label}: launch', 'launch', {'argv': [str(self.fixture), '--autonomous',
-                                                                       '--exit-after-ms', '60000'],
+                                                                       '--exit-after-ms', '60000', *extra],
                                                               'wait_window': True})
         result = payload['result']
         self.pids.append(result['process']['pid'])
@@ -222,10 +223,28 @@ class MCPScenario(failures.Scenario):
         if payload['result']['dimensions'] != [1280, 720]:
             raise SmokeFailure('screenshot (full)', f'dimensions {payload["result"]["dimensions"]}')
         self.tool('fixture: close', 'close', {'app': app})
+        self.unicode()
         payload, _ = self.tool('mcp session_stop', 'session_stop', timeout=60)
         self.stopped = True
         if payload['result'].get('cleanup') != 'complete':
             raise SmokeFailure('mcp session_stop', json.dumps(payload)[:400], payload)
+
+    def unicode(self):
+        app, window, log = self.launch_fixture('fixture 2', '--text-input')
+        payload, _ = self.tool('fixture 2: type --method keys (non-ASCII)', 'type',
+                               {'window': window, 'text': smoke.UNICODE_TEXT, 'method': 'keys'}, expect_ok=False)
+        if (payload['error'] or {}).get('code') != 'unsupported_input':
+            raise SmokeFailure('fixture 2: type --method keys', json.dumps(payload)[:400])
+        payload, _ = self.tool('fixture 2: type (input method)', 'type', {'window': window, 'text': smoke.UNICODE_TEXT})
+        result = payload['result']
+        if (result.get('method'), result.get('confirmed')) != ('input_method', True):
+            raise SmokeFailure('fixture 2: type (input method)', json.dumps(result)[:400])
+        smoke.wait_for_keys(log, 1, kinds={'text_input_commit_string'})
+        commits = [row['text'] for row in log_events(log, {'text_input_commit_string'})]
+        if commits != [smoke.UNICODE_TEXT] or log_events(log, {'key'}):
+            raise SmokeFailure('fixture 2: commit receipts', f'commits {commits!r}')
+        ok('fixture 2: commit receipts', 'one exact commit, confirmed, no key events')
+        self.tool('fixture 2: close', 'close', {'app': app})
 
     def hold(self, label):
         """Start `key --hold 2 w` through MCP and wait until the fixture has the key down."""

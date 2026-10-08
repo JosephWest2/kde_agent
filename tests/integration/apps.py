@@ -6,7 +6,8 @@ the way an agent would, and checks the application's own state on disk, not
 just that input was dispatched:
 
     text-editor  gnome-text-editor: type, save through the "Save a File" dialog
-                 with keyboard shortcuts, compare the file; edit and save again
+                 with keyboard shortcuts, compare the file; edit and save again;
+                 type a non-ASCII line (one input-method commit) and save again
     gimp         GIMP 3: a new 320x240 image, one paintbrush click and one brush
                  stroke (drag), export to PNG through the export dialogs; the
                  clicked pixel and points along the stroke are dark, the rest white
@@ -52,6 +53,9 @@ PROBE_ENV = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8'}
 # and only characters the private US layout can type.
 EDITOR_TEXT = 'agent desktop save check {tag}\nbraces {{x}} [y] $HOME ~/p "q" \'s\'\ttab\nlast line'
 EDITOR_MORE = '\nappended after the first save'
+# Typed on a new line through the input method: precomposed and combining (e + U+0301)
+# accents, a symbol, CJK and an emoji (4 UTF-8 bytes).
+EDITOR_UNICODE = 'ünïcödé ✓ 中文 🎉 e\u0301'
 
 GIMP_SIZE = (320, 240)
 GIMP_DOT = (80, 60)  # Image pixel to paint: off-centre, so a shifted or mirrored mapping fails.
@@ -145,6 +149,19 @@ class AppScenario(smoke.Smoke):
         expect_file(f'{label}: saved again', target, (text + EDITOR_MORE + '\n').encode())
         if any(row['kind'] == 'window' and row['window']['ref'] != window for row in self.rows(app)):
             raise SmokeFailure(f'{label}: second save', 'a dialog opened for a file that already has a path')
+        # Non-ASCII goes as one input-method commit; the saved file is the proof. GTK reports
+        # only a window of the text around the cursor (lines before it, or just the current
+        # line after a commit), so `confirmed` may be false (mismatch) here: it's reported.
+        self.type(label, window, '\n', 'a new line')
+        step = f'{label}: type non-ASCII line'
+        result = self.desktop(step, 'type', '--window', window, EDITOR_UNICODE)['result']
+        if (result.get('method'), result.get('bytes')) != ('input_method', len(EDITOR_UNICODE.encode())):
+            raise SmokeFailure(step, f'unexpected result {json.dumps(result)[-300:]}')
+        ok(step, f'method input_method, {result["bytes"]} bytes, confirmed {result["confirmed"]} '
+                 f'({result["confirmation_reason"]})')
+        self.key(label, window, 'ctrl+s')
+        expect_file(f'{label}: saved with non-ASCII', target,
+                    (text + EDITOR_MORE + '\n' + EDITOR_UNICODE + '\n').encode())
         result = self.desktop(f'{label}: close', 'close', '--app', app)['result']
         if result.get('exited') is not True:
             raise SmokeFailure(f'{label}: close', f'application did not exit: {json.dumps(result)[:300]}')

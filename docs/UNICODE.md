@@ -7,7 +7,9 @@ used GTK3, GTK4 and Qt6 clients.
 
 **Decision: go ahead with an input-method commit through KWin's
 `zwp_input_method_v1`; follow-up [#102](https://github.com/JosephWest2/kde_agent/issues/102),
-size medium.**
+size medium.** Implemented in #102: `type` now commits non-ASCII text this way;
+[INPUT.md](INPUT.md#non-ascii-text-the-input-method) documents the behavior. This
+page stays the spike's record.
 - **Why.** It delivered exact text, including combining marks, CJK, emoji, newline
   and tab, to every text-input client checked byte for byte: GTK3 and GTK4 (probes,
   gnome-text-editor), Qt6 (probe) and Dolphin (KF6). Blender 5.2 was checked only
@@ -290,6 +292,19 @@ whether the text arrived.
 2. **Clipboard paste: not for `type`.** It stays possible as a separate `paste`
    command if a workflow needs it (parking lot, #87). It needs a data-control
    source owned by the worker.
+   Implemented as planned (#102), with these choices:
+   - a pure-Python wire client (`input_method.py`) on the worker's GLib loop: no
+     libwayland or native code, a non-blocking socket, at most 64KiB read per
+     wakeup, whole messages only;
+   - one connection per session, bound at start, because KWin doesn't replay a
+     field's `surrounding_text` to a later client (per-request connections would
+     almost never have a before-snapshot);
+   - a 4000-byte limit (`text_too_long`) and a 200ms bound for an active context
+     (`text_input_unavailable`);
+   - measured afterwards: GTK reports a window of a multi-line text (the lines
+     around the cursor while typing keys, only the current line after a commit),
+     so exact before/after comparison reports `mismatch` there even when the text
+     arrived; single-line GTK fields and the fixture confirm.
 3. **Keymap approaches: no-go for Unicode.** `type` keeps the fixed US layout. A
    per-session or live layout option is possible, but it would cover only that
    layout's characters. A live change also needs the worker to survive a

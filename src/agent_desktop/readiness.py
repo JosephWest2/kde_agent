@@ -1,7 +1,9 @@
 """Capability gate: a session is ready only after control, window query, resumed input and a screenshot pass.
 
 The same input connection, window adapter and capture adapter then serve public
-operations; there is no separate provisional provider.
+operations; there is no separate provisional provider. The input-method client
+(input_method.py) connects alongside the input connection; whether KWin offers
+zwp_input_method_v1 is reported in health, but its absence never fails the session.
 """
 from __future__ import annotations
 from copy import deepcopy
@@ -13,13 +15,17 @@ from .contracts import ContractError
 from .health import fresh
 from .private_bus import PrivateBus
 from .input_connection import Input
+from .input_method import InputMethod
 from .owner_time import Budget
 from .windows import Adapter
 
 CAPABILITIES = ('window_query', 'input_resumed', 'screenshot')
+INPUT_METHOD_SETUP = 1.0  # Connect, registry and bind: a few milliseconds in practice.
 
 
 class Readiness:
+    input_method = None  # The input-method client, once input starts.
+
     def __init__(self, desktop, generation, binary, deadline):
         from gi.repository import GLib
         self.GLib = GLib
@@ -30,10 +36,12 @@ class Readiness:
         self.state = 'starting'
         self.phase = 'bus'
         self.health = {key: {'state': 'pending'} for key in CAPABILITIES}
-        self.health.update(bus={'state': 'pending'}, compositor={'state': 'pending'})
+        self.health.update(bus={'state': 'pending'}, compositor={'state': 'pending'},
+                           input_method={'state': 'pending'})
         self.error = self.fatal = None
         self.emissions = 0
         self.input = None
+        self.input_method = None
         self.folder = desktop.store.path / 'readiness'
         self.folder.mkdir(mode=0o700)
         self.bus = PrivateBus(desktop.env['DBUS_SESSION_BUS_ADDRESS'], min(deadline, time.monotonic() + 3))
@@ -129,6 +137,29 @@ class Readiness:
         self.input = Input(self.generation, self.GLib, invalidated=self.cancel,
                            failed=self._input_failed, log=self.log)
         self.input.connect(self.bus, self.input_deadline)
+        self._input_method_start()
+
+    def _input_method_start(self):
+        """A new input-method connection; non-essential, so a failure is only reported in health."""
+        path = Path(self.desktop.root) / self.desktop.env.get('WAYLAND_DISPLAY', 'wayland-private')
+        client = InputMethod(path, self.GLib)
+        self.input_method = client
+        deadline = time.monotonic() + INPUT_METHOD_SETUP
+        client.start(min(deadline, self.deadline) if self.state == 'starting' else deadline)
+        self.health['input_method'] = client.health()
+        return client
+
+    def input_method_client(self):
+        """The session's input-method client for `type`, reconnecting once a connection was lost.
+
+        None before input starts. A compositor that does not advertise the
+        global keeps its 'unavailable' client: that does not change at run time.
+        """
+        client = self.input_method
+        if client is not None and client.state in ('failed', 'closed') and self.state == 'ready':
+            client.close()
+            client = self._input_method_start()
+        return client
 
     def _input_failed(self, error):
         self.fatal = self.fatal or error
@@ -178,6 +209,9 @@ class Readiness:
             self.bus.tick()
             if self.input is not None:
                 self.input.tick()
+            if self.input_method is not None:
+                self.input_method.tick()
+                self.health['input_method'] = self.input_method.health()
             now = time.monotonic()
             if self.state == 'ready':
                 for component in ('bus', 'compositor'):
@@ -203,7 +237,9 @@ class Readiness:
             elif self.phase == 'input_resumed':
                 if now >= self.input_deadline:
                     self.fail(ContractError('timeout', 'Resumed input device timed out.'))
-                if self.input.ready():
+                # The input-method client settles (ready, unavailable or failed) within
+                # INPUT_METHOD_SETUP; health then says whether `type` can commit text.
+                if self.input.ready() and (self.input_method is None or self.input_method.settled):
                     self._passed('input_resumed', resumed=True)
                     self._capture_start()
             elif self.phase == 'screenshot':
@@ -243,6 +279,8 @@ class Readiness:
             self.fail(error)
 
     def close(self):
+        if self.input_method is not None:
+            self.input_method.close()
         if self.input is not None:
             self.input.dispose()
         self.bus.close()

@@ -88,6 +88,34 @@ class Input:
         self.disposed = True
 
 
+class InputMethod:
+    """Fake input-method client: settles when the test says so."""
+    instances = []
+
+    def __init__(self, path, GLib):
+        self.path = path
+        self.state = 'registry'
+        self.closed = False
+        InputMethod.instances.append(self)
+
+    def start(self, deadline):
+        self.deadline = deadline
+
+    def tick(self):
+        pass
+
+    @property
+    def settled(self):
+        return self.state not in ('registry', 'binding')
+
+    def health(self):
+        return {'state': {'ready': 'passed'}.get(self.state, self.state), 'advertised': self.state == 'ready'}
+
+    def close(self):
+        self.closed = True
+        self.state = 'closed'
+
+
 class Query:
     def __init__(self, owner, deadline):
         self.owner, self.deadline = owner, deadline
@@ -146,6 +174,10 @@ class ReadinessTests(unittest.TestCase):
         input_patch = patch.object(readiness, 'Input', Input)
         input_patch.start()
         self.addCleanup(input_patch.stop)
+        InputMethod.instances = []
+        method_patch = patch.object(readiness, 'InputMethod', InputMethod)
+        method_patch.start()
+        self.addCleanup(method_patch.stop)
         adapter_patch = patch.object(readiness, 'Adapter', Adapter)
         adapter_patch.start()
         self.addCleanup(adapter_patch.stop)
@@ -196,6 +228,7 @@ class ReadinessTests(unittest.TestCase):
         # Native FD bootstrap ownership is independently covered in input tests.
         provider.bus.pending.pop('input_resumed')
         provider.input.usable = True
+        provider.input_method.state = 'ready'
         provider.tick()
         self.assertEqual(provider.phase, 'screenshot')
         return provider
@@ -469,3 +502,36 @@ class ReadinessTests(unittest.TestCase):
         provider.close()
         self.assertTrue(provider.bus.closed)
         self.assertTrue(provider.input.disposed)
+
+    def test_input_method_is_reported_but_never_required(self):
+        provider = self.to_input()
+        self.assertEqual(provider.health['input_method']['state'], 'registry')
+        self.assertTrue(str(InputMethod.instances[0].path).endswith('desktop/wayland-private'))
+        self.assertLessEqual(InputMethod.instances[0].deadline, readiness.time.monotonic() + readiness.INPUT_METHOD_SETUP)
+        provider.bus.pending.pop('input_resumed')
+        provider.input.usable = True
+        provider.tick()
+        self.assertEqual(provider.phase, 'input_resumed')  # Waits for the client to settle (bounded by it).
+        provider.input_method.state = 'unavailable'
+        provider.tick()
+        self.assertEqual(provider.phase, 'screenshot')
+        self.write_receipt(provider)
+        provider.tick()
+        provider.bus.complete('bus', ('private-bus-id',))
+        provider.bus.complete('compositor', ())
+        provider.tick()
+        self.assertEqual(provider.state, 'ready')
+        self.assertEqual(provider.snapshot()['health']['input_method'], {'state': 'unavailable', 'advertised': False})
+        self.assertIs(provider.input_method_client(), InputMethod.instances[0])  # Unavailable stays unavailable.
+
+    def test_a_lost_input_method_connection_reconnects_when_type_needs_it(self):
+        provider = self.ready()
+        first = provider.input_method
+        self.assertIs(provider.input_method_client(), first)
+        first.state = 'failed'
+        second = provider.input_method_client()
+        self.assertIsNot(second, first)
+        self.assertTrue(first.closed)
+        self.assertEqual(provider.health['input_method']['state'], 'registry')
+        provider.close()
+        self.assertTrue(second.closed)

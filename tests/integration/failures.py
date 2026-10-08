@@ -18,6 +18,9 @@ generation's cgroup and no systemd unit:
     bus-death        SIGKILL the private dbus-daemon
     worker-sigkill   SIGKILL the worker during a hold
     worker-stopped   SIGSTOP the worker, then `session stop`
+    text-input       non-ASCII `type` refused before anything is sent: no text field
+                     (text_input_unavailable, exit 5) and over 4000 UTF-8 bytes
+                     (text_too_long, exit 2); the fixture sees no key or commit
     title-gone       `wait --for title|gone`: retitle, timeout, a window lost
                      mid-wait, a dialog closing while the app keeps running, and
                      a bad --regex sent straight over the transport
@@ -411,6 +414,29 @@ class Scenario(smoke.Smoke):
         print(f'  ok  {step:<34} {time.monotonic() - started:5.2f}s')
         return json.loads(out)
 
+    def text_input_refusals(self):
+        _, window, log = self.fixture_window()  # No --text-input: the window has no text field.
+        kinds = {'key', 'text_input_commit_string', 'text_input_enter'}
+        for step, text, code, reason, exit_code in (
+                ('type non-ASCII (no text field)', smoke.UNICODE_TEXT, 'unsupported_input', 'text_input_unavailable', 5),
+                ('type 4001 bytes', 'é' * 2000 + 'x', 'invalid_arguments', 'text_too_long', 2)):
+            argv = [self.cli, '--json', 'type', '--session', self.session, '--window', window, text]
+            process = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=40)
+            payload = json.loads(process.stdout)
+            error = payload['error'] or {}
+            if ((error.get('code'), error.get('context', {}).get('reason'), error.get('outcome'), process.returncode)
+                    != (code, reason, 'not_started', exit_code)):
+                raise SmokeFailure(step, f'exit {process.returncode}: {json.dumps(payload)[:400]}', payload)
+            ok(step, f'{code}/{reason}, outcome not_started, exit {exit_code}')
+        time.sleep(.3)
+        if log_events(log, kinds):
+            raise SmokeFailure('text-input', f'the fixture received input: {log_events(log, kinds)[:3]}')
+        ok('text-input: fixture log', 'no key events, no commits')
+        # The same session still types ASCII as keys.
+        result = self.desktop('type ASCII afterwards', 'type', '--window', window, 'ok')['result']
+        if result.get('method') != 'keys':
+            raise SmokeFailure('type ASCII afterwards', json.dumps(result)[:300])
+
     def title_gone_waits(self):
         # Each SIGUSR1 applies the fixture's next step: retitle the primary, close
         # the sibling, close the dialog. The fixture keeps running throughout.
@@ -552,7 +578,8 @@ def ok(step, detail):
 SCENARIOS = {'focus-loss': 'focus_loss', 'cancel-hold': 'cancel_hold', 'cancel-type': 'cancel_type',
              'scroll-interrupted': 'scroll_interrupted', 'drag-interrupted': 'drag_interrupted',
              'generation': 'generation_refusal', 'compositor-death': 'compositor_death', 'bus-death': 'bus_death',
-             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'title-gone': 'title_gone_waits'}
+             'worker-sigkill': 'worker_sigkill', 'worker-stopped': 'worker_stopped', 'text-input': 'text_input_refusals',
+             'title-gone': 'title_gone_waits'}
 
 
 def main(argv=None):

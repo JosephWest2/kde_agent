@@ -47,6 +47,8 @@ def parser():
         sub = group.add_subparsers(dest="action", required=True)
         for action in actions:
             leaves[f"{family}.{action}"] = sub.add_parser(action, help=note(f"{family}.{action}"))
+    # Listed for --help only: main() runs "agent-desktop mcp ..." before this parser.
+    commands.add_parser("mcp", help="serve the commands as MCP tools over stdio (see docs/MCP.md)", add_help=False)
     for operation, leaf in leaves.items():
         default, maximum, _ = OPERATIONS[operation]
         leaf.set_defaults(operation=operation)
@@ -123,6 +125,8 @@ def parse_request(argv, request_id, caller_cwd):
     except HelpRequested as help_result:
         return None, dict(help=help_result.help_text), "help", json_mode
     values = vars(namespace)
+    if values["command"] == "mcp":
+        raise ContractError("invalid_arguments", "Run the MCP server as: agent-desktop mcp [options], first and without --json.")
     operation = values["operation"]
     args = {key: value for key, value in values.items() if key in ARGUMENTS[operation]}
     if launch:
@@ -140,17 +144,37 @@ def parse_request(argv, request_id, caller_cwd):
     return normalize(request), None, operation, json_mode
 
 
+COPY_LIMIT = 8 * 1024 * 1024  # Bytes; a 1280x720 RGBA PNG is at most about 3.7 MB.
+
+
 def copy_output(payload, output):
-    """Copy the worker's artifact PNG to --output (a file path, or an existing directory)."""
+    """Copy the worker's artifact PNG to --output (a file path, or an existing directory).
+
+    The source must be the session generation's own regular file, opened without
+    symlinks (artifacts.open_capture) and at most COPY_LIMIT bytes; anything else is
+    refused like an unreadable source, so nothing outside the artifacts is copied.
+    """
+    from .artifacts import CaptureRefused, open_capture, read_bounded
     result = payload["result"]
+    session = payload.get("session") or {}
     target = output
     if os.path.isdir(target):
         target = os.path.join(target, result["capture_id"] + ".png")
     temporary = f"{target}.{uuid.uuid4().hex}.partial"
     error = None
     try:
-        with open(result["path"], "rb") as source, open(temporary, "xb") as destination:
-            destination.write(source.read())
+        try:
+            fd = open_capture(session.get("name"), session.get("generation"), result.get("path"))
+        except CaptureRefused:
+            raise OSError("refused capture source") from None
+        try:
+            data = read_bounded(fd, COPY_LIMIT)
+        finally:
+            os.close(fd)
+        if len(data) > COPY_LIMIT:
+            raise OSError("capture over the copy limit")
+        with open(temporary, "xb") as destination:
+            destination.write(data)
         os.replace(temporary, target)
     except OSError:
         error = ContractError("artifact_failed", "Screenshot was captured but could not be copied to --output.",
@@ -188,30 +212,42 @@ def render(payload, json_mode):
             print(json.dumps(result, indent=2, ensure_ascii=True, allow_nan=False))
 
 
-def main(argv=None):
-    argv = list(sys.argv[1:] if argv is None else argv)
-    request_id = uuid.uuid4().hex
-    json_mode = split_cli(argv)[2]
+def run(request):
+    """The shared dispatcher: one validated, normalized Request to one response payload.
+
+    The CLI and each MCP tool call (agent_desktop.mcp_call) both use it, so doctor,
+    lifecycle, the worker transport and the screenshot copy behave identically.
+    """
+    operation = request.operation
+    if operation == "doctor":
+        from .prerequisites import doctor
+        return response(request.request_id, operation, result=doctor(request))
+    if operation == "session.start":
+        from .lifecycle import Manager
+        return Manager().start(request)
+    if operation in {"session.status", "session.stop"}:
+        from .lifecycle import Manager
+        return Manager().handle(request)
+    from .transport import exchange
+    payload = exchange(request)
+    if (operation == "screenshot" and payload["ok"] and request.arguments.get("output")
+            and "capture_id" in payload["result"]):
+        payload = copy_output(payload, request.arguments["output"])
+    return payload
+
+
+def execute(request_id, prepare):
+    """Run prepare() -> (request, local_result, operation), then the dispatcher.
+
+    Every failure, Ctrl-C included, becomes one public envelope. Returns
+    (payload with refs, exit status).
+    """
     request = None
     operation = None
     try:
-        request, local_result, operation, json_mode = parse_request(argv, request_id, os.getcwd())
+        request, local_result, operation = prepare()
         if request is not None:
-            if operation == "doctor":
-                from .prerequisites import doctor
-                payload = response(request_id, operation, result=doctor(request))
-            elif operation == "session.start":
-                from .lifecycle import Manager
-                payload = Manager().start(request)
-            elif operation in {"session.status", "session.stop"}:
-                from .lifecycle import Manager
-                payload = Manager().handle(request)
-            else:
-                from .transport import exchange
-                payload = exchange(request)
-                if (operation == "screenshot" and payload["ok"] and request.arguments.get("output")
-                        and "capture_id" in payload["result"]):
-                    payload = copy_output(payload, request.arguments["output"])
+            payload = run(request)
             status = 0 if payload["ok"] else EXIT_CODES[payload["error"]["code"]]
         else:
             result = dispatch(request) if request is not None else local_result
@@ -230,5 +266,23 @@ def main(argv=None):
         failure = ContractError("internal_error", "Internal command failure.", outcome="unknown" if request else "not_started")
         payload = response(request_id, operation, session=request.session if request else None, error=failure)
         status = EXIT_CODES[failure.code]
-    render(with_refs(payload), json_mode)
+    return with_refs(payload), status
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["mcp"]:
+        # The stdio MCP server is a long-running mode, not a one-shot command.
+        from .mcp import serve
+        return serve(argv[1:])
+    request_id = uuid.uuid4().hex
+    json_mode = split_cli(argv)[2]
+
+    def prepare():
+        nonlocal json_mode
+        request, local_result, operation, json_mode = parse_request(argv, request_id, os.getcwd())
+        return request, local_result, operation
+
+    payload, status = execute(request_id, prepare)
+    render(payload, json_mode)
     return status

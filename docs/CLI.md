@@ -12,7 +12,8 @@ One list in `contracts.SUPPORTED_OPERATIONS` defines what is implemented:
 
 Currently supported: `doctor`, `session start|status|stop`, `launch`, `windows`,
 `focus`, `wait`, `key`, `type`, `click`, `move`, `scroll`, `drag`, `screenshot`, `close` and `kill`.
-Every command in the table below is supported. There is no `input reset`; recover
+Every command in the table below is supported. `agent-desktop mcp` serves the same
+commands as MCP tools over stdio; see [MCP server](MCP.md). There is no `input reset`; recover
 from `input_uncertain` with `session stop` and `session start`. Key names, text limits, pointer coordinates, scroll signs and release guarantees are
 in [keyboard and pointer input](INPUT.md).
 
@@ -68,8 +69,12 @@ apps); full-screen screenshots show both. The window doesn't need focus.
 Each capture has a unique `capture_id` and is stored in the artifact root. The
 result gives `path`, `png_sha256`, `png_bytes`, `dimensions`, `screen_dimensions`
 and `crop`, plus `window`, `client` and `frame` with `--window`. `--output` copies the PNG
-to a file path, or into an existing directory as `capture-ID.png`. If the copy
-fails, the result is `artifact_failed` with the capture in `partial_result`. A
+to a file path (replacing it), or into an existing directory as `capture-ID.png`.
+It copies only the session generation's own capture: the source must lie inside
+`ARTIFACTS/generations/GENERATION/` of that generation's lifecycle record, reached
+without symlinks through owner-private directories, be an owner-private regular
+file and be at most 8 MiB. If the copy fails or the source is refused, the result
+is `artifact_failed` (context `output`) with the capture in `partial_result`. A
 failed screenshot fails only that request, not the session. See [application ownership](APPLICATIONS.md),
 [window discovery](WINDOWS.md), [lifecycle](LIFECYCLE.md) and
 [transport](TRANSPORT.md).

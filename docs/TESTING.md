@@ -23,7 +23,7 @@ of skipping it. On a complete host nothing skips either way.
 
 | Category | Tests | What they need |
 | --- | --- | --- |
-| Portable | 661 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
+| Portable | 734 | Python 3.11+, PyGObject (GLib/Gio), dbus-python, Pillow, `dbus-daemon`, `/usr/bin/python`, `/usr/bin/git` |
 | Needs host services | 4 | A user systemd manager on `/run/user/$UID/bus` with a visible `app.slice` cgroup |
 | Needs native build | 9 | libei at `/usr/lib/libei.so.1`; some need the exact reviewed build, `cc`, `pkg-config` and the libei header |
 
@@ -53,7 +53,7 @@ reason, to the log and the job summary. It checks skips by test id, not by outpu
 text: a skip in any module other than the three above fails the job, as do failures,
 errors and an empty run. A new host skip has to be added to `HOST_MODULES` there on
 purpose. The runner has no libei at `/usr/lib`, so the 9 libei tests skip. It does
-have a user systemd manager, so `test_lifecycle_process` runs there: 665 of the 674
+have a user systemd manager, so `test_lifecycle_process` runs there: 738 of the 747
 tests. CI never runs the smoke, failure-path or application tests below.
 `test_app_checks` covers the application tests' desktop-free checks (finding the
 canvas, the exported pixels, version and skip handling) and is portable.
@@ -162,6 +162,29 @@ process remains in the generation's cgroup and the systemd unit is gone:
 It takes the same `--cli`, `--dependency-root`, `--keep-artifacts` and `--verbose`
 options as the smoke test. A failing scenario keeps its artifact directory and stops
 the run.
+
+## MCP tests
+
+```sh
+python tests/integration/mcp.py --cli .local/dependencies/venv/bin/agent-desktop   # all four, about 10 seconds
+python tests/integration/mcp.py --cli .local/dependencies/venv/bin/agent-desktop cancel disconnect --loop 3
+```
+
+A minimal MCP client runs `agent-desktop mcp` over stdio, as Claude Code would,
+and drives the native fixture through it ([MCP server](MCP.md)). Each scenario
+starts its own session through the server and ends with the same leak check as
+the other tests:
+
+| Scenario | What it does | What must happen |
+| --- | --- | --- |
+| `flow` | legacy `initialize` (2025-11-25), `tools/list`, then `session_start`, `launch`, `windows`, `focus`, `type 'aB!'`, `key ctrl+shift+t`, `screenshot` of the window (also copied to `output`) and of the screen, `close`, `session_stop` | the fixture's key receipts in order; the `output` copy equals the capture; each screenshot has one PNG image block whose size and SHA-256 match the result and whose bytes equal the stored file; the full screen is 1280×720; text, `structuredContent` and `isError` agree |
+| `cancel` | modern per-request `_meta` (2026-07-28, after `server/discover`); `notifications/cancelled` while `key --hold 2 w` is held | release within 0.5s of the cancel (fixture clock); no response for the cancelled call; the next `key` works |
+| `disconnect` | the client closes the server's stdin while the key is held | release within 0.5s; the server exits 0; the session is still `ready` (CLI `session status`) and takes input |
+| `server-kill` | SIGKILL the server while the key is held | release within 0.5s (the call process's parent-death signal); the session keeps running |
+
+It takes the same `--cli`, `--dependency-root`, `--loop`, `--keep-artifacts` and
+`--verbose` options as the failure-path tests, and prints the server's stderr if
+there was any.
 
 ## Application tests
 

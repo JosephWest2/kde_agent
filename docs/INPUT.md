@@ -50,7 +50,8 @@ keys such as `w` or `shift+w` with `--hold` (at most 2s).
 **Text.** `type` maps printable ASCII, space, newline (Return) and tab (Tab) to the
 US layout, adding Shift where needed. Any other character rejects the whole request
 before anything is sent, with its `index` and `codepoint` (non-ASCII lookalikes
-such as the Kelvin sign included). If `key caps_lock` has turned Caps Lock on,
+such as the Kelvin sign included). Non-ASCII entry is planned through an input-method
+commit; see [the #84 spike](UNICODE.md). If `key caps_lock` has turned Caps Lock on,
 `type` inverts Shift for letters so the text still comes out as written; only this
 toolkit sends input to the private desktop, so the worker tracks that state. Each character is one
 press and one release, about 10ms apart, so roughly 170 characters fit the default

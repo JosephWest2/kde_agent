@@ -37,10 +37,11 @@ DISPLAY, XAUTHORITY, WAYLAND_DISPLAY, WAYLAND_SOCKET, DBUS_SESSION_BUS_ADDRESS,
 DBUS_SESSION_BUS_PID, DBUS_SESSION_BUS_WINDOWID, DBUS_SYSTEM_BUS_ADDRESS and
 AT_SPI_BUS_ADDRESS are protected. Host D-Bus starter addresses, SESSION_MANAGER,
 KDE_FULL_SESSION and KDE_APPLICATIONS_AS_SCOPE hints are also removed/protected.
-X11 and AT-SPI endpoints stay absent. Accessibility is off: QT_ACCESSIBILITY=0,
-NO_AT_BRIDGE=1 (GTK3) and GTK_A11Y=none (GTK4) cannot be overridden, and
-QT_LINUX_ACCESSIBILITY_ALWAYS_ON is removed and protected, because Qt turns
-accessibility on whenever it is set, even to 0 ([ACCESSIBILITY.md](ACCESSIBILITY.md)). The
+X11 and AT-SPI endpoints stay absent. QT_ACCESSIBILITY=0, NO_AT_BRIDGE=1 (GTK3)
+and GTK_A11Y=none (GTK4) cannot be overridden. QT_LINUX_ACCESSIBILITY_ALWAYS_ON
+is removed and protected, because Qt turns accessibility on whenever it is set,
+even to 0; Qt then follows the accessibility bus's IsEnabled property, and with
+no bus it stays off ([ACCESSIBILITY.md](ACCESSIBILITY.md)). The
 system-bus address names an absent private socket. Bus addresses allow one literal
 private `unix:path=` address; alternate-address, option and percent-escape syntax
 is rejected. QT_QPA_PLATFORM=wayland, XDG_SESSION_TYPE=wayland,

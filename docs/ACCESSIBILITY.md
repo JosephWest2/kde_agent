@@ -222,6 +222,14 @@ a toplevel within 2.5s; 1 sample per cell.
   - remove `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` (not set it to `0`);
   - add `GTK_A11Y=none`;
   - keep `NO_AT_BRIDGE=1`.
+- **Rechecked after #107** (installed CLI, 2 runs of one session each, a
+  private bus and registry started inside the session as in the spike, 2.5s
+  per probe): with the session's default environment and `IsEnabled` false,
+  none of the Qt, GTK4 and GTK3 probes registered (0 of 2 each); the on values
+  as a control registered all three (2 of 2 each). With `IsEnabled` true, GTK4 and
+  GTK3 stayed off but **Qt registered** (2 of 2), as the matrix above predicts:
+  Qt 6.11 has no environment-only off switch. So an accessibility bus, when
+  #104 adds one, must keep `IsEnabled` false for Qt programs to stay off.
 - **The on state the follow-up should use:**
   - the launcher with `--a11y=0`, so `IsEnabled` is false;
   - applications get `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` and

@@ -185,6 +185,9 @@ class Call:
                 payload = self.execute()
         except Exception as error:
             log(f"internal diagnostic: {type(error).__name__}")
+            if self.process is not None and self.process.poll() is None:
+                self.process.kill()  # Never leave a call running that nothing waits for.
+                self.process.wait()
             payload = envelope_error(self.request_id, self.operation, self.spec["session"], "internal_error",
                                      "MCP call failure.", outcome="unknown")
         finally:
@@ -328,6 +331,9 @@ class Server:
             self.error(rpc_id, error.code, error.message, error.data)
         except Exception as error:
             log(f"internal diagnostic: {type(error).__name__}")
+            if self.process is not None and self.process.poll() is None:
+                self.process.kill()  # Never leave a call running that nothing waits for.
+                self.process.wait()
             self.error(rpc_id, INTERNAL_ERROR, "Internal error")
 
     def notification(self, method, params):

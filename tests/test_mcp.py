@@ -77,6 +77,7 @@ class ServerTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="adm-")
         self.addCleanup(self.temp.cleanup)
+        self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.plan = self.root / "plan.json"
         self.events = self.root / "events"
@@ -540,20 +541,33 @@ class EntryPointTests(unittest.TestCase):
                          (130, "cancelled", "not_started"))
 
 
+def reap(process):
+    """Kill a test's child if it is still running and close its pipes (a cleanup)."""
+    if process.poll() is None:
+        process.kill()
+    process.wait()
+    for stream in (process.stdin, process.stdout, process.stderr):
+        if stream is not None and not stream.closed:
+            stream.close()
+
+
 class ProcessTests(unittest.TestCase):
     """The real server and call processes against a fixture worker on real sockets."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="adm-")
+        self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.events = self.root / "events"
         self.env = os.environ | {"XDG_RUNTIME_DIR": self.temp.name, "PYTHONPATH": str(SRC), "PYTHONWARNINGS": "ignore"}
         self.err = (self.root / "worker.err").open("w")
         self.worker = subprocess.Popen([sys.executable, str(TESTS / "mcp_worker_fixture.py"), "default", GEN,
                                         str(self.events)], env=self.env, stdout=subprocess.DEVNULL, stderr=self.err)
+        self.addCleanup(self.stop_worker)  # Runs even if setUp or tearDown fails.
         self.wait(lambda: (self.root / "agent-desktop/current/default.json").exists())
         self.server = subprocess.Popen([sys.executable, "-m", "agent_desktop", "mcp"], env=self.env, cwd="/",
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.addCleanup(reap, self.server)
         self.send({"jsonrpc": "2.0", "id": 0, "method": "initialize",
                    "params": {"protocolVersion": LEGACY, "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}})
         self.assertEqual(self.receive()["result"]["protocolVersion"], LEGACY)
@@ -566,11 +580,18 @@ class ProcessTests(unittest.TestCase):
         self.server.wait(timeout=10)
         self.server.stdout.close()
         self.server.stderr.close()
-        self.worker.terminate()
-        self.worker.wait(timeout=5)
-        self.err.close()
+        self.stop_worker()
         self.assertEqual((self.root / "worker.err").read_text(), "")
-        self.temp.cleanup()
+
+    def stop_worker(self):
+        if self.worker.poll() is None:
+            self.worker.terminate()
+            try:
+                self.worker.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.worker.kill()
+                self.worker.wait()
+        self.err.close()
 
     def send(self, message):
         self.server.stdin.write((json.dumps(message) + "\n").encode())
@@ -658,6 +679,7 @@ class ProcessTests(unittest.TestCase):
         request_id = "c" * 32
         call = subprocess.Popen([sys.executable, "-P", "-m", "agent_desktop.mcp_call", request_id], env=self.env,
                                 cwd="/", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.addCleanup(reap, call)
         call.stdin.write(json.dumps({"operation": "type", "arguments": {"window": WINDOW, "text": "slow"},
                                      "session": "default", "generation": None, "timeout": None,
                                      "caller_cwd": "/", "parent_pid": os.getpid()}).encode())

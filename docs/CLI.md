@@ -420,7 +420,8 @@ failure after it may have been written reports outcome `unknown` with
 error: check the application, and never resend blindly. Non-ASCII `type` is refused
 before sending with exit 2 (`invalid_arguments`, reason `text_too_long`, over 4000
 UTF-8 bytes) or exit 5 (`unsupported_input`, reason `text_input_unavailable`, no
-active text field within 200ms). Exit codes are the ones in the table above: 2 for bad
+active text field within 200ms), and fails with exit 6 (`target_lost`, reason
+`context_changed`, nothing sent) if another field became active before the commit. Exit codes are the ones in the table above: 2 for bad
 coordinates or steps (including `zero_scroll` and `zero_drag`), 6 for `target_lost`, 8 for a
 `timeout` (phase `budget` when nothing was sent), 9 for input errors. Input dispatch does not promise application acknowledgment, a rendered
 frame or UI readiness. Screenshot success reports the fresh complete PNG's path

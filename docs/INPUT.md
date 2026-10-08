@@ -85,13 +85,21 @@ key results have `method: keys`.
 - **Preconditions.** The same focus and compositor-surface checks as keys, then
   the focused window must have an active text field: KWin activates the input
   method for a Wayland client with text-input enabled. If none is active within
-  200ms the request fails before anything is recorded or sent: `unsupported_input`
+  200ms (by when KWin's activation was received, not when the worker got to it)
+  the request fails before anything is recorded or sent: `unsupported_input`
   (exit 5), reason `text_input_unavailable`, outcome `not_started`. That covers
   windows without a text field (the fixture without `--text-input`), a focused
   widget that isn't a text field, and X11 (XWayland) clients, which can't receive
   it. If the private KWin doesn't offer the input method at all (see `health`
   below), the request fails with `input_unavailable`, reason
-  `input_method_unavailable`.
+  `input_method_unavailable`. The client is acquired once per request: a
+  connection that fails during the request fails it, and the next request reopens it.
+- **Same field.** If the field became active after the focus check started (for
+  example, the window was only just focused), the focus is checked again
+  (`focus_rechecks`). The field found active must still be the active one when the
+  commit is written: if another field took over (a dialog opened, focus moved),
+  the request fails with `target_lost` (exit 6), reason `context_changed`, and
+  nothing is sent.
 - **One effect.** The commit is a single message. Once any of it may have been
   written, failure, timeout or cancellation report outcome `unknown` with
   `partial_result` (`method`, `bytes`, `commit_sent`), and nothing is retried
@@ -99,7 +107,7 @@ key results have `method: keys`.
   before the message was written withdraws it. As for keys, the request is
   refused with `input_uncertain` while an earlier release is unconfirmed.
 - **`confirmed`.** After the commit the worker waits up to 250ms for the field to
-  report its text (`surrounding_text`). `confirmed: true` only if the field's last
+  report its text (`surrounding_text`); reports received later never count. `confirmed: true` only if the field's last
   report before the commit (newer than the field's activation) and a later report
   from the same field, with no deactivation in between, differ by exactly the
   commit: the selection (anchor to cursor, in bytes) replaced by the text and the

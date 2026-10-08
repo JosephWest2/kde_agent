@@ -217,6 +217,30 @@ class ClientTests(unittest.TestCase):
         self.assertTrue(commit.settled())
         self.assertEqual(commit.verdict(), (True, None))
 
+    def test_a_report_after_the_confirmation_bound_does_not_confirm(self):
+        client = self.ready()
+        self.feed(SURROUNDING_AB)
+        commit = client.commit('é✓'.encode())
+        self.read(24)
+        late = commit.until + .01
+        client.clock = lambda: late
+        self.feed(SURROUNDING_AB_E_CHECK)
+        self.assertFalse(commit.settled())
+        self.assertEqual(commit.verdict(), (False, 'timeout'))
+
+    def test_an_overlapping_activation_retires_the_previous_context(self):
+        client = self.ready()
+        for index in range(1, 101):
+            self.feed(struct.pack('<III', 4, 12 << 16, CONTEXT + index))
+            # The replaced context is destroyed, as after a deactivate.
+            self.assertEqual(self.read(8), im.encode(CONTEXT + index - 1, 0))
+        self.assertEqual(client.context, CONTEXT + 100)
+        self.assertEqual(sum(kind == 'context' for kind in client.objects.values()), 1)
+        self.assertLessEqual(len(client.objects), 8)
+        # A late deactivate for a retired context is ignored.
+        self.feed(DEACTIVATE)
+        self.assertEqual((client.state, client.context), ('ready', CONTEXT + 100))
+
     def test_a_context_change_after_the_commit_settles_it_unconfirmed(self):
         client = self.ready()
         self.feed(SURROUNDING_AB)
@@ -346,13 +370,22 @@ class Client:
         self.commits, self.finished, self.abandoned = [], [], []
         self.verdict = (True, None)
         self.written = 0
+        self.epoch = 1 if active else 0
+        self.activated_at = time.monotonic() - 1 if active else None
+
+    def activate(self, at=None):
+        """A new context (a field, or a dialog's field) becomes active."""
+        self.is_active = True
+        self.epoch += 1
+        self.activated_at = time.monotonic() if at is None else at
 
     def active(self):
         return self.state == 'ready' and self.is_active
 
-    def commit(self, text):
+    def commit(self, text, wait, limit):
         commit = SimpleNamespace(text=text, sent=True, flushed=True, flushed_at=time.monotonic(), lost=False,
                                  settled=lambda: True, verdict=lambda: self.verdict)
+        commit.until = min(commit.flushed_at + wait, limit)
         self.commits.append(text)
         return commit
 
@@ -364,11 +397,22 @@ class Client:
 
 
 class Target:
+    instances = []
+    error = None  # Raised by targets created from now on.
+    on_recheck = None  # Called when a recheck (a target with a selected window) steps.
+
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
         self.result = {'window': WINDOW, 'focused': True, 'query_artifact': 'window-observations/q.json'}
+        self.error = Target.error
+        self.selected = None
+        Target.instances.append(self)
 
     def step(self, now):
+        if self.error is not None:
+            raise self.error
+        if self.selected is not None and Target.on_recheck is not None:
+            Target.on_recheck()
         return self.result
 
     def request_cancel(self, reason):
@@ -403,11 +447,26 @@ class TypeTaskTests(unittest.TestCase):
         self.effects = []
         work = SimpleNamespace(admission=SimpleNamespace(deadline=time.monotonic() + request.timeout_seconds),
                                error=None, partial=None)
-        context = SimpleNamespace(work=work, effects=lambda partial, uncertain=False: self.effects.append(partial))
+
+        def effects(partial, uncertain=False):  # Like Context.effects: the intent becomes the partial result.
+            self.effects.append(partial)
+            work.partial = partial
+            if self.on_effects:
+                self.on_effects()
+        context = SimpleNamespace(work=work, effects=effects)
+        self.on_effects = None
         self.owner = Owner()
         self.client = client if client is not None else Client()
-        with patch('agent_desktop.input_actions.TargetTask', Target):
-            return TypeTask(request, context, None, lambda: self.owner, None, lambda: None, lambda: self.client)
+        self.getter_calls = 0
+
+        def getter():
+            self.getter_calls += 1
+            return self.client
+        Target.instances, Target.error, Target.on_recheck = [], None, None
+        patcher = patch('agent_desktop.input_actions.TargetTask', Target)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return TypeTask(request, context, None, lambda: self.owner, None, lambda: None, getter)
 
     def run_task(self, task, limit=3):
         end = time.monotonic() + limit
@@ -490,7 +549,7 @@ class TypeTaskTests(unittest.TestCase):
     def test_failure_after_the_commit_reports_it_as_partial(self):
         task = self.make('é')
         commit = SimpleNamespace(sent=True, flushed=False, lost=True, flushed_at=None)
-        self.client.commit = lambda text: commit
+        self.client.commit = lambda text, **_: commit
         with self.assertRaises(ContractError) as caught:
             self.run_task(task)
         self.assertEqual(caught.exception.outcome, 'unknown')
@@ -500,13 +559,96 @@ class TypeTaskTests(unittest.TestCase):
     def test_cancel_after_the_commit_abandons_it_and_keeps_progress(self):
         task = self.make('é')
         commit = SimpleNamespace(sent=True, flushed=False, lost=False, flushed_at=None)
-        self.client.commit = lambda text: commit
+        self.client.commit = lambda text, **_: commit
         for _ in range(5):
             task.step(time.monotonic())
         task.request_cancel('cancelled')
         self.assertEqual(self.client.abandoned, [commit])
         self.assertEqual(task.context.work.partial['commit_sent'], True)
         self.assertTrue(task.cleanup(time.monotonic()))
+
+    def test_a_context_change_while_the_intent_is_recorded_sends_nothing(self):
+        task = self.make('é')
+        self.on_effects = self.client.activate  # A dialog's field takes over before the commit.
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual((caught.exception.code, caught.exception.context['reason']), ('target_lost', 'context_changed'))
+        self.assertEqual(self.client.commits, [])
+
+    def test_a_context_change_during_the_focus_recheck_records_nothing(self):
+        client = Client(active=False)
+        task = self.make('é', client=client)
+        self.assertIsNone(task.step(time.monotonic()))
+        client.activate()
+        Target.on_recheck = client.activate  # A dialog's field takes over during the recheck.
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual(caught.exception.context['reason'], 'context_changed')
+        self.assertEqual((self.effects, client.commits), ([], []))
+
+    def test_a_delayed_activation_rechecks_focus_before_committing(self):
+        client = Client(active=False)
+        task = self.make('é', client=client)
+        self.assertIsNone(task.step(time.monotonic()))
+        client.activate()
+        Target.error = ContractError('target_lost', 'Target is not focused.', context={'reason': 'focus_lost'})
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual(caught.exception.context['reason'], 'focus_lost')
+        self.assertEqual(len(Target.instances), 2)
+        self.assertEqual(Target.instances[1].selected, WINDOW)
+        self.assertEqual(client.commits, [])
+        # With focus still on the window, the commit goes ahead.
+        client = Client(active=False)
+        task = self.make('é', client=client)
+        self.assertIsNone(task.step(time.monotonic()))
+        client.activate()
+        self.assertTrue(self.run_task(task)['confirmed'])
+        self.assertEqual((len(Target.instances), client.commits), (2, ['é'.encode()]))
+
+    def test_an_already_active_context_needs_no_second_focus_check(self):
+        self.run_task(self.make('é'))
+        self.assertEqual(len(Target.instances), 1)
+
+    def test_an_activation_after_the_bound_is_refused_by_its_own_time(self):
+        client = Client(active=False)
+        task = self.make('é', client=client)
+        self.assertIsNone(task.step(time.monotonic()))
+        time.sleep(ACTIVATION_WAIT + .05)
+        client.activate()  # Observed now: too late, even though no step ran in between.
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual(caught.exception.context['reason'], 'text_input_unavailable')
+        self.assertEqual(client.commits, [])
+        # Observed in time, though the owner only gets to it late: accepted.
+        client = Client(active=False)
+        task = self.make('é', client=client)
+        self.assertIsNone(task.step(time.monotonic()))
+        client.activate(at=time.monotonic() + .05)
+        time.sleep(ACTIVATION_WAIT + .05)
+        self.assertTrue(self.run_task(task)['confirmed'])
+
+    def test_the_client_is_acquired_once_per_request(self):
+        client = Client(state='binding', active=False)
+        task = self.make('é', client=client)
+        for _ in range(5):
+            self.assertIsNone(task.step(time.monotonic()))
+        client.state, client.settled = 'failed', True
+        with self.assertRaises(ContractError) as caught:
+            self.run_task(task)
+        self.assertEqual(caught.exception.context['reason'], 'input_method_unavailable')
+        self.assertEqual(self.getter_calls, 1)
+
+    def test_timeout_after_the_commit_reports_it_sent_over_the_intent(self):
+        task = self.make('é')
+        commit = SimpleNamespace(sent=True, flushed=False, lost=False, flushed_at=None)
+        self.client.commit = lambda text, **_: commit
+        for _ in range(5):
+            task.step(time.monotonic())
+        self.assertEqual(task.context.work.partial['phase'], 'emitting')  # The intent, as Context.effects left it.
+        task.request_cancel('timeout')
+        self.assertEqual(task.context.work.partial['commit_sent'], True)
+        self.assertEqual(task.context.work.partial['bytes'], 2)
 
 
 if __name__ == '__main__':

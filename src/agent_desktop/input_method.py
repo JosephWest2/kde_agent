@@ -23,6 +23,7 @@ returned: results carry lengths and whether it matched.
 """
 from __future__ import annotations
 
+import math
 import os
 import socket
 import struct
@@ -35,6 +36,8 @@ TRUNCATION_BYTES = 3900   # A snapshot this long may be a toolkit's window into 
 READ_BYTES = 65536        # At most this much is read per wakeup.
 MAX_OUTGOING = 64 * 1024  # Bound on queued writes; a commit is at most MAX_MESSAGE.
 SERVER_ID = 0xff000000    # Objects the compositor creates (a context) have ids from here.
+MAX_OBJECTS = 16          # Live objects: display, registry, the input method, a sync callback, one context.
+CONFIRM_WAIT = .25        # After a commit is written, only reports received within this count.
 INTERFACE = 'zwp_input_method_v1'
 
 DISPLAY, REGISTRY = 1, 2
@@ -130,10 +133,11 @@ def frames(buffer):
 
 class Snapshot:
     """One surrounding_text event: UTF-8 TEXT with byte offsets CURSOR and ANCHOR."""
-    __slots__ = ('text', 'cursor', 'anchor', 'epoch', 'seq')
+    __slots__ = ('text', 'cursor', 'anchor', 'epoch', 'seq', 'received_at')
 
-    def __init__(self, text, cursor, anchor, epoch=0, seq=0):
+    def __init__(self, text, cursor, anchor, epoch=0, seq=0, received_at=None):
         self.text, self.cursor, self.anchor, self.epoch, self.seq = text, cursor, anchor, epoch, seq
+        self.received_at = received_at
 
     def empty(self):
         return not self.text and self.cursor == 0 and self.anchor == 0
@@ -191,9 +195,10 @@ def verdict(before, afters, committed, *, changed, lost=False):
 class Commit:
     """One commit_string in flight: whether it was written, and what the context reported afterwards."""
 
-    def __init__(self, client, text, before, epoch, start, end):
+    def __init__(self, client, text, before, epoch, start, end, wait=CONFIRM_WAIT, limit=math.inf):
         self.client, self.text, self.before, self.epoch = client, text, before, epoch
         self.start, self.end = start, end  # Byte offsets of the message in the connection's output stream.
+        self.wait, self.limit = wait, limit
         self.afters = []
         self.matched = False
         self.changed = False
@@ -210,7 +215,14 @@ class Commit:
     def flushed(self):
         return not self.recalled and self.client.written >= self.end
 
+    @property
+    def until(self):
+        """Reports received after this (WAIT after the commit was written, at most LIMIT) do not count."""
+        return self.limit if self.flushed_at is None else min(self.flushed_at + self.wait, self.limit)
+
     def observe(self, snapshot):
+        if snapshot.received_at is not None and snapshot.received_at > self.until:
+            return  # Too late: the request's verdict may already be out, and must not depend on it.
         if self.flushed and snapshot.epoch == self.epoch and len(self.afters) < 64:
             self.afters.append(snapshot)
             if self.before is not None and matches(self.before, snapshot, self.text):
@@ -253,6 +265,7 @@ class InputMethod:
         self.snapshot = None   # The latest surrounding text of the active context.
         self.seq = 0
         self.activations = 0
+        self.activated_at = None  # Clock time of the latest activate.
         self.pending = None    # The Commit awaiting confirmation, if any.
         self.deadline = None
         self.started_at = None
@@ -293,7 +306,7 @@ class InputMethod:
 
     def _allocate(self, interface):
         new = self.next_id
-        if new >= SERVER_ID:
+        if new >= SERVER_ID or len(self.objects) >= MAX_OBJECTS:
             raise ProtocolError('Client object ids exhausted.')
         self.next_id += 1
         self.objects[new] = interface
@@ -487,8 +500,16 @@ class InputMethod:
     def _zwp_input_method_v1_activate(self, obj, context):
         if context < SERVER_ID or context in self.objects:
             raise ProtocolError('Invalid input-method context id.')
+        if self.context is not None:
+            # KWin deactivates before activating another field (as recorded), but
+            # an activation that replaces a context retires it, as a deactivate would.
+            self._send(encode(self.context, CONTEXT_DESTROY))
+            del self.objects[self.context]
+        if len(self.objects) >= MAX_OBJECTS:
+            raise ProtocolError('Too many input-method objects.')
         self.objects[context] = 'context'
         self.context = context
+        self.activated_at = self.clock()
         self.epoch += 1
         self.activations += 1
         self.serial = 0
@@ -498,6 +519,8 @@ class InputMethod:
 
     def _zwp_input_method_v1_deactivate(self, obj, context):
         if self.objects.get(context) != 'context':
+            if context >= SERVER_ID:
+                return  # A context already retired by a later activate.
             raise ProtocolError('Deactivate of an unknown context.')
         if context == self.context:
             self.context, self.snapshot = None, None
@@ -512,7 +535,7 @@ class InputMethod:
         if obj != self.context:
             return
         self.seq += 1
-        self.snapshot = Snapshot(text or b'', cursor, anchor, self.epoch, self.seq)
+        self.snapshot = Snapshot(text or b'', cursor, anchor, self.epoch, self.seq, self.clock())
         if self.pending is not None:
             self.pending.observe(self.snapshot)
 
@@ -534,15 +557,18 @@ class InputMethod:
 
     # Commit ----------------------------------------------------------------
 
-    def commit(self, text):
-        """Send TEXT (UTF-8 bytes, at most MAX_COMMIT_BYTES) to the active context as one commit_string."""
+    def commit(self, text, *, wait=CONFIRM_WAIT, limit=math.inf):
+        """Send TEXT (UTF-8 bytes, at most MAX_COMMIT_BYTES) to the active context as one commit_string.
+
+        Reports count towards its verdict until WAIT after it was written, and never after LIMIT.
+        """
         if not self.active():
             raise RuntimeError('No active input-method context.')
         if len(text) > MAX_COMMIT_BYTES:
             raise ValueError('Commit text too long.')
         message = commit_message(self.context, self.serial, text)
         start = self.queued
-        self.pending = Commit(self, text, self.snapshot, self.epoch, start, start + len(message))
+        self.pending = Commit(self, text, self.snapshot, self.epoch, start, start + len(message), wait, limit)
         self._send(message)
         return self.pending
 

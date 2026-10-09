@@ -1,0 +1,73 @@
+name: project status sync
+
+on:
+  issues:
+    types: [opened, reopened, closed, labeled, unlabeled]
+  pull_request:
+    paths:
+      - .github/project-sync/**
+      - .github/workflows/project-sync.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/project-sync/**
+      - .github/workflows/project-sync.yml
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue/PR number; leave empty to reconcile the entire board'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: project sync tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/project-sync -p 'test_*.py' -v
+
+  sync:
+    name: synchronize project Status
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: project-status-${{ github.repository }}
+      cancel-in-progress: false
+    env:
+      REPOSITORY: ${{ github.repository }}
+      PROJECT_ID: PVT_kwHOBs5NDM4BmR1L
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number || '' }}
+    steps:
+      - name: Require the dedicated Projects credential
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_SYNC_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            printf '%s\n' '::error::Add the PROJECT_SYNC_TOKEN Actions secret with project and private-issue read access.'
+            exit 1
+          fi
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Apply issue state and labels to the board
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_SYNC_TOKEN }}
+        shell: bash
+        run: |
+          printf '%s\n' '## Project Status synchronization' '```json' >> "$GITHUB_STEP_SUMMARY"
+          python3 .github/project-sync/sync.py | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' '```' >> "$GITHUB_STEP_SUMMARY"

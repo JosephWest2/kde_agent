@@ -69,10 +69,10 @@ class InputHealthFailure(unittest.TestCase):
         finally:
             store.close()
 
-    def test_three_second_owner_delay_rejects_work_and_heartbeat_on_next_real_glib_turn(self):
+    def test_owner_delay_past_health_expiry_rejects_work_and_heartbeat_on_next_real_glib_turn(self):
         with tempfile.TemporaryDirectory(prefix='ihf-') as temporary:
             root = Path(temporary)
-            provider = self.provider(root, age=3.5)
+            provider = self.provider(root, age=5.5)  # Past HEALTH_FRESH_SECONDS (#111).
             self.rejected_worker(root, provider, 'bus')
 
     def test_startup_health_waits_for_drained_ready_input_before_publication(self):

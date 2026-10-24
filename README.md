@@ -35,7 +35,7 @@ Then, from the checkout:
 export PATH="$PWD/.local/dependencies/venv/bin:$PATH"
 D="agent-desktop --json"
 $D session start                                 # about 1s; reuses a running session
-$D launch --wait-window -- gnome-text-editor     # → result.application.ref, result.windows[].window.ref
+$D launch --wait-window -- gnome-text-editor     # → result.application.ref, result.windows[].ref
 $D windows --app APP_REF                         # client/frame geometry, title, active
 $D focus --window WIN_REF                        # input requires a focused window
 $D type --window WIN_REF 'Hello'

@@ -94,8 +94,8 @@ $D launch --wait-window --timeout 60 --cwd "$WORK" --env GIMP3_DIRECTORY="$WORK/
 
 ```sh
 # Once per profile: a userpref.blend stops the first-run quick-setup splash.
-# Create config/ first: if it is missing, save_userpref writes to the real
-# ~/.config/blender/VERSION/config/userpref.blend instead.
+# Create the directory first: if BLENDER_USER_RESOURCES doesn't exist, save_userpref
+# writes to the real ~/.config/blender/VERSION/config/userpref.blend instead.
 mkdir -p "$WORK/blender-user/config"
 BLENDER_USER_RESOURCES="$WORK/blender-user" blender -b --factory-startup \
   --python-expr 'import bpy; bpy.ops.wm.save_userpref()'

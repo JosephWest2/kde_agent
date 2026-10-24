@@ -12,7 +12,7 @@ from pathlib import Path
 import time
 from importlib.resources import files
 from .contracts import ContractError
-from .health import fresh
+from .health import HEALTH_FRESH_SECONDS, fresh
 from .private_bus import PrivateBus
 from .input_connection import Input
 from .input_method import InputMethod
@@ -21,6 +21,10 @@ from .windows import Adapter
 
 CAPABILITIES = ('window_query', 'input_resumed', 'screenshot')
 INPUT_METHOD_SETUP = 1.0  # Connect, registry and bind: a few milliseconds in practice.
+# A health round's budget. Startup qualifies on a prompt reply; once ready, a reply
+# that KWin is slow to send under host load still counts (#111), within HEALTH_FRESH_SECONDS.
+STARTUP_HEALTH_ROUND = 1.0
+READY_HEALTH_ROUND = 3.5  # Expires before the observation it renews, so a timeout names its component.
 
 
 class Readiness:
@@ -185,7 +189,8 @@ class Readiness:
     def _health_start(self):
         now = time.monotonic()
         self.next_health = now + 1
-        self.round = {'deadline': Budget(1, clock=self.owner_clock), 'bus': None, 'compositor': None}
+        budget = READY_HEALTH_ROUND if self.state == 'ready' else STARTUP_HEALTH_ROUND
+        self.round = {'deadline': Budget(budget, clock=self.owner_clock), 'bus': None, 'compositor': None}
         current = self.round
         def reply(component):
             def accept(value, _fds, error):
@@ -215,7 +220,7 @@ class Readiness:
             now = time.monotonic()
             if self.state == 'ready':
                 for component in ('bus', 'compositor'):
-                    if not fresh(self.health.get(component, {}).get('observed_at'), now):
+                    if not fresh(self.health.get(component, {}).get('observed_at'), now, HEALTH_FRESH_SECONDS):
                         self.fail(ContractError('timeout', 'Essential health observation expired.'), component)
             if self.state == 'starting' and now >= self.deadline:
                 self.fail(ContractError('timeout', 'Shared startup deadline expired.'))

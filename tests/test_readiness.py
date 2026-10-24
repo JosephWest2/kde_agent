@@ -407,7 +407,7 @@ class ReadinessTests(unittest.TestCase):
                     receipt.symlink_to(target)
                 self.failure(provider, 'screenshot')
 
-    def test_health_round_shares_one_second_deadline_and_never_overlaps(self):
+    def test_health_round_shares_one_deadline_and_never_overlaps(self):
         provider = self.to_health()
         health = [call for call in provider.bus.calls if call.token in ('bus', 'compositor')]
         self.assertEqual(len(health), 2)
@@ -423,14 +423,38 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(provider.state, 'ready')
         self.clock.return_value = 101.5
         provider.tick()
-        # A still-fresh owner starts one round, without catch-up bursts.
+        # A still-fresh owner starts one round, without catch-up bursts. Once ready,
+        # the round allows a slow reply (#111).
         self.assertEqual(sum(call.token in ('bus', 'compositor') for call in provider.bus.calls), 4)
-        self.assertEqual(provider.round['deadline'].at(), 102.5)
+        self.assertEqual(provider.round['deadline'].at(), 105.0)
+
+    def test_ready_session_survives_a_slow_health_reply(self):
+        provider = self.ready()
+        self.clock.return_value = 101
+        provider.tick()
+        self.clock.return_value = 104.4  # KWin descheduled by host load, not hung.
+        provider.tick()
+        provider.bus.complete('bus', ('private-bus-id',))
+        provider.bus.complete('compositor', ())
+        provider.tick()
+        self.assertEqual(provider.state, 'ready')
+        self.assertEqual(provider.health['compositor']['observed_at'], 104.4)
+
+    def test_hung_compositor_of_a_ready_session_fails_before_its_observation_expires(self):
+        provider = self.ready()
+        self.clock.return_value = 101
+        provider.tick()
+        provider.bus.complete('bus', ('private-bus-id',))
+        self.clock.return_value = 104.49
+        provider.tick()
+        self.assertEqual(provider.state, 'ready')
+        self.clock.return_value = 104.5
+        self.failure(provider, 'compositor')
 
     def test_delayed_owner_cannot_renew_stale_success_with_a_fresh_control_timestamp(self):
         provider = self.ready()
         before_calls = len(provider.bus.calls)
-        self.clock.return_value = 103.5
+        self.clock.return_value = 105.5
         self.failure(provider, 'bus')
         self.assertEqual(len(provider.bus.calls), before_calls)
         self.assertEqual(provider.health['bus']['observed_at'], 100)

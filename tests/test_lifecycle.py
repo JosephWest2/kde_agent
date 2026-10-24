@@ -164,6 +164,12 @@ class LifecycleTests(unittest.TestCase):
         with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': deepcopy(base)}):
             result = self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
             self.assertEqual(result['health']['control']['state'], 'passed')
+        # Bus and KWin observations stay fresh longer than the worker's own (#111).
+        slow = deepcopy(base)
+        for component in ('bus', 'compositor'):
+            slow['health'][component]['observed_at'] = time.monotonic() - 3.5
+        with patch('agent_desktop.lifecycle.exchange', return_value={'ok': True, 'result': slow}):
+            self.manager._ping(self.request('session.status'), generation, time.monotonic() + 1)
         variants = [dict(base, observed_at=time.monotonic()-3), dict(base, observed_at=float('nan')),
                     dict(base, health=[]), dict(base, desktop_ready=False)]
         for key in base['health']:
@@ -171,7 +177,7 @@ class LifecycleTests(unittest.TestCase):
             changed['health'][key] = {'state': 'pending'}
             variants.append(changed)
         for component in ('bus', 'compositor'):
-            for observed in (None, True, 'recent', 10**400, -(10**400), float('nan'), float('inf'), time.monotonic()+1, time.monotonic()-3.5):
+            for observed in (None, True, 'recent', 10**400, -(10**400), float('nan'), float('inf'), time.monotonic()+1, time.monotonic()-5.5):
                 changed = deepcopy(base)
                 changed['health'][component]['observed_at'] = observed
                 variants.append(changed)

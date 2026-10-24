@@ -14,7 +14,7 @@ import uuid
 
 from .contracts import ContractError, EXIT_CODES, GENERATION, make_request, response
 from .protocol import decode
-from .health import fresh
+from .health import HEALTH_FRESH_SECONDS, fresh
 from .runtime import Runtime, check_directory, check_file
 from .transport import exchange
 
@@ -396,7 +396,8 @@ class Manager:
                     or result['desktop_ready'] is not True or not fresh(observed, now)
                     or any(not isinstance(health.get(key), dict) or health[key].get('state') != 'passed'
                            for key in ('bus', 'compositor', 'window_query', 'input_resumed', 'screenshot'))
-                    or any(not fresh(health[key].get('observed_at'), now) for key in ('bus', 'compositor'))):
+                    or any(not fresh(health[key].get('observed_at'), now, HEALTH_FRESH_SECONDS)
+                           for key in ('bus', 'compositor'))):
                 raise ContractError('session_unavailable', 'Worker readiness observations are stale or incomplete.')
         remaining(deadline)
         if isinstance(result.get('health'), dict):

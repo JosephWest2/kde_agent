@@ -288,6 +288,18 @@ class CodecTests(unittest.TestCase):
             self.assertEqual(image.getpixel((1, 0)), (0, 0, 0, 0))
             self.assertEqual(image.getpixel((0, 1)), (1, 2, 3, 255))
 
+    def test_rgbx8888_decodes_byte_ordered_and_opaque(self):
+        # KWin 6.8 reports Qt's RGBX8888 (16): R,G,B,X bytes regardless of host byte order.
+        raw = bytearray(RAW_BYTES)
+        raw[0:4] = bytes((10, 20, 30, 0))
+        raw[5120:5124] = bytes((200, 100, 50, 7))
+        image = codec.decode(bytes(raw), METADATA | {'format': 16}, 'Virtual-1')
+        self.assertEqual(image.mode, 'RGBA')
+        self.assertEqual(image.getpixel((0, 0)), (10, 20, 30, 255))
+        self.assertEqual(image.getpixel((0, 1)), (200, 100, 50, 255))
+        with self.assertRaises(codec.Failure):
+            codec.validate_metadata(METADATA | {'format': 17}, 'Virtual-1')
+
     def test_strict_metadata_does_not_coerce_types_or_dimensions(self):
         for key, value in (('scale', True), ('scale', 1.5), ('width', 1280.0), ('height', 721),
                            ('stride', 5124), ('format', 5), ('type', 'png'), ('screen', 'other')):

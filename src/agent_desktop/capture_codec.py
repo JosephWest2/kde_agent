@@ -14,6 +14,8 @@ from PIL import Image
 MAX_RAW_BYTES = 8 * 1024 * 1024
 WIDTH, HEIGHT, STRIDE = 1280, 720, 5120
 QT_ARGB32_PREMULTIPLIED = 6
+QT_RGBX8888 = 16  # KWin 6.8 captures opaque outputs in this byte-ordered format
+SUPPORTED_FORMATS = (QT_ARGB32_PREMULTIPLIED, QT_RGBX8888)
 
 
 class Failure(ValueError):
@@ -33,10 +35,11 @@ def validate_metadata(metadata, screen):
     for key, expected in (("type", "raw"), ("screen", screen)):
         if not isinstance(metadata.get(key), str) or metadata[key] != expected:
             raise Failure(f"unexpected capture {key}")
-    for key, expected in (("width", WIDTH), ("height", HEIGHT),
-                          ("stride", STRIDE), ("format", QT_ARGB32_PREMULTIPLIED)):
+    for key, expected in (("width", WIDTH), ("height", HEIGHT), ("stride", STRIDE)):
         if type(metadata.get(key)) is not int or metadata[key] != expected:
             raise Failure(f"unexpected capture {key}")
+    if type(metadata.get("format")) is not int or metadata["format"] not in SUPPORTED_FORMATS:
+        raise Failure("unexpected capture format")
     scale = metadata.get("scale")
     if type(scale) not in (int, float) or scale != 1:
         raise Failure("unexpected capture scale")
@@ -68,9 +71,19 @@ def _decode_argb32(raw, size, stride, byteorder):
         raise Failure(f"cannot decode premultiplied capture: {exc}") from exc
 
 
+def _decode_rgbx8888(raw, size, stride):
+    """Decode Qt RGBX8888: bytes R,G,B,X in memory on every byte order, opaque."""
+    try:
+        return Image.frombytes("RGB", size, raw, "raw", "RGBX", stride, 1).convert("RGBA")
+    except (ValueError, OSError) as exc:
+        raise Failure(f"cannot decode RGBX capture: {exc}") from exc
+
+
 def decode(raw, metadata, screen):
     """Return straight RGBA pixels only for the complete supported payload."""
     expected_bytes = validate_metadata(metadata, screen)
     if not isinstance(raw, (bytes, bytearray)) or len(raw) != expected_bytes:
         raise Failure("capture payload length/type does not match metadata")
+    if metadata["format"] == QT_RGBX8888:
+        return _decode_rgbx8888(raw, (WIDTH, HEIGHT), STRIDE)
     return _decode_argb32(raw, (WIDTH, HEIGHT), STRIDE, sys.byteorder)

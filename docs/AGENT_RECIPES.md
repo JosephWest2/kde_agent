@@ -9,8 +9,8 @@ in [TARGET_APPS.md](TARGET_APPS.md).
 
 ## Refs go stale
 
-Refs are `GENERATION:ID` strings copied from results (`result.application.ref`,
-`result.windows[].window.ref`). They are valid for one session generation only.
+Refs are `GENERATION:ID` strings copied from results (`launch`: `result.application.ref`,
+`result.windows[].ref`; `windows`: `result.windows[].window.ref`). They are valid for one session generation only.
 
 - After `session stop` and `session start`, the new session has a new generation
   and the old application is gone. Every old ref is refused with

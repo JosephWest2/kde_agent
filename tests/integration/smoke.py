@@ -668,7 +668,7 @@ def print_versions(cli, dependency_root):
           f"libei {libei['version']} (tested {libei['tested_version']}), kdotool {kdotool['revision'][:12]}, "
           f"python {observed['python_bindings']['python']}")
     for warning in payload['result']['warnings']:
-        print(f"warning: {warning['code']}: {warning['message']}")
+        print(f"warning: {warning['code']}: {warning['observed']} (tested {warning['tested']}). {warning['advice']}")
 
 
 def positive_int(text):
